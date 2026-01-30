@@ -1,5 +1,6 @@
 'use server';
 
+import { revalidatePath } from 'next/cache';
 import { HtmlForm } from '../html-form-schema';
 import { UserFacingError, getErrorMessage, userError } from '../server-error-handling/user-error';
 import {
@@ -77,6 +78,7 @@ export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>)
     if (result && result.isErr()) {
       return userError(getErrorMessage(result.error));
     }
+    revalidatePath(`/tasks/${formId}`);
   } catch (err) {
     console.error(`Unable to update html form ${formId} in the database. Reason: ${err}`);
     if (err instanceof UserFacingError) {

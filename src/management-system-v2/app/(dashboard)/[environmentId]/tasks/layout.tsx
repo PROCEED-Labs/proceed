@@ -5,17 +5,17 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
-type DocumentationLayoutProps = {
+type TaskEditorLayoutProps = {
   params: Promise<{ environmentId: string }>;
 } & React.PropsWithChildren;
 
-const DocumentationLayout: React.FC<DocumentationLayoutProps> = async (props) => {
+const TaskEditorLayout: React.FC<TaskEditorLayoutProps> = async (props) => {
   const params = await props.params;
 
   const { children } = props;
 
   const msConfig = await getMSConfig();
-  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+  if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE) {
     return notFound();
   }
 
@@ -43,4 +43,4 @@ const DocumentationLayout: React.FC<DocumentationLayoutProps> = async (props) =>
   return <>{children}</>;
 };
 
-export default DocumentationLayout;
+export default TaskEditorLayout;

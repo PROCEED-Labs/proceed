@@ -71,7 +71,7 @@ const Page = async (props: { params: Promise<{ roleId: string; environmentId: st
     ? await getFolderById(role.value.parentId, ability)
     : undefined;
   if (roleParentFolder && roleParentFolder.isErr()) {
-    return roleParentFolder;
+    return errorResponse(roleParentFolder);
   }
 
   const tabs = [

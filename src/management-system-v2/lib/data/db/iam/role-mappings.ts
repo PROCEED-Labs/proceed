@@ -188,6 +188,8 @@ export async function _addRoleMappings(
       },
     });
   }
+
+  return ok();
 }
 
 // TODO: also check if user exists?

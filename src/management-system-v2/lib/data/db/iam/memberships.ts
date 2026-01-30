@@ -178,6 +178,8 @@ export async function addMember(
       createdOn: new Date().toISOString(),
     },
   });
+
+  return ok();
 }
 
 export const removeMember = ensureTransactionWrapper(_removeMember, 2);

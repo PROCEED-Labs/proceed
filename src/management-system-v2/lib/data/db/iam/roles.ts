@@ -255,7 +255,11 @@ export async function updateRole(
   // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
   if (
     !(
-      ability.checkInputFields(toCaslResource('Role', targetRole), 'update', roleRepresentation) &&
+      ability.checkInputFields(
+        toCaslResource('Role', targetRole.value),
+        'update',
+        roleRepresentation,
+      ) &&
       ability.can('create', toCaslResource('Role', roleRepresentation), {
         environmentId: targetRole.value.environmentId,
       })

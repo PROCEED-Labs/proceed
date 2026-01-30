@@ -182,7 +182,7 @@ export async function addMember(
   return ok();
 }
 
-export const removeMember = ensureTransactionWrapper(_removeMember, 2);
+export const removeMember = ensureTransactionWrapper(_removeMember, 3);
 async function _removeMember(
   environmentId: string,
   userId: string,

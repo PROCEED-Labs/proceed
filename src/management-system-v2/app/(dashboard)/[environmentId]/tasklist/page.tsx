@@ -6,7 +6,8 @@ import Tasklist from './tasklist';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
-const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
+const TasklistPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();

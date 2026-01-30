@@ -24,7 +24,7 @@ const EnginesModal = ({
       onCancel={() => close()}
       title={title}
       onOk={() => close({ name: values.name, address: values.address })}
-      destroyOnClose={true}
+      destroyOnHidden={true}
       {...modalProps}
     >
       <Form

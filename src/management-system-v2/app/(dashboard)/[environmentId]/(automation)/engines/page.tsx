@@ -21,10 +21,11 @@ const getEngineStatus = async (engine: DBEngine) => {
   }
 };
 
-const EnginesPage = async ({ params }: { params: { environmentId: string } }) => {
+const EnginesPage = async (props: { params: Promise<{ environmentId: string }> }) => {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
+  const params = await props.params;
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
 
   const machinesSettings = await getSpaceSettingsValues(
@@ -57,7 +58,8 @@ const EnginesPage = async ({ params }: { params: { environmentId: string } }) =>
   );
 };
 
-const Page = ({ params }: any) => {
+const Page = async (props: any) => {
+  const params = await props.params;
   return (
     <Content title="Engines">
       <Suspense fallback={<Skeleton />}>

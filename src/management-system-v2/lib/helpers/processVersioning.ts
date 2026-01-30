@@ -267,26 +267,26 @@ export async function versionScriptTasks(
 
         try {
           const scriptTaskTS = await getProcessScriptTaskScript(processInfo.id, fileName + '.ts');
-          if (scriptTaskTS.isErr()) return userError(getErrorMessage(scriptTaskTS.error));
-
-          await saveProcessScriptTask(
-            processInfo.id,
-            versionFileName + '.ts',
-            scriptTaskTS.value,
-            versionCreatedOn,
-          );
+          if (scriptTaskTS.isOk()) {
+            await saveProcessScriptTask(
+              processInfo.id,
+              versionFileName + '.ts',
+              scriptTaskTS.value,
+              versionCreatedOn,
+            );
+          }
         } catch (err) {}
 
         try {
           const scriptTaskXML = await getProcessScriptTaskScript(processInfo.id, fileName + '.xml');
-          if (scriptTaskXML.isErr()) return userError(getErrorMessage(scriptTaskXML.error));
-
-          await saveProcessScriptTask(
-            processInfo.id,
-            versionFileName + '.xml',
-            scriptTaskXML.value,
-            versionCreatedOn,
-          );
+          if (scriptTaskXML.isOk()) {
+            await saveProcessScriptTask(
+              processInfo.id,
+              versionFileName + '.xml',
+              scriptTaskXML.value,
+              versionCreatedOn,
+            );
+          }
         } catch (err) {}
       }
 

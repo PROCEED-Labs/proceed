@@ -14,7 +14,8 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
   const searchParams = await props.searchParams;
   const currentUser = await getCurrentUser();
   if (currentUser.isErr()) {
-    // this should be handled in the layout in the parent folder already
+    // this shouldn't really occur since it is handled in the layout file in the parent folder
+    // already
     return notFound();
   }
   const { session } = currentUser.value;

@@ -77,7 +77,7 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
         return userError(`Environment ${environmentId} is not an organization environment`);
 
       const deleteResult = await deleteEnvironment(environmentId, ability);
-      if (deleteResult?.isErr()) {
+      if (deleteResult.isErr()) {
         return userError(getErrorMessage(deleteResult.error));
       }
     }

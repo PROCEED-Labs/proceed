@@ -202,9 +202,12 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   }
 
   if (ability && !ability.can('delete', 'Environment')) return err(new UnauthorizedError());
+
   await db.space.delete({
     where: { id: environmentId },
   });
+
+  return ok();
 }
 
 //TODO organisation logo in db logic

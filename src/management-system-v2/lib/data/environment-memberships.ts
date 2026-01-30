@@ -108,9 +108,10 @@ export async function inviteUsersToEnvironment(
       // NOTE: technically not possible as guests cannot have an email or username
       if (invitedUser?.isGuest) continue;
 
-      if (invitedUser && (await isMember(environmentId, invitedUser.id))) continue;
-
       if (invitedUser) {
+        const userIsMember = await isMember(environmentId, invitedUser.id);
+        if (userIsMember.isErr() || userIsMember.value) continue;
+
         invitedUserEmail = invitedUser.email;
       } else if ('email' in invitedUserIdentifier) {
         invitedUserEmail = invitedUserIdentifier.email;
@@ -171,7 +172,8 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
       );
 
     for (const userId of userIds) {
-      await removeMember(environmentId, userId, ability);
+      const res = await removeMember(environmentId, userId, ability);
+      if (res.isErr()) return userError('Error removing users from environment');
     }
   } catch (_) {
     return userError('Error removing users from environment');
@@ -226,7 +228,7 @@ export async function createUserAndAddToOrganization(
         if (passwordResult.isErr()) throw passwordResult.error;
 
         const memberResult = await addMember(organizationId, user.id, ability, tx);
-        if (memberResult?.isErr()) throw memberResult.error;
+        if (memberResult.isErr()) throw memberResult.error;
 
         const roleMappingsResult = await addRoleMappings(
           roles.map((roleId) => ({
@@ -237,7 +239,7 @@ export async function createUserAndAddToOrganization(
           ability,
           tx,
         );
-        if (roleMappingsResult?.isErr()) throw roleMappingsResult.error;
+        if (roleMappingsResult.isErr()) throw roleMappingsResult.error;
       });
     } catch (error) {
       return userError(getErrorMessage(error));

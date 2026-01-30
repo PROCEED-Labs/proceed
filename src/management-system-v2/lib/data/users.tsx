@@ -150,7 +150,7 @@ export async function setUserPassword(newPassword: string) {
 }
 
 // To avoid this endpoint from being abused there's not much we can do, but we do the following:
-// - Encoforce the user to be an admin of an org
+// - Enforce the user to be an admin of an org
 // - Search query has to be at least 4 characters long
 // - We only return 10 users
 export async function queryUsers(organizationId: string, searchQuery: string) {

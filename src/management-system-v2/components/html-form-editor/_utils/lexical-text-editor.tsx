@@ -34,7 +34,8 @@ import { TRANSFORMERS } from '@lexical/markdown';
 import { ListNode, ListItemNode } from '@lexical/list';
 import { ListPlugin } from '@lexical/react/LexicalListPlugin';
 
-// Plugin to clean up markdown delimiters after transformation
+// Lexical's markdown shortcuts leave the closing delimiter (e.g. *) as a
+// This plugin removes those leftover nodes after space is pressed.
 const CleanupMarkdownPlugin: React.FC = () => {
   const [editor] = useLexicalComposerContext();
 
@@ -47,13 +48,12 @@ const CleanupMarkdownPlugin: React.FC = () => {
         const anchorNode = selection.anchor.getNode();
         const parent = anchorNode.getParent();
 
-        // Try to remove any text nodes that are only a markdown characters (with optional space)
         if (parent) {
           const children = parent.getChildren();
           children.forEach((child) => {
             if ($isTextNode(child)) {
               const text = child.getTextContent();
-              // Match markdown characters followed by optional space
+              // Remove nodes that only contain markdown delimiters (with optional space)
               if (/^[\*`_]+ ?$/.test(text)) {
                 // console.log('Removing node with text:', text);
                 child.remove();
@@ -64,6 +64,7 @@ const CleanupMarkdownPlugin: React.FC = () => {
       });
     };
 
+    // Delay to let Lexical markdown transformation finish first
     const removeSpace = editor.registerCommand(
       KEY_SPACE_COMMAND,
       () => {

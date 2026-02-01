@@ -80,24 +80,16 @@ export default function ToolbarPlugin() {
       setIsUnorderedList(false);
 
       if (elementDOM !== null) {
-        if ($isListNode(element)) {
-          const parentList = element as ListNode;
-          const type = parentList.getListType();
-          setIsOrderedList(type === 'number');
-          setIsUnorderedList(type === 'bullet');
-        } else {
-          // Check if we're inside a list item
-          let parent = element.getParent();
-          while (parent) {
-            if ($isListNode(parent)) {
-              const parentList = parent as ListNode;
-              const type = parentList.getListType();
-              setIsOrderedList(type === 'number');
-              setIsUnorderedList(type === 'bullet');
-              break;
-            }
-            parent = parent.getParent();
+        let parent: ReturnType<typeof element.getParent> | typeof element = element;
+        while (parent) {
+          if ($isListNode(parent)) {
+            const parentList = parent as ListNode;
+            const type = parentList.getListType();
+            setIsOrderedList(type === 'number');
+            setIsUnorderedList(type === 'bullet');
+            break;
           }
+          parent = parent.getParent();
         }
       }
 

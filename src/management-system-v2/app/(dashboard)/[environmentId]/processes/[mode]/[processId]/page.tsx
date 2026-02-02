@@ -19,19 +19,20 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById } from '@/lib/data/db/folders';
 
 type ProcessPageProps = {
-  params: { processId: string; environmentId: string; mode: string };
-  searchParams: { version?: string };
+  params: Promise<{ processId: string; environmentId: string; mode: string }>;
+  searchParams: Promise<{ version?: string }>;
 };
 
 type ProcessComponentProps = ProcessPageProps & {
   isListView?: boolean;
 };
 
-const ProcessComponent = async ({
-  params: { processId, environmentId },
-  searchParams,
-  isListView,
-}: ProcessComponentProps) => {
+const ProcessComponent = async (props: ProcessComponentProps) => {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const { processId, environmentId } = params;
+
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
 
@@ -44,7 +45,7 @@ const ProcessComponent = async ({
   const process = await getProcess(processId, !selectedVersionId);
 
   // For list view: check for redirect
-  if (isListView) {
+  if (props.isListView) {
     // If no version specified but released versions exist, redirect to last released version
     if (!searchParams.version && process.versions.length > 0) {
       const lastVersionId = process.versions[process.versions.length - 1].id;
@@ -115,7 +116,8 @@ const ProcessComponent = async ({
 };
 
 const Process = async (props: ProcessPageProps) => {
-  const isListView = props.params.mode === 'list';
+  const params = await props.params;
+  const isListView = params.mode === 'list';
   return <ProcessComponent {...props} isListView={isListView} />;
 };
 

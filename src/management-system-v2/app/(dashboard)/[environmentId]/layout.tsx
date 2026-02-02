@@ -44,10 +44,13 @@ import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 
-const DashboardLayout = async ({
-  children,
-  params,
-}: PropsWithChildren<{ params: { environmentId: string } }>) => {
+const DashboardLayout = async (
+  props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
+) => {
+  const params = await props.params;
+
+  const { children } = props;
+
   const { userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
@@ -176,7 +179,10 @@ const DashboardLayout = async ({
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
-    if (automationSettings.task_editor?.active !== false) {
+    if (
+      msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE &&
+      automationSettings.task_editor?.active !== false
+    ) {
       childRegex = '/tasks($|/)';
       children.push({
         key: 'task-editor',
@@ -196,7 +202,7 @@ const DashboardLayout = async ({
       icon: <CheckSquareOutlined />,
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
-      children,
+      children: children.length ? children : undefined,
     });
   }
 

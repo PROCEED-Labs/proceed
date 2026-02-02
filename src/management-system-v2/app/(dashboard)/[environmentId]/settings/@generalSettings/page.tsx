@@ -7,7 +7,8 @@ import db from '@/lib/data/db';
 import { SpaceNotFoundError } from '@/lib/errors';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const {
     ability,
     activeEnvironment: { spaceId },

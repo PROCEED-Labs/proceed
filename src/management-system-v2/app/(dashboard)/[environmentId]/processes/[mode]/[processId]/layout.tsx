@@ -1,8 +1,9 @@
-import { FC, PropsWithChildren, ReactNode } from 'react';
+import { FC, ReactNode } from 'react';
 
-type ProcessesLayoutProps = PropsWithChildren<{
+type ProcessesLayoutProps = {
+  children?: ReactNode;
   /*background: ReactNode;*/
-}>;
+};
 
 const ProcessesLayout: FC<ProcessesLayoutProps> = ({ children /*, background*/ }) => {
   return (

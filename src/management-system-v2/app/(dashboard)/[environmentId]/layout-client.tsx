@@ -202,7 +202,7 @@ const Layout: FC<
                 },
               ],
             }}
-            modalProps={{ closeIcon: null, destroyOnClose: true }}
+            modalProps={{ closeIcon: null, destroyOnHidden: true }}
           />
         ) : null}
 

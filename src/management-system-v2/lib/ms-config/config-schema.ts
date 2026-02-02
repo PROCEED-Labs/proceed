@@ -60,6 +60,14 @@ export const msConfigSchema = {
           'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_GANTT_ACTIVE',
       }),
     PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((val) => !val || process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE, {
+        message:
+          'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE',
+      }),
     PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE: z
       .string()

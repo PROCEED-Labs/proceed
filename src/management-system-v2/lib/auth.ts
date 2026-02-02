@@ -127,9 +127,8 @@ const nextAuthOptions: NextAuthConfig = {
       if (!token.user.isGuest) return;
 
       const user = await getUserById(token.user.id);
-      if (user.isErr()) {
-        throw user.error;
-      }
+      if (user.isErr()) throw user.error;
+
       if (user.value) {
         if (!user.value.isGuest) {
           console.warn('User with invalid session');
@@ -350,7 +349,6 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
 }
 
 if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
-  //Vorname, Nachname und Username input feldern,
   const credentials: Record<string, CredentialInput> = {
     firstName: {
       type: 'string',
@@ -431,7 +429,8 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
 
           const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
 
-          await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+          const res = await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+          if (res.isErr()) throw new Error('Something went wrong');
 
           const signinMail = renderSigninLinkEmail({
             signInLink: userRegistrationToken.redirectUrl,

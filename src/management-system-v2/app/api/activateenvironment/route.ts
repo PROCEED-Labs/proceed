@@ -17,7 +17,11 @@ export const GET = async (req: Request) => {
     if (!activationId)
       return Response.json({ message: 'No activationId provided' }, { status: 400 });
 
-    await activateEnvrionment(activationId, session.user.id);
+    const res = await activateEnvrionment(activationId, session.user.id);
+
+    if (res.isErr()) {
+      return Response.json({ message: 'Error activating environment' }, { status: 500 });
+    }
   } catch (e) {
     console.error(e);
     return Response.json({ message: 'Error activating environment' }, { status: 500 });

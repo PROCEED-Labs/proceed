@@ -18,6 +18,7 @@ import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { env } from '@/lib/ms-config/env-vars';
 import { ensureTransactionWrapper } from '../util';
+import { on } from 'node:events';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -88,6 +89,8 @@ export async function activateEnvrionment(environmentId: string, userId: string)
       tx,
     );
   });
+
+  return ok();
 }
 
 export const addEnvironment = ensureTransactionWrapper(_addEnvironment, 2);

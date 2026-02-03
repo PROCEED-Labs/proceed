@@ -31,7 +31,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onLayoutChange,
 }) => {
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
-  
+
   // Check if the changes have been made to default content to enable the button
   const { query, actions, isDefault } = useEditor((state) => {
     const rootNode = state.nodes['ROOT'];

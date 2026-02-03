@@ -192,18 +192,28 @@ const DashboardLayout = async (
       });
     }
 
+    let pollingInterval = 10000;
+
+    if (Number.isInteger(automationSettings.taskPollingInterval)) {
+      pollingInterval = automationSettings.taskPollingInterval;
+    }
+
     layoutMenuItems.push({
       key: 'tasklist',
       label: (
         <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/tasklist`)}>
           My Tasks
-          <ActiveTasksBadge activeSpace={activeEnvironment} />
+          <ActiveTasksBadge activeSpace={activeEnvironment} pollingInterval={pollingInterval} />
         </Link>
       ),
       icon: (
         <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
           <CheckSquareOutlined />
-          <ActiveTasksBadge activeSpace={activeEnvironment} onIcon />
+          <ActiveTasksBadge
+            activeSpace={activeEnvironment}
+            onIcon
+            pollingInterval={pollingInterval}
+          />
         </Link>
       ),
       selectedRegex: '/tasklist($|/)',

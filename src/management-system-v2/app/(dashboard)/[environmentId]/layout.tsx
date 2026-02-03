@@ -206,7 +206,6 @@ const DashboardLayout = async (
           <ActiveTasksBadge activeSpace={activeEnvironment} onIcon />
         </Link>
       ),
-      extra: 'Test',
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
       children: children.length ? children : undefined,

@@ -5,10 +5,12 @@ import { InputNumber, ColorPicker, Empty } from 'antd';
 import { UserComponent, useNode } from '@craftjs/core';
 
 import { useDroppable } from '@dnd-kit/core';
-
+import { useState } from 'react';
+import useEditorStateStore from '../use-editor-state-store';
 import { ContextMenu, Setting } from './utils';
 import { DragPreviewContext } from './Column';
-
+import { DeleteOutlined } from '@ant-design/icons';
+import { useDeleteControl } from './utils';
 export type ContainerProps = React.PropsWithChildren & {
   padding?: string | number;
   background?: string;
@@ -33,11 +35,16 @@ const Container: UserComponent<ContainerProps> = ({
     return { nodeId: node.id, nodeChildren: node.data.nodes };
   });
 
-  // prevent that a drag preview interacts with the drag and drop functionality of the original
-  // object
+  const [hovered, setHovered] = useState(false);
+  const { handleDelete } = useDeleteControl();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
+
   const isDragPreview = useContext(DragPreviewContext);
   const droppableId = isDragPreview ? '' : nodeId;
   const { setNodeRef } = useDroppable({ id: droppableId });
+
+  // Do not show overlay for root container
+  const isRoot = nodeId === 'ROOT';
 
   return (
     <div
@@ -47,8 +54,57 @@ const Container: UserComponent<ContainerProps> = ({
         setNodeRef(r);
       }}
       className="user-task-form-container"
-      style={{ padding, background, border: `${borderThickness}px solid ${borderColor}` }}
+      style={{
+        padding,
+        background,
+        border: `${borderThickness}px solid ${borderColor}`,
+        position: isRoot ? 'static' : 'relative',
+      }}
+      onMouseEnter={() => !isRoot && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
+      {!isRoot && editingEnabled && hovered && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '-12px',
+            left: '8px',
+            zIndex: 999,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            borderRadius: '4px',
+            padding: '4px',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+          }}
+          onMouseMove={(e) => e.stopPropagation()}
+        >
+          <button
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '14px',
+              width: '24px',
+              height: '24px',
+              border: 'none',
+              borderRadius: '3px',
+              transition: 'background-color 0.15s ease',
+              backgroundColor: 'transparent',
+              padding: '0',
+            }}
+            onClick={handleDelete}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <DeleteOutlined />
+          </button>
+        </div>
+      )}
       <ContextMenu menu={[]}>
         {children ? (
           <>{children}</>

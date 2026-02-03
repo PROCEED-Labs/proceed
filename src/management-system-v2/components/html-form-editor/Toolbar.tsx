@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Row, Button, Divider, Col, Space } from 'antd';
+import { Row, Button, Divider, Col, Space, Modal } from 'antd';
 
 import {
   DesktopOutlined,
@@ -8,12 +8,14 @@ import {
   UndoOutlined,
   RedoOutlined,
   DeleteOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons';
 
 import styles from './index.module.scss';
 
 import useEditorControls from './use-editor-controls';
 import useEditorStateStore from './use-editor-state-store';
+import { useEditor } from '@craftjs/core';
 
 export type EditorLayout = 'computer' | 'mobile';
 
@@ -29,6 +31,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onLayoutChange,
 }) => {
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
+  
+  // Check if the changes have been made to default content to enable the button
+  const { query, actions, isDefault } = useEditor((state) => {
+    const rootNode = state.nodes['ROOT'];
+    const isDefault = rootNode?.data?.nodes?.length === 0;
+    return { isDefault };
+  });
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
@@ -74,7 +83,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             />
           </>
 
-          {editingEnabled && (
+          {/* {editingEnabled && (
             <>
               <Divider type="vertical" />
               <Button
@@ -84,6 +93,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 icon={<DeleteOutlined />}
                 onClick={async () => {
                   selected && deleteElement(selected);
+                }}
+              />
+            </>
+          )} */}
+          {editingEnabled && (
+            <>
+              <Divider type="vertical" />
+              <Button
+                danger
+                type="text"
+                icon={<ReloadOutlined />}
+                disabled={isDefault}
+                onClick={() => {
+                  Modal.confirm({
+                    title: 'Reset Form',
+                    content:
+                      'Are you sure you want to reset the form to default content? This will remove all elements.',
+                    okText: 'Reset',
+                    okType: 'danger',
+                    cancelText: 'Cancel',
+                    onOk: () => {
+                      // Reset to default form
+                      const rootNode = query.node('ROOT').get();
+                      rootNode.data.nodes.forEach((nodeId: string) => {
+                        actions.delete(nodeId);
+                      });
+                    },
+                  });
                 }}
               />
             </>

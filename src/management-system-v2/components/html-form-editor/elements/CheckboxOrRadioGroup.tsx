@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   TbRowInsertTop,
   TbRowInsertBottom,
@@ -22,6 +22,7 @@ import {
   SidebarButtonFactory,
   MenuItemFactoryFactory,
   VariableSetting,
+  useDeleteControl,
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
@@ -154,7 +155,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
-
+  const { handleDelete } = useDeleteControl();
   return (
     <>
       <input
@@ -180,6 +181,7 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
             },
+            { key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> },
           ]}
           onDoubleClick={() => setTextEditing(true)}
         >

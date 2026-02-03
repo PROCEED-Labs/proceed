@@ -1,10 +1,10 @@
 import { useNode, UserComponent, useEditor } from '@craftjs/core';
 
-import { EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
 import React, { useState } from 'react';
-import { Overlay, Setting } from './utils';
+import { Overlay, Setting, useDeleteControl } from './utils';
 
 import cn from 'classnames';
 import { Checkbox, Select } from 'antd';
@@ -28,6 +28,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
 
   const [textEditing, setTextEditing] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const { handleDelete } = useDeleteControl();
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
@@ -50,6 +51,7 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
               key: 'edit',
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
             },
+            { key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> },
           ]}
           onDoubleClick={() => setTextEditing(true)}
         >

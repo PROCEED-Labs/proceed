@@ -22,6 +22,8 @@ import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } fr
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
+import { DeleteOutlined } from '@ant-design/icons';
+import { useDeleteControl } from './utils';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -161,7 +163,8 @@ const Table: UserComponent<TableProps> = ({
 
   const [targetCell, setTargetCell] = useState<{ row: number; col: number }>();
   const [hoveredAction, setHoveredAction] = useState<CellAction>();
-
+  const [hoveredTable, setHoveredTable] = useState(false);
+  const { handleDelete } = useDeleteControl();
   useEffect(() => {
     if (!isSelected) {
       setTargetCell(undefined);
@@ -428,36 +431,85 @@ const Table: UserComponent<TableProps> = ({
         setHoveredAction(undefined);
       }}
     >
-      <table
-        className="user-task-form-table"
-        ref={(r) => {
-          r && connect(r);
-        }}
+      {/* Just show one delete button for whole table on its upper left corner */}
+      <div
+        style={{ position: 'relative' }}
+        onMouseEnter={() => setHoveredTable(true)}
+        onMouseLeave={() => setHoveredTable(false)}
       >
-        <thead>
-          <TableRow
-            rowIndex={0}
-            tableRowData={tableDataWithPreviews[0]}
-            onUpdateContent={handleCellEdit}
-            onEditCell={(row, col) => {
-              setTargetCell({ row, col });
+        {editingEnabled && hoveredTable && !targetCell && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-12px',
+              left: '8px',
+              zIndex: 999,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              borderRadius: '4px',
+              padding: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
             }}
-          />
-        </thead>
-        <tbody>
-          {[...Array(tableDataWithPreviews.length - 1).keys()].map((index) => (
+            onMouseMove={(e) => e.stopPropagation()}
+          >
+            <button
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: 'white',
+                fontSize: '14px',
+                width: '24px',
+                height: '24px',
+                border: 'none',
+                borderRadius: '3px',
+                transition: 'background-color 0.15s ease',
+                backgroundColor: 'transparent',
+                padding: '0',
+              }}
+              onClick={handleDelete}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            >
+              <DeleteOutlined />
+            </button>
+          </div>
+        )}
+        <table
+          className="user-task-form-table"
+          ref={(r) => {
+            r && connect(r);
+          }}
+        >
+          <thead>
             <TableRow
-              key={`row-${index}`}
-              rowIndex={index + 1}
-              tableRowData={tableDataWithPreviews[index + 1]}
+              rowIndex={0}
+              tableRowData={tableDataWithPreviews[0]}
               onUpdateContent={handleCellEdit}
               onEditCell={(row, col) => {
                 setTargetCell({ row, col });
               }}
             />
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {[...Array(tableDataWithPreviews.length - 1).keys()].map((index) => (
+              <TableRow
+                key={`row-${index}`}
+                rowIndex={index + 1}
+                tableRowData={tableDataWithPreviews[index + 1]}
+                onUpdateContent={handleCellEdit}
+                onEditCell={(row, col) => {
+                  setTargetCell({ row, col });
+                }}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
       {isSelected &&
         targetCell &&
         createPortal(

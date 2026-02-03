@@ -306,17 +306,15 @@ const ModelerToolbar = ({
                 );
               }}
               options={(isListView ? [] : [LATEST_VERSION])
-              .concat((process.versions ?? [])
-              .sort((a, b) => {
-                  const dateA = new Date(a.createdOn).getTime();
-                  const dateB = new Date(b.createdOn).getTime();
-                  return dateB - dateA;
-                })
-              )
-              .map(({ id, name }) => ({
-                value: id,
-                label: name,
-              }))}
+                .concat(
+                  (process.versions ?? []).sort((a, b) => {
+                    return b.createdOn.getTime() - a.createdOn.getTime();
+                  }),
+                )
+                .map(({ id, name }) => ({
+                  value: id,
+                  label: name,
+                }))}
             />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>

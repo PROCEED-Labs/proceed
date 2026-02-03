@@ -64,46 +64,36 @@ const Container: UserComponent<ContainerProps> = ({
       onMouseLeave={() => setHovered(false)}
     >
       {!isRoot && editingEnabled && hovered && (
-        <div
+        <button
           style={{
             position: 'absolute',
-            top: '-12px',
-            left: '8px',
-            zIndex: 999,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            top: '-10px',
+            right: '8px',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            color: 'white',
+            fontSize: '14px',
+            width: '28px',
+            height: '28px',
+            border: 'none',
             borderRadius: '4px',
+            backgroundColor: 'rgba(0, 0, 0, 0.80)',
             padding: '4px',
             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
           }}
-          onMouseMove={(e) => e.stopPropagation()}
+          onClick={handleDelete}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+          }}
         >
-          <button
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'white',
-              fontSize: '14px',
-              width: '24px',
-              height: '24px',
-              border: 'none',
-              borderRadius: '3px',
-              transition: 'background-color 0.15s ease',
-              backgroundColor: 'transparent',
-              padding: '0',
-            }}
-            onClick={handleDelete}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }}
-          >
-            <DeleteOutlined />
-          </button>
-        </div>
+          <DeleteOutlined />
+        </button>
       )}
       <ContextMenu menu={[]}>
         {children ? (

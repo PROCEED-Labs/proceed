@@ -131,27 +131,28 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
             style={{
               position: 'absolute',
               top: '-10px',
-              left: '8px',
+              right: '8px',
               zIndex: 1000,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               color: 'white',
-              fontSize: '16px',
+              fontSize: '14px',
               width: '28px',
               height: '28px',
               border: 'none',
               borderRadius: '4px',
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              padding: '0',
+              backgroundColor: 'rgba(0, 0, 0, 0.80)',
+              padding: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
             }}
             onClick={handleDelete}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
             }}
           >
             <DeleteOutlined />

@@ -155,7 +155,6 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   const [textEditing, setTextEditing] = useState(false);
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
-  const { handleDelete } = useDeleteControl();
   return (
     <>
       <input
@@ -181,7 +180,6 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
             },
-            { key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> },
           ]}
           onDoubleClick={() => setTextEditing(true)}
         >
@@ -226,7 +224,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const [editTarget, setEditTarget] = useState<number>();
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
-
+  const [hoveredGroup, setHoveredGroup] = useState(false);
+  const { handleDelete } = useDeleteControl();
   const variables = useEditorStateStore((state) => state.variables);
 
   const {
@@ -448,7 +447,42 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         ref={(r) => {
           r && connect(r);
         }}
+        style={{ position: 'relative' }}
+        onMouseEnter={() => setHoveredGroup(true)}
+        onMouseLeave={() => setHoveredGroup(false)}
       >
+        {editingEnabled && hoveredGroup && editTarget === undefined && (
+          <button
+            style={{
+              position: 'absolute',
+              top: '-10px',
+              right: '8px',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '14px',
+              width: '28px',
+              height: '28px',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: 'rgba(0, 0, 0, 0.80)',
+              padding: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            }}
+            onClick={handleDelete}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            }}
+          >
+            <DeleteOutlined />
+          </button>
+        )}
         <div className={`user-task-form-input-group variable-${variable}`}>
           {dataWithPreviews.map(
             ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (

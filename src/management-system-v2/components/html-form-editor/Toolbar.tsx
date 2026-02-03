@@ -83,20 +83,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             />
           </>
 
-          {/* {editingEnabled && (
-            <>
-              <Divider type="vertical" />
-              <Button
-                danger
-                disabled={!selected}
-                type="text"
-                icon={<DeleteOutlined />}
-                onClick={async () => {
-                  selected && deleteElement(selected);
-                }}
-              />
-            </>
-          )} */}
           {editingEnabled && (
             <>
               <Divider type="vertical" />

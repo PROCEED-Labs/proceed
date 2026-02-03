@@ -46,7 +46,8 @@ export async function deleteRoleMappings(
 
   for (const { userId, roleId } of roleMappings) {
     try {
-      await _deleteRoleMapping(userId, roleId, activeEnvironment.spaceId, ability);
+      const res = await _deleteRoleMapping(userId, roleId, activeEnvironment.spaceId, ability);
+      if (res.isErr()) return userError(getErrorMessage(res.error));
     } catch (error) {
       console.error(error);
       errors.push(error);

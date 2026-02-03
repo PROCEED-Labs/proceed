@@ -353,7 +353,8 @@ export const updateProcess = async (
     revalidatePath(`/processes/editor/${definitionsId}`);
   }
 
-  await _updateProcess(definitionsId, { bpmn: newBpmn });
+  const res = await _updateProcess(definitionsId, { bpmn: newBpmn });
+  if (res.isErr()) return userError(getErrorMessage(res.error));
 };
 
 export const updateProcessMetaData = async (

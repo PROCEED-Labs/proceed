@@ -8,8 +8,9 @@ import { truthyFilter } from '../typescript-utils';
 /** Returns all roles that are applied to a user in a given organization environment */
 export async function getAppliedRolesForUser(userId: string, environmentId: string) {
   // enforces environment to be an organization
-  if (!isMember(environmentId, userId))
-    return err(new Error('User is not a member of this environment'));
+  const checkIsMember = await isMember(environmentId, userId);
+  if (checkIsMember.isErr()) return checkIsMember;
+  if (!checkIsMember.value) return err(new Error('User is not a member of this environment'));
 
   const environmentRoles = await getRoles(environmentId);
   if (environmentRoles.isErr()) {

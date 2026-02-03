@@ -78,4 +78,6 @@ export async function deleteSystemAdmin(adminId: string) {
   if (!adminData.value) return err(new Error('System admin not found'));
 
   await db.systemAdmin.delete({ where: { id: adminId } });
+
+  return ok();
 }

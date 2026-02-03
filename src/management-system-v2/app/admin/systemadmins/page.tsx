@@ -35,7 +35,8 @@ async function deleteAdmins(userIds: string[]) {
       }
       if (!adminMapping.value) return userError('Admin not found');
 
-      deleteSystemAdmin(adminMapping.value.id);
+      const res = await deleteSystemAdmin(adminMapping.value.id);
+      if (res.isErr()) return userError('Failed to remove admin rights from the user');
     }
   } catch (e) {
     return userError('Something went wrong');

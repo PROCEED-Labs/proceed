@@ -121,6 +121,8 @@ export async function updateHtmlForm(formId: string, newInfoInput: Partial<HtmlF
     where: { id: formId },
     data: formInput,
   });
+
+  return ok();
 }
 
 /** Removes an existing html form */

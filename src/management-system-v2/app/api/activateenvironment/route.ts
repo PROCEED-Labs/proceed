@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth';
-import { activateEnvrionment } from '@/lib/data/db/iam/environments';
+import { activateEnvironment } from '@/lib/data/db/iam/environments';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { redirect } from 'next/navigation';
 
@@ -17,7 +17,7 @@ export const GET = async (req: Request) => {
     if (!activationId)
       return Response.json({ message: 'No activationId provided' }, { status: 400 });
 
-    const res = await activateEnvrionment(activationId, session.user.id);
+    const res = await activateEnvironment(activationId, session.user.id);
 
     if (res.isErr()) {
       return Response.json({ message: 'Error activating environment' }, { status: 500 });

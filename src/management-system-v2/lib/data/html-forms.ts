@@ -75,7 +75,7 @@ export const addHtmlForm = async (
 export const updateHtmlForm = async (formId: string, newData: Partial<HtmlForm>) => {
   try {
     const result = await _updateHtmlForm(formId, newData);
-    if (result && result.isErr()) {
+    if (result.isErr()) {
       return userError(getErrorMessage(result.error));
     }
     revalidatePath(`/tasks/${formId}`);

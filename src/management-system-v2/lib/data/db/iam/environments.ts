@@ -50,7 +50,7 @@ export async function getEnvironmentById(
 }
 
 /** Sets an environment to active, and adds the given user as an admin */
-export async function activateEnvrionment(environmentId: string, userId: string) {
+export async function activateEnvironment(environmentId: string, userId: string) {
   const environmentResult = await getEnvironmentById(environmentId);
   if (environmentResult.isErr()) {
     return environmentResult;
@@ -75,9 +75,10 @@ export async function activateEnvrionment(environmentId: string, userId: string)
       data: { isActive: true },
     });
 
-    await addMember(environmentId, userId, undefined, tx);
+    const addMemberRes = await addMember(environmentId, userId, undefined, tx);
+    if (addMemberRes.isErr()) throw new Error('Failed to add the owner to the environment');
 
-    await addRoleMappings(
+    const addRoleMappingsRes = await addRoleMappings(
       [
         {
           environmentId,
@@ -88,6 +89,8 @@ export async function activateEnvrionment(environmentId: string, userId: string)
       undefined,
       tx,
     );
+
+    if (addRoleMappingsRes.isErr()) throw new Error('Failed to add the user as the admin');
   });
 
   return ok();
@@ -159,7 +162,7 @@ async function _addEnvironment(
 
     if (newEnvironment.isActive) {
       const ownerAdded = await addMember(id, newEnvironment.ownerId, undefined, tx);
-      if (ownerAdded?.isErr()) return ownerAdded;
+      if (ownerAdded.isErr()) return ownerAdded;
 
       const adminRoleMapping = await addRoleMappings(
         [
@@ -301,9 +304,10 @@ export async function spaceHasLogo(organizationId: string) {
 }
 
 export async function deleteSpaceLogo(organizationId: string) {
-  await getEnvironmentById(organizationId, undefined, {
+  const res = await getEnvironmentById(organizationId, undefined, {
     throwOnNotFound: true,
   });
+  if (res.isErr()) return res;
 
   //if (!hasLogo(organizationId)) throw new Error("Organization doesn't have a logo");
 

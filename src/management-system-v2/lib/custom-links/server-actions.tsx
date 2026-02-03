@@ -9,7 +9,10 @@ import { getErrorMessage, userError } from '../server-error-handling/user-error'
 
 export async function getCustomLinksStatus(spaceId: string) {
   // Check that the user is a member of the space
-  getCurrentEnvironment(spaceId);
+  const res = await getCurrentEnvironment(spaceId);
+  if (res.isErr()) {
+    return userError(getErrorMessage(res.error));
+  }
 
   const generalSettings = await getSpaceSettingsValues(spaceId, 'general-settings');
   if (generalSettings.isErr()) {

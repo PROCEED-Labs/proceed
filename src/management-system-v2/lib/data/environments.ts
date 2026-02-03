@@ -132,9 +132,11 @@ export async function leaveOrganization(spaceId: string) {
       return userError('You cannot leave your personal spcae');
     }
 
-    if (!(await isMember(spaceId, user.id))) {
+    const checkIsMember = await isMember(spaceId, user.id);
+    if (checkIsMember.isErr()) return userError('Something went wrong');
+    if (!checkIsMember.value) {
       // I don't think we should return a specific error, as it allows to check environment ID's
-      throw new Error();
+      return userError('Something went wrong');
     }
 
     const result = await removeMember(spaceId, user.id);

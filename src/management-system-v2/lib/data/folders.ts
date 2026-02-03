@@ -186,7 +186,8 @@ export async function updateFolder(
     const folderUpdate = FolderUserInputSchema.partial().parse(folderInput);
     if (folderUpdate.parentId) return userError('Wrong method for moving folders');
 
-    await updateFolderMetaData(folderId, folderUpdate, ability);
+    const res = await updateFolderMetaData(folderId, folderUpdate, ability);
+    if (res.isErr()) return userError(getErrorMessage(res.error));
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

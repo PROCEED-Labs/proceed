@@ -164,13 +164,15 @@ export async function versionStartForm(
         const startFormData = await getProcessHtmlFormJSON(processInfo.id, fileName);
         if (startFormData.isErr()) return userError(getErrorMessage(startFormData.error));
 
-        await saveProcessHtmlForm(
+        const res = await saveProcessHtmlForm(
           processInfo.id,
           versionFileName,
           startFormData.value!,
           startFormHtml.value!,
           versionCreatedOn,
         );
+
+        if (res.isErr()) return userError(getErrorMessage(res.error));
       }
 
       // update ref for the artifacts referenced by the versioned start form
@@ -213,13 +215,14 @@ export async function versionUserTasks(
         const userTaskData = await getProcessHtmlFormJSON(processInfo.id, fileName);
         if (userTaskData.isErr()) return userError(getErrorMessage(userTaskData.error));
 
-        await saveProcessHtmlForm(
+        const res = await saveProcessHtmlForm(
           processInfo.id,
           versionFileName,
           userTaskData.value!,
           userTaskHtml.value!,
           versionCreatedOn,
         );
+        if (res.isErr()) return userError(getErrorMessage(res.error));
       }
 
       // update ref for the artifacts referenced by the versioned user task

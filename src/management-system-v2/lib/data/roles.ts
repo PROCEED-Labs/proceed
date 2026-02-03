@@ -20,7 +20,8 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
 
   try {
     for (const roleId of roleIds) {
-      await deleteRole(roleId, ability);
+      const res = await deleteRole(roleId, ability);
+      if (res.isErr()) return userError(getErrorMessage(res.error));
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)

@@ -116,9 +116,9 @@ export const getCurrentEnvironment = cache(
     if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
       // Note: will be undefined for not logged in users
       const userOrgs = await getUserOrganizationEnvironments(userId);
-      // if (userOrgs.isErr()) {
-      //   return userOrgs;
-      // }
+      if (userOrgs.isErr()) {
+        return userOrgs;
+      }
 
       if (userOrgs.value.length === 0) {
         if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
@@ -143,7 +143,9 @@ export const getCurrentEnvironment = cache(
       });
     }
 
-    if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
+    const checkIsMember = await isMember(decodeURIComponent(spaceIdParam), userId);
+    if (checkIsMember.isErr()) return checkIsMember;
+    if (!userId || !checkIsMember.value) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
           return err(new Error('User does not have access to this environment'));

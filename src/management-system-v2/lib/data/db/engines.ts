@@ -119,7 +119,8 @@ export async function updateDbEngine(
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) return err(new Error('Engine not found'));
+    if (engine.isErr()) return engine;
+    if (!engine.value) return err(new Error('Engine not found'));
     if (
       !ability.can('update', toCaslResource('Machine', engine), { environmentId: environmentId! })
     )
@@ -149,7 +150,8 @@ export async function deleteSpaceEngine(
 
   if (ability) {
     const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) return err(new Error('Engine not found'));
+    if (engine.isErr()) return engine;
+    if (!engine.value) return err(new Error('Engine not found'));
     if (
       !ability.can('delete', toCaslResource('Machine', engine), { environmentId: environmentId! })
     )

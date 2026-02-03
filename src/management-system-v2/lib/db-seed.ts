@@ -269,8 +269,11 @@ async function writeSeedToDb(seed: DBSeed) {
       const userRoleMappings = new Map<string, string[]>();
       for (const member of organization.members) {
         const memberId = usernameToId.get(member)!;
-        if (!(await isMember(org.id, memberId, tx))) {
-          await addMember(org.id, memberId, undefined, tx);
+        const checkIsMember = await isMember(org.id, memberId, tx);
+        if (checkIsMember.isErr()) return checkIsMember;
+        if (!checkIsMember.value) {
+          const res = await addMember(org.id, memberId, undefined, tx);
+          if (res.isErr()) return res;
         }
 
         // get members role mappings

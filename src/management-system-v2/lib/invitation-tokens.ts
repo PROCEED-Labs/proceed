@@ -69,7 +69,7 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
 
   if (!userIsMember.value) {
     const memberAdded = await addMember(invite.spaceId, userId);
-    if (memberAdded?.isErr()) return userError(getErrorMessage(memberAdded.error));
+    if (memberAdded.isErr()) return userError(getErrorMessage(memberAdded.error));
 
     if (invite.roleIds) {
       const validRoles = [];
@@ -86,7 +86,7 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
           userId,
         })),
       );
-      if (result?.isErr()) return userError(getErrorMessage(result.error));
+      if (result.isErr()) return userError(getErrorMessage(result.error));
     }
   }
 }

@@ -1,10 +1,9 @@
 'use server';
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
-import { OrganizationEnvironment } from './environment-schema';
 import Link from 'next/link';
 import {
   UserHasToDeleteOrganizationsError,
@@ -13,25 +12,35 @@ import {
   setUserPassword as _setUserPassword,
   getUserById,
 } from '@/lib/data/db/iam/users';
-import { getEnvironmentById } from './db/iam/environments';
 import { hashPassword } from '../password-hashes';
 import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
 import db from '@/lib/data/db/index';
 import { env } from '../ms-config/env-vars';
 
 export async function deleteUser() {
-  const { userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
+
+  const deleteResult = await _deleteUser(userId);
+  if (deleteResult.isOk()) return;
 
   try {
-    await _deleteUser(userId);
-  } catch (e) {
+    const e = deleteResult.error;
     let message: ReactNode;
 
     if (e instanceof UserHasToDeleteOrganizationsError) {
-      const conflictingOrgsNames = e.conflictingOrgs.map(
-        async (orgId: string) =>
-          ((await getEnvironmentById(orgId)) as OrganizationEnvironment).name,
-      );
+      const conflictingOrgs = await db.space.findMany({
+        where: {
+          id: { in: e.conflictingOrgs },
+        },
+        select: {
+          name: true,
+          id: true,
+        },
+      });
 
       message = (
         <>
@@ -41,14 +50,9 @@ export async function deleteUser() {
           </p>
           <p>The affected organizations are:</p>
           <ul>
-            {conflictingOrgsNames.map((name, idx) => (
-              <li key={idx}>
-                {name}:{' '}
-                <Link
-                  href={`/${(e as UserHasToDeleteOrganizationsError).conflictingOrgs[idx]}/iam/roles`}
-                >
-                  manage roles here
-                </Link>
+            {conflictingOrgs.map(({ name, id }) => (
+              <li key={id}>
+                {name}: <Link href={`/${id}/iam/roles`}>manage roles here</Link>
               </li>
             ))}
           </ul>
@@ -62,19 +66,31 @@ export async function deleteUser() {
     }
 
     return userError(message);
+  } catch (_) {
+    return userError('Something weng wrong');
   }
 }
 
 export async function updateUser(newUserDataInput: AuthenticatedUserData) {
   try {
-    const { userId } = await getCurrentUser();
-    const user = await getUserById(userId);
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return userError(getErrorMessage(currentUser.error));
+    }
+    const { userId } = currentUser.value;
 
-    if (user?.isGuest) {
+    const user = await getUserById(userId);
+    if (user.isErr()) {
+      return userError(getErrorMessage(user.error));
+    }
+
+    if (user.value?.isGuest) {
       return userError('Guest users cannot be updated');
     }
 
-    const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
+    const parseResult = AuthenticatedUserDataSchema.safeParse(newUserDataInput);
+    if (!parseResult.success) return userError('Malformed data');
+    const newUserData = parseResult.data;
 
     await _updateUser(userId, { ...newUserData });
   } catch (e) {
@@ -83,32 +99,50 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
   }
 }
 
-export async function getUsersFavourites(): Promise<String[]> {
-  const { userId } = await getCurrentUser();
+export async function getUsersFavourites() {
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
 
   const user = await getUserById(userId);
+  if (user.isErr()) {
+    return userError(getErrorMessage(user.error));
+  }
 
-  if (user?.isGuest) {
+  if (user.value?.isGuest) {
     return []; // Guest users have no favourites
   }
-  return user?.favourites ?? [];
+  return user.value?.favourites ?? [];
 }
 
 export async function setUserPassword(newPassword: string) {
   try {
-    const { userId } = await getCurrentUser();
-    const user = await getUserById(userId);
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return userError(getErrorMessage(currentUser.error));
+    }
+    const { userId } = currentUser.value;
 
-    if (!user) {
+    const user = await getUserById(userId);
+    if (user.isErr()) {
+      return userError(getErrorMessage(user.error));
+    }
+
+    if (!user.value) {
       return userError('Invalid session, please sign in again');
     }
 
-    if (user?.isGuest) {
+    if (user.value?.isGuest) {
       return userError('Guest users cannot change their password');
     }
 
     const passwordHash = await hashPassword(newPassword);
-    await _setUserPassword(userId, passwordHash);
+    const result = await _setUserPassword(userId, passwordHash);
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    }
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -116,7 +150,7 @@ export async function setUserPassword(newPassword: string) {
 }
 
 // To avoid this endpoint from being abused there's not much we can do, but we do the following:
-// - Encoforce the user to be an admin of an org
+// - Enforce the user to be an admin of an org
 // - Search query has to be at least 4 characters long
 // - We only return 10 users
 export async function queryUsers(organizationId: string, searchQuery: string) {
@@ -124,15 +158,26 @@ export async function queryUsers(organizationId: string, searchQuery: string) {
     return userError('Unauthorized', UserErrorType.PermissionError);
   }
 
-  const { userId } = await getCurrentUser();
-  const { activeEnvironment } = await getCurrentEnvironment(organizationId);
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
+
+  const currentEnvironment = await getCurrentEnvironment(organizationId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { activeEnvironment } = currentEnvironment.value;
 
   if (!activeEnvironment.isOrganization) {
     return userError('Unauthorized', UserErrorType.PermissionError);
   }
 
   const userRoles = await getAppliedRolesForUser(userId, organizationId);
-  const isAdmin = userRoles.some((role) => role.name === '@admin');
+  if (userRoles.isErr()) return userError(getErrorMessage(userRoles.error));
+
+  const isAdmin = userRoles.value.some((role) => role.name === '@admin');
   if (!isAdmin) {
     return userError('Unauthorized', UserErrorType.PermissionError);
   }
@@ -175,7 +220,11 @@ export async function setUserTemporaryPassword(
   spaceId?: string,
 ) {
   try {
-    const { user, systemAdmin } = await getCurrentUser();
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return userError(getErrorMessage(currentUser.error));
+    }
+    const { user, systemAdmin } = currentUser.value;
 
     let allowed = false;
     if (systemAdmin) {

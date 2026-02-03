@@ -15,17 +15,18 @@ import * as noIamUser from '@/lib/no-iam-user';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { cookies } from 'next/headers';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { UIError as UserUIError } from '@/lib/ui-error';
 import { packedStaticRules } from '@/lib/authorization/caslRules';
+import { err, ok } from 'neverthrow';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
 
 export const getCurrentUser = cache(async () => {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
-    return {
+    return ok({
       session: noIamUser.session,
       userId: noIamUser.userId,
       systemAdmin: noIamUser.systemAdmin,
       user: noIamUser.user,
-    };
+    });
   }
 
   const session = await auth();
@@ -35,12 +36,15 @@ export const getCurrentUser = cache(async () => {
     userId !== '' ? getUserById(userId) : undefined,
   ]);
 
+  if (systemAdmin.isErr()) return systemAdmin;
+  if (user && user.isErr()) return user;
+
   // Sign out user if the id doesn't correspond to a user in the db
   // We need to reset the cookie that stores the user id, this isn't possible
   // inside a server components, so we need to redirect the user to an endpoint
   // that logs him out, this endpoint needs to csrf protected, for this we use
   // the user's csrf token (which was added by next-auth)
-  if (userId !== '' && !user) {
+  if (userId !== '' && !user?.value) {
     const cookieStore = await cookies();
     const csrfToken = cookieStore.get('proceed.csrf-token')!.value;
 
@@ -56,7 +60,7 @@ export const getCurrentUser = cache(async () => {
     redirect(`/api/private/signout?${searchParams}`);
   }
 
-  return { session, userId, systemAdmin, user };
+  return ok({ session, userId, systemAdmin: systemAdmin.value, user: user?.value });
 });
 
 const systemAdminRulesForOrganizations = packedAdminRules
@@ -89,7 +93,12 @@ export const getCurrentEnvironment = cache(
       permissionErrorHandling: { action: 'redirect' },
     },
   ) => {
-    const { userId, systemAdmin } = await getCurrentUser();
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return err('Could not get the current user');
+    }
+
+    const { userId, systemAdmin } = currentUser.value;
     const msConfig = await getMSConfig();
 
     if (
@@ -107,16 +116,19 @@ export const getCurrentEnvironment = cache(
     if (userId && !isOrganization && !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
       // Note: will be undefined for not logged in users
       const userOrgs = await getUserOrganizationEnvironments(userId);
+      if (userOrgs.isErr()) {
+        return userOrgs;
+      }
 
-      if (userOrgs.length === 0) {
+      if (userOrgs.value.length === 0) {
         if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
-          throw new UserUIError('You are not part of an organization.');
+          return err(new UserFacingError('You are not part of an organization.'));
         } else {
           return redirect(`/create-organization`);
         }
       }
 
-      activeSpace = userOrgs[0];
+      activeSpace = userOrgs.value[0];
       isOrganization = true;
     }
 
@@ -125,16 +137,18 @@ export const getCurrentEnvironment = cache(
     if (systemAdmin || !msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
       const rules = getSystemAdminRules(isOrganization);
 
-      return {
+      return ok({
         ability: new Ability(rules, activeSpace),
         activeEnvironment: { spaceId: activeSpace, isOrganization },
-      };
+      });
     }
 
-    if (!userId || !isMember(decodeURIComponent(spaceIdParam), userId)) {
+    const checkIsMember = await isMember(decodeURIComponent(spaceIdParam), userId);
+    if (checkIsMember.isErr()) return checkIsMember;
+    if (!userId || !checkIsMember.value) {
       switch (opts?.permissionErrorHandling.action) {
         case 'throw-error':
-          throw new Error('User does not have access to this environment');
+          return err(new Error('User does not have access to this environment'));
         case 'redirect':
         default:
           if (opts.permissionErrorHandling.redirectUrl)
@@ -146,10 +160,13 @@ export const getCurrentEnvironment = cache(
     }
 
     const ability = await getAbilityForUser(userId, activeSpace);
+    if (ability.isErr()) {
+      return ability;
+    }
 
-    return {
-      ability,
+    return ok({
+      ability: ability.value,
       activeEnvironment: { spaceId: activeSpace, isOrganization },
-    };
+    });
   },
 );

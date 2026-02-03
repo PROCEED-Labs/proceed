@@ -6,14 +6,18 @@ import {
   addRoleMappings as _addRoleMappings,
   RoleMappingInput,
 } from '@/lib/data/db/iam/role-mappings';
-import { getErrorMessage, userError } from '../user-error';
+import { getErrorMessage, userError } from '../server-error-handling/user-error';
 
 export async function addRoleMappings(
   environmentId: string,
   roleMappings: Omit<RoleMappingInput, 'environmentId'>[],
 ) {
   try {
-    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability, activeEnvironment } = currentEnvironment.value;
 
     await _addRoleMappings(
       roleMappings.map((roleMapping) => ({
@@ -34,11 +38,16 @@ export async function deleteRoleMappings(
 ) {
   const errors: unknown[] = [];
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const currentEnvironment = await getCurrentEnvironment(environmentId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability, activeEnvironment } = currentEnvironment.value;
 
   for (const { userId, roleId } of roleMappings) {
     try {
-      await _deleteRoleMapping(userId, roleId, activeEnvironment.spaceId, ability);
+      const res = await _deleteRoleMapping(userId, roleId, activeEnvironment.spaceId, ability);
+      if (res.isErr()) return userError(getErrorMessage(res.error));
     } catch (error) {
       console.error(error);
       errors.push(error);

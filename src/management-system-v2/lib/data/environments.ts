@@ -5,7 +5,7 @@ import {
   UserOrganizationEnvironmentInput,
   UserOrganizationEnvironmentInputSchema,
 } from './environment-schema';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { UnauthorizedError } from '../ability/abilityHelper';
 import {
   addEnvironment,
@@ -26,17 +26,26 @@ export async function addOrganizationEnvironment(
       UserErrorType.PermissionError,
     );
 
-  const { userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
 
   try {
     const environmentData = UserOrganizationEnvironmentInputSchema.parse(environmentInput);
 
-    return await addEnvironment({
+    const result = await addEnvironment({
       ownerId: userId,
       isActive: true,
       isOrganization: true,
       ...environmentData,
     });
+    if (result.isErr()) {
+      return userError(getErrorMessage(result.error));
+    }
+
+    return result.value;
   } catch (e) {
     console.error(e);
     return userError('Error adding environment');
@@ -53,14 +62,24 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
 
   try {
     for (const environmentId of environmentIds) {
-      const { ability } = await getCurrentEnvironment(environmentId);
+      const currentEnvironment = await getCurrentEnvironment(environmentId);
+      if (currentEnvironment.isErr()) {
+        return userError(getErrorMessage(currentEnvironment.error));
+      }
+      const { ability } = currentEnvironment.value;
 
       const environment = await getEnvironmentById(environmentId);
+      if (environment.isErr()) {
+        return userError(getErrorMessage(environment.error));
+      }
 
-      if (!environment?.isOrganization)
+      if (!environment.value?.isOrganization)
         return userError(`Environment ${environmentId} is not an organization environment`);
 
-      deleteEnvironment(environmentId, ability);
+      const deleteResult = await deleteEnvironment(environmentId, ability);
+      if (deleteResult.isErr()) {
+        return userError(getErrorMessage(deleteResult.error));
+      }
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)
@@ -79,9 +98,16 @@ export async function updateOrganization(
   data: Partial<UserOrganizationEnvironmentInput>,
 ) {
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
-    return _updateOrganization(environmentId, data, ability);
+    const result = await _updateOrganization(environmentId, data, ability);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError("You're not allowed to update this organization");
@@ -92,7 +118,11 @@ export async function updateOrganization(
 
 export async function leaveOrganization(spaceId: string) {
   try {
-    const { user } = await getCurrentUser();
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return userError(getErrorMessage(currentUser.error));
+    }
+    const { user } = currentUser.value;
 
     if (!user || user.isGuest) {
       return userError('You need to be signed in');
@@ -102,12 +132,17 @@ export async function leaveOrganization(spaceId: string) {
       return userError('You cannot leave your personal spcae');
     }
 
-    if (!(await isMember(spaceId, user.id))) {
+    const checkIsMember = await isMember(spaceId, user.id);
+    if (checkIsMember.isErr()) return userError('Something went wrong');
+    if (!checkIsMember.value) {
       // I don't think we should return a specific error, as it allows to check environment ID's
-      throw new Error();
+      return userError('Something went wrong');
     }
 
-    await removeMember(spaceId, user.id);
+    const result = await removeMember(spaceId, user.id);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (e) {
     console.error(e);
     let message;

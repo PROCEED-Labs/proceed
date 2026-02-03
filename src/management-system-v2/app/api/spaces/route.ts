@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import db from '@/lib/data/db';
 import { env } from '@/lib/ms-config/env-vars';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
     return NextResponse.json([
       { id: 'proceed-default-no-iam-user', type: 'personal', name: 'Default User' },

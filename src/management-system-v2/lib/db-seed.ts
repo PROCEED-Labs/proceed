@@ -5,7 +5,6 @@ import { addRoleMappings } from './data/db/iam/role-mappings';
 import {
   OrganizationEnvironment,
   UserOrganizationEnvironmentInputSchema,
-  environmentSchema,
 } from './data/environment-schema';
 import { addRole, getRoleById } from './data/db/iam/roles';
 import { addEnvironment, getEnvironmentById } from './data/db/iam/environments';
@@ -166,6 +165,7 @@ function verifySeed(seed: DBSeed) {
  * -----------------------------------------------------------------------------------------------*/
 
 async function writeSeedToDb(seed: DBSeed) {
+  // We need to throw inside the transcation to cancel it
   await db.$transaction(async (tx) => {
     const seedVersion = new Date(seed.version);
     const seedVersionDb = await tx.seedVersion.findUnique({
@@ -196,16 +196,20 @@ async function writeSeedToDb(seed: DBSeed) {
     const usernameToId = new Map<string, string>();
     for (const user of seed.users) {
       const existingUser = await getUserById(user.id);
-      if (existingUser) {
+      if (existingUser.isErr()) throw existingUser.error;
+
+      if (existingUser.value) {
         // Use the username in seed-file instead of username in the db, as it may have changed
-        usernameToId.set(user.username, existingUser.id);
+        usernameToId.set(user.username, existingUser.value.id);
         continue;
       }
 
       const newUser = await addUser({ ...user, isGuest: false, emailVerifiedOn: null }, tx);
+      if (newUser.isErr()) throw newUser.error;
+
       const hashedPassword = await hashPassword(user.initialPassword);
       await setUserPassword(user.id, hashedPassword, tx, true);
-      usernameToId.set(user.username, newUser.id);
+      usernameToId.set(user.username, newUser.value.id);
     }
 
     // Add system administrators
@@ -235,9 +239,13 @@ async function writeSeedToDb(seed: DBSeed) {
     // Create / Update organizations
     for (const organization of seed.organizations) {
       // create org
-      let org = await getEnvironmentById(organization.id);
+      const existingOrg = await getEnvironmentById(organization.id);
+      if (existingOrg.isErr()) throw existingOrg.error;
+
+      let org = existingOrg.value;
+
       if (!org) {
-        org = (await addEnvironment(
+        const newOrg = await addEnvironment(
           {
             id: organization.id,
             ownerId: usernameToId.get(organization.owner)!,
@@ -251,22 +259,30 @@ async function writeSeedToDb(seed: DBSeed) {
           },
           undefined,
           tx,
-        )) as OrganizationEnvironment;
+        );
+        if (newOrg.isErr()) throw newOrg.error;
+
+        org = newOrg.value as OrganizationEnvironment;
       }
 
       // Add members + get their roles
       const userRoleMappings = new Map<string, string[]>();
       for (const member of organization.members) {
         const memberId = usernameToId.get(member)!;
-        if (!(await isMember(org.id, memberId, tx))) {
-          await addMember(org.id, memberId, undefined, tx);
+        const checkIsMember = await isMember(org.id, memberId, tx);
+        if (checkIsMember.isErr()) return checkIsMember;
+        if (!checkIsMember.value) {
+          const res = await addMember(org.id, memberId, undefined, tx);
+          if (res.isErr()) return res;
         }
 
         // get members role mappings
         const userRoles = await getRoleMappingByUserId(memberId, org.id, undefined, undefined, tx);
+        if (userRoles.isErr()) throw userRoles.error;
+
         userRoleMappings.set(
           memberId,
-          userRoles.map((role) => role.roleId),
+          userRoles.value.map((role) => role.roleId),
         );
       }
 
@@ -306,14 +322,17 @@ async function writeSeedToDb(seed: DBSeed) {
           const roleMembers = roleInput.members;
           delete (roleInput as any)['members'];
 
-          let role = await getRoleById(roleInput.id, undefined, tx);
+          const existingRole = await getRoleById(roleInput.id, undefined, tx);
+          if (existingRole.isErr()) throw existingRole.error;
+
+          let role = existingRole.value;
           if (!role) {
             const rolePermissions: Partial<Record<ResourceType, number>> = {};
             for (const [action, permissions] of Object.entries(roleInput.permissions)) {
               rolePermissions[action as ResourceType] = permissionIdentifiersToNumber(permissions);
             }
 
-            role = await addRole(
+            const newRole = await addRole(
               {
                 ...roleInput,
                 permissions: rolePermissions,
@@ -322,6 +341,9 @@ async function writeSeedToDb(seed: DBSeed) {
               undefined,
               tx,
             );
+            if (newRole.isErr()) throw newRole.error;
+
+            role = newRole.value;
           }
 
           for (const roleMember of roleMembers) {

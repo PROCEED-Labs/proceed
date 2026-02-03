@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { deleteInactiveGuestUsers } from '@/lib/data/db/iam/users';
 
 // TODO: get this time from the database
-const GUESET_INACTIVE_TIME = 1000 * 60 * 60 * 24 * 30; // 30 days
+const GUEST_INACTIVE_TIME = 1000 * 60 * 60 * 24 * 30; // 30 days
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,11 +18,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Invalid Bearer token' }, { status: 403 });
     }
 
-    const { count } = await deleteInactiveGuestUsers(GUESET_INACTIVE_TIME);
+    const result = await deleteInactiveGuestUsers(GUEST_INACTIVE_TIME);
+    if (result.isErr()) throw result.error;
 
     return NextResponse.json(
       {
-        message: `${count} guest users deleted`,
+        message: `${result.value.count} guest users deleted`,
       },
       { status: 200 },
     );

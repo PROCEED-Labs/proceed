@@ -29,6 +29,7 @@ import db from './data/db';
 import { createUserRegistrationToken } from './email-verification-tokens/utils';
 import { saveEmailVerificationToken } from './data/db/iam/verification-tokens';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from './authjs-error-message';
+import { NotFoundError } from './server-error-handling/errors';
 
 const nextAuthOptions: NextAuthConfig = {
   secret: env.NEXTAUTH_SECRET,
@@ -56,9 +57,16 @@ const nextAuthOptions: NextAuthConfig = {
         return token;
       }
 
-      let user = _user as User | undefined;
+      let user = (_user as User | undefined) || null;
 
-      if (trigger === 'update') user = (await getUserById(token.user.id)) as User;
+      if (trigger === 'update') {
+        const newUserData = await getUserById(token.user.id);
+        if (newUserData.isErr()) {
+          throw newUserData.error;
+        }
+
+        user = newUserData.value;
+      }
 
       if (user) token.user = user;
 
@@ -86,11 +94,16 @@ const nextAuthOptions: NextAuthConfig = {
       ) {
         // Check if the user's cookie is correct
         const sessionUserInDb = await getUserById(sessionUser.id);
-        if (!sessionUserInDb || !sessionUserInDb.isGuest) throw new Error('Something went wrong');
+        if (sessionUserInDb.isErr()) {
+          throw sessionUserInDb.error;
+        }
+        if (!sessionUserInDb.value?.isGuest) throw new Error('Something went wrong');
 
         const userSigningIn = _user.id ? await getUserById(_user.id) : null;
 
-        if (!userSigningIn) {
+        if (userSigningIn && userSigningIn.isErr()) throw new Error('Something went wrong');
+
+        if (!userSigningIn || !userSigningIn.value) {
           const user = _user as Partial<ProviderUser>;
           await updateUser(sessionUser.id, {
             firstName: user.firstName ?? undefined,
@@ -114,13 +127,15 @@ const nextAuthOptions: NextAuthConfig = {
       if (!token.user.isGuest) return;
 
       const user = await getUserById(token.user.id);
-      if (user) {
-        if (!user.isGuest) {
+      if (user.isErr()) throw user.error;
+
+      if (user.value) {
+        if (!user.value.isGuest) {
           console.warn('User with invalid session');
           return;
         }
 
-        await deleteUser(user.id);
+        await deleteUser(user.value.id);
       }
     },
     async session({ session }) {
@@ -226,7 +241,11 @@ if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
       id: 'guest-signin',
       credentials: {},
       async authorize() {
-        return addUser({ isGuest: true });
+        const result = await addUser({ isGuest: true });
+        if (result.isErr()) {
+          throw result.error;
+        }
+        return result.value;
       },
     }),
   );
@@ -257,16 +276,20 @@ if (env.NODE_ENV === 'development') {
         },
       },
       async authorize(credentials) {
-        let user: User | null = null;
+        let user;
 
         if (credentials.username === 'johndoe') {
-          user = await getUserByUsername('johndoe');
-          if (!user) user = await addUser(johnDoeTemplate);
+          let u = await getUserByUsername('johndoe');
+          if (u.isOk() && !u.value) user = await addUser(johnDoeTemplate);
+          else user = u;
         } else if (credentials.username === 'admin') {
           user = await getUserByUsername('admin');
         }
 
-        return user;
+        if (!user) return null;
+        if (user.isErr()) throw user.error;
+
+        return user.value;
       },
     }),
   );
@@ -307,23 +330,25 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE) {
       },
       authorize: async (credentials, req) => {
         const userAndPassword = await getUserAndPasswordByUsername(credentials.username as string);
+        if (userAndPassword.isErr()) {
+          throw userAndPassword.error;
+        }
 
-        if (!userAndPassword) return null;
+        if (!userAndPassword.value) return null;
 
         const passwordIsCorrect = await comparePassword(
           credentials.password as string,
-          userAndPassword.passwordAccount.password,
+          userAndPassword.value.passwordAccount.password,
         );
         if (!passwordIsCorrect) return null;
 
-        return userAndPassword as User;
+        return userAndPassword.value as User;
       },
     }),
   );
 }
 
 if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_LOGIN_MAIL_ACTIVE) {
-  //Vorname, Nachname und Username input feldern,
   const credentials: Record<string, CredentialInput> = {
     firstName: {
       type: 'string',
@@ -381,10 +406,14 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
             getUserByUsername(credentials.username as string),
             getUserByEmail(credentials.email as string),
           ]);
-          if (existingUserUsername) {
+
+          if (existingUserUsername.isErr()) throw existingUserUsername.error;
+          if (existingUserMail.isErr()) throw existingUserMail.error;
+
+          if (existingUserUsername.value) {
             throw new NextAuthUsernameTakenError();
           }
-          if (existingUserMail) {
+          if (existingUserMail.value) {
             throw new NextAuthEmailTakenError();
           }
 
@@ -400,7 +429,8 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
 
           const userRegistrationToken = await createUserRegistrationToken(tokenParams, callbackUrl);
 
-          await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+          const res = await saveEmailVerificationToken(userRegistrationToken.verificationToken);
+          if (res.isErr()) throw new Error('Something went wrong');
 
           const signinMail = renderSigninLinkEmail({
             signInLink: userRegistrationToken.redirectUrl,
@@ -421,7 +451,7 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
         } else {
           // Only password is enabled -> immediately create user
           await db.$transaction(async (tx) => {
-            user = await addUser(
+            const addUserResult = await addUser(
               {
                 username: credentials.username,
                 firstName: credentials.firstName,
@@ -431,9 +461,12 @@ if (env.PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE || env.PROCEED_PUBLIC_IAM_
               },
               tx,
             );
+            if (addUserResult.isErr()) throw addUserResult.error;
+            user = addUserResult.value;
 
             const hashedPassword = await hashPassword(credentials.password as string);
-            await setUserPassword(user.id, hashedPassword, tx);
+            const setUserResult = await setUserPassword(user.id, hashedPassword, tx);
+            if (setUserResult.isErr()) throw setUserResult.error;
           });
         }
 

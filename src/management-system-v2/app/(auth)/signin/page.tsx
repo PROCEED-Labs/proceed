@@ -1,17 +1,24 @@
 import { getProviders } from '@/lib/auth';
 import { getCurrentUser } from '@/components/auth';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SignIn from './signin';
 import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
 import { env } from '@/lib/ms-config/env-vars';
 import db from '@/lib/data/db';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
 const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }> }) => {
   const searchParams = await props.searchParams;
-  const { session } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    // this shouldn't really occur since it is handled in the layout file in the parent folder
+    // already
+    return notFound();
+  }
+  const { session } = currentUser.value;
   const isGuest = session?.user.isGuest;
 
   if (session?.user && !isGuest) {

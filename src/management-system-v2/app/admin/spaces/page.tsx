@@ -7,7 +7,7 @@ import {
 import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
-import { UserErrorType, userError } from '@/lib/user-error';
+import { UserErrorType, userError } from '@/lib/server-error-handling/user-error';
 import Content from '@/components/content';
 import { getSpaceRepresentation, getUserName } from './space-representation';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
@@ -17,10 +17,16 @@ import { ReactNode } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
 import { User } from '@/lib/data/user-schema';
 import { Environment } from '@/lib/data/environment-schema';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
+import { Result } from 'neverthrow';
 
 async function deleteSpace(spaceIds: string[]) {
   'use server';
-  const { systemAdmin } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { systemAdmin } = currentUser.value;
   if (!systemAdmin) return userError('Not a system admin', UserErrorType.PermissionError);
 
   // TODO: decide what to do if space is a personal space
@@ -31,9 +37,12 @@ export type deleteSpace = typeof deleteSpace;
 export default async function SysteAdminDashboard(props: { params?: Promise<{ userId: string }> }) {
   const params = await props.params;
   const user = await getCurrentUser();
-  if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
+  if (user.isErr()) return errorResponse(user);
+  if (!user.value.session) redirect('/');
+
+  const adminData = await getSystemAdminByUserId(user.value.userId);
+  if (adminData.isErr()) return errorResponse(adminData);
+  if (!adminData.value) redirect('/');
 
   let spacesTableRepresentation;
   let title: ReactNode = 'MS Spaces';
@@ -41,37 +50,52 @@ export default async function SysteAdminDashboard(props: { params?: Promise<{ us
   if (params?.userId) {
     const userId = decodeURIComponent(params.userId);
     const user = await getUserById(userId, { throwIfNotFound: false });
-    if (!user) redirect('/admin/spaces');
+    if (user.isErr()) {
+      return errorResponse(user);
+    }
+    if (!user.value) redirect('/admin/spaces');
 
     title = (
       <Space>
         <Button type="text" icon={<LeftOutlined />} href="/admin/spaces">
           Back to MS spaces
         </Button>
-        {`${getUserName(user as User)}'s Spaces`}
+        {`${getUserName(user.value as User)}'s Spaces`}
       </Space>
     );
 
-    const userSpaces: any[] = [await getEnvironmentById(userId)];
+    const personalEnvironment = await getEnvironmentById(userId);
+    if (personalEnvironment.isErr()) return errorResponse(personalEnvironment);
+    const userSpaces: any[] = [personalEnvironment.value];
+
     const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-    const orgEnvironmentsPromises = userOrgEnvs.map(async (environmentId) => {
+    if (userOrgEnvs.isErr()) return errorResponse(userOrgEnvs);
+    const orgEnvironmentsPromises = userOrgEnvs.value.map(async (environmentId) => {
       return await getEnvironmentById(environmentId);
     });
 
-    const orgEnvironments = await Promise.all(orgEnvironmentsPromises);
+    const orgEnvironments = Result.combine(await Promise.all(orgEnvironmentsPromises));
+    if (orgEnvironments.isErr()) {
+      return errorResponse(orgEnvironments);
+    }
 
-    userSpaces.push(...orgEnvironments);
+    userSpaces.push(...orgEnvironments.value);
 
     spacesTableRepresentation = await getSpaceRepresentation(userSpaces);
   } else {
-    spacesTableRepresentation = await getSpaceRepresentation(
-      (await getEnvironments()) as Environment[],
-    );
+    const environments = await getEnvironments();
+    if (environments.isErr()) {
+      return errorResponse(environments);
+    }
+
+    spacesTableRepresentation = await getSpaceRepresentation(environments.value as Environment[]);
   }
+
+  if (spacesTableRepresentation.isErr()) return errorResponse(spacesTableRepresentation);
 
   return (
     <Content title={title}>
-      <SpacesTable spaces={spacesTableRepresentation} deleteSpace={deleteSpace} />
+      <SpacesTable spaces={spacesTableRepresentation.value} deleteSpace={deleteSpace} />
     </Content>
   );
 }

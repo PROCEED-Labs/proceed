@@ -10,6 +10,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';
 import { spaceURL } from '@/lib/utils';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const getEngineStatus = async (engine: DBEngine) => {
   const engines = await savedEnginesToEngines([engine]);
@@ -26,20 +27,30 @@ const EnginesPage = async (props: { params: Promise<{ environmentId: string }> }
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
   const params = await props.params;
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { activeEnvironment, ability } = currentSpace.value;
 
   const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation.process-engines',
   );
+  if (machinesSettings.isErr()) {
+    return errorResponse(machinesSettings);
+  }
 
-  if (machinesSettings.active === false) {
+  if (machinesSettings.value.active === false) {
     return notFound();
   }
 
   const engines = await getDbEngines(activeEnvironment.spaceId, ability);
+  if (engines.isErr()) {
+    return errorResponse(engines);
+  }
 
-  const enginesWithStatus = engines.map((engine) => {
+  const enginesWithStatus = engines.value.map((engine) => {
     return {
       ...engine,
       status: (

@@ -14,14 +14,9 @@ import { Button, Tooltip, Typography, Space, Grid } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
 
 import Content from '@/components/content';
-
-import { getProcess } from '@/lib/data/db/process';
 import { useRouter } from 'next/navigation';
-
 import { getSVGFromBPMN } from '@/lib/process-export/util';
-
 import styles from './documentation-page.module.scss';
-
 import { getRootFromElement, getDefinitionsVersionInformation } from '@proceed/bpmn-helper';
 
 import SettingsModal, { settingsOptions, SettingsOption } from './settings-modal';
@@ -38,6 +33,7 @@ import {
   getElementSVG,
 } from './documentation-page-utils';
 import { Environment } from '@/lib/data/environment-schema';
+import { Process } from '@/lib/data/process-schema';
 
 /**
  * Import the Editor asynchronously since it implicitly uses browser logic which leads to errors when this file is loaded on the server
@@ -53,7 +49,7 @@ const markdownEditor: Promise<ToastEditorType> =
     : (Promise.resolve(null) as any);
 
 type BPMNSharedViewerProps = {
-  processData: Awaited<ReturnType<typeof getProcess>>;
+  processData: Process;
   isOwner: boolean;
   userWorkspaces: Environment[];
   defaultSettings?: SettingsOption;

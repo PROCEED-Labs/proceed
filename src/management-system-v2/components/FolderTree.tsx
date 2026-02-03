@@ -6,7 +6,7 @@ import React, { ReactNode, SetStateAction, useCallback, useEffect, useRef, useSt
 import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
 import ProceedLoadingIndicator from './loading-proceed';
-import { UserError, isUserErrorResponse } from '@/lib/user-error';
+import { UserError, isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 type FolderChildren = {
   id: string;

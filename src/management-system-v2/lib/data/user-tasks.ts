@@ -10,18 +10,19 @@ import {
   deleteUserTask as _deleteUserTask,
 } from './db/user-tasks';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../server-error-handling/user-error';
 import { UserTaskInput } from '../user-task-schema';
 
 export async function getUserTasks() {
   if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
 
   try {
-    return await _getUserTasks();
+    const result = await _getUserTasks();
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (err) {
-    if (err instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting user tasks');
+    return userError('Error getting user tasks');
   }
 }
 
@@ -29,11 +30,12 @@ export async function getUserTaskById(userTaskId: string) {
   if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
 
   try {
-    return await _getUserTaskById(userTaskId);
+    const result = await _getUserTaskById(userTaskId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (err) {
-    if (err instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting user tasks');
+    return userError('Error getting user tasks');
   }
 }
 
@@ -41,7 +43,10 @@ export async function addUserTasks(userTasks: UserTaskInput[]) {
   if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
 
   try {
-    return await _addUserTasks(userTasks);
+    const result = await _addUserTasks(userTasks);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (e) {
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -55,13 +60,12 @@ export async function updateUserTask(userTaskId: string, userTaskInput: Partial<
   if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
 
   try {
-    return await _updateUserTask(userTaskId, userTaskInput);
+    const result = await _updateUserTask(userTaskId, userTaskInput);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
-      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting updating user task');
+    return userError('Error getting updating user task');
   }
 }
 
@@ -69,10 +73,11 @@ export async function deleteUserTask(userTaskId: string) {
   if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
 
   try {
-    return await _deleteUserTask(userTaskId);
+    const result = await _deleteUserTask(userTaskId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error deleting user task');
+    return userError('Error deleting user task');
   }
 }

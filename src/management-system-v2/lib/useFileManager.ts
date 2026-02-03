@@ -1,4 +1,4 @@
-import { use, useCallback, useState } from 'react';
+import { use, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEnvironment } from '@/components/auth-can';
 import {
@@ -8,7 +8,7 @@ import {
   saveEntityFileOrGetPresignedUrl,
   updateFileDeletableStatus,
 } from './data/file-manager-facade';
-import { EntityType, getNewFileName } from '@/lib/helpers/fileManagerHelpers';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { message } from 'antd';
 import { EnvVarsContext } from '@/components/env-vars-context';
 

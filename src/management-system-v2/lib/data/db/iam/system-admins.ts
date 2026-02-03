@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { v4 } from 'uuid';
 import {
   SystemAdmin,
@@ -7,21 +8,20 @@ import {
   SystemAdminUpdateInput,
   SystemAdminUpdateInputSchema,
 } from '../../system-admin-schema';
-import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 
 export async function getSystemAdmins() {
   const sysAdmins = await db.systemAdmin.findMany({});
-  return sysAdmins as SystemAdmin[];
+  return ok(sysAdmins as SystemAdmin[]);
 }
 
 export async function getAdminById(id: string) {
-  return await db.systemAdmin.findUnique({ where: { id: id } });
+  return ok(await db.systemAdmin.findUnique({ where: { id: id } }));
 }
 
 export async function getSystemAdminByUserId(userId: string) {
-  return (await db.systemAdmin.findUnique({ where: { userId: userId } })) as SystemAdmin;
+  return ok((await db.systemAdmin.findUnique({ where: { userId: userId } })) as SystemAdmin);
 }
 
 export async function addSystemAdmin(
@@ -42,7 +42,7 @@ export async function addSystemAdmin(
 
   await dbMutator.systemAdmin.create({ data: { ...admin } });
 
-  return admin;
+  return ok(admin);
 }
 
 export async function updateSystemAdmin(
@@ -51,23 +51,33 @@ export async function updateSystemAdmin(
 ) {
   // TODO: decide if permissions should be checkded here
   const adminData = await getAdminById(adminId);
-  if (!adminData) throw new Error('System admin not found');
+  if (adminData.isErr()) {
+    return adminData;
+  }
+  if (!adminData.value) return err(new Error('System admin not found'));
 
+  const parseResult = SystemAdminUpdateInputSchema.partial().safeParse(adminUpdate);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
   const newAdminData = {
-    ...adminData,
-    ...SystemAdminUpdateInputSchema.partial().parse(adminUpdate),
+    ...adminData.value,
+    ...parseResult.data,
     lastEditedOn: new Date(),
   } as SystemAdmin;
 
   await db.systemAdmin.update({ where: { id: adminId }, data: { ...newAdminData } });
 
-  return newAdminData;
+  return ok(newAdminData);
 }
 
 export async function deleteSystemAdmin(adminId: string) {
   // TODO: decide if permissions should be checkded here
   const adminData = await getAdminById(adminId);
-  if (!adminData) throw new Error('System admin not found');
+  if (adminData.isErr()) return adminData;
+  if (!adminData.value) return err(new Error('System admin not found'));
 
   await db.systemAdmin.delete({ where: { id: adminId } });
+
+  return ok();
 }

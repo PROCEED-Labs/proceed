@@ -6,7 +6,7 @@ import path from 'path';
 import envPaths from 'env-paths';
 import { LRUCache } from 'lru-cache';
 import { env } from '@/lib/ms-config/env-vars';
-import { UserFacingError } from '@/lib/user-error';
+import { UserFacingError } from '@/lib/server-error-handling/user-error';
 
 // Constants
 const MAX_CONTENT_LENGTH = 10 * 1024 * 1024; // 10 MB

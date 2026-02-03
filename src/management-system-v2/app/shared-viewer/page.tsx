@@ -9,6 +9,7 @@ import { ImportsInfo } from './documentation-page-utils';
 import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
 import ErrorMessage from '../../components/error-message';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
@@ -21,6 +22,12 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
+import {
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '@/lib/server-error-handling/user-error';
+import { Result } from 'neverthrow';
 
 interface PageProps {
   searchParams: Promise<{
@@ -45,20 +52,27 @@ const getProcessInfo = async (
   isImport: boolean,
   versionId?: string,
 ) => {
-  const { session, userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) return userError(getErrorMessage(currentUser.error));
+  const { session } = currentUser.value;
 
   let spaceId;
   let isOwner = false;
   let processData;
-
   // check if there is a session (=> the user is already logged in)
   if (session) {
-    const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
+    const currentSpace = await getCurrentEnvironment(session?.user.id);
+    if (currentSpace.isErr()) return userError(getErrorMessage(currentSpace.error));
+
+    const { ability, activeEnvironment } = currentSpace.value;
+
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(spaceId, ability);
+    if (ownedProcesses.isErr()) return userError(getErrorMessage(ownedProcesses.error));
+
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
-    isOwner = ownedProcesses.some((process) => process.id === definitionId);
+    isOwner = ownedProcesses.value.some((process) => process.id === definitionId);
   }
 
   if (isOwner) {
@@ -70,24 +84,26 @@ const getProcessInfo = async (
         ? await getProcessVersionBpmn(definitionId, versionId)
         : await getProcessBpmn(definitionId);
 
-      processData = { ...processMetaData, bpmn };
+      if (bpmn.isErr()) {
+        return userError(getErrorMessage(bpmn.error));
+      }
+
+      processData = { ...processMetaData, bpmn: bpmn.value };
     }
   } else {
     // the user has no regular access to the process so get the process data from the sharing api
     const res = await getSharedProcessWithBpmn(definitionId, versionId);
-    if ('error' in res) {
-      return <ErrorMessage message={res.error.message as string} />;
-    } else {
-      processData = res;
+    if ('error' in res) return res;
 
-      if (
-        // bypass the timestamp check for imports
-        !isImport &&
-        ((embeddedMode && timestamp !== processData.allowIframeTimestamp) ||
-          (!embeddedMode && timestamp !== processData.shareTimestamp))
-      ) {
-        return <ErrorMessage message="Token expired" />;
-      }
+    processData = res;
+
+    if (
+      // bypass the timestamp check for imports
+      !isImport &&
+      ((embeddedMode && timestamp !== processData.allowIframeTimestamp) ||
+        (!embeddedMode && timestamp !== processData.shareTimestamp))
+    ) {
+      return userError('Token expired');
     }
   }
 
@@ -100,7 +116,7 @@ const getProcessInfo = async (
  * @param bpmn the bpmn of the process to get the imports for
  * @param knownInfos the object to put the bpmns into
  */
-const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
+const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo): Promise<void> => {
   // information which tasks reference which processes
   const taskImportMap = await getDefinitionsAndProcessIdForEveryCallActivity(bpmn, true);
 
@@ -109,17 +125,15 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
 
     if (!(knownInfos[definitionId] && knownInfos[definitionId][versionId])) {
       const processInfo = await getProcessInfo(definitionId, 0, false, true, versionId);
+      if (isUserErrorResponse(processInfo)) continue;
 
-      // check if the return value is a valid process info (might also be a react component that signals an error => no isOwner)
-      if ('isOwner' in processInfo && processInfo.processData) {
-        const { bpmn: importBpmn } = processInfo.processData;
+      const { bpmn: importBpmn } = processInfo.processData;
 
-        if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
-        knownInfos[definitionId][versionId] = importBpmn as string;
+      if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
+      knownInfos[definitionId][versionId] = importBpmn as string;
 
-        // recursively get the imports of the imports
-        await getImportInfos(importBpmn as string, knownInfos);
-      }
+      // recursively get the imports of the imports
+      await getImportInfos(importBpmn as string, knownInfos);
     }
   }
 };
@@ -127,20 +141,32 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
 const SharedViewer = async (props: PageProps) => {
   const searchParams = await props.searchParams;
   const { token, version, settings } = searchParams;
-  const { session, userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { session, userId } = currentUser.value;
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+  const personalEnvironment = await getEnvironmentById(userId);
+  if (personalEnvironment.isErr()) return errorResponse(personalEnvironment);
+
+  const userEnvironments: Environment[] = [personalEnvironment.value];
+
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
+  if (userOrgEnvs.isErr()) return errorResponse(userOrgEnvs);
 
-  const orgEnvironments = await asyncMap(
-    userOrgEnvs,
-    async (environmentId) => (await getEnvironmentById(environmentId))!,
+  const orgEnvironments = Result.combine(
+    await asyncMap(
+      userOrgEnvs.value,
+      async (environmentId) => (await getEnvironmentById(environmentId))!,
+    ),
   );
+  if (orgEnvironments.isErr()) return errorResponse(orgEnvironments);
 
-  userEnvironments.push(...orgEnvironments);
+  userEnvironments.push(...orgEnvironments.value);
 
   let isOwner = false;
 
@@ -162,8 +188,8 @@ const SharedViewer = async (props: PageProps) => {
     );
 
     // the return value of getProcessInfo might be an error that should just be returned to the user
-    if (!('isOwner' in processInfo)) {
-      return processInfo;
+    if (isUserErrorResponse(processInfo)) {
+      return <ErrorMessage message={processInfo.error.message} />;
     }
 
     ({ isOwner, processData } = processInfo);
@@ -181,8 +207,10 @@ const SharedViewer = async (props: PageProps) => {
   if (!iframeMode) {
     try {
       await getImportInfos(processData.bpmn, availableImports);
-    } catch (err) {
-      console.error('Failed to resolve the information for process imports: ', err);
+    } catch (error) {
+      console.error('Failed to resolve the information for process imports: ', error);
+
+      return <ErrorMessage message={'Failed to resolve the information for process imports'} />;
     }
   }
 
@@ -215,7 +243,7 @@ const SharedViewer = async (props: PageProps) => {
               <BPMNSharedViewer
                 isOwner={isOwner}
                 userWorkspaces={userEnvironments}
-                processData={processData as any}
+                processData={processData}
                 defaultSettings={defaultSettings}
                 availableImports={availableImports}
               />

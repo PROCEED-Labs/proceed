@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Grid,
-  Row,
-  TableColumnType,
-  TableColumnsType,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
 import React, {
   useCallback,
   FC,

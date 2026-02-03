@@ -11,7 +11,7 @@ import { getFolderScriptTasks, getFolderPathScriptTasks } from '@/lib/data/proce
 import styles from './tab-bar-height.module.scss';
 import { FolderTree, TreeNode as FolderTreeNode, generateTreeNode } from '@/components/FolderTree';
 import { useQuery } from '@tanstack/react-query';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
 import { Folder } from '@/lib/data/folder-schema';
 

@@ -2,9 +2,10 @@
 
 import { Typography } from 'antd';
 import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { ReactNode } from 'react';
 
 interface ErrorMessageProps {
-  message: string;
+  message: ReactNode;
 }
 
 const ErrorMessage = ({ message }: ErrorMessageProps) => {

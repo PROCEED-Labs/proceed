@@ -7,7 +7,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { SettingsGroup } from '../../app/(dashboard)/[environmentId]/settings/components';
 import { debouncedSettingsUpdate } from '../../app/(dashboard)/[environmentId]/settings/utils';
 import { getSpaceSettingsValues } from '@/lib/data/space-settings';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { ganttViewSettingsDefinition } from './gantt-settings-definition';
 import { createGanttSettingsRenderer } from './gantt-settings-utils';
 import type { SettingGroup } from '../../app/(dashboard)/[environmentId]/settings/type-util';

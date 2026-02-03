@@ -318,4 +318,6 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   );
 };
 
+UserTaskEditor.displayName = 'UserTaskEditor';
+
 export default UserTaskEditorModal;

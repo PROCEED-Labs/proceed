@@ -1,6 +1,11 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, userError } from '../user-error';
+import {
+  UserFacingError,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '../server-error-handling/user-error';
 import {
   DeployedProcessInfo,
   deployProcess as _deployProcess,
@@ -43,25 +48,40 @@ import {
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
-import Ability from '../ability/abilityHelper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
   onlyProceedEngines = false,
   validatorFunc?: (engine: Engine) => Promise<boolean>,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  const currentEnvironment = await getCurrentEnvironment(spaceId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
   let engines: Engine[] = [];
   if (onlyProceedEngines) {
     // force that only proceed engines are supposed to be used
     const proceedSavedEngines = await getDbEngines(null, undefined, 'dont-check');
-    engines = await savedEnginesToEngines(proceedSavedEngines);
+    if (proceedSavedEngines.isErr()) return userError(getErrorMessage(proceedSavedEngines.error));
+
+    engines = await savedEnginesToEngines(proceedSavedEngines.value);
   } else {
     // use all available engines
     const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
-      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
+      (async () => {
+        const engines = await getDbEngines(null, undefined, 'dont-check');
+        if (engines.isErr()) throw engines.error;
+
+        return await savedEnginesToEngines(engines.value);
+      })(),
+      (async () => {
+        const engines = await getDbEngines(spaceId, ability);
+        if (engines.isErr()) throw engines.error;
+
+        return await savedEnginesToEngines(engines.value);
+      })(),
     ]);
 
     if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
@@ -88,15 +108,24 @@ export async function deployProcess(
     let engines;
     if (_forceEngine && _forceEngine !== 'PROCEED') {
       // forcing a specific engine
-      const { ability } = await getCurrentEnvironment(spaceId);
+      const currentEnvironment = await getCurrentEnvironment(spaceId);
+      if (currentEnvironment.isErr()) {
+        return userError(getErrorMessage(currentEnvironment.error));
+      }
+      const { ability } = currentEnvironment.value;
+
       const address =
         _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
+
       const spaceEngine = await getDbEngineByAddress(address, spaceId, ability);
-      if (!spaceEngine) throw new Error('No matching space engine found');
-      engines = await savedEnginesToEngines([spaceEngine]);
+      if (spaceEngine.isErr()) return userError(getErrorMessage(spaceEngine.error));
+      if (!spaceEngine.value) throw new Error('No matching space engine found');
+
+      engines = await savedEnginesToEngines([spaceEngine.value]);
       if (engines.length === 0) throw new Error("Engine couldn't be reached");
     } else {
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
+      if (isUserErrorResponse(engines)) return engines;
     }
 
     if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
@@ -118,6 +147,8 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
       return deployments.some((deployment) => deployment.definitionId === definitionId);
     });
 
+    if (isUserErrorResponse(engines)) return engines;
+
     await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
@@ -131,6 +162,7 @@ export async function getAvailableTaskListEntries(spaceId: string) {
       throw new Error('getAvailableTaskListEntries only available with enableUseDB');
 
     const engines = await getCorrectTargetEngines(spaceId);
+    if (isUserErrorResponse(engines)) return engines;
 
     let stored = await getUserTasks();
 
@@ -242,7 +274,6 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       state: storedState,
     } = storedUserTask;
     const [taskId, instanceId, startTimeString] = userTaskId.split('|');
-    const [definitionId] = instanceId.split('-_');
 
     if (!html || !milestones || !initialVariables) {
       const startTime = parseInt(startTimeString);
@@ -250,6 +281,8 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
       const definitionId = instanceId.split('-_')[0];
 
       let engines = await getCorrectTargetEngines(spaceId);
+      if (isUserErrorResponse(engines)) return engines;
+
       let deployments = await asyncMap(engines, async (engine) => {
         return [engine, await fetchDeployments([engine])] as [Engine, DeployedProcessInfo[]];
       });
@@ -327,7 +360,8 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
 
     // maps relative urls used to get resources on the engine to the MS api to allow them to work here as well
     function mapResourceUrls(variables: Record<string, any>) {
-      if (!variables) return variables;
+      if (!instanceId || !variables) return variables;
+      const definitionId = instanceId.split('-_')[0];
 
       return Object.fromEntries(
         Object.entries(variables).map(([key, value]) => {
@@ -385,6 +419,8 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
         return instance.tokens.some((token) => token.currentFlowElementId === taskId);
       });
 
+      if (isUserErrorResponse(engines)) return engines;
+
       if (engines.length) {
         return await addOwnerToTaskListEntryOnMachine(engines[0], instanceId, taskId, owner);
       }
@@ -434,6 +470,8 @@ export async function setTasklistEntryVariableValues(
         return instance.tokens.some((token) => token.currentFlowElementId === taskId);
       });
 
+      if (isUserErrorResponse(engines)) return engines;
+
       if (engines.length) {
         await setTasklistEntryVariableValuesOnMachine(engines[0], instanceId, taskId, variables);
       }
@@ -481,6 +519,8 @@ export async function setTasklistMilestoneValues(
         return instance.tokens.some((token) => token.currentFlowElementId === taskId);
       });
 
+      if (isUserErrorResponse(engines)) return engines;
+
       if (engines.length) {
         await setTasklistEntryMilestoneValuesOnMachine(engines[0], instanceId, taskId, milestones);
       }
@@ -525,6 +565,8 @@ export async function completeTasklistEntry(
 
         return instance.tokens.some((token) => token.currentFlowElementId === taskId);
       });
+
+      if (isUserErrorResponse(engines)) return engines;
 
       if (!engines.length)
         throw new Error('Failed to find the engine the user task is running on!');
@@ -575,6 +617,8 @@ export async function updateVariables(
       );
     });
 
+    if (isUserErrorResponse(engines)) return engines;
+
     await asyncForEach(
       engines,
       async (engine) => await updateVariablesOnMachine(definitionId, instanceId, engine, variables),
@@ -593,7 +637,11 @@ export async function submitFile(
   file: Buffer,
 ) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    const currentEnvironment = await getCurrentEnvironment(spaceId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     const [taskId, instanceId] = userTaskId.split('|');
     const [definitionId] = instanceId.split('-_');
@@ -611,10 +659,12 @@ export async function submitFile(
       return instance.tokens.some((token) => token.currentFlowElementId === taskId);
     });
 
+    if (isUserErrorResponse(engines)) return engines;
+
     engines = ability ? ability.filter('view', 'Machine', engines) : engines;
 
     if (!engines.length) {
-      throw new UserFacingError('Failed to find the engine the user task is running on!');
+      return userError('Failed to find the engine the user task is running on!');
     }
 
     const res = await submitFileToMachine(
@@ -639,7 +689,11 @@ export async function getFile(
   instanceId: string,
   fileName: string,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  const currentEnvironment = await getCurrentEnvironment(spaceId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
   try {
     // find the engine the instance is running on
@@ -651,10 +705,12 @@ export async function getFile(
       );
     });
 
+    if (isUserErrorResponse(engines)) return engines;
+
     engines = ability ? ability.filter('view', 'Machine', engines) : engines;
 
     if (!engines.length) {
-      throw new UserFacingError('Failed to find the engine the instance is running on!');
+      return userError('Failed to find the engine the instance is running on!');
     }
 
     return await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
@@ -670,9 +726,16 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     if (!enableUseDB)
       throw new Error('getAvailableEnginesForSpace only available with enableUseDB');
 
-    const { ability } = await getCurrentEnvironment(spaceId);
+    const currentEnvironment = await getCurrentEnvironment(spaceId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
+
     const spaceEngines = await getDbEngines(spaceId, ability);
-    return (await savedEnginesToEngines(spaceEngines)) as SpaceEngine[];
+    if (spaceEngines.isErr()) return userError(getErrorMessage(spaceEngines.error));
+
+    return (await savedEnginesToEngines(spaceEngines.value)) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -681,6 +744,7 @@ export async function getAvailableSpaceEngines(spaceId: string) {
 
 export async function getDeployment(spaceId: string, definitionId: string) {
   const engines = await getCorrectTargetEngines(spaceId);
+  if (isUserErrorResponse(engines)) return engines;
 
   const deployments = await fetchDeployments(engines);
 
@@ -699,6 +763,8 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
       // if the deployment on the machine actually contains the image
       return deployments.some((deployment) => deployment.definitionId === definitionId);
     });
+
+    if (isUserErrorResponse(engines)) return engines;
 
     if (!engines.length) throw new Error('Failed to an engine the process was deployed to!');
 

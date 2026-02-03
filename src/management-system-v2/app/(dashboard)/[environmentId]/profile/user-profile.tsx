@@ -33,7 +33,7 @@ import ImageUpload, { fallbackImage } from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import ChangeUserPasswordModal from './change-password-modal';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 
 const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
   userData,

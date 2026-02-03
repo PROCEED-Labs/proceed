@@ -25,7 +25,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import { getAvailableSpaceEngines } from '@/lib/engines/server-actions';
 import { SpaceEngine } from '@/lib/engines/machines';
 import { MdOutlineComputer } from 'react-icons/md';

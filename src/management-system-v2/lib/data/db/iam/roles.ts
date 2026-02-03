@@ -1,3 +1,4 @@
+import { ok, err } from 'neverthrow';
 import { v4 } from 'uuid';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -14,7 +15,7 @@ export async function getRoles(environmentId?: string, ability?: Ability) {
 
   const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
 
-  return filteredRoles as Role[];
+  return ok(filteredRoles as Role[]);
 }
 
 /** Returns all roles in form of an array including the members of each role included in its data */
@@ -49,7 +50,7 @@ export async function getRolesWithMembers(environmentId?: string, ability?: Abil
         .map((role) => ({ ...role, members: ability.filter('view', 'User', role.members) }))
     : mappedRoles;
 
-  return filteredRoles;
+  return ok(filteredRoles);
 }
 
 /**
@@ -65,13 +66,13 @@ export async function getRoleByName(environmentId: string, name: string, ability
     },
   });
 
-  if (!role) return undefined;
+  if (!role) return ok(undefined);
 
   if (ability && !ability.can('view', toCaslResource('Role', role))) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
-  return role;
+  return ok(role);
 }
 
 /**
@@ -91,11 +92,12 @@ export async function getRoleById(
     },
   });
 
-  if (!ability) return role as Role;
+  if (!ability) return ok(role as Role);
 
-  if (role && !ability.can('view', toCaslResource('Role', role))) throw new UnauthorizedError();
+  if (role && !ability.can('view', toCaslResource('Role', role)))
+    return err(new UnauthorizedError());
 
-  return role as Role;
+  return ok(role as Role | null);
 }
 
 /**
@@ -125,21 +127,23 @@ export async function getRoleWithMembersById(roleId: string, ability?: Ability) 
     },
   });
 
-  if (!role) return null;
+  if (!role) return ok(null);
 
   const mappedRole = {
     ...role,
     members: role.members.map((member) => member.user),
   } as RoleWithMembers;
 
-  if (!ability) return mappedRole;
+  if (!ability) return ok(mappedRole);
 
   if (mappedRole && !ability.can('view', toCaslResource('Role', mappedRole)))
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
 
-  return ability
+  const filteredRoles = ability
     ? { ...mappedRole, members: ability.filter('view', 'User', mappedRole.members) }
     : mappedRole;
+
+  return ok(filteredRoles);
 }
 
 /**
@@ -159,7 +163,7 @@ export async function getUserRoles(userId: string, environmentId?: string, abili
 
   const filteredRoles = ability ? ability.filter('view', 'Role', roles) : roles;
 
-  return filteredRoles as Role[];
+  return ok(filteredRoles as Role[]);
 }
 
 /**
@@ -175,7 +179,12 @@ export async function addRole(
 ) {
   const dbMutator = tx ? tx : db;
 
-  const roleRepresentation = RoleInputSchema.parse(roleRepresentationInput);
+  const parseResult = RoleInputSchema.safeParse(roleRepresentationInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+
+  const roleRepresentation = parseResult.data;
 
   // if (ability && !ability.can('create', toCaslResource('Role', roleRepresentation))) {
   if (
@@ -183,7 +192,7 @@ export async function addRole(
     (!ability.can('create', toCaslResource('Role', roleRepresentation)) ||
       !ability.can('admin', 'All'))
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
@@ -197,7 +206,7 @@ export async function addRole(
   });
 
   if (existingRole) {
-    throw new Error('Role already exists');
+    return err(new Error('Role already exists'));
   }
 
   const createdOn = new Date().toISOString();
@@ -219,7 +228,7 @@ export async function addRole(
     },
   });
 
-  return createdRole as Role;
+  return ok(createdRole as Role);
 }
 
 /**
@@ -234,21 +243,32 @@ export async function updateRole(
   ability: Ability,
 ) {
   const targetRole = await getRoleById(roleId);
-  if (!targetRole) throw new Error('Role not found');
+  if (targetRole.isErr()) return targetRole;
+  if (!targetRole.value) return err(new Error('Role not found'));
 
-  const roleRepresentation = RoleInputSchema.partial().parse(roleRepresentationInput);
+  const parseResult = RoleInputSchema.partial().safeParse(roleRepresentationInput);
+  if (!parseResult.success) {
+    return err(parseResult.error);
+  }
+  const roleRepresentation = parseResult.data;
 
   // Casl isn't really built to check the value of input fields when updating, so we have to perform this two checks
   if (
     !(
-      ability.checkInputFields(toCaslResource('Role', targetRole), 'update', roleRepresentation) &&
+      ability.checkInputFields(
+        toCaslResource('Role', targetRole.value),
+        'update',
+        roleRepresentation,
+      ) &&
       ability.can('create', toCaslResource('Role', roleRepresentation), {
-        environmentId: targetRole.environmentId,
+        environmentId: targetRole.value.environmentId,
       })
     ) ||
     !ability.can('admin', 'All')
-  )
-    throw new UnauthorizedError();
+  ) {
+    return err(new UnauthorizedError());
+  }
+
   const updatedRole = await db.role.update({
     where: {
       id: roleId,
@@ -258,9 +278,10 @@ export async function updateRole(
       lastEditedOn: new Date().toISOString(),
     },
   });
+
   rulesCacheDeleteAll();
 
-  return updatedRole as Role;
+  return ok(updatedRole as Role);
 }
 
 /**
@@ -278,7 +299,7 @@ export async function deleteRole(roleId: string, ability?: Ability) {
 
   // Throw error if role not found
   if (!role) {
-    throw new Error('Role not found');
+    return err(new Error('Role not found'));
   }
 
   // Check if user has permission to delete the role
@@ -286,7 +307,7 @@ export async function deleteRole(roleId: string, ability?: Ability) {
     ability &&
     (!ability.can('delete', toCaslResource('Role', role)) || !ability.can('admin', 'All'))
   ) {
-    throw new UnauthorizedError();
+    return err(new UnauthorizedError());
   }
 
   // Delete role from database
@@ -296,5 +317,5 @@ export async function deleteRole(roleId: string, ability?: Ability) {
     },
   });
 
-  return true;
+  return ok(true);
 }

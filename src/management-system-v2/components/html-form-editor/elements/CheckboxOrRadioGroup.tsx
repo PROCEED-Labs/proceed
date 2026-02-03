@@ -126,6 +126,7 @@ export const ExportCheckboxOrRadioGroup: React.FC<CheckBoxOrRadioGroupProps> = (
     <div className={`user-task-form-input-group variable-${variable}`}>
       {data.map((entry) => (
         <ExportCheckboxOrRadioButton
+          key={entry.label}
           type={type}
           variable={variable}
           label={entry.label}

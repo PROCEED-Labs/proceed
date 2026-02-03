@@ -9,6 +9,7 @@ import { getUserRoles } from '@/lib/data/db/iam/roles';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getUsersInSpace } from '@/lib/data/db/iam/memberships';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 const TasklistPage = async (props: { params: Promise<{ environmentId: string }> }) => {
   const params = await props.params;
@@ -17,7 +18,11 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
     return notFound();
   }
 
-  const { userId, user: userData } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { userId, user: userData } = currentUser.value;
   if (!userData || userData?.isGuest) {
     return (
       <Content title="Tasklist">
@@ -29,13 +34,24 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
     );
   }
 
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
   const {
     ability,
     activeEnvironment: { spaceId, isOrganization },
-  } = await getCurrentEnvironment(params.environmentId);
+  } = currentSpace.value;
 
   const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
-  if (automationSettings.active === false || automationSettings.tasklist?.active === false) {
+  if (automationSettings.isErr()) {
+    return errorResponse(automationSettings);
+  }
+
+  if (
+    automationSettings.value.active === false ||
+    automationSettings.value.tasklist?.active === false
+  ) {
     return notFound();
   }
 
@@ -50,8 +66,11 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
   }
 
   const spaceUsers = await getUsersInSpace(spaceId, ability);
+  if (spaceUsers.isErr()) {
+    return errorResponse(spaceUsers);
+  }
   const users = Object.fromEntries(
-    spaceUsers.map((member) => [
+    spaceUsers.value.map((member) => [
       member.id,
       {
         userName: member.username || undefined,
@@ -66,13 +85,17 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
   }
 
   const userRoles = await getUserRoles(userId, spaceId, ability);
+  if (userRoles.isErr()) {
+    return errorResponse(userRoles);
+  }
+
   userTasks = userTasks.filter((uT) => {
     const utRoles = uT.potentialOwners?.roles || [];
     const utUsers = uT.potentialOwners?.user || [];
     if (!utUsers.length && !utRoles.length) return true;
 
     const userCanOwn = utUsers.some((id) => id === userId);
-    const userRoleCanOwn = utRoles.some((id) => userRoles.some((role) => role.id === id));
+    const userRoleCanOwn = utRoles.some((id) => userRoles.value.some((role) => role.id === id));
 
     return userCanOwn || userRoleCanOwn;
   });

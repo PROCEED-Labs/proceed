@@ -1,7 +1,5 @@
 'use server';
-
 import { z } from 'zod';
-import { userError } from '../user-error';
 import { createChangeEmailVerificationToken, getTokenHash, notExpired } from './utils';
 import { getCurrentUser } from '@/components/auth';
 import {
@@ -12,10 +10,16 @@ import {
 import { updateUser } from '@/lib/data/db/iam/users';
 import { sendEmail } from '../email/mailer';
 import renderSigninLinkEmail from '../email/signin-link-email';
+import { getErrorMessage, userError } from '../server-error-handling/user-error';
 
 export async function requestEmailChange(newEmail: string) {
   try {
-    const { session } = await getCurrentUser();
+    const currentUser = await getCurrentUser();
+    if (currentUser.isErr()) {
+      return userError(getErrorMessage(currentUser.error));
+    }
+    const { session } = currentUser.value;
+
     if (!session || session.user.isGuest)
       return userError('You must be signed in to change your email');
     const userId = session.user.id;
@@ -54,21 +58,32 @@ export async function requestEmailChange(newEmail: string) {
 }
 
 export async function changeEmail(token: string, identifier: string, cancel: boolean = false) {
-  const { session, userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return currentUser;
+  }
+  const { session, userId } = currentUser.value;
   if (!session || session.user.isGuest)
     return userError('You must be signed in to change your email');
 
   const tokenParams = { identifier, token: await getTokenHash(token) };
   const verificationToken = await getEmailVerificationToken(tokenParams);
+  if (verificationToken.isErr()) {
+    return userError(getErrorMessage(verificationToken.error));
+  }
+
   if (
-    !verificationToken ||
-    verificationToken.type !== 'change_email' ||
-    verificationToken.userId !== userId ||
-    !(await notExpired(verificationToken))
+    !verificationToken.value ||
+    verificationToken.value.type !== 'change_email' ||
+    verificationToken.value.userId !== userId ||
+    !(await notExpired(verificationToken.value))
   )
     return userError('Invalid token');
 
-  if (!cancel) updateUser(userId, { email: verificationToken.identifier, isGuest: false });
+  if (!cancel) updateUser(userId, { email: verificationToken.value.identifier, isGuest: false });
 
-  await deleteEmailVerificationToken(tokenParams);
+  const deleteResult = await deleteEmailVerificationToken(tokenParams);
+  if (deleteResult.isErr()) {
+    return userError(getErrorMessage(deleteResult.error));
+  }
 }

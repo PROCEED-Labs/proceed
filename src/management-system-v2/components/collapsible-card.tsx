@@ -2,7 +2,7 @@
 
 import { Card, Button } from 'antd';
 import { DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
-import React, { FC, PropsWithChildren } from 'react';
+import { FC, PropsWithChildren } from 'react';
 import classNames from 'classnames';
 
 type CollapsibleCardProps = PropsWithChildren<{

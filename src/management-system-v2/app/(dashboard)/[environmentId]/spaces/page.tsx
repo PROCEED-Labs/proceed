@@ -5,17 +5,37 @@ import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import EnvironmentsPage from './environments-page';
 import { getUserById } from '@/lib/data/db/iam/users';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
+import { Result } from 'neverthrow';
 
 const Page = async () => {
-  const { userId } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { userId } = currentUser.value;
 
   const user = await getUserById(userId);
-  if (user?.isGuest) return <UnauthorizedFallback />;
+  if (user.isErr()) return errorResponse(user);
+  if (user.value?.isGuest) return <UnauthorizedFallback />;
 
   const environmentIds = await getUserOrganizationEnvironments(userId);
-  const userSpaces = (await Promise.all(
-    environmentIds.map((environmentId: string) => getEnvironmentById(environmentId)),
-  )) as { id: string; name: string; description: string; isOrganization: boolean }[];
+  if (environmentIds.isErr()) return errorResponse(environmentIds);
+
+  const _userSpaces = Result.combine(
+    await Promise.all(
+      environmentIds.value.map((environmentId: string) => getEnvironmentById(environmentId)),
+    ),
+  );
+  if (_userSpaces.isErr()) return errorResponse(_userSpaces);
+
+  const userSpaces = _userSpaces.value as {
+    id: string;
+    name: string;
+    description: string;
+    isOrganization: boolean;
+  }[];
+
   userSpaces.unshift({
     id: userId,
     name: 'My Personal Space',

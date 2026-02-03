@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { getProcess } from '@/lib/data/db/process';
-
 import { Typography, Table, Grid, Image, Spin } from 'antd';
 
 const { Title } = Typography;
@@ -18,6 +16,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
+import { Process } from '@/lib/data/process-schema';
 import { generateDateString } from '@/lib/utils';
 
 export type VersionInfo = {
@@ -28,7 +27,7 @@ export type VersionInfo = {
 };
 
 type ProcessDocumentProps = {
-  processData: Awaited<ReturnType<typeof getProcess>>;
+  processData: Process;
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
   version: VersionInfo;

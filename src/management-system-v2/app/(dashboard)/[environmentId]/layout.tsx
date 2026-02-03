@@ -4,6 +4,7 @@ import { SetAbility } from '@/lib/abilityStore';
 import Layout, { ExtendedMenuItems } from './layout-client';
 import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { MenuProps } from 'antd';
+import { errorResponse } from '@/lib/server-error-handling/page-error-response';
 
 import {
   PartitionOutlined,
@@ -42,6 +43,7 @@ import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
+import { Result } from 'neverthrow';
 
 const DashboardLayout = async (
   props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
@@ -50,33 +52,66 @@ const DashboardLayout = async (
 
   const { children } = props;
 
-  const { userId, systemAdmin, user } = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return errorResponse(currentUser);
+  }
+  const { userId, systemAdmin, user } = currentUser.value;
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const currentSpace = await getCurrentEnvironment(params.environmentId);
+  if (currentSpace.isErr()) {
+    return errorResponse(currentSpace);
+  }
+  const { activeEnvironment, ability } = currentSpace.value;
+
   const can = ability.can.bind(ability);
 
   const userEnvironments: Environment[] = [];
-  if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
-    userEnvironments.push(await getEnvironmentById(userId))!;
+  if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
+    const personalEnvironment = await getEnvironmentById(userId);
+    if (personalEnvironment.isErr()) return errorResponse(personalEnvironment);
+
+    userEnvironments.push(personalEnvironment.value);
+  }
 
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(
-    userOrgEnvs,
-    async (envId) => (await getEnvironmentById(envId))!,
+  if (userOrgEnvs.isErr()) {
+    return errorResponse(userOrgEnvs);
+  }
+
+  const orgEnvironments = Result.combine(
+    await asyncMap(userOrgEnvs.value, async (envId) => await getEnvironmentById(envId)),
   );
+  if (orgEnvironments.isErr()) {
+    return errorResponse(orgEnvironments);
+  }
+
   const msConfig = await getMSConfig();
 
-  userEnvironments.push(...orgEnvironments);
+  userEnvironments.push(...orgEnvironments.value);
 
-  const userRules = systemAdmin
-    ? getSystemAdminRules(activeEnvironment.isOrganization)
-    : await getUserRules(userId, activeEnvironment.spaceId);
+  let userRules;
+  if (systemAdmin) {
+    userRules = getSystemAdminRules(activeEnvironment.isOrganization);
+  } else {
+    const rules = await getUserRules(userId, activeEnvironment.spaceId);
+    if (rules.isErr()) {
+      return errorResponse(rules);
+    }
+
+    userRules = rules.value;
+  }
 
   const generalSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'general-settings',
   );
-  const customNavLinks: CustomNavigationLink[] = generalSettings.customNavigationLinks?.links || [];
+  if (generalSettings.isErr()) {
+    return errorResponse(generalSettings);
+  }
+
+  const customNavLinks: CustomNavigationLink[] =
+    generalSettings.value.customNavigationLinks?.links || [];
   const topCustomNavLinks = customNavLinks.filter((link) => link.position === 'top');
   const middleCustomNavLinks = customNavLinks.filter((link) => link.position === 'middle');
   const bottomCustomNavLinks = customNavLinks.filter((link) => link.position === 'bottom');
@@ -115,7 +150,11 @@ const DashboardLayout = async (
   }
 
   const userPassword = await getUserPassword(user!.id);
-  const userNeedsToChangePassword = userPassword ? userPassword.isTemporaryPassword : false;
+  if (userPassword.isErr()) {
+    return errorResponse(userPassword);
+  }
+
+  const userNeedsToChangePassword = userPassword ? userPassword.value?.isTemporaryPassword : false;
 
   let layoutMenuItems: ExtendedMenuItems = [];
 
@@ -139,17 +178,20 @@ const DashboardLayout = async (
       activeEnvironment.spaceId,
       'process-documentation',
     );
+    if (documentationSettings.isErr()) {
+      return errorResponse(documentationSettings);
+    }
 
-    if (documentationSettings.active !== false) {
+    if (documentationSettings.value.active !== false) {
       const processRegex = '/processes($|/)';
       let children: ExtendedMenuItems = [
-        documentationSettings.list?.active !== false && {
+        documentationSettings.value.list?.active !== false && {
           key: 'processes-list',
           label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
           icon: <CopyOutlined />,
           selectedRegex: '/processes/list($|/)',
         },
-        documentationSettings.editor?.active !== false && {
+        documentationSettings.value.editor?.active !== false && {
           key: 'processes-editor',
           label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
           icon: <EditOutlined />,
@@ -173,14 +215,20 @@ const DashboardLayout = async (
     activeEnvironment.spaceId,
     'process-automation',
   );
+  if (automationSettings.isErr()) {
+    return errorResponse(automationSettings);
+  }
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+  if (
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    automationSettings.value.active !== false
+  ) {
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
     if (
       msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE &&
-      automationSettings.task_editor?.active !== false
+      automationSettings.value.task_editor?.active !== false
     ) {
       childRegex = '/tasks($|/)';
       children.push({
@@ -206,11 +254,11 @@ const DashboardLayout = async (
   }
 
   if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
-    if (automationSettings.active !== false) {
+    if (automationSettings.value.active !== false) {
       let childRegex = '';
       let children: ExtendedMenuItems = [];
 
-      if (automationSettings.dashboard?.active !== false) {
+      if (automationSettings.value.dashboard?.active !== false) {
         const dashboardRegex = '/executions-dashboard($|/)';
         childRegex = !childRegex ? dashboardRegex : `(${childRegex})|(${dashboardRegex})`;
         children.push({
@@ -220,7 +268,7 @@ const DashboardLayout = async (
           selectedRegex: dashboardRegex,
         });
       }
-      if (automationSettings.executions?.active !== false) {
+      if (automationSettings.value.executions?.active !== false) {
         const executionsRegex = '/executions($|/)';
         childRegex = !childRegex ? executionsRegex : `(${childRegex})|(${executionsRegex})`;
         children.push({
@@ -230,7 +278,7 @@ const DashboardLayout = async (
           selectedRegex: executionsRegex,
         });
       }
-      if (automationSettings.machines?.active !== false) {
+      if (automationSettings.value.machines?.active !== false) {
         const machinesRegex = '/engines($|/)';
         childRegex = !childRegex ? machinesRegex : `(${childRegex})|(${machinesRegex})`;
         children.push({
@@ -414,14 +462,22 @@ const DashboardLayout = async (
     );
   }
 
-  const logo = (await getSpaceLogo(activeEnvironment.spaceId))?.spaceLogo ?? undefined;
+  const spaceLogo = await getSpaceLogo(activeEnvironment.spaceId);
+  if (spaceLogo.isErr()) {
+    return errorResponse(spaceLogo);
+  }
+
+  const logo = spaceLogo.value?.spaceLogo ?? undefined;
+
+  const treeMap = await getSpaceFolderTree(activeEnvironment.spaceId);
+  if (treeMap.isErr()) return errorResponse(treeMap);
 
   return (
     <>
       <SetAbility
         rules={userRules}
         environmentId={activeEnvironment.spaceId}
-        treeMap={await getSpaceFolderTree(activeEnvironment.spaceId)}
+        treeMap={treeMap.value}
       />
       <CustomLinkStateProvider spaceId={activeEnvironment.spaceId}>
         <Layout

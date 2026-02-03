@@ -29,7 +29,7 @@ import { EnvVarsContext } from '@/components/env-vars-context';
 import useOrganizationRoles from './use-org-roles';
 import useDebounce from '@/lib/useDebounce';
 import { queryUsers } from '@/lib/data/users';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/server-error-handling/user-error';
 import UserAvatar from '@/components/user-avatar';
 import { z } from 'zod';
 

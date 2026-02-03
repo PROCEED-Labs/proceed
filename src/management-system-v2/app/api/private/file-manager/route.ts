@@ -3,7 +3,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { NextRequest, NextResponse } from 'next/server';
 import { Readable } from 'node:stream';
-import type { ReadableStream } from 'node:stream/web';
 import jwt from 'jsonwebtoken';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { getProcess } from '@/lib/data/processes';
@@ -13,244 +12,271 @@ import {
   retrieveEntityFile,
   saveEntityFileOrGetPresignedUrl,
 } from '@/lib/data/file-manager-facade';
+import { getErrorMessage, userError } from '@/lib/server-error-handling/user-error';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const entityId = searchParams.get('entityId');
-  const entityType = searchParams.get('entityType');
-  const environmentId = searchParams.get('environmentId') || 'unauthenticated';
-  const filePath = searchParams.get('filePath') || undefined;
-  if (
-    !entityId ||
-    !entityType ||
-    !environmentId ||
-    (entityType === EntityType.PROCESS && !filePath)
-  ) {
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
-    });
-  }
-
-  if (entityType === EntityType.PROCESS) {
-    let canAccess = false;
-
-    const processMeta = await getProcess(entityId, environmentId, true); // true --> skip the validity check as it will be done below
-    if (!processMeta || 'error' in processMeta) {
-      return new NextResponse(null, {
-        status: 404,
-        statusText: 'Process with this id does not exist.',
-      });
-    }
-
-    if (environmentId !== 'unauthenticated') {
-      const { ability } = await getCurrentEnvironment(environmentId);
-
-      canAccess = ability.can('view', toCaslResource('Process', processMeta));
-    }
-
-    // if the user is not an owner check if they have access if a share token is provided in the query data of the url
-    const shareToken = searchParams.get('shareToken');
-    if (!canAccess && shareToken) {
-      const key = process.env.SHARING_ENCRYPTION_SECRET!;
-      const {
-        processId: shareProcessId,
-        embeddedMode,
-        timestamp,
-      } = jwt.verify(shareToken, key!) as TokenPayload;
-      canAccess =
-        !embeddedMode && shareProcessId === entityId && timestamp === processMeta.shareTimestamp;
-    }
-
-    if (!canAccess) {
-      return new NextResponse(null, {
-        status: 403,
-        statusText: 'Not allowed to access files in this process',
-      });
-    }
-  }
-
   try {
-    const data = await retrieveEntityFile(entityType as EntityType, entityId, filePath);
-
-    const fileType = await fileTypeFromBuffer(data as Buffer);
-    if (!fileType) {
+    const searchParams = request.nextUrl.searchParams;
+    const entityId = searchParams.get('entityId');
+    const entityType = searchParams.get('entityType');
+    const environmentId = searchParams.get('environmentId') || 'unauthenticated';
+    const filePath = searchParams.get('filePath') || undefined;
+    if (
+      !entityId ||
+      !entityType ||
+      !environmentId ||
+      (entityType === EntityType.PROCESS && !filePath)
+    ) {
       return new NextResponse(null, {
-        status: 415,
-        statusText: 'Cannot read file type of requested file',
+        status: 400,
+        statusText:
+          'entityId, entityType, environmentId and filePath required as URL search params',
       });
     }
-    let mimeType: string = fileType.mime;
 
-    if (fileType.mime === 'application/xml' && filePath?.endsWith('.svg'))
-      mimeType = 'image/svg+xml';
+    if (entityType === EntityType.PROCESS) {
+      let canAccess = false;
 
-    const headers = new Headers();
-    headers.set('Content-Type', mimeType);
-    return new NextResponse(data, { status: 200, statusText: 'OK', headers });
-  } catch (error: any) {
-    console.error('Error retrieving file:', error);
+      const processMeta = await getProcess(entityId, environmentId, true); // true --> skip the validity check as it will be done below
+      if (!processMeta || 'error' in processMeta) {
+        return new NextResponse(null, {
+          status: 404,
+          statusText: 'Process with this id does not exist.',
+        });
+      }
 
-    if (error.message.includes('File') && error.message.includes('does not exist')) {
+      if (environmentId !== 'unauthenticated') {
+        const currentEnvironment = await getCurrentEnvironment(environmentId);
+        if (currentEnvironment.isErr()) throw currentEnvironment.error;
+        const { ability } = currentEnvironment.value;
+
+        canAccess = ability.can('view', toCaslResource('Process', processMeta));
+      }
+
+      // if the user is not an owner check if they have access if a share token is provided in the query data of the url
+      const shareToken = searchParams.get('shareToken');
+      if (!canAccess && shareToken) {
+        const key = process.env.SHARING_ENCRYPTION_SECRET!;
+        const {
+          processId: shareProcessId,
+          embeddedMode,
+          timestamp,
+        } = jwt.verify(shareToken, key!) as TokenPayload;
+        canAccess =
+          !embeddedMode && shareProcessId === entityId && timestamp === processMeta.shareTimestamp;
+      }
+
+      if (!canAccess) {
+        return new NextResponse(null, {
+          status: 403,
+          statusText: 'Not allowed to access files in this process',
+        });
+      }
+    }
+
+    try {
+      const data = await retrieveEntityFile(entityType as EntityType, entityId, filePath);
+
+      const fileType = await fileTypeFromBuffer(data as Buffer);
+      if (!fileType) {
+        return new NextResponse(null, {
+          status: 415,
+          statusText: 'Cannot read file type of requested file',
+        });
+      }
+      let mimeType: string = fileType.mime;
+
+      if (fileType.mime === 'application/xml' && filePath?.endsWith('.svg'))
+        mimeType = 'image/svg+xml';
+
+      const headers = new Headers();
+      headers.set('Content-Type', mimeType);
+      return new NextResponse(data, { status: 200, statusText: 'OK', headers });
+    } catch (error: any) {
+      console.error('Error retrieving file:', error);
+
+      if (error.message.includes('File') && error.message.includes('does not exist')) {
+        return new NextResponse(null, {
+          status: 404,
+          statusText: 'File not found',
+        });
+      }
       return new NextResponse(null, {
-        status: 404,
-        statusText: 'File not found',
+        status: 500,
+        statusText: 'Internal Server Error',
       });
     }
+  } catch (error) {
     return new NextResponse(null, {
       status: 500,
-      statusText: 'Internal Server Error',
+      statusText: getErrorMessage(error),
     });
   }
 }
 
 export async function PUT(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const entityId = searchParams.get('entityId');
-  const entityType = searchParams.get('entityType');
-  const environmentId = searchParams.get('environmentId');
-  const filePath = searchParams.get('filePath');
-  const saveWithoutSavingReference = !!searchParams.get('saveWithoutSavingReference');
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const entityId = searchParams.get('entityId');
+    const entityType = searchParams.get('entityType');
+    const environmentId = searchParams.get('environmentId');
+    const filePath = searchParams.get('filePath');
+    const saveWithoutSavingReference = !!searchParams.get('saveWithoutSavingReference');
 
-  if (!entityId || !environmentId || !entityType || !filePath) {
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
-    });
-  }
-
-  const body = request.body;
-  if (!body)
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'No file data provided in request body',
-    });
-
-  const { ability } = await getCurrentEnvironment(environmentId);
-  if (entityType === EntityType.PROCESS) {
-    const process = await getProcess(entityId, environmentId);
-    if (!process) {
+    if (!entityId || !environmentId || !entityType || !filePath) {
       return new NextResponse(null, {
-        status: 404,
-        statusText: 'Process with this id does not exist.',
+        status: 400,
+        statusText:
+          'entityId, entityType, environmentId and filePath required as URL search params',
       });
     }
-    if (!ability.can('view', toCaslResource('Process', process))) {
+
+    const body = request.body;
+    if (!body)
       return new NextResponse(null, {
-        status: 403,
-        statusText: 'Not allowed to view image in this process',
+        status: 400,
+        statusText: 'No file data provided in request body',
       });
-    }
-  }
 
-  // NOTE: This may need changing
-  // @ts-expect-error ReadableStream in next.js' request isn't quite compatible with Readable.fromWeb (node:stream)
-  const reader = Readable.fromWeb(body);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) throw currentEnvironment.error;
+    const { ability } = currentEnvironment.value;
 
-  const chunks: Uint8Array[] = [];
-  let totalLength = 0;
-
-  for await (const chunk of reader) {
-    if (chunk) {
-      chunks.push(chunk);
-      totalLength += chunk.length;
-      if (totalLength > MAX_FILE_SIZE) {
-        // For some reason, after calling destroy the http response is not sent, causing the request to hang
-        reader.pause();
+    if (entityType === EntityType.PROCESS) {
+      const process = await getProcess(entityId, environmentId);
+      if (!process) {
+        return new NextResponse(null, {
+          status: 404,
+          statusText: 'Process with this id does not exist.',
+        });
+      }
+      if (!ability.can('view', toCaslResource('Process', process))) {
+        return new NextResponse(null, {
+          status: 403,
+          statusText: 'Not allowed to view image in this process',
+        });
       }
     }
-  }
 
-  // The return doesn't work inside of the iterator for loop
-  if (totalLength > MAX_FILE_SIZE)
-    return new NextResponse(null, {
-      status: 413,
-      statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
-    });
+    // NOTE: This may need changing
+    // @ts-expect-error ReadableStream in next.js' request isn't quite compatible with Readable.fromWeb (node:stream)
+    const reader = Readable.fromWeb(body);
 
-  // Proceed with processing if the size limit is not exceeded
-  const buffer = Buffer.concat(
-    chunks.map((chunk) => Buffer.from(chunk)),
-    totalLength,
-  );
+    const chunks: Uint8Array[] = [];
+    let totalLength = 0;
 
-  const fileType = await fileTypeFromBuffer(buffer);
-  if (!fileType) {
-    return new NextResponse(null, {
-      status: 415,
-      statusText: 'Cannot store file with unknown file type',
-    });
-  }
-
-  try {
-    const res = await saveEntityFileOrGetPresignedUrl(
-      entityType as EntityType,
-      entityId,
-      fileType.mime,
-      filePath,
-      buffer,
-      { saveWithoutSavingReference },
-    );
-
-    if ('error' in res) throw new Error((res.error as any).message);
-
-    if (!res.filePath) {
-      throw new Error('No file name returned');
+    for await (const chunk of reader) {
+      if (chunk) {
+        chunks.push(chunk);
+        totalLength += chunk.length;
+        if (totalLength > MAX_FILE_SIZE) {
+          // For some reason, after calling destroy the http response is not sent, causing the request to hang
+          reader.pause();
+        }
+      }
     }
 
-    const { filePath: newFileName } = res;
+    // The return doesn't work inside of the iterator for loop
+    if (totalLength > MAX_FILE_SIZE)
+      return new NextResponse(null, {
+        status: 413,
+        statusText: `Allowed file size of ${MAX_FILE_SIZE / (1024 * 1024)} MB exceeded`,
+      });
 
-    return new NextResponse(newFileName, {
-      status: 200,
-      statusText: 'OK',
-    });
+    // Proceed with processing if the size limit is not exceeded
+    const buffer = Buffer.concat(
+      chunks.map((chunk) => Buffer.from(chunk)),
+      totalLength,
+    );
+
+    const fileType = await fileTypeFromBuffer(buffer);
+    if (!fileType) {
+      return new NextResponse(null, {
+        status: 415,
+        statusText: 'Cannot store file with unknown file type',
+      });
+    }
+
+    try {
+      const res = await saveEntityFileOrGetPresignedUrl(
+        entityType as EntityType,
+        entityId,
+        fileType.mime,
+        filePath,
+        buffer,
+        { saveWithoutSavingReference },
+      );
+
+      if ('error' in res) throw new Error((res.error as any).message);
+
+      if (!res.filePath) {
+        throw new Error('No file name returned');
+      }
+
+      const { filePath: newFileName } = res;
+
+      return new NextResponse(newFileName, {
+        status: 200,
+        statusText: 'OK',
+      });
+    } catch (error) {
+      console.error('Error saving file:', error);
+      return new NextResponse(null, { status: 500, statusText: 'Internal Server Error' });
+    }
   } catch (error) {
-    console.error('Error saving file:', error);
-    return new NextResponse(null, { status: 500, statusText: 'Internal Server Error' });
+    return new NextResponse(null, { status: 500, statusText: getErrorMessage(error) });
   }
 }
 
 export async function DELETE(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const entityId = searchParams.get('entityId');
-  const entityType = searchParams.get('entityType');
-  const environmentId = searchParams.get('environmentId');
-  const filePath = searchParams.get('filePath ');
-
-  if (!entityId || !entityType || !environmentId || !filePath) {
-    return new NextResponse(null, {
-      status: 400,
-      statusText: 'entityId, entityType, environmentId and filePath required as URL search params',
-    });
-  }
-
-  const { ability } = await getCurrentEnvironment(environmentId);
-  if (entityType === EntityType.PROCESS) {
-    const process = await getProcess(entityId, environmentId);
-
-    if (!process) {
-      return new NextResponse(null, {
-        status: 404,
-        statusText: 'Process with this id does not exist.',
-      });
-    }
-
-    if (!ability.can('delete', toCaslResource('Process', process))) {
-      return new NextResponse(null, {
-        status: 403,
-        statusText: 'Not allowed to delete image in this process',
-      });
-    }
-  }
-
   try {
-    await deleteEntityFile(entityType as EntityType, entityId, filePath);
-    return new NextResponse(null, { status: 200, statusText: 'OK' });
+    const searchParams = request.nextUrl.searchParams;
+    const entityId = searchParams.get('entityId');
+    const entityType = searchParams.get('entityType');
+    const environmentId = searchParams.get('environmentId');
+    const filePath = searchParams.get('filePath ');
+
+    if (!entityId || !entityType || !environmentId || !filePath) {
+      return new NextResponse(null, {
+        status: 400,
+        statusText:
+          'entityId, entityType, environmentId and filePath required as URL search params',
+      });
+    }
+
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) throw currentEnvironment.error;
+    const { ability } = currentEnvironment.value;
+
+    if (entityType === EntityType.PROCESS) {
+      const process = await getProcess(entityId, environmentId);
+
+      if (!process) {
+        return new NextResponse(null, {
+          status: 404,
+          statusText: 'Process with this id does not exist.',
+        });
+      }
+
+      if (!ability.can('delete', toCaslResource('Process', process))) {
+        return new NextResponse(null, {
+          status: 403,
+          statusText: 'Not allowed to delete image in this process',
+        });
+      }
+    }
+
+    try {
+      await deleteEntityFile(entityType as EntityType, entityId, filePath);
+      return new NextResponse(null, { status: 200, statusText: 'OK' });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      return new NextResponse(null, { status: 500, statusText: 'Internal Server Error' });
+    }
   } catch (error) {
-    console.error('Error deleting file:', error);
-    return new NextResponse(null, { status: 500, statusText: 'Internal Server Error' });
+    return new NextResponse(null, { status: 500, statusText: getErrorMessage(error) });
   }
 }

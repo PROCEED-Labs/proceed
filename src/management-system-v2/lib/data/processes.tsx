@@ -8,7 +8,6 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
-  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -18,7 +17,13 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import {
+  UserError,
+  UserErrorType,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '../server-error-handling/user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -65,6 +70,9 @@ import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
 import { getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
+import { Result, ok } from 'neverthrow';
+
+// FIXME: Check abilities
 
 // Import necessary functions from processModule
 
@@ -73,10 +81,18 @@ export const checkValidity = async (
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
 ) => {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  const currentEnvironment = await getCurrentEnvironment(spaceId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability } = currentEnvironment.value;
 
   const process = await _getProcess(definitionId);
-  if (!process) {
+  if (process.isErr()) {
+    return userError(getErrorMessage(process.error));
+  }
+
+  if (!process.value) {
     return userError('A process with this id does not exist.', UserErrorType.NotFoundError);
   }
 
@@ -92,7 +108,7 @@ export const checkValidity = async (
 
   if (
     !ability.can(operation, toCaslResource('Process', process), {
-      environmentId: process.environmentId,
+      environmentId: process.value.environmentId,
     })
   ) {
     return userError(errorMessages[operation], UserErrorType.PermissionError);
@@ -101,9 +117,10 @@ export const checkValidity = async (
 
 const getBpmnVersion = async (definitionId: string, versionId?: string) => {
   const process = await _getProcess(definitionId);
+  if (process.isErr()) return userError(getErrorMessage(process.error));
 
   if (versionId) {
-    const version = process.versions.find((version) => version.id === versionId);
+    const version = process.value.versions.find((version) => version.id === versionId);
 
     if (!version) {
       return userError(
@@ -112,20 +129,29 @@ const getBpmnVersion = async (definitionId: string, versionId?: string) => {
       );
     }
 
-    return await getProcessVersionBpmn(definitionId, versionId);
+    const result = await getProcessVersionBpmn(definitionId, versionId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } else {
-    return await _getProcessBpmn(definitionId);
+    const result = await _getProcessBpmn(definitionId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   }
 };
 
 export const getSharedProcessWithBpmn = async (definitionId: string, versionCreatedOn?: string) => {
   const processMetaObj = await _getProcess(definitionId);
+  if (processMetaObj.isErr()) {
+    return userError(getErrorMessage(processMetaObj.error));
+  }
 
-  if (!processMetaObj) {
+  if (!processMetaObj.value) {
     return userError(`Process does not exist `);
   }
 
-  if (processMetaObj.shareTimestamp > 0 || processMetaObj.allowIframeTimestamp > 0) {
+  if (processMetaObj.value.shareTimestamp > 0 || processMetaObj.value.allowIframeTimestamp > 0) {
     const bpmn = await getBpmnVersion(definitionId, versionCreatedOn);
 
     // check if getBpmnVersion returned an error that should be shown to the user instead of the bpmn
@@ -133,7 +159,7 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionCrea
       return bpmn;
     }
 
-    const processWithBPMN = { ...processMetaObj, bpmn: bpmn };
+    const processWithBPMN = { ...processMetaObj.value, bpmn: bpmn };
     return processWithBPMN;
   }
 
@@ -143,20 +169,24 @@ export const getSharedProcessWithBpmn = async (definitionId: string, versionCrea
 export const getProcess = async (
   definitionId: string,
   spaceId: string,
+  // FIXME: This allows anyone to just skip authorization
   skipValidityCheck = false,
 ) => {
   if (!skipValidityCheck) {
     const error = await checkValidity(definitionId, 'view', spaceId);
-
     if (error) return error;
   }
+
   const result = await _getProcess(definitionId);
-  return result as Process;
+  if (result.isErr()) {
+    return userError(getErrorMessage(result.error));
+  }
+
+  return result.value as Process;
 };
 
 export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: string) => {
   const error = await checkValidity(definitionId, 'view', spaceId);
-
   if (error) return error;
 
   return await getBpmnVersion(definitionId, versionId);
@@ -168,7 +198,8 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
 
     if (error) return error;
 
-    await removeProcess(definitionId);
+    const result = await removeProcess(definitionId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
   }
 };
 
@@ -185,8 +216,17 @@ export const addProcesses = async (
   spaceId: string,
   generateNewId: boolean = false,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
-  const { userId } = await getCurrentUser();
+  const currentEnvironment = await getCurrentEnvironment(spaceId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability, activeEnvironment } = currentEnvironment.value;
+
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
 
   const newProcesses: Process[] = [];
 
@@ -199,8 +239,15 @@ export const addProcesses = async (
     });
 
     // if imported process has a id that is not present in system, we can use that
-    if (value.id && (await checkIfProcessExists(value.id, false))) {
-      generateNewId = true;
+    if (value.id) {
+      const processExists = await checkIfProcessExists(value.id, false);
+      if (processExists.isErr()) {
+        return userError(getErrorMessage(processExists.error));
+      }
+
+      if (processExists.value) {
+        generateNewId = true;
+      }
     }
 
     if (generateNewId) {
@@ -228,12 +275,15 @@ export const addProcesses = async (
 
     // bpmn prop gets deleted in addProcess()
     const process = await _addProcess({ ...newProcess, folderId: value.folderId });
+    if (process.isErr()) {
+      return userError(getErrorMessage(process.error));
+    }
 
-    if (typeof process !== 'object') {
+    if (typeof process.value !== 'object') {
       return userError('A process with this id does already exist');
     }
 
-    newProcesses.push({ ...process, bpmn });
+    newProcesses.push({ ...process.value, bpmn });
   }
 
   return newProcesses;
@@ -250,11 +300,14 @@ export const updateProcessShareInfo = async (
 
   if (error) return error;
 
-  await _updateProcessMetaData(definitionsId, {
+  const result = await _updateProcessMetaData(definitionsId, {
     sharedAs: sharedAs,
     shareTimestamp: shareTimestamp,
     allowIframeTimestamp: allowIframeTimestamp,
   });
+  if (result.isErr()) {
+    return userError(getErrorMessage(result.error));
+  }
 };
 
 export const updateProcess = async (
@@ -271,9 +324,17 @@ export const updateProcess = async (
   if (error) return error;
 
   // Either replace or update the old BPMN.
-  let newBpmn = bpmn ?? (await _getProcessBpmn(definitionsId));
+  let newBpmn = bpmn;
+  if (bpmn === undefined) {
+    const result = await _getProcessBpmn(definitionsId);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    newBpmn = result.value;
+  }
+
   if (description !== undefined) {
-    newBpmn = (await addDocumentation(newBpmn!, description)) as string;
+    const result = await addDocumentation(newBpmn!, description);
+    newBpmn = result as string;
   }
   if (name !== undefined) {
     newBpmn = (await setDefinitionsName(newBpmn!, name)) as string;
@@ -292,7 +353,8 @@ export const updateProcess = async (
     revalidatePath(`/processes/editor/${definitionsId}`);
   }
 
-  await _updateProcess(definitionsId, { bpmn: newBpmn });
+  const res = await _updateProcess(definitionsId, { bpmn: newBpmn });
+  if (res.isErr()) return userError(getErrorMessage(res.error));
 };
 
 export const updateProcessMetaData = async (
@@ -302,10 +364,12 @@ export const updateProcessMetaData = async (
   invalidate = false,
 ) => {
   const error = await checkValidity(definitionsId, 'update', spaceId);
-
   if (error) return error;
 
-  await _updateProcessMetaData(definitionsId, metaChanges);
+  const result = await _updateProcessMetaData(definitionsId, metaChanges);
+  if (result.isErr()) {
+    return userError(getErrorMessage(result.error));
+  }
 
   if (invalidate) {
     revalidatePath(`/processes/editor/${definitionsId}`);
@@ -387,10 +451,9 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
       } else {
         const newFileName = generateStartFormFileName();
         fileNameMapping['start-form'].set(filename, newFileName);
-        try {
-          await _saveProcessHtmlForm(process.id, newFileName, json, html);
-        } catch (error) {
-          console.log(`Error processing start form ${newFileName}:`, error);
+        const result = await _saveProcessHtmlForm(process.id, newFileName, json, html);
+        if (result.isErr()) {
+          console.log(`Error processing start form ${newFileName}:`, result.error);
         }
       }
     }
@@ -408,10 +471,9 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
         const newUserTaskFileName =
           fileNameMapping['user-tasks'].get(baseName) || generateUserTaskFileName();
         fileNameMapping['user-tasks'].set(baseName, newUserTaskFileName);
-        try {
-          await _saveProcessHtmlForm(process.id, newUserTaskFileName, json, html);
-        } catch (error) {
-          console.error(`Error processing user task ${newUserTaskFileName}:`, error);
+        const result = await _saveProcessHtmlForm(process.id, newUserTaskFileName, json, html);
+        if (result.isErr()) {
+          console.error(`Error processing user task ${newUserTaskFileName}:`, result.error);
         }
       }
     }
@@ -453,8 +515,18 @@ export const copyProcesses = async (
   destinationfolderId?: string,
   referencedProcessId?: string,
 ) => {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
-  const { userId } = await getCurrentUser();
+  const currentEnvironment = await getCurrentEnvironment(spaceId);
+  if (currentEnvironment.isErr()) {
+    return userError(getErrorMessage(currentEnvironment.error));
+  }
+  const { ability, activeEnvironment } = currentEnvironment.value;
+
+  const currentUser = await getCurrentUser();
+  if (currentUser.isErr()) {
+    return userError(getErrorMessage(currentUser.error));
+  }
+  const { userId } = currentUser.value;
+
   const copiedProcesses: Process[] = [];
 
   for (const copyProcess of processes) {
@@ -464,9 +536,12 @@ export const copyProcesses = async (
     const originalBpmn = copyProcess.originalVersion
       ? await getProcessVersionBpmn(copyProcess.originalId, copyProcess.originalVersion)
       : await _getProcessBpmn(copyProcess.originalId);
+    if (originalBpmn.isErr()) {
+      return userError(getErrorMessage(originalBpmn.error));
+    }
 
     // TODO: Does createProcess() do the same as this function?
-    let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn! });
+    let newBpmn = await getFinalBpmn({ ...copyProcess, id: newId, bpmn: originalBpmn.value! });
 
     const bpmnObj = await toBpmnObject(newBpmn);
     const [processObj] = getElementsByTagName(bpmnObj, 'bpmn:Process');
@@ -485,15 +560,20 @@ export const copyProcesses = async (
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
     }
     const process = await _addProcess(newProcess, referencedProcessId);
+    if (process.isErr()) {
+      return userError(getErrorMessage(process.error));
+    }
 
-    if (typeof process !== 'object') {
+    if (typeof process.value !== 'object') {
       return userError('A process with this id does already exist');
     }
 
     await copyProcessArtifactReferences(copyProcess.originalId, newProcess.definitionId);
 
     const copiedFiles = await copyProcessFiles(copyProcess.originalId, newProcess.definitionId);
-    const changesFileNames = copiedFiles
+    if (copiedFiles.isErr()) return userError(getErrorMessage(copiedFiles.error));
+
+    const changesFileNames = copiedFiles.value
       .filter(truthyFilter)
       .filter((file) => file.artifactType === 'html-forms' || file.artifactType === 'script-tasks')
       .map(
@@ -503,7 +583,7 @@ export const copyProcesses = async (
     newBpmn = await updateFileNames(newBpmn, changesFileNames);
     await _updateProcess(newProcess.definitionId, { bpmn: newBpmn });
 
-    copiedProcesses.push({ ...process, bpmn: newBpmn });
+    copiedProcesses.push({ ...process.value, bpmn: newBpmn });
   }
 
   return copiedProcesses;
@@ -515,20 +595,25 @@ export const processHasChangesSinceLastVersion = async (processId: string, space
   if (error) return error;
 
   const process = await _getProcess(processId, true);
-  if (!process) return userError('Process not found', UserErrorType.NotFoundError);
+  if (process.isErr()) return userError(getErrorMessage(process.error));
+  if (!process.value) return userError('Process not found', UserErrorType.NotFoundError);
 
-  const bpmnObj = await toBpmnObject(process.bpmn!);
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const bpmnObj = await toBpmnObject(process.value.bpmn!);
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
     versionBasedOn !== undefined
-      ? await getLocalVersionBpmn(process as Process, versionBasedOn)
+      ? await getLocalVersionBpmn(process.value as Process, versionBasedOn)
       : undefined;
+  if (basedOnBPMN && basedOnBPMN.isErr()) {
+    return userError(getErrorMessage(basedOnBPMN.error));
+  }
 
-  const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
+  const versionsAreEqual =
+    basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN?.value));
   return !versionsAreEqual;
 };
 
@@ -539,14 +624,13 @@ export const createVersion = async (
   spaceId: string,
 ) => {
   const error = await checkValidity(processId, 'update', spaceId);
-
   if (error) return error;
 
   const bpmn = await _getProcessBpmn(processId);
-  if (!bpmn) {
-    return null;
-  }
-  const bpmnObj = await toBpmnObject(bpmn);
+  if (bpmn.isErr()) return userError(getErrorMessage(bpmn.error));
+  if (!bpmn.value) return null;
+
+  const bpmnObj = await toBpmnObject(bpmn.value);
 
   const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
   const versionCreatedOn = toCustomUTCString(new Date());
@@ -560,19 +644,30 @@ export const createVersion = async (
     versionCreatedOn,
   });
 
-  const process = (await _getProcess(processId)) as Process;
+  const _process = await _getProcess(processId);
+  if (_process.isErr()) return userError(getErrorMessage(_process.error));
+  const process = _process.value as Process;
 
   const versionedProcessStartFormFilenames = await versionStartForm(process, versionId, bpmnObj);
+  if (isUserErrorResponse(versionedProcessStartFormFilenames))
+    return versionedProcessStartFormFilenames;
+
   const versionedUserTaskFilenames = await versionUserTasks(process, versionId, bpmnObj);
+  if (isUserErrorResponse(versionedUserTaskFilenames)) return versionedUserTaskFilenames;
+
   const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
+  if (isUserErrorResponse(versionedScriptTaskFilenames)) return versionedScriptTaskFilenames;
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
     versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionCreatedOn) : undefined;
+  if (basedOnBPMN && basedOnBPMN.isErr()) {
+    return userError(getErrorMessage(basedOnBPMN.error));
+  }
 
-  if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
+  if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN?.value))) {
     return versionBasedOn;
   }
 
@@ -585,7 +680,7 @@ export const createVersion = async (
     versionedScriptTaskFilenames,
   );
 
-  await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
+  await updateProcessVersionBasedOn({ ...process, bpmn: bpmn.value }, versionId);
 
   return versionId;
 };
@@ -614,7 +709,10 @@ export const getProcessHtmlFormData = async (
   if (error) return error;
 
   try {
-    return await _getProcessHtmlFormJSON(definitionId, fileName);
+    const result = await _getProcessHtmlFormJSON(definitionId, fileName);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (err) {
     return userError(
       `Unable to get the requested process html form data for ${fileName}`,
@@ -633,7 +731,10 @@ export const getProcessHtmlFormHTML = async (
   if (error) return error;
 
   try {
-    return await _getHtmlForm(definitionId, fileName);
+    const result = await _getHtmlForm(definitionId, fileName);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (err) {
     return userError(
       `Unable to get the requested html form html ${fileName}.`,
@@ -668,9 +769,15 @@ export const saveProcessHtmlForm = async (
 };
 export const getFolderScriptTasks = async (environmentId: string, folderId?: string) => {
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
-    return await _getFolderScriptTasks(environmentId, folderId, ability);
+    const result = await _getFolderScriptTasks(environmentId, folderId, ability);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+    return result.value;
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -679,9 +786,15 @@ export const getFolderScriptTasks = async (environmentId: string, folderId?: str
 
 export const getFolderPathScriptTasks = async (environmentId: string, folderId: string) => {
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    const currentEnvironment = await getCurrentEnvironment(environmentId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
-    return await _getFolderPathScriptTasks(environmentId, folderId, ability);
+    const result = await _getFolderPathScriptTasks(environmentId, folderId, ability);
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+    return result.value;
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -699,7 +812,13 @@ export const getProcessScriptTaskData = async (
   if (error) return error;
 
   try {
-    return await _getProcessScriptTaskScript(definitionId, `${taskFileName}.${fileExtension}`);
+    const result = await _getProcessScriptTaskScript(
+      definitionId,
+      `${taskFileName}.${fileExtension}`,
+    );
+    if (result.isErr()) return userError(getErrorMessage(result.error));
+
+    return result.value;
   } catch (err) {
     return userError('Unable to get the requested Script Task data.', UserErrorType.NotFoundError);
   }
@@ -747,7 +866,10 @@ export const getProcessImage = async (
 
   if (error) return error;
 
-  return _getProcessImage!(definitionId, imageFileName);
+  const result = await _getProcessImage!(definitionId, imageFileName);
+  if (result.isErr()) return userError(getErrorMessage(result.error));
+
+  return result.value;
 };
 
 interface BaseProcessCheckData {
@@ -768,35 +890,69 @@ interface BatchProcessCheckData extends BaseProcessCheckData {
 
 type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
 
-export async function checkIfProcessExistsByName(data: SingleProcessCheckData): Promise<boolean>;
-export async function checkIfProcessExistsByName(data: BatchProcessCheckData): Promise<boolean[]>;
 export async function checkIfProcessExistsByName(
-  data: ProcessCheckData,
-): Promise<boolean | boolean[]> {
+  data: SingleProcessCheckData,
+): Promise<boolean | { error: UserError }>;
+export async function checkIfProcessExistsByName(
+  data: BatchProcessCheckData,
+): Promise<boolean[] | { error: UserError }>;
+export async function checkIfProcessExistsByName(data: ProcessCheckData) {
   try {
-    const { ability } = await getCurrentEnvironment(data.spaceId);
+    const currentEnvironment = await getCurrentEnvironment(data.spaceId);
+    if (currentEnvironment.isErr()) {
+      return userError(getErrorMessage(currentEnvironment.error));
+    }
+    const { ability } = currentEnvironment.value;
 
     if (data.batch === true) {
-      const processesWithFolderIds = await Promise.all(
-        data.processes.map(async (process) => ({
-          name: process.name,
-          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
-        })),
-      );
+      let rootFolderId: string | undefined = undefined;
+      const processesWithFolderIds = Result.combine(
+        await Promise.all(
+          data.processes.map(async (process) => {
+            let folderId = process.folderId;
 
-      return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
-        processesWithFolderIds,
+            if (!folderId) {
+              if (!rootFolderId) {
+                const rootFolder = await getRootFolder(data.spaceId, ability);
+                if (rootFolder.isErr()) return rootFolder;
+                rootFolderId = rootFolder.value.id;
+              }
+
+              folderId = rootFolderId;
+            }
+            return ok({
+              name: process.name,
+              folderId: folderId,
+            });
+          }),
+        ),
+      );
+      if (processesWithFolderIds.isErr()) {
+        return userError(getErrorMessage(processesWithFolderIds.error));
+      }
+
+      const result = await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
+        processesWithFolderIds.value,
         data.spaceId,
         data.userId,
       );
+      if (result.isErr()) return userError(getErrorMessage(result.error));
+
+      return result.value;
     } else {
-      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
-      return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
+      const rootFolder = await getRootFolder(data.spaceId, ability);
+      if (rootFolder.isErr()) return userError(getErrorMessage(rootFolder.error));
+
+      const folderId = data.folderId ?? rootFolder.value.id;
+      const result = await checkIfProcessAlreadyExistsForAUserInASpaceByName(
         data.processName,
         data.spaceId,
         data.userId,
         folderId,
       );
+      if (result.isErr()) return userError(getErrorMessage(result.error));
+
+      return result.value;
     }
   } catch (error) {
     console.log(error);

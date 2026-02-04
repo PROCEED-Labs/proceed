@@ -85,7 +85,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
 
   const inEditing = {
     ...(process.inEditingBy as any)?.find(
-      (e: any) => e.userId !== userId && e.lastPing + 15000 > Date.now(),
+      (e: any) => e.userId !== userId && e.timestamp + 15000 > Date.now(),
     ),
   };
 
@@ -109,7 +109,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
         modelerComponent={
           <Modeler
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as unknown as Process}
             folder={folder}
             versionName={selectedVersion?.name}
             inEditing={inEditing}
@@ -118,7 +118,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
         timelineComponent={
           <BPMNTimeline
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as unknown as Process}
           />
         }
       />

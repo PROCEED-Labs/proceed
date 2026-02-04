@@ -430,7 +430,7 @@ export async function moveProcess({
  * parsing the bpmn unnecessarily */
 export async function updateProcessMetaData(
   processDefinitionsId: string,
-  metaChanges: Prisma.ProcessUpdateInput,
+  metaChanges: Partial<Omit<ProcessMetadata, 'bpmn'>>,
 ) {
   try {
     const existingProcess = await checkIfProcessExists(processDefinitionsId);

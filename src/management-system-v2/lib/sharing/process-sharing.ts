@@ -1,7 +1,7 @@
 'use server';
 
 import jwt from 'jsonwebtoken';
-import { updateProcessMetaData } from '../data/processes';
+import { updateProcessShareInfo } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
@@ -28,7 +28,13 @@ export async function updateProcessGuestAccessRights(
   newMeta: ProcessGuestAccessRights,
   spaceId: string,
 ) {
-  await updateProcessMetaData(processId as string, spaceId, newMeta);
+  await updateProcessShareInfo(
+    processId as string,
+    newMeta.sharedAs,
+    newMeta.shareTimestamp,
+    newMeta.allowIframeTimestamp,
+    spaceId,
+  );
 }
 
 function generateProcessShareToken(payload: TokenPayload) {

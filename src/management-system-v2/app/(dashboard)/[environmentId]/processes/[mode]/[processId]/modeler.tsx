@@ -32,7 +32,7 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: Process;
   folder?: Folder;
-  inEditing?: { userId: string; name: string; lastPing: number };
+  inEditing?: { userId: string; name: string; timestamp: number };
 };
 
 const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: ModelerProps) => {

@@ -239,10 +239,12 @@ export const addProcesses = async (
   return newProcesses;
 };
 
-export const updateProcessMetaData = async (
+export const updateProcessShareInfo = async (
   definitionsId: string,
+  sharedAs: 'public' | 'protected' | undefined,
+  shareTimestamp: number | undefined,
+  allowIframeTimestamp: number | undefined,
   spaceId: string,
-  metaData: Prisma.ProcessUpdateInput,
 ) => {
   const error = await checkValidity(definitionsId, 'update', spaceId);
 

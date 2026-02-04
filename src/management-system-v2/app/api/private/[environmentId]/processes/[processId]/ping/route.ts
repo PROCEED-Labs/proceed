@@ -1,20 +1,17 @@
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getProcessMetaObjects } from '@/lib/data/legacy/_process';
-import { updateProcessMetaData } from '@/lib/data/processes';
+import { getProcess, updateProcessMetaData } from '@/lib/data/processes';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  {
-    params: { environmentId, processId },
-  }: { params: { environmentId: string; processId: string } },
+  { params }: { params: Promise<{ environmentId: string; processId: string }> },
 ) {
+  const { environmentId, processId } = await params;
   const { ability } = await getCurrentEnvironment(environmentId);
   const { userId } = await getCurrentUser();
 
-  const processMetaObjects: any = getProcessMetaObjects();
-  const process = processMetaObjects[processId];
+  const process = await getProcess(processId, environmentId);
 
   if (!process) {
     return new NextResponse(null, {
@@ -31,7 +28,7 @@ export async function POST(
   }
 
   updateProcessMetaData(processId, environmentId, {
-    inEditingBy: [{ userId, lastPing: Date.now() }],
+    inEditingBy: [{ userId, timestamp: Date.now() }],
   });
 
   return NextResponse.json({ success: true });

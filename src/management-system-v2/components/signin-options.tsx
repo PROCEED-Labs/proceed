@@ -270,43 +270,47 @@ export function SigninOptions({
             }}
           >
             {tabs.map((option, index) => {
-              const Wrapper = option.href ? Link : Fragment;
-
-              return (
-                <Wrapper key={index} href={option.href as any} passHref legacyBehavior>
-                  <AntDesignButton
+              const content = (
+                <AntDesignButton
+                  style={{
+                    flex: breakpoint.xs ? '' : '1 1 0', // evenly fill container
+                    height: 'auto', // Allow for vertical stretching
+                    minHeight: 'min-content',
+                    padding: '.5rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                    whiteSpace: 'normal',
+                    wordBreak: 'keep-all',
+                    minWidth: '22%', // -> 4 per row
+                  }}
+                  color={option.key === activeIndex ? 'primary' : 'default'}
+                  variant="outlined"
+                  onClick={() => {
+                    if (option.onClick) option.onClick();
+                    else if (!option.href) setActiveIndex(option.key);
+                  }}
+                >
+                  {option.icon}
+                  <Typography.Text
                     style={{
-                      flex: breakpoint.xs ? '' : '1 1 0', // evenly fill container
-                      height: 'auto', // Allow for vertical stretching
-                      minHeight: 'min-content',
-                      padding: '.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      overflow: 'hidden',
-                      whiteSpace: 'normal',
-                      wordBreak: 'keep-all',
-                      minWidth: '22%', // -> 4 per row
-                    }}
-                    color={option.key === activeIndex ? 'primary' : 'default'}
-                    variant="outlined"
-                    onClick={() => {
-                      if (option.onClick) option.onClick();
-                      else if (!option.href) setActiveIndex(option.key);
+                      textAlign: 'center',
+                      fontSize: '0.75rem',
                     }}
                   >
-                    {option.icon}
-                    <Typography.Text
-                      style={{
-                        textAlign: 'center',
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      {option.label}
-                    </Typography.Text>
-                  </AntDesignButton>
-                </Wrapper>
+                    {option.label}
+                  </Typography.Text>
+                </AntDesignButton>
+              );
+
+              return option.href ? (
+                <Link key={index} href={option.href as any} passHref legacyBehavior>
+                  {content}
+                </Link>
+              ) : (
+                <Fragment key={index}>{content}</Fragment>
               );
             })}
           </div>

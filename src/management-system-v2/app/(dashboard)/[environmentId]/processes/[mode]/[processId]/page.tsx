@@ -109,7 +109,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
         modelerComponent={
           <Modeler
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string } as unknown as Process}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
             folder={folder}
             versionName={selectedVersion?.name}
             inEditing={inEditing}
@@ -118,7 +118,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
         timelineComponent={
           <BPMNTimeline
             className={styles.Modeler}
-            process={{ ...process, bpmn: selectedVersionBpmn as string } as unknown as Process}
+            process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
           />
         }
       />

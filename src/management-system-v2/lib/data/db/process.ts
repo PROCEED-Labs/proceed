@@ -129,7 +129,7 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   };
 
   return convertedProcess as typeof convertedProcess & {
-    inEditingBy?: { id: string; task?: string }[];
+    inEditingBy?: { userId: string; timestamp?: number }[];
   };
 }
 

@@ -14,7 +14,11 @@ module.exports = (path) => {
 
     await db.saveHTMLString(definitionId, fileName, html);
 
-    return '';
+    return {
+      statusCode: 200,
+      mimeType: 'text/html',
+      response: html,
+    };
   });
 
   network.get(`${path}/:definitionId/user-tasks/:fileName`, { cors: true }, async (req) => {
@@ -38,5 +42,31 @@ module.exports = (path) => {
     const html = await db.getAllUserTasks(definitionId);
 
     return JSON.stringify(html);
+  });
+
+  network.put(`${path}/:definitionId/versions/:version/start-form`, { cors: true }, async (req) => {
+    const { definitionId, version } = req.params;
+    const { body } = req;
+    const { html } = body;
+
+    await db.saveStartFormString(definitionId, version, html);
+
+    return {
+      statusCode: 200,
+      mimeType: 'text/html',
+      response: html,
+    };
+  });
+
+  network.get(`${path}/:definitionId/versions/:version/start-form`, { cors: true }, async (req) => {
+    const { definitionId, version } = req.params;
+
+    const html = await db.getStartForm(definitionId, version);
+
+    return {
+      statusCode: 200,
+      mimeType: 'text/html',
+      response: html,
+    };
   });
 };

@@ -4,9 +4,12 @@ import jwt from 'jsonwebtoken';
 import { updateProcessMetaData } from '../data/processes';
 import { headers } from 'next/headers';
 import { Environment } from '../data/environment-schema';
-import { getUserOrganizationEnvironments, getEnvironmentById } from '@/lib/data/DTOs';
-import { env } from '@/lib/env-vars';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
 import { asyncMap } from '../helpers/javascriptHelpers';
+import Ability from '../ability/abilityHelper';
+import { UserErrorType, userError } from '../user-error';
+import { env } from '../ms-config/env-vars';
 
 export interface TokenPayload {
   processId: string | string[];
@@ -39,34 +42,43 @@ export async function generateSharedViewerUrl(
   version?: string,
   settings?: string[],
 ) {
-  const token = generateProcessShareToken(payload);
+  try {
+    if (payload.embeddedMode && !version)
+      return userError('A version is required for embedded mode', UserErrorType.ConstraintError);
 
-  const header = headers();
-  const host = header.get('host');
-  const scheme = header.get('referer')?.split('://')[0];
+    const token = generateProcessShareToken(payload);
 
-  const baseUrl = `${scheme}://${host}`;
-  let url = `${baseUrl}/shared-viewer?token=${token}`;
+    const header = await headers();
+    const host = header.get('host');
+    const scheme = header.get('referer')?.split('://')[0];
 
-  if (version) {
-    url += `&version=${version}`;
+    const baseUrl = `${scheme}://${host}`;
+    let url = `${baseUrl}/shared-viewer?token=${token}`;
+
+    if (version) {
+      url += `&version=${version}`;
+    }
+
+    if (settings?.length) {
+      settings.forEach((option) => {
+        url += `&settings=${option}`;
+      });
+    }
+
+    return url;
+  } catch (e) {
+    return userError('Something went wrong');
   }
-
-  if (settings?.length) {
-    settings.forEach((option) => {
-      url += `&settings=${option}`;
-    });
-  }
-
-  return url;
 }
 
-export async function getAllUserWorkspaces(userId: string) {
-  const userEnvironments: Environment[] = [await getEnvironmentById(userId)];
+export async function getAllUserWorkspaces(userId: string, ability?: Ability) {
+  // if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
+
+  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
-  const orgEnvironments = await asyncMap(userOrgEnvs, (environmentId) =>
+  const orgEnvironments = (await asyncMap(userOrgEnvs, (environmentId) =>
     getEnvironmentById(environmentId),
-  );
+  )) as Environment[];
 
   userEnvironments.push(...orgEnvironments);
   return userEnvironments;

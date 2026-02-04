@@ -22,7 +22,7 @@ const fastParser = require('fast-xml-parser');
 async function getRequiredProcessFragments(bpmnObj) {
   const deployMethod = await getDeploymentMethod(bpmnObj);
 
-  let requiredFragmentInfo = { html: [], imports: [], images: [] };
+  let requiredFragmentInfo = { html: [], imports: [], images: [], scripts: [] };
 
   const flowElements = await getAllBpmnFlowElements(bpmnObj);
   const flowNodes = flowElements.filter((node) => node.$type !== 'bpmn:SequenceFlow');
@@ -63,11 +63,13 @@ async function getRequiredProcessFragments(bpmnObj) {
       [],
     );
 
-    requiredFragmentInfo.html = getUserTasksToKnow(locallyExecuted);
+    requiredFragmentInfo.scripts = getScriptsToKnow(locallyExecuted);
+    requiredFragmentInfo.html = getHtmlToKnow(locallyExecuted);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, locallyExecuted);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(locallyExecuted);
   } else {
-    requiredFragmentInfo.html = getUserTasksToKnow(flowNodes);
+    requiredFragmentInfo.scripts = getScriptsToKnow(flowNodes);
+    requiredFragmentInfo.html = getHtmlToKnow(flowNodes);
     requiredFragmentInfo.imports = getImportsToKnow(bpmnObj, flowNodes);
     requiredFragmentInfo.images = getFlowElementImagesToKnow(flowNodes);
   }
@@ -76,14 +78,38 @@ async function getRequiredProcessFragments(bpmnObj) {
 }
 
 /**
- * Returns the required html data for all UserTasks inside the given list
+ * Returns the required script data for all script-tasks inside the given list
+ *
+ * @param {Array} flowNodesToKnow the list of flowNodes that might be executed on this machine
+ * @returns {string[]} an array containing information about all script files needed for the process
+ */
+function getScriptsToKnow(flowNodesToKnow) {
+  return flowNodesToKnow.reduce((curr, flowNode) => {
+    // only handle script tasks with a reference to an external file
+    if (flowNode.$type === 'bpmn:ScriptTask' && flowNode.fileName) {
+      const { fileName } = flowNode;
+
+      // TODO: maybe throw if neither a filename nor an inline script is defined
+
+      // prevent duplicate references to the same filename
+      if (!curr.includes(fileName)) {
+        curr.push(fileName);
+      }
+    }
+
+    return curr;
+  }, []);
+}
+
+/**
+ * Returns the required html data for all elements inside the given list
  *
  * Will throw if a user task contains no information about its execution
  *
  * @param {Array} flowNodesToKnow the list of flowNodes that might be executed on this machine
  * @returns {string[]} an array containing information about all html files needed for the process
  */
-function getUserTasksToKnow(flowNodesToKnow) {
+function getHtmlToKnow(flowNodesToKnow) {
   return flowNodesToKnow.reduce((curr, flowNode) => {
     // user tasks that use 5thIndustry don't need html
     if (flowNode.$type === 'bpmn:UserTask' && flowNode.implementation !== '5thIndustry') {
@@ -98,6 +124,26 @@ function getUserTasksToKnow(flowNodesToKnow) {
       // prevent duplicate references to the same filename
       if (!curr.includes(fileName)) {
         curr.push(fileName);
+      }
+    } else if (
+      flowNode.$type === 'bpmn:StartEvent' &&
+      (!flowNode.eventDefinitions || !flowNode.eventDefinitions.length)
+    ) {
+      // check if there is a start form when encountering non-typed start events
+      // find the process element
+      let element = flowNode;
+      while (element) {
+        if (element.$type === 'bpmn:Process') break;
+        element = element.$parent;
+      }
+
+      // check for the start form definition and add it if it exists and was not referenced before
+      if (
+        element &&
+        element.uiForNontypedStartEventsFileName &&
+        !curr.includes(element.uiForNontypedStartEventsFileName)
+      ) {
+        curr.push(element.uiForNontypedStartEventsFileName);
       }
     }
 

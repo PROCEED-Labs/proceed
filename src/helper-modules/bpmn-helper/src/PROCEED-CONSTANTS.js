@@ -62,12 +62,20 @@ function generateBpmnId(prefix) {
   }
 }
 
+function generateStartFormFileName() {
+  return generateBpmnId('Process_Start_');
+}
+
 /**
  * Generates the 'fileName' attribute string of a PROCEED UserTask
  * @returns A new 'filename' value
  */
 function generateUserTaskFileName() {
   return generateBpmnId('User_Task_');
+}
+
+function generateScriptTaskFileName() {
+  return generateBpmnId('Script_Task_');
 }
 
 function generateProcessId() {
@@ -97,6 +105,13 @@ function initXml(
   processId = `Process_${generateBpmnId()}`,
   startEventId = `StartEvent_${generateBpmnId()}`,
 ) {
+  /* If we decide to reintroduce resources: */
+  // <resource id="resource_user" name="User">
+  //     <resourceParameter id="user_id" isRequired="true" name="id"/>
+  //   </resource>
+  //   <resource id="resource_role" name="Role">
+  //     <resourceParameter id="role_id" isRequired="true" name="id"/>
+  //   </resource>
   const bpmn = `
   <?xml version="1.0" encoding="UTF-8"?>
   <definitions
@@ -106,7 +121,7 @@ function initXml(
       xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
       xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
   >
-    <Process id="${processId}" name="PROCEED Main Process" processType="Private" isExecutable="true">
+    <Process id="${processId}" name="PROCEED Main Process" processType="Private" isExecutable="false">
       <startEvent id="${startEventId}"/>
     </Process>
     <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -127,7 +142,9 @@ module.exports = {
   generateBpmnId,
   generateDefinitionsId,
   generateProcessId,
+  generateStartFormFileName,
   generateUserTaskFileName,
+  generateScriptTaskFileName,
   getUserTaskImplementationString,
   generateTargetNamespace,
   initXml,

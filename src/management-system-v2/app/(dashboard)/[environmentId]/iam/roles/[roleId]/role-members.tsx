@@ -5,9 +5,12 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import UserList, { UserListProps } from '@/components/user-list';
 import { App, Button, Modal, Tooltip } from 'antd';
 import ConfirmationButton from '@/components/confirmation-button';
-import { addRoleMappings, deleteRoleMappings } from '@/lib/data/role-mappings';
+import {
+  addRoleMappings,
+  deleteRoleMappings as serverDeleteRoleMappings,
+} from '@/lib/data/role-mappings';
 import { useRouter } from 'next/navigation';
-import { Role } from '@/lib/data/role-schema';
+import { Role, RoleWithMembers } from '@/lib/data/role-schema';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
@@ -40,6 +43,7 @@ const AddUserModal: FC<{
           if (clearIds) clearIds();
           router.refresh();
         },
+        errorDisplay: 'notification',
         app,
       });
     });
@@ -89,7 +93,7 @@ const AddUserModal: FC<{
 
 const RoleMembers: FC<{
   role: Role;
-  usersInRole: AuthenticatedUser[];
+  usersInRole: RoleWithMembers['members'];
   usersNotInRole: AuthenticatedUser[];
 }> = ({ role, usersInRole, usersNotInRole }) => {
   const [addUserModalOpen, setAddUserModalOpen] = useState(false);
@@ -98,12 +102,12 @@ const RoleMembers: FC<{
   const environment = useEnvironment();
   const app = App.useApp();
 
-  async function deleteMembers(userIds: string[], clearIds: () => void) {
+  async function deleteRoleMappings(userIds: string[], clearIds: () => void) {
     setLoading(true);
 
     await wrapServerCall({
       fn: () =>
-        deleteRoleMappings(
+        serverDeleteRoleMappings(
           environment.spaceId,
           userIds.map((userId) => ({
             roleId: role.id,
@@ -114,6 +118,7 @@ const RoleMembers: FC<{
         router.refresh();
         clearIds();
       },
+      errorDisplay: 'notification',
       app,
     });
 
@@ -148,7 +153,7 @@ const RoleMembers: FC<{
                 <ConfirmationButton
                   title="Remove Member"
                   description="Are you sure you want to remove this member?"
-                  onConfirm={() => deleteMembers([id], clearSelected)}
+                  onConfirm={() => deleteRoleMappings([id], clearSelected)}
                   buttonProps={{
                     style: { opacity: hoveredId == id && selectedRowKeys.length === 0 ? 1 : 0 },
                     icon: <DeleteOutlined />,
@@ -164,7 +169,7 @@ const RoleMembers: FC<{
             <ConfirmationButton
               title="Remove Members"
               description="Are you sure you want to remove the selected members?"
-              onConfirm={() => deleteMembers(ids, clearIds)}
+              onConfirm={() => deleteRoleMappings(ids, clearIds)}
               buttonProps={{
                 icon: <DeleteOutlined />,
                 type: 'text',

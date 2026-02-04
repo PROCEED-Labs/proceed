@@ -5,8 +5,10 @@ const {
   getMilestonesFromElementById,
   getMetaData,
   convertISODurationToMiliseconds,
-  getPerformersFromElementById,
+  getPotentialOwnersFromElementById,
 } = require('@proceed/bpmn-helper');
+
+const { db } = require('@proceed/distribution');
 
 const { enable5thIndustryIntegration } = require('../../../../../../FeatureFlags.js');
 
@@ -27,7 +29,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 
     const token = engine.getToken(instance.id, tokenId);
     const metaData = await getMetaData(bpmn, userTask.id);
-    const performers = await getPerformersFromElementById(bpmn, userTask.id);
+    const performers = await getPotentialOwnersFromElementById(userTask.id, bpmn);
 
     const startTime = token.currentFlowElementStartTime;
     let endTime = null;
@@ -80,6 +82,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
       currentFlowNodeProgress: { value: 0, manual: false },
       priority: metaData.defaultPriority || 1,
       performers,
+      actualOwner: [],
     });
 
     const initializedMilestones = (await getMilestonesFromElementById(bpmn, userTask.id)).reduce(
@@ -100,7 +103,7 @@ function onUserTask(engine, instance, tokenId, userTask) {
 function onCallActivity(engine, instance, tokenId, callActivity) {
   return new Promise(async (resolve) => {
     // get necessary process information about the process referenced by the callActivity
-    const { definitionId, version } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
+    const { definitionId, versionId } = getTargetDefinitionsAndProcessIdForCallActivityByObject(
       getRootFromElement(callActivity),
       callActivity.id,
     );
@@ -114,7 +117,7 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
     // make sure that the imported process is started with the correct version and the current instance variables
     await engine._management.createInstance(
       definitionId,
-      version,
+      versionId,
       instance.getVariables(),
       undefined,
       // onStarted callBack: log that we started an instance of a callActivity process and put a reference to the instance into the token
@@ -124,6 +127,26 @@ function onCallActivity(engine, instance, tokenId, callActivity) {
         resolve(true);
       },
     );
+  });
+}
+
+function onScriptTask(engine, instance, tokenId, scriptTask) {
+  return new Promise(async (resolve) => {
+    engine._log.info({
+      msg: `A new Script Task was encountered, InstanceId = ${instance.id}`,
+      instanceId: instance.id,
+    });
+
+    instance.updateToken(tokenId, { currentFlowNodeProgress: { value: 0, manual: false } });
+
+    // if the script task references a file instead of having inline script information inject the script information from the file
+    if (scriptTask.$attrs['proceed:fileName'] && !scriptTask.script) {
+      const script = await db.getScript(engine.definitionId, scriptTask.$attrs['proceed:fileName']);
+      scriptTask.script = script;
+      scriptTask.scriptFormat = 'application/javascript';
+    }
+
+    resolve();
   });
 }
 
@@ -161,7 +184,7 @@ module.exports = {
       }
 
       if (flowNode.$type === 'bpmn:ScriptTask') {
-        instance.updateToken(tokenId, { currentFlowNodeProgress: { value: 0, manual: false } });
+        await onScriptTask(engine, instance, tokenId, flowNode);
       }
 
       return true;

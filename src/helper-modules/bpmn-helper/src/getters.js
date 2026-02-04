@@ -64,27 +64,28 @@ async function getDefinitionsName(bpmn) {
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
+ * @returns {(Promise.<{versionId?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string }>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 async function getDefinitionsVersionInformation(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  if (bpmnObj.version && isNaN(bpmnObj.version)) {
-    throw new Error('The process version has to be a number (time in ms since 1970)');
-  }
+  // if (bpmnObj.versionId && isNaN(bpmnObj.versionId)) {
+  //   throw new Error('The process version has to be a number (time in ms since 1970)');
+  // }
 
-  if (!bpmnObj.version) {
+  if (!bpmnObj.processVersionId) {
     return {
-      versionBasedOn: bpmnObj.versionBasedOn,
+      versionBasedOn: bpmnObj.processVersionBasedOn,
     };
   }
 
   return {
-    version: parseInt(bpmnObj.version),
-    name: bpmnObj.versionName,
-    description: bpmnObj.versionDescription,
-    versionBasedOn: bpmnObj.versionBasedOn,
+    versionId: bpmnObj.processVersionId,
+    name: bpmnObj.processVersionName,
+    description: bpmnObj.processVersionDescription,
+    versionBasedOn: bpmnObj.processVersionBasedOn,
+    versionCreatedOn: bpmnObj.processVersionCreatedOn,
   };
 }
 
@@ -132,7 +133,12 @@ function getProcessDocumentationByObject(processObject) {
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
  * @property {string} [targetNamespace] - definitions targetNamespace
- */
+ * @property {string} [creatorName] - definitions creatorName
+ * @property {string} [userDefinedId] - definitions userDefinedId
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 
 /**
  * Gets the 'definitions' root element from the given BPMN XML
@@ -149,6 +155,10 @@ async function getDefinitionsInfos(bpmn) {
     exporter: bpmnObj.exporter,
     exporterVersion: bpmnObj.exporterVersion,
     targetNamespace: bpmnObj.targetNamespace,
+    creatorName: bpmnObj.creatorName,
+    userDefinedId: bpmnObj.userDefinedId,
+    creatorUsername: bpmnObj.creatorUsername,
+    creationDate: bpmnObj.creationDate,
   };
 }
 
@@ -184,6 +194,23 @@ async function getElementMachineMapping(bpmn) {
 }
 
 /**
+ * Get the file names for the start forms of all processes,
+ * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [processId: string]: string}> } an object (a map) with all processIds as keys
+ */
+async function getStartFormFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
+  const mapping = {};
+  processes.forEach((p) => {
+    mapping[p.id] = p.uiForNontypedStartEventsFileName;
+  });
+  return mapping;
+}
+
+/**
  * Get all fileName for all userTasks,
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
@@ -204,6 +231,25 @@ async function getUserTaskFileNameMapping(bpmn) {
 }
 
 /**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+async function getScriptTaskFileNameMapping(bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const scriptTasks = getElementsByTagName(bpmnObj, 'bpmn:ScriptTask');
+  const mapping = {};
+  scriptTasks.forEach((task) => {
+    mapping[task.id] = {
+      fileName: task.fileName,
+    };
+  });
+  return mapping;
+}
+
+/**
  * Creates a map (object) that contains the 'fileName' (key) and UserTask-IDs (value)
  * for every UserTask in a BPMN process.
  *
@@ -215,6 +261,7 @@ async function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn) {
   const userTasks = getElementsByTagName(bpmnObj, 'bpmn:UserTask');
   const mapping = {};
   userTasks.forEach((task) => {
+    if (!task.fileName) return;
     if (mapping[task.fileName]) {
       mapping[task.fileName].push(task.id);
     } else {
@@ -396,7 +443,7 @@ async function getChildrenFlowElements(bpmn, elementId) {
  *
  * @param {object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
  * @param {string} callActivityId - The id of the callActivity
- * @returns { { definitionId: string, processId: string, version: number } } An Object with the definition, process id and version
+ * @returns { { definitionId: string, processId: string, versionId: string } } An Object with the definition, process id and version
  * @throws An Error if the callActivity id does not exist
  * @throws If the callActivity has no 'calledElement' attribute
  * @throws If the targetNamespace for a callActivity could not be found
@@ -443,7 +490,8 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
     );
   }
 
-  const version = importElement.version || importElement.$attrs['proceed:version'];
+  const version =
+    importElement.processVersionId || importElement.$attrs['proceed:processVersionId'];
 
   if (!version) {
     throw new Error(
@@ -454,7 +502,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
   return {
     definitionId: importElement.location,
     processId,
-    version: version && parseInt(version),
+    versionId: version,
   };
 }
 
@@ -463,7 +511,7 @@ function getTargetDefinitionsAndProcessIdForCallActivityByObject(bpmnObj, callAc
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, versionId: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 async function getDefinitionsAndProcessIdForEveryCallActivity(bpmn, dontThrow = false) {
@@ -586,12 +634,12 @@ async function getProcessConstraints(bpmn) {
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string, userDefinedId: string }> } object containing the identifying information
  */
 async function getIdentifyingInfos(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
 
-  const { id, originalId, name } = await getDefinitionsInfos(bpmnObj);
+  const { id, originalId, name, userDefinedId } = await getDefinitionsInfos(bpmnObj);
 
   const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
@@ -604,7 +652,7 @@ async function getIdentifyingInfos(bpmn) {
     description = '';
   }
 
-  return { id, originalId, processIds, name, description };
+  return { id, originalId, processIds, name, description, userDefinedId };
 }
 
 /**
@@ -729,6 +777,77 @@ async function getMilestonesFromElementById(bpmn, elementId) {
   const element = getElementById(bpmnObj, elementId);
 
   return getMilestonesFromElement(element);
+}
+
+/**
+ * An object containing information about a variable that might exist during the instance of a process
+ *
+ * @typedef Variable
+ *
+ * @type {object}
+ * @property {string} name - variable name
+ * @property {string} [description] - a description of the variable
+ * @property {string} dataType - the type of the value of the variable
+ * @property {string} [textFormat] - expected formatting for variables with type text (e.g. url,
+ * email, ...)
+ * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
+ * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
+ * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+ * @property {boolean} [const] - if the variable can be reassigned after having been set once
+ */
+
+/**
+ * Parses the variables from a bpmn-moddle element (variables are only expected to be defined on process elements)
+ *
+ * @param {object} element
+ * @returns {Variable[]} array with all variables
+ */
+function getVariablesFromElement(element) {
+  let variables = [];
+  if (element && element.extensionElements && Array.isArray(element.extensionElements.values)) {
+    const variablesElement = element.extensionElements.values.find(
+      (child) => child.$type == 'proceed:Variables',
+    );
+    if (variablesElement && variablesElement.variable) {
+      variables = variablesElement.variable.map(
+        ({
+          name,
+          description,
+          dataType,
+          textFormat,
+          defaultValue,
+          requiredAtInstanceStartup,
+          enum: e,
+          const: c,
+        }) => ({
+          name,
+          description,
+          dataType,
+          textFormat,
+          defaultValue,
+          requiredAtInstanceStartup,
+          enum: e,
+          const: c,
+        }),
+      );
+    }
+  }
+
+  return variables;
+}
+
+/**
+ * Get the variables for given element id (variables are only expected to be defined on process elements)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {Promise<Variable[]>} array with all variables
+ */
+async function getVariablesFromElementById(bpmn, elementId) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const element = getElementById(bpmnObj, elementId);
+
+  return getVariablesFromElement(element);
 }
 
 /**
@@ -1070,6 +1189,39 @@ function getPerformersFromElement(element) {
 }
 
 /**
+ * Returrns the roles and users that may be owners of a specific element
+ *
+ * @param {string} elementId id of the element to get the potential owners for
+ * @param {(string|object)} bpmn the bpmn containing the element
+ * @returns {{ user: string[], roles: string[] }} the potential owners of the element
+ */
+async function getPotentialOwnersFromElementById(elementId, bpmn) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+
+  let user = [];
+  let roles = [];
+
+  const element = getElementById(bpmnObj, elementId);
+
+  element?.resources?.forEach((resource) => {
+    if (
+      resource.$type === 'bpmn:PotentialOwner' &&
+      resource.resourceAssignmentExpression?.expression?.body
+    ) {
+      try {
+        const { user: _user, roles: _roles } = JSON.parse(
+          resource.resourceAssignmentExpression.expression.body,
+        );
+        user = user.concat(_user);
+        roles = roles.concat(_roles);
+      } catch (err) {}
+    }
+  });
+
+  return { user, roles };
+}
+
+/**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration
  * @returns {{years: number | null, months: number | null, days: number | null, hours: number | null, minutes: number | null, seconds: number | null}} Object with number of years, months, days, hours, minutes and seconds
@@ -1155,10 +1307,16 @@ module.exports = {
   getProcessConstraints,
   getProcessDocumentation,
   getProcessDocumentationByObject,
+  getVariablesFromElement,
+  getVariablesFromElementById,
+  getStartFormFileNameMapping,
 
   // userTasks
   getUserTaskFileNameMapping,
   getAllUserTaskFileNamesAndUserTaskIdsMapping,
+
+  // scriptTasks
+  getScriptTaskFileNameMapping,
 
   // sub-process related
   getSubprocess,
@@ -1187,6 +1345,7 @@ module.exports = {
   getLocationsFromElement,
   getPerformersFromElement,
   getPerformersFromElementById,
+  getPotentialOwnersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,
 };

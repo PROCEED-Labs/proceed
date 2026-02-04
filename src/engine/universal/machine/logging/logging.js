@@ -6,6 +6,8 @@ const rotationUtils = require('./src/utils/logRotationUtils');
 const startRotation = require('./src/rotation/rotation');
 const routes = require('./src/routes/logRoutes');
 
+/** @typedef {{moduleName:string;  definitionId: string; consoleOnly: boolean;}} LoggerConfObject */
+
 let singletonInstance;
 
 /**
@@ -22,6 +24,7 @@ class Logging {
     this.doneInitializing = undefined;
     // See @proceed/system.console
     console.constructor._setLoggingModule(this);
+    this.logCallbacks = new Set();
   }
 
   /**
@@ -65,13 +68,29 @@ class Logging {
     routes(this);
   }
 
+  /** @param {(obj: LoggerConfObject, log:any)=>void} callback  */
+  registerCallback(callback) {
+    return this.logCallbacks.add(callback);
+  }
+
+  /** @param {(obj: LoggerConfObject, log:string)=>void} callback  */
+  unregisterCallback(callback) {
+    return this.logCallbacks.delete(callback);
+  }
+
   /**
    * Factory method creating a logger
-   * @param {object} confObject An object containing all configuration parameters for the logger
+   * @param {LoggerConfObject } confObject An object containing all configuration parameters for the logger
    * @returns a logger
    */
   getLogger(confObject) {
-    const logger = loggerLoader(confObject, this.init.bind(this));
+    const logger = loggerLoader(confObject, this.init.bind(this), [
+      (msg) => {
+        for (const callback of this.logCallbacks) {
+          callback(confObject, msg);
+        }
+      },
+    ]);
     return logger;
   }
 

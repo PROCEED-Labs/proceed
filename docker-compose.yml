@@ -1,78 +1,53 @@
-# use in production environment
-
-version: '3.8'
-
 services:
-  management_system:
-    image: proceed/ms-server:${MS_TAG:-latest}
-    container_name: proceed-ms-server
-    volumes:
-      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/ssl:/opt/proceed-ms-server/ssl
-      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Processes:/opt/proceed-ms-server/Processes
-      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Storage:/opt/proceed-ms-server/Storage
-      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Engine:/opt/proceed-ms-server/Engine
-      - ${MS_BIND_MOUNT_DIRECTORY:-/opt/proceed-ms-server}/Config:/opt/proceed-ms-server/Config
-    logging:
-      driver: ${MS_LOG_DRIVER:-local}
-    cap_add:
-      - SYS_ADMIN
+  proceed_standalone_management_system:
+    image: proceed/ms-server:standalone
+    container_name: proceed_standalone_management_system
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
+      - NEXTAUTH_URL=http://localhost:3002
+      - NEXTAUTH_SECRET=gVRJMFKtjZmfNuLt3ZoxWTMujSwkig
+      - PROCEED_PUBLIC_IAM_ACTIVE=true
+      - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
+      - PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true
+      - PROCEED_PUBLIC_GANTT_ACTIVE=true
+      - PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE=false
+      - PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE=true
+    ports:
+      - '3002:33081'
     depends_on:
-      - redis
-      - opa
-    ports:
-      - 80:80
-      - ${MS_HTTPS_PORT:-33080}:33080
-      - 33081:33081
-    networks:
-      proceed:
-
-  redis:
-    image: 'redis:alpine'
-    container_name: proceed-redis
-    command: redis-server /usr/local/etc/redis/redis.conf
-    ports:
-      - 6379
+      - proceed_standalone_postgres_database
     volumes:
-      - session_storage:/data
-      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - proceed_standalone_management-system_data:/app/volume
     networks:
-      proceed:
+      - proceed-standalone-network
 
-  opa:
-    image: openpolicyagent/opa:0.39.0
-    container_name: proceed-opa
-    ports:
-      - 8181
-    command:
-      - 'run'
-      - '--server'
-      - '--watch'
-      - 'data.json'
-      - '--config-file=/opt/opa/config.yaml'
+  proceed_standalone_postgres_database:
+    image: postgres:17.7
+    container_name: proceed_standalone_postgres_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: proceed_db
+      POSTGRES_USER: proceed
+      POSTGRES_PASSWORD: proceed
     volumes:
-      - ./opa:/opt/opa
-      - ./data.json:/data.json
+      - proceed_standalone_postgres_db:/var/lib/postgresql/data
     networks:
-      proceed:
+      - proceed-standalone-network
 
-  engine:
-    image: proceed/engine:${ENGINE_TAG:-latest}
-    container_name: 'proceed-engine'
-    volumes:
-      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/data_files:/opt/proceed-engine/data_files
-      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/capabilities:/opt/proceed-engine/capabilities
-      - ${ENGINE_BIND_MOUNT_DIRECTORY:-/opt/proceed-engine}/config.json:/opt/proceed-engine/config.json
-    logging:
-      driver: ${ENGINE_LOG_DRIVER:-local}
+  proceed_standalone_engine:
+    image: proceed/engine:edge
+    container_name: proceed_standalone_engine
+    restart: unless-stopped
     ports:
-      - 33029:33029
+      - '33029:33029'
     networks:
-      proceed:
+      - proceed-standalone-network
 
 volumes:
-  session_storage:
-    name: session_storage
+  proceed_standalone_postgres_db:
+  proceed_standalone_management-system_data:
 
 networks:
-  proceed:
-    name: proceed
+  proceed-standalone-network:
+    name: proceed-standalone-network

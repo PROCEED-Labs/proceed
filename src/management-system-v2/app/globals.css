@@ -132,3 +132,65 @@
     display: none !important;
   }
 }
+
+.proceed-robot-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'a';
+}
+
+.proceed-screen-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'b';
+}
+
+.proceed-user-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'c';
+  font-size: 24px;
+}
+
+.proceed-user-icon.context-menu-icon::before {
+  font-size: 20px;
+}
+
+.proceed-server-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'd';
+}
+
+.proceed-laptop-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'e';
+}
+
+.proceed-server-with-screen-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'f';
+}
+
+.proceed-text-annotation-icon::before {
+  font-family: var(--custom-icon-font);
+  content: 'g';
+  width: 1em;
+  font-size: 0.95em;
+}
+
+.orange:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: orange !important;
+}
+
+.white:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: white !important;
+}
+
+.green:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #dcffd6ff !important;
+}
+
+.yellow:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #f2ffd6 !important;
+}
+
+.red:not(.djs-connection) .djs-visual > :nth-child(1) {
+  fill: #ffd3d3ff !important;
+}

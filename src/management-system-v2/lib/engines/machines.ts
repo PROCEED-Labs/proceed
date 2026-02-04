@@ -1,19 +1,15 @@
-// TODO: refine type
-type MachineStatus = {
-  discovered?: true;
-  saved?: true;
-  status?: 'DISCONNECTED' | 'CONNECTED';
-};
+type Discriminator = { spaceEngine?: undefined } | { spaceEngine: true };
 
-export type Machine = {
-  id: string;
-  ip: string;
-  port: number;
-  hostname?: string;
-  name?: string;
-} & MachineStatus;
+export type MqttEngine = { type: 'mqtt'; id: string; brokerAddress: string } & Discriminator;
+export type HttpEngine = { type: 'http'; id: string; address: string } & Discriminator;
+export type Engine = MqttEngine | HttpEngine;
 
-// TODO: implement discovery
-export async function getMachines() {
-  return [{ id: 'id', ip: 'localhost', port: 33029, status: 'CONNECTED' }] as Machine[];
+export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
+export type ProceedEngine = Extract<Engine, { spaceEngine?: undefined }>;
+
+export function isHttpEngine(engine: Engine): engine is HttpEngine {
+  return engine.type === 'http';
+}
+export function isMqttEngine(engine: Engine): engine is MqttEngine {
+  return engine.type === 'mqtt';
 }

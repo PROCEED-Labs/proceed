@@ -6,13 +6,14 @@ import {
   deleteSystemAdmin,
   getSystemAdminByUserId,
   getSystemAdmins,
-} from '@/lib/data/DTOs';
-import { getUserById, getUsers } from '@/lib/data/DTOs';
+} from '@/lib/data/db/iam/system-admins';
+import { getUserById, getUsers } from '@/lib/data/db/iam/users';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { UserErrorType, userError } from '@/lib/user-error';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import SystemAdminsTable from './admins-table';
 import { SystemAdminCreationInput } from '@/lib/data/system-admin-schema';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 async function deleteAdmins(userIds: string[]) {
   'use server';
@@ -81,6 +82,9 @@ async function getNonAdminUsers(page: number = 1, pageSize: number = 10) {
 export type getNonAdminUsers = typeof getNonAdminUsers;
 
 export default async function ManageAdminsPage() {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
+
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
   const adminData = await getSystemAdminByUserId(user.userId);
@@ -110,3 +114,5 @@ export default async function ManageAdminsPage() {
     </Content>
   );
 }
+
+export const dynamic = 'force-dynamic';

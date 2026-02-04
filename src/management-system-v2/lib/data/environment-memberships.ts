@@ -1,44 +1,42 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, userError } from '../user-error';
 import { z } from 'zod';
-import { env } from '@/lib/env-vars';
 import { sendEmail } from '../email/mailer';
 import renderOrganizationInviteEmail from '../organization-invite-email';
 import { OrganizationEnvironment } from './environment-schema';
-import { generateInvitationToken } from '../invitation-tokens';
+import { Invitation, acceptInvitation, generateInvitationToken } from '../invitation-tokens';
 import { toCaslResource } from '../ability/caslAbility';
-import { RoleMapping } from './legacy/iam/role-mappings';
-import { enableUseDB } from 'FeatureFlags';
-import { TMembershipsModule, TUsersModule } from './module-import-types-temp';
-import { getUserByEmail, getRoleById, getEnvironmentById, isMember } from './DTOs';
+import { getRoleById } from '@/lib/data/db/iam/roles';
+import { addRoleMappings, type RoleMapping } from '@/lib/data/db/iam/role-mappings';
+import {
+  addUser,
+  getUserByEmail,
+  getUserByUsername,
+  setUserPassword,
+} from '@/lib/data/db/iam/users';
+import { getEnvironmentById } from '@/lib/data/db/iam/environments';
+import { addMember, isMember, removeMember } from '@/lib/data/db/iam/memberships';
+import { env } from '../ms-config/env-vars';
+import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
+import { hashPassword } from '../password-hashes';
+import db from '@/lib/data/db';
 
-let addMember: TMembershipsModule['addMember'];
-let removeMember: TMembershipsModule['removeMember'];
-// Function to load modules based on feature flag
-const loadModules = async () => {
-  const [membershipModuleImport] = await Promise.all([
-    enableUseDB ? import('./db/iam/memberships') : import('./legacy/iam/memberships'),
-  ]);
-
-  removeMember = membershipModuleImport.removeMember;
-};
-
-loadModules().catch(console.error);
-
-const EmailListSchema = z.array(z.string().email());
+const EmailListSchema = z.array(
+  z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
+);
 
 /** 30 days in ms */
 const invitationExpirationTime = 30 * 24 * 60 * 60 * 1000;
 
 export async function inviteUsersToEnvironment(
   environmentId: string,
-  invitedEmailsInput: string[],
+  invitedUsersIdentifiers: ({ email: string } | { username: string })[],
   roleIds?: string[],
 ) {
   try {
-    const invitedEmails = EmailListSchema.parse(invitedEmailsInput);
+    const invitedEmails = EmailListSchema.parse(invitedUsersIdentifiers);
 
     const { ability } = await getCurrentEnvironment(environmentId);
 
@@ -53,6 +51,7 @@ export async function inviteUsersToEnvironment(
 
     const filteredRoles = roleIds?.filter(async (roleId) => {
       return (
+        ability.can('admin', 'All') &&
         ability.can('manage', toCaslResource('Role', await getRoleById(roleId))) &&
         ability.can(
           'create',
@@ -62,21 +61,44 @@ export async function inviteUsersToEnvironment(
       );
     });
 
-    for (const invitedEmail of invitedEmails) {
-      const invitedUser = await getUserByEmail(invitedEmail);
+    for (const invitedUserIdentifier of invitedEmails) {
+      let invitedUser: User | null = null;
+      let invitedUserEmail: string | null | undefined = null;
+
+      if ('email' in invitedUserIdentifier) {
+        invitedUser = await getUserByEmail(invitedUserIdentifier.email);
+      } else if ('username' in invitedUserIdentifier) {
+        invitedUser = await getUserByUsername(invitedUserIdentifier.username);
+        // If there is no user with the given username there is nothing we can do
+        if (!invitedUser) continue;
+      }
+
+      // NOTE: technically not possible as guests cannot have an email or username
+      if (invitedUser?.isGuest) continue;
+
       if (invitedUser && (await isMember(environmentId, invitedUser.id))) continue;
 
+      if (invitedUser) {
+        invitedUserEmail = invitedUser.email;
+      } else if ('email' in invitedUserIdentifier) {
+        invitedUserEmail = invitedUserIdentifier.email;
+      }
+
       const expirationDate = new Date(Date.now() + invitationExpirationTime);
+      const invite: Invitation = {
+        spaceId: environmentId,
+        roleIds: filteredRoles,
+        ...(invitedUser ? { userId: invitedUser.id } : { email: invitedUserEmail! }),
+      };
 
-      const invitationToken = generateInvitationToken(
-        {
-          spaceId: environmentId,
-          roleIds: filteredRoles,
-          ...(invitedUser ? { userId: invitedUser.id } : { email: invitedEmail }),
-        },
-        expirationDate,
-      );
+      // TODO: we need to implement a way for users that don't have an email to accept invitations,
+      // instead of just adding them to the org
+      if (!invitedUserEmail) {
+        acceptInvitation(invite);
+        continue;
+      }
 
+      const invitationToken = generateInvitationToken(invite, expirationDate);
       const invitationEmail = renderOrganizationInviteEmail({
         acceptInviteLink: `${env.NEXTAUTH_URL}/accept-invitation?token=${invitationToken}`,
         expires: expirationDate,
@@ -84,7 +106,7 @@ export async function inviteUsersToEnvironment(
       });
 
       sendEmail({
-        to: invitedEmail,
+        to: invitedUserEmail,
         html: invitationEmail.html,
         text: invitationEmail.text,
         subject: `PROCEED: you've been invited to ${organization.name}`,
@@ -113,9 +135,65 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
       );
 
     for (const userId of userIds) {
-      removeMember(environmentId, userId, ability);
+      await removeMember(environmentId, userId, ability);
     }
   } catch (_) {
     return userError('Error removing users from environment');
+  }
+}
+
+const createUserDataSchema = AuthenticatedUserSchema.pick({
+  firstName: true,
+  lastName: true,
+  username: true,
+});
+export async function createUserAndAddToOrganization(
+  organizationId: string,
+  {
+    password,
+    roles,
+    ...userDataInput
+  }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(organizationId);
+
+    // Check if the user is an admin
+    if (!ability.can('admin', 'All')) {
+      return userError(
+        'You do not have permission to create users in this organization',
+        UserErrorType.PermissionError,
+      );
+    }
+
+    const userDataParsed = createUserDataSchema.parse(userDataInput);
+
+    let user: AuthenticatedUser;
+    await db.$transaction(async (tx) => {
+      // no need to check the if the user has permissions to create the role mappings since it's
+      // he's an admin
+      user = (await addUser(
+        { ...userDataParsed, isGuest: false, emailVerifiedOn: null },
+        tx,
+      )) as AuthenticatedUser;
+      const passwordHash = await hashPassword(password);
+      await setUserPassword(user.id, passwordHash, tx, true);
+
+      await addMember(organizationId, user.id, ability, tx);
+      await addRoleMappings(
+        roles.map((roleId) => ({
+          roleId,
+          environmentId: organizationId,
+          userId: user.id,
+        })),
+        ability,
+        tx,
+      );
+    });
+
+    return user!;
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return userError(message);
   }
 }

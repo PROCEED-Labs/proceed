@@ -1,7 +1,12 @@
 import jsZip from 'jszip';
 
-import { ProcessesExportData, ProcessExportData } from './export-preparation';
-import { getProcessFilePathName, downloadFile, getSVGFromBPMN, getImageDimensions } from './util';
+import { ProcessesExportData, ProcessExportData, ProcessExportOptions } from './export-preparation';
+import {
+  getProcessFilePathName,
+  getSVGFromBPMN,
+  getImageDimensions,
+  handleExportMethod,
+} from './util';
 
 /**
  * Executes the logic that adds the file for a specific process version/collapsed subprocess
@@ -22,7 +27,7 @@ async function addImageFile(
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
   isImport = false,
-  showOnlySelected?: boolean,
+  options: ProcessExportOptions,
   zipFolder?: jsZip | null,
   subprocessId?: string,
   subprocessName?: string,
@@ -31,7 +36,7 @@ async function addImageFile(
   const svg = await getSVGFromBPMN(
     versionData.bpmn!,
     subprocessId,
-    showOnlySelected ? versionData.selectedElements : undefined,
+    options.exportSelectionOnly ? versionData.selectedElements : undefined,
   );
 
   const blob = await generateBlobFromSvgString(svg);
@@ -58,7 +63,7 @@ async function addImageFile(
   if (zipFolder) {
     zipFolder.file(`${filename}.${filetype}`, blob);
   } else {
-    downloadFile(`${filename}.${filetype}`, blob);
+    return { filename: `${filename}.${filetype}`, blob };
   }
 }
 
@@ -81,23 +86,24 @@ async function handleProcessVersionExport(
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
   isImport = false,
-  showOnlySelected?: boolean,
+  options: ProcessExportOptions,
   zipFolder?: jsZip | null,
 ) {
   const versionData = processData.versions[version];
   // add the main process (version) file (layer with id === undefined) and collapsed subprocesses as additional files
   for (const { id: subprocessId, name: subprocessName } of versionData.layers) {
-    await addImageFile(
+    const blob = await addImageFile(
       processData,
       version,
       generateBlobFromSvgString,
       filetype,
       isImport,
-      showOnlySelected,
+      options,
       zipFolder,
       subprocessId,
       subprocessName,
     );
+    if (blob) return blob;
   }
 
   // recursively add imports as additional files into the same folder
@@ -111,7 +117,7 @@ async function handleProcessVersionExport(
         generateBlobFromSvgString,
         filetype,
         true,
-        showOnlySelected,
+        options,
         zipFolder,
       );
     }
@@ -123,7 +129,7 @@ async function exportImage(
   processData: ProcessExportData,
   generateBlobFromSvgString: (svg: string) => Promise<Blob>,
   filetype: string,
-  showOnlySelected?: boolean,
+  options: ProcessExportOptions,
   zipFolder?: jsZip | null,
 ) {
   // only export the versions that were explicitly selected for export inside the folder for the given process
@@ -132,16 +138,17 @@ async function exportImage(
     .map(([version]) => version);
 
   for (const version of nonImportVersions) {
-    await handleProcessVersionExport(
+    const blob = await handleProcessVersionExport(
       processesData,
       processData,
       version,
       generateBlobFromSvgString,
       filetype,
       false,
-      showOnlySelected,
+      options,
       zipFolder,
     );
+    if (blob) return blob;
   }
 }
 
@@ -158,10 +165,10 @@ async function exportImage(
 export async function svgExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
-  showOnlySelected?: boolean,
+  options: ProcessExportOptions,
   zipFolder?: jsZip | null,
 ) {
-  await exportImage(
+  return await exportImage(
     processesData,
     processData,
     async (svg) => {
@@ -170,7 +177,7 @@ export async function svgExport(
       });
     },
     'svg',
-    showOnlySelected,
+    options,
     zipFolder,
   );
 }
@@ -244,16 +251,15 @@ export async function getPNGFromSVG(svg: string, scaling = 1) {
 export async function pngExport(
   processesData: ProcessesExportData,
   processData: ProcessExportData,
-  scaling: number,
-  showOnlySelected?: boolean,
+  options: ProcessExportOptions,
   zipFolder?: jsZip | null,
 ) {
-  await exportImage(
+  return await exportImage(
     processesData,
     processData,
-    (svg: string) => getPNGFromSVG(svg, scaling),
+    (svg: string) => getPNGFromSVG(svg, options.scaling),
     'png',
-    showOnlySelected,
+    options,
     zipFolder,
   );
 }

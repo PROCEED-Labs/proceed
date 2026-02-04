@@ -17,12 +17,9 @@ export const resources = [
   'Role',
   'User',
   'Setting',
-  'EnvConfig',
   'RoleMapping',
-  'Share',
   'Environment',
   'Folder',
-  'MachineConfig',
   // NOTE: All is just supposed to be used for storing permissions in roles
   // what All contains can change with env.NEXT_PUBLIC_MS_ENABLED_RESOURCES
   'All',
@@ -86,12 +83,16 @@ const conditions = {
       )
         return true;
 
+      // Folders store their parent id in parentId and processes store the folder theiy're stored in
+      // in folderId
+      const folderIdentifier = 'parentId' in resource ? 'parentId' : 'folderId';
+
       // If the resource doesn't specify a perent we can't know where it should be in the tree.
       // Although this would probably be an error, this should be caught by zod, so here
       // we just return false implying that this rule doesn't apply.
-      if (!resource.parentId) return false;
+      if (!resource[folderIdentifier]) return false;
 
-      let currentFolder = resource.parentId;
+      let currentFolder = resource[folderIdentifier];
       const seen = new Set<string>();
       while (currentFolder) {
         if (currentFolder === valueInCondition) return true;

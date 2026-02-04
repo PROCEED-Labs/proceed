@@ -1,8 +1,8 @@
-jest.mock('async-mqtt');
+jest.mock('mqtt');
 
 const NativeMQTT = require('../index.js');
 
-const mqtt = require('async-mqtt');
+const mqtt = require('mqtt');
 
 describe('Native-MQTT', () => {
   let nativeMQTT;
@@ -56,7 +56,7 @@ describe('Native-MQTT', () => {
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         `mqtt://test-user:password123@localhost:1883`,
         // the clean attribute is always set to signal that we don't want to reuse connection info from the last time we were connected
-        { username: 'test-user', password: 'password123', clean: true },
+        { username: 'test-user', password: 'password123', clean: true, rejectUnauthorized: false },
       );
     });
 
@@ -73,7 +73,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -112,7 +117,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -140,7 +150,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -168,7 +183,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -196,7 +216,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'otherId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -224,7 +249,12 @@ describe('Native-MQTT', () => {
           password: 'password123',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -252,7 +282,12 @@ describe('Native-MQTT', () => {
           password: 'password456',
           clientId: 'engineId',
           clean: true,
-          eventHandlers: { message: [expect.any(Function)] },
+          rejectUnauthorized: false,
+          eventHandlers: {
+            message: [expect.any(Function)],
+            close: [expect.any(Function)],
+            connect: [expect.any(Function)],
+          },
           eventNames: expect.any(Function),
           on: expect.any(Function),
           off: expect.any(Function),
@@ -322,7 +357,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and used that connection to send the message
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true },
+        { username: 'test-user', password: 'password123', rejectUnauthorized: false, clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].publish).toHaveBeenCalledWith('test/topic', 'Hello World!', {
@@ -389,7 +424,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and subscribed to the topic on that connection
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true },
+        { username: 'test-user', password: 'password123', rejectUnauthorized: false, clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].subscribe).toHaveBeenCalledWith('test/topic', { qos: 2 });
@@ -407,7 +442,7 @@ describe('Native-MQTT', () => {
       // should have called the mqtt function to create a connection and subscribed to the topic on that connection
       expect(mqtt.connectAsync).toHaveBeenCalledWith(
         'mqtt://test-user:password123@localhost:1883',
-        { username: 'test-user', password: 'password123', clean: true },
+        { username: 'test-user', password: 'password123', rejectUnauthorized: false, clean: true },
       );
       expect(mockConnections.length).toBe(1);
       expect(mockConnections[0].subscribe).toHaveBeenCalledWith('test/topic', { qos: 2 });

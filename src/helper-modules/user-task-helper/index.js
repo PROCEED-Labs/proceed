@@ -1,0 +1,444 @@
+const { render } = require('./src/render.js');
+
+const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
+/**
+ * @module @proceed/user-task-helper
+ */
+
+/**
+ * An object containing information about a user task execution
+ *
+ * @typedef UserTaskInfo
+ * @type {object}
+ * @property {string} id - the id of the user task
+ * @property {number} startTime - the time at which execution of the element started
+ * @property {number} [endTime] - the time at which execution of the element ended
+ * @property {string} state - the current execution state of the user task
+ * @property {{ [key: string]: number }} [milestones] - the values of the milestones of the user task
+ * @property {{ [key: string]: any }} [variableChanges] - the variables that were changed by the user task
+ */
+
+/**
+ * An object containing information about a token in an instance
+ *
+ * @typedef TokenInfo
+ * @type {object}
+ * @property {string} tokenId - the id of the token
+ * @property {string} state - the state the token is in
+ * @property {string} currentFlowElementId - the flow element the token resides on
+ * @property {number} currentFlowElementStartTime - the time the current execution of the current flow element started
+ * @property {{ [key: string]: any }} [intermediateVariablesState] - the values of variables changed during the tokens execution that are not yet committed to the instance
+ */
+
+/**
+ * An object containing information about a token in an instance
+ *
+ * @typedef VariableInfo
+ * @type {object}
+ * @property {any} value - the value of the variable
+ * @property {{ changedTime: number, changedBy: string, oldValue?: any }[]} log
+ */
+
+/**
+ * An object containing information about already executed flow nodes
+ *
+ * @typedef LogEntry
+ * @type {object}
+ * @property {string} flowElementId - id of the executed element
+ * @property {string} tokenId - id of the token that activated the element
+ * @property {string} executionState - the with which the execution of the element ended
+ * @property {number} startTime - the time at which execution of the element started
+ * @property {number} endTime - the time at which execution of the element ended
+ */
+
+/**
+ * An object containing information about a process execution
+ *
+ * @typedef InstanceInfo
+ * @type {object}
+ * @property {string} processId - the id of the process that is being executed
+ * @property {string} processInstanceId - the id of the instance
+ * @property {number} globalStartTime - the time the instance was started
+ * @property {string[]} instanceState - the states of the tokens in the instance
+ * @property {TokenInfo[]} tokens - the tokens currently existing in the instance
+ * @property {{ [key: string]: VariableInfo }} variables - the variables in the instance (state and change log)
+ * @property {LogEntry[]} log - execution log with info about already executed flow nodes
+ */
+
+/**
+ * Returns the relevant variable state for a user task that is being executed or was executed at some point in the past
+ *
+ * @param {UserTaskInfo} userTask information about the user task for which we want to get the data
+ * @param {InstanceInfo} instance the instance information that contains the relevant data
+ * @returns {{ [key: string]: any }} the value for all variables at the time the user task was executed
+ */
+function getCorrectVariableState(userTask, instance) {
+  const variables = {};
+
+  // handle variables on user tasks that have already ended
+  Object.entries(instance.variables).forEach(([key, { value, log }]) => {
+    for (const entry of log) {
+      if (userTask.endTime && entry.changedTime > userTask.endTime + 10) {
+        value = entry.oldValue;
+        break;
+      }
+    }
+
+    variables[key] = value;
+  });
+
+  if (userTask.variableChanges) {
+    Object.entries(userTask.variableChanges).forEach(([key, value]) => (variables[key] = value));
+  }
+
+  // handle variables on user tasks that are still running
+  const userTaskToken = instance.tokens.find(
+    (token) =>
+      token.currentFlowElementId === userTask.id &&
+      token.currentFlowElementStartTime === userTask.startTime,
+  );
+
+  if (userTaskToken) {
+    Object.entries(userTaskToken.intermediateVariablesState).forEach(([key, value]) => {
+      variables[key] = value;
+    });
+  }
+
+  return variables;
+}
+
+/**
+ * Returns the relevant milestone state for a user task that is being executed or was executed at some point in the past
+ *
+ * @param {string} bpmn the bpmn of the process the user task is part of
+ * @param {UserTaskInfo} userTask information about the user task for which we want to get the data
+ * @param {InstanceInfo} instance the instance information that contains the relevant data
+ * @returns {Promise<{ id: string; name: string; description?: string; value: number; }[]>}
+ */
+async function getCorrectMilestoneState(bpmn, userTask, instance) {
+  const userTaskToken = instance.tokens.find(
+    (token) =>
+      token.currentFlowElementId === userTask.id &&
+      token.currentFlowElementStartTime === userTask.startTime,
+  );
+
+  let milestonesData;
+  if (userTaskToken) {
+    milestonesData = userTaskToken.milestones;
+  } else {
+    milestonesData = userTask.milestones;
+  }
+
+  const milestones = await getMilestonesFromElementById(bpmn, userTask.id);
+  return milestones.map((milestone) => ({
+    ...milestone,
+    value: milestonesData[milestone.id] || 0,
+  }));
+}
+
+const script = `
+    const instanceID = '{%instanceId%}';
+    const userTaskID = '{%userTaskId%}';
+
+    const variableDefinitions = {%variableDefinitions%};
+
+    function getValueFromCheckbox(checkbox) {
+      if (!checkbox.defaultValue) {
+        return !!checkbox.checked;
+      } else {
+        return checkbox.checked ? checkbox.defaultValue : undefined;
+      }
+    }
+
+    function getValueFromVariableElement(variableName, element) {
+      let value;
+      if (element.tagName === 'INPUT') {
+        if (element.type === 'number') {
+          value = element.value && parseFloat(element.value);
+          if (Number.isNaN(value)) throw new Error('The given value is not a valid number.');
+        } else if (element.type === 'file') {
+          value = element.files.length ? element.files[0] : undefined;
+        } else {
+          value = element.value;
+        }
+      } else {
+        const classes = Array.from(element.classList.values());
+        if (classes.includes('user-task-form-input-group')) {
+          const checkboxes = Array.from(element.querySelectorAll("input[type='checkbox']"));
+          const radios = Array.from(element.querySelectorAll("input[type='radio']"));
+          if (checkboxes.length) {
+            if (checkboxes.length === 1) {
+              const [checkbox] = checkboxes;
+              value = getValueFromCheckbox(checkbox);
+            } else {
+              value = checkboxes.map(getValueFromCheckbox).filter(v => v !== undefined);
+            }
+          } else if (radios.length) {
+            const checked = radios.find(r => r.checked === true);
+            value = checked.value;
+
+            const definition = variableDefinitions[variableName];
+            if (definition && definition.dataType === 'number') {
+              value = value && parseFloat(value);
+            }
+          }
+        }
+      }
+
+      return value;
+    }
+
+    function validateValue(key, value) {
+      if (!value) return;
+
+      const definition = variableDefinitions[key];
+      if (!definition) return;
+
+      if (definition.enum) {
+        const allowedValues = definition.enum.split(';');
+        if (!allowedValues.includes((typeof value === 'string') ? value : JSON.stringify(value))) {
+          throw new Error(\`Invalid value. Expected one of \${allowedValues.join(', ')}\`);
+        }
+      }
+    }
+
+    function updateValidationErrorMessage(key, message) {
+      const elements = Array.from(document.getElementsByClassName(\`input-for-\${key}\`));
+      if (!elements.length) return;
+      const [element] = elements;
+      element.classList.remove('invalid');
+      const messageEl = element.getElementsByClassName('validation-error');
+      if (messageEl.length) messageEl[0].textContent = '';
+      if (message) {
+        element.classList.add('invalid');
+        if (messageEl.length) messageEl[0].textContent = message;
+      }
+    }
+
+    window.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      async function submitData() {
+        const variableElements = Array.from(document.querySelectorAll('[class*=\"variable-\"]'));
+
+        const variables = {};
+        let validationErrors = 0;
+        variableElements.forEach(el => {
+          const key = Array.from(el.classList.values()).find(c => c.startsWith('variable-')).split('variable-')[1];
+          try {
+            const value = getValueFromVariableElement(key, el);
+            validateValue(key, value);
+            updateValidationErrorMessage(key);
+            variables[key] = value;
+          } catch (err) {
+            ++validationErrors;
+            updateValidationErrorMessage(key, err.message);
+          }
+        });
+
+        if (validationErrors) return;
+
+        const data = new FormData(event.target);
+        const entries = data.entries();
+        let entry = entries.next();
+        while (!entry.done) {
+          const [key, value] = entry.value;
+          if (!variables[key]) variables[key] = value;
+          entry = entries.next();
+        }
+
+        for (const [key, value] of Object.entries(variables)) {
+          // if the value set for a variable is a file => upload the file and replace the variable
+          // with a reference to the stored file
+          if (value instanceof File) {
+            const buffer = await value.arrayBuffer();
+            const { path } = await window.PROCEED_DATA.post(
+              '/tasklist/api/variable-file',
+              Array.from(new Uint8Array(buffer)),
+              {
+                instanceID,
+                userTaskID,
+                type: value.type,
+                name: value.name
+              },
+            );
+            variables[key] = path;
+          }
+        }
+
+        window.PROCEED_DATA.put('/tasklist/api/variable', variables, {
+            instanceID,
+            userTaskID,
+        }).then(() => {
+          window.PROCEED_DATA.post('/tasklist/api/userTask', variables, {
+            instanceID,
+            userTaskID,
+          });
+        });
+      }
+
+      submitData();
+    })
+
+    function updateUploadInfo(input) {
+      const parent = input.parentElement.parentElement;
+      const selectedFileElements = parent.getElementsByClassName("selected-files");
+      if (selectedFileElements.length) {
+        const [selectedFileElement] = selectedFileElements;
+        for (const child of selectedFileElement.childNodes) {
+          selectedFileElement.removeChild(child);
+        }
+        for (const file of input.files) {
+          const div = document.createElement('div');
+          if (file.type.startsWith('image')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.alt = file.name;
+            div.appendChild(img);
+          } else {
+            div.textContent = file.name;
+          }
+          selectedFileElement.appendChild(div);
+        }
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const milestoneInputs = document.querySelectorAll(
+        'input[class^="milestone-"]'
+      );
+      Array.from(milestoneInputs).forEach((milestoneInput) => {
+        milestoneInput.addEventListener('input', (event) => {
+          milestoneInput.nextElementSibling.value = milestoneInput.value + '%'
+        });
+
+        milestoneInput.addEventListener('click', (event) => {
+          const milestoneName = Array.from(event.target.classList)
+          .find((className) => className.includes('milestone-'))
+          .split('milestone-')
+          .slice(1)
+          .join('');
+
+          window.PROCEED_DATA.put(
+            '/tasklist/api/milestone',
+            { [milestoneName]: parseInt(event.target.value) },
+            {
+              instanceID,
+              userTaskID,
+            }
+          );
+        });
+      });
+
+      // get all input(-group)s that can be used to set the value of an input
+      const variableInputs = document.querySelectorAll(
+        '[class*="variable-"]'
+      );
+      Array.from(variableInputs).forEach((variableInput) => {
+        let variableInputTimer;
+
+        // a single input or all inputs in the group
+        let inputs;
+        if (variableInput.tagName === 'INPUT') inputs = [variableInput];
+        else {
+          inputs = Array.from(variableInput.getElementsByTagName('input'));
+        }
+
+        // the name of the variable assigned to the input/group
+        const variableName = Array.from(variableInput.classList)
+          .find((className) => className.includes('variable-'))
+          .split('variable-')
+          .slice(1)
+          .join('');
+
+        // add a handler that will save intermediate changes when a user interacts with the
+        // input/group (with a debounce)
+        inputs.forEach((input) => {
+          input.addEventListener('input', (event) => {
+            // cancel pending updates
+            clearTimeout(variableInputTimer);
+
+            if (event.target.type === 'file') {
+              updateUploadInfo(event.target);
+              return;
+            }
+
+            // trigger a timeout for an update to commit
+            variableInputTimer = setTimeout(() => {
+              try {
+                const value = getValueFromVariableElement(variableName, variableInput);
+
+                validateValue(variableName, value);
+                updateValidationErrorMessage(variableName);
+
+                window.PROCEED_DATA.put(
+                  '/tasklist/api/variable',
+                  { [variableName]: value },
+                  {
+                    instanceID,
+                    userTaskID,
+                  }
+                );
+              } catch (err) {
+                updateValidationErrorMessage(variableName, err.message);
+              }
+            }, 2000)
+          });
+        });
+      });
+    })
+    `;
+
+/**
+ * Function that replaces the {{script}} placeholder in the html with the default script
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {string} instanceId the id of the instance the user task was triggered in
+ * @param {string} userTaskId the id of the user task element that created this user task instance
+ * @param {{ name: string; dataType: string; enum?: string; }[]} [variableDefinitions=[]] meta data about the variables expected in the instance
+ * containing the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineScript(html, instanceId, userTaskId, variableDefinitions = []) {
+  const variableDefinitionsMap = Object.fromEntries(
+    variableDefinitions.map((def) => [def.name, def]),
+  );
+
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalScript = render(script, {
+    instanceId,
+    userTaskId,
+    variableDefinitions: JSON.stringify(variableDefinitionsMap),
+  });
+
+  html = render(html, { script: finalScript }, true);
+
+  return html;
+}
+
+/**
+ * Function that replaces placeholders in html with the correct data
+ *
+ * @param {string | Buffer} html the html that contains placeholders to replace with some data
+ * @param {ReturnType<typeof getCorrectVariableState>} variables the values of variables at the time the user task is executed
+ * @param {Awaited<ReturnType<typeof getCorrectMilestoneState>>} milestones the milestones assigned to the user task
+ * @returns {string} the html with the placeholders replaced by the correct values
+ */
+function inlineUserTaskData(html, variables, milestones) {
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const finalHtml = render(html, {
+    ...variables,
+    milestones,
+  });
+
+  return finalHtml;
+}
+
+module.exports = {
+  getCorrectVariableState,
+  getCorrectMilestoneState,
+  inlineScript,
+  inlineUserTaskData,
+};

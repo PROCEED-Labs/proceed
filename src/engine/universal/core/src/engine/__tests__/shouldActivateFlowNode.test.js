@@ -29,7 +29,7 @@ beforeEach(() => {
   mockEngine = {
     _management: { createInstance: jest.fn() },
     _bpmn: 'Bpmn Definitions',
-    processID: 'mockProcessId',
+    definitionId: 'mockProcessId',
     _log: {
       info: jest.fn().mockImplementation(),
     },
@@ -99,6 +99,45 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
     });
   });
 
+  describe('new script task referencing a file encountered', () => {
+    let mockTask;
+    let hookReturnValue;
+
+    beforeEach(() => {
+      db.getScript.mockClear();
+      db.getScript.mockResolvedValueOnce('console.log("Hello Test");');
+
+      mockTask = {
+        id: 'mockTaskId',
+        $type: 'bpmn:ScriptTask',
+        name: 'mockTaskName',
+        $attrs: {
+          'proceed:fileName': 'scriptFileName',
+        },
+      };
+
+      hookReturnValue = hook('mockProcess', 'mockInstance', 'mockTokenId', mockTask, {
+        mockStateEntry: 'mockStateValue',
+      });
+    });
+
+    it('logs that a new script task was encountered', async () => {
+      expect(mockEngine._log.info).toHaveBeenCalledTimes(1);
+    });
+
+    it('should inject the script into the script task', () => {
+      expect(mockTask).toStrictEqual({
+        ...mockTask,
+        script: 'console.log("Hello Test");',
+        scriptFormat: 'application/javascript',
+      });
+      expect(db.getScript).toHaveBeenCalledWith(
+        mockEngine.definitionId,
+        mockTask.$attrs['proceed:fileName'],
+      );
+    });
+  });
+
   describe('new call activity encountered', () => {
     let mockRoot;
     let mockTask;
@@ -106,7 +145,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       // mock the return values of the function analyzing the bpmn or returning the import bpmn
       getTargetDefinitionsAndProcessIdForCallActivityByObject.mockReturnValue({
         definitionId: 'callActivityDefinitionId',
-        version: 456,
+        versionId: '456',
       });
 
       mockRoot = {
@@ -143,7 +182,7 @@ describe('Tests for the function that is supposed to decide if a flow node shoul
       // check if the creation of the instance of the imported process was triggered
       expect(mockEngine._management.createInstance).toHaveBeenCalledWith(
         'callActivityDefinitionId',
-        456,
+        '456',
         { mockVariable: 'mockValue' },
         undefined,
         expect.any(Function),

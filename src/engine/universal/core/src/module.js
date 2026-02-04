@@ -10,7 +10,7 @@ const monitoring = require('@proceed/monitoring');
 const management = require('./management.js');
 const { setup5thIndustryEndpoints } = require('./engine/5thIndustry.js');
 const { enableInterruptedInstanceRecovery } = require('../../../../../FeatureFlags.js');
-const { setupMessaging } = require('./messaging-setup.js');
+const { setupMessaging, setupMonitoringAndLogging } = require('./messaging-setup.js');
 const { enableMessaging, enable5thIndustryIntegration } = require('../../../../../FeatureFlags.js');
 
 const configObject = {
@@ -51,8 +51,12 @@ module.exports = {
     // Open /status endpoint at last
     distribution.init(management);
 
+    logger.info(`Engine-ID: ${(await machineInformation.getMachineInformation(['id'])).id}`);
+    logger.info(`Engine-Name (self-defined in config.json): ${await config.readConfig('name')}`);
+
     if (enableMessaging) {
       await setupMessaging(system.messaging, config, machineInformation, logger);
+      await setupMonitoringAndLogging(system.messaging, config, machineInformation, logger);
     }
 
     if (!options.silentMode) {
@@ -70,12 +74,17 @@ module.exports = {
     management.provideScriptExecutor(scriptExecutor);
   },
 
+  async setupSubProcessScriptExecution() {
+    const machinePort = await config.readConfig('machine.port');
+    const scriptExecutor = system.setupScriptExecutor(machinePort);
+    management.provideScriptExecutor(scriptExecutor);
+  },
+
   /**
    * Deactivates the silentMode by opening all networking and discovery
    * communication channels.
    */
   async deactivateSilentMode() {
-    logger.info('Publishing the engine (deactivating silentmode)');
     logger.debug('Set port for HTTP endpoint of the engine');
     logger.debug('Start advertising on the network via mDNS');
     await distribution.publish();

@@ -1,8 +1,9 @@
 import { Browser, Page, chromium, firefox } from '@playwright/test';
 import { test, expect } from '../processes.fixtures';
-import { openModal, closeModal } from '../../testUtils';
+import { openModal, closeModal, waitForHydration } from '../../testUtils';
 
 test('process modeler', async ({ processModelerPage, processListPage }) => {
+  test.slow();
   const { page } = processModelerPage;
   const definitionId = await processListPage.createProcess({ processName: 'Process Name' });
 
@@ -10,9 +11,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   let modal = await openModal(page, () => page.getByRole('button', { name: 'xml-sign' }).click());
   await expect(page.getByRole('dialog', { name: 'BPMN XML' })).toBeVisible();
   /* While the xml editor is there, the xml is still loading, wait for it to load, before closing the modal */
-  await expect(
-    page.locator('span').filter({ hasText: '<?xml version="1.0" encoding' }),
-  ).toBeVisible();
+  await expect(page.getByText('<?xml version="1.0" encoding')).toBeVisible();
   //todo: check xml for startevent
   await closeModal(modal, async () => await modal.getByRole('button', { name: 'Ok' }).click());
 
@@ -35,7 +34,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     .getByRole('button', { name: 'plus' });
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationDialog = page.getByRole('dialog', {
-    name: 'Create New Version',
+    name: 'Release a new Process Version',
   });
   await expect(versionCreationDialog).toBeVisible();
   await closeModal(modal, () => modal.getByRole('button', { name: 'Cancel' }).click());
@@ -49,14 +48,15 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
     'Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam volu';
   modal = await openModal(page, () => openVersionCreationDialog.click());
   const versionCreationSubmitButton = modal.getByRole('button', {
-    name: 'Create Version',
+    name: 'Release Version',
   });
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal.getByPlaceholder('Version Name').fill('Version 1');
   await expect(versionCreationSubmitButton).toBeDisabled();
   await modal
     .getByPlaceholder('Version Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith150Chars);
   await expect(page.getByPlaceholder('Version Description')).toHaveText(stringWith150Chars);
   await expect(versionCreationSubmitButton).toBeEnabled();
   await closeModal(modal, () => versionCreationSubmitButton.click());
@@ -67,7 +67,9 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(page.getByRole('option', { name: 'Latest Version' })).toBeVisible();
   await expect(page.getByRole('option', { name: 'Version 1' })).toBeVisible();
   await page.getByRole('option', { name: 'Version 1' }).click();
-  const expectedURLWithVersion = new RegExp(`\\/processes\\/${definitionId}\\?version=\\d+$`);
+  const expectedURLWithVersion = new RegExp(
+    `\\/processes\\/editor\\/${definitionId}\\?version=[a-zA-Z0-9-_]+$`,
+  );
   await page.waitForURL(expectedURLWithVersion);
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 
@@ -97,21 +99,26 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
 
   // Fill process creation dialog and create new process, check for url change
   await processCreationDialog.getByLabel('Process Name').fill('New Process');
+  const stringWith1000Chars = stringWith150Chars
+    .repeat(Math.ceil(1000 / stringWith150Chars.length))
+    .slice(0, 1000);
   await processCreationDialog
     .getByLabel('Process Description')
-    .fill(`${stringWith150Chars}, characaters passing the 150 mark should not be visible`);
+    // .fill(`${stringWith150Chars}, characters passing the 150 mark should not be visible`); // we decided to remove this limit for now
+    .fill(stringWith1000Chars);
   await expect(processCreationDialog.getByLabel('Process Description')).toHaveText(
-    stringWith150Chars,
+    stringWith1000Chars,
   );
+
   await closeModal(processCreationDialog, () =>
     processCreationDialog.getByRole('button', { name: 'Create' }).click(),
   );
-  const expectedURLNewProcess = new RegExp(`\\/processes\\/[a-zA-Z0-9-_]+`);
+  const expectedURLNewProcess = new RegExp(`\\/processes\\/editor\\/[a-zA-Z0-9-_]+`);
   await page.waitForURL((url) => {
     return url.pathname.match(expectedURLNewProcess) && !url.pathname.includes(definitionId);
   });
   expect(expectedURLNewProcess.test(page.url())).toBeTruthy();
-  const newDefinitionID = page.url().split('/processes/').pop();
+  const newDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newDefinitionID).not.toEqual(definitionId);
 
   // Not only wait for URL change, but also new content to be loaded.
@@ -123,11 +130,11 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   await expect(openSubprocessButton).toBeVisible();
   await openSubprocessButton.click();
   const expectedURLSubprocess = new RegExp(
-    `\\/processes\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
+    `\\/processes\\/editor\\/[a-zA-Z0-9-_]+\\?subprocess\\=[a-zA-Z0-9-_]+`,
   );
   await page.waitForURL(expectedURLSubprocess);
   expect(expectedURLSubprocess.test(page.url())).toBeTruthy();
-  const newSubprocessDefinitionID = page.url().split('/processes/').pop();
+  const newSubprocessDefinitionID = page.url().split('/processes/editor/').pop();
   expect(newSubprocessDefinitionID).not.toEqual(definitionId);
 });
 
@@ -144,7 +151,7 @@ test.describe('Shortcuts in Modeler', () => {
     await page.getByRole('main').press('Escape');
 
     /* Wait for navigation change */
-    await page.waitForURL(/\/processes$/);
+    await page.waitForURL(/\/processes\/editor$/);
 
     // await processModelerPage.waitForHydration();
 
@@ -234,9 +241,7 @@ test.describe('Shortcuts in Modeler', () => {
 
     /* Check if correct modal opened */
     let modalTitle = await modal.locator('div[class="ant-modal-title"]');
-    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(
-      /export/i,
-    );
+    await expect(modalTitle, 'Could not ensure that the correct modal opened').toHaveText(/Share/i);
 
     /* Close Modal */
     // await page.locator('body').press('Escape');
@@ -256,10 +261,29 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   // open the new process in the modeler
   await page.locator(`tr[data-row-key="${process1Id}"]>td:nth-child(3)`).click();
 
-  await page.waitForURL(/processes\/[a-z0-9-_]+/);
+  await page.waitForURL(/processes\/editor\/[a-z0-9-_]+/);
 
+  // create new process version - Needed for embed
+  const openVersionCreationDialog = page
+    .getByLabel('general-modeler-toolbar')
+    .getByRole('button', { name: 'plus' });
+  let versionModal = await openModal(page, () => openVersionCreationDialog.click());
+  const versionCreationDialog = page.getByRole('dialog', {
+    name: 'Release a new Process Version',
+  });
+  await expect(versionCreationDialog).toBeVisible();
+
+  // Fill version creation dialog and create new version
+  const versionCreationSubmitButton = versionModal.getByRole('button', {
+    name: 'Release Version',
+  });
+  await versionModal.getByPlaceholder('Version Name').fill('Version 1');
+  await versionModal.getByPlaceholder('Version Description').fill('description');
+  await closeModal(versionModal, () => versionCreationSubmitButton.click());
+
+  //Open share modal
   const modal = await openModal(page, () =>
-    page.getByRole('button', { name: 'share-alt' }).click(),
+    page.getByRole('button', { name: 'share-alt', exact: true }).click(),
   );
 
   //await expect(page.getByText('Share', { exact: true })).toBeVisible();
@@ -267,48 +291,16 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   /*************************** Embed in Website ********************************/
 
   await modal.getByRole('button', { name: 'Embed in Website' }).click();
-  await expect(modal.getByText('Allow iframe Embedding', { exact: true })).toBeVisible();
-  await modal.getByRole('checkbox', { name: 'Allow iframe Embedding' }).click();
+  await expect(modal.getByText('Enable iFrame Embedding', { exact: true })).toBeVisible();
+  await modal.getByRole('checkbox', { name: 'Enable iFrame Embedding' }).click();
   await expect(modal.locator('div[class="code"]')).toBeVisible();
   await modal.getByTitle('copy code', { exact: true }).click();
 
   clipboardData = await ms2Page.readClipboard(true);
 
   const regex =
-    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+)'/;
+    /<iframe src='((http|https):\/\/[a-zA-Z0-9.:_-]+\/shared-viewer\?token=[a-zA-Z0-9._-]+\&version=[a-zA-Z0-9._-]+)'/;
   expect(clipboardData).toMatch(regex);
-
-  /*************************** Copy Diagram As PNG ********************************/
-  //if (page.context().browser().browserType() !== firefox) {
-  await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click();
-  await page.waitForTimeout(100);
-  clipboardData = await ms2Page.readClipboard(false);
-  await expect(clipboardData).toMatch('image/png');
-  /*} else {
-    // download as fallback
-    const { filename: pngFilename, content: exportPng } = await processListPage.handleDownload(
-      async () => await modal.getByTitle('Copy Diagram as PNG', { exact: true }).click(),
-      'string',
-    );
-
-    expect(pngFilename).toMatch(/.png$/);
-  }*/
-
-  /*************************** Copy Diagram As XML ********************************/
-
-  await modal.getByTitle('Copy Diagram as XML', { exact: true }).click();
-
-  clipboardData = await ms2Page.readClipboard(true);
-
-  const xmlRegex = /<([a-zA-Z0-9\-:_]+)[^>]*>[\s\S]*?<\/\1>/g;
-  await expect(clipboardData).toMatch(xmlRegex);
-
-  /*************************** Export as File ********************************/
-  const exportModal = await openModal(page, () =>
-    modal.getByTitle('Export as file', { exact: true }).click(),
-  );
-  await expect(page.getByTestId('Export Modal').getByRole('dialog')).toBeVisible();
-  await closeModal(exportModal, () => exportModal.getByRole('button', { name: 'cancel' }).click());
 
   /*************************** Share Process with link ********************************/
   await modal.getByRole('button', { name: 'Share Public Link' }).click();
@@ -330,9 +322,12 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
+  // Wait for hydration
+  await newPage.getByText('Loading process data').waitFor({ state: 'hidden' });
+
   // Add the shared process to the workspace
   await openModal(newPage, async () => {
-    await newPage.getByRole('button', { name: 'Add to your workspace' }).click();
+    await newPage.getByRole('button', { name: 'edit' }).click();
     await newPage.waitForURL(/signin\?callbackUrl=([^]+)/);
   });
 
@@ -340,11 +335,15 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
   await newPage.waitForURL(/shared-viewer\?token=([^]+)/);
 
   await newPage.getByRole('button', { name: 'My Space' }).click();
+
+  await newPage.getByText('root', { exact: true }).click();
+  await newPage.getByRole('button', { name: 'Copy and Edit' }).click();
   await newPage.waitForURL(/processes\/[a-z0-9-_]+/);
 
-  const newProcessId = newPage.url().split('/processes/').pop();
+  const newProcessId = newPage.url().split('/editor/').pop();
 
-  await newPage.getByRole('link', { name: 'process list' }).click();
+  //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
+  await newPage.getByRole('link', { name: 'Editor' }).click();
   await newPage.waitForURL(/processes/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

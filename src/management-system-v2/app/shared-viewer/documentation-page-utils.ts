@@ -3,6 +3,9 @@ import type { Editor as ToastEditorType } from '@toast-ui/editor';
 import { v4 } from 'uuid';
 
 import type ViewerType from 'bpmn-js/lib/Viewer';
+
+import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotation';
+
 import Canvas from 'diagram-js/lib/core/Canvas';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
@@ -18,6 +21,9 @@ import {
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 
 import schema from '@/lib/schema';
+
+import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/index';
+import { generateNumberString } from '@/lib/utils';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -44,15 +50,14 @@ export function getTitle(el: any) {
  */
 export function getMetaDataFromBpmnElement(el: any, mdEditor: ToastEditorType) {
   const meta = getMetaDataFromElement(el);
-
   let image = '';
 
   // transform the costs information into a [value] [currency-symbol] format (e.g. {value: 123, unit: 'EUR'} => '123 €')
   if (meta.costsPlanned)
-    meta.costsPlanned = new Intl.NumberFormat('de-DE', {
+    meta.costsPlanned = generateNumberString(meta.costsPlanned.value, {
       style: 'currency',
       currency: meta.costsPlanned.unit,
-    }).format(meta.costsPlanned.value);
+    });
 
   if (meta.overviewImage) {
     image = meta.overviewImage;
@@ -128,6 +133,7 @@ export async function getViewer(bpmn: string) {
     moddleExtensions: {
       proceed: schema,
     },
+    additionalModules: [ResourceViewModule, CustomAnnotationViewModule],
   });
   await viewer.importXML(bpmn);
 
@@ -139,7 +145,7 @@ export async function getViewer(bpmn: string) {
 
 export type ImportsInfo = {
   [definitionId: string]: {
-    [versionId: number]: string;
+    [versionId: string]: string;
   };
 };
 
@@ -183,23 +189,23 @@ export async function getElementSVG(
   } else if (isType(el, 'bpmn:CallActivity')) {
     // check if the call activity references another process which this user can access
     let importDefinitionId: string | undefined;
-    let version: number | undefined;
+    let versionId: string | undefined;
     try {
-      ({ definitionId: importDefinitionId, version: version } =
+      ({ definitionId: importDefinitionId, versionId } =
         getTargetDefinitionsAndProcessIdForCallActivityByObject(getRootFromElement(el), el.id));
     } catch (err) {}
 
     if (
       importDefinitionId &&
-      version &&
+      versionId &&
       availableImports[importDefinitionId] &&
-      availableImports[importDefinitionId][version]
+      availableImports[importDefinitionId][versionId]
     ) {
       // remember the bpmn currently loaded into the viewer so we can return to it after getting the svg for the elements in the imported process
       ({ xml: oldBpmn } = await bpmnViewer.saveXML());
 
       // get the bpmn for the import and load it into the viewer
-      const importBpmn = availableImports[importDefinitionId][version];
+      const importBpmn = availableImports[importDefinitionId][versionId];
 
       await bpmnViewer.importXML(importBpmn);
 
@@ -217,7 +223,7 @@ export async function getElementSVG(
         name: `Imported Process: ${definitions.name}`,
         ...getMetaDataFromBpmnElement(el, mdEditor),
         planeSvg: await getSVGFromBPMN(bpmnViewer),
-        version,
+        versionId,
         versionName,
         versionDescription,
       };

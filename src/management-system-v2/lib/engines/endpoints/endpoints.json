@@ -1,0 +1,111 @@
+{
+  "get": {
+    "/machine/:properties": {
+      "queryParams": {
+        "entries": true
+      }
+    },
+    "/machine/": {},
+    "/capabilities/": {},
+    "/configuration/": {},
+    "/configuration/:key": {},
+    "/logging": {},
+    "/logging/status": {},
+    "/logging/standard": {},
+    "/logging/process": {},
+    "/logging/process/:definitionId": {},
+    "/logging/process/:definitionId/instance/:instanceId": {},
+    "/monitoring/": {},
+    "/tasklist/api/": {},
+    "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true,
+        "startTime": true
+      }
+    },
+    "/configuration/api/config": {},
+    "/logging/api/log": {},
+    "/": {},
+    "/process/": {
+      "queryParams": {
+        "entries": true
+      }
+    },
+    "/process/:definitionId": {},
+    "/process/:definitionId/versions": {},
+    "/process/:definitionId/versions/:version": {},
+    "/process/:definitionId/instance": {},
+    "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/versions/:version/start-form": {},
+    "/process/:definitionId/user-tasks/:fileName": {},
+    "/process/:definitionId/user-tasks": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks": {},
+    "/status/": {},
+    "/resources/process/:definitionId/images/:fileName": {},
+    "/resources/process/:definitionId/images/": {},
+    "/resources/process/:definitionId/instance/:instanceId/file/:fileName": {}
+  },
+  "post": {
+    "/capabilities/execute": {},
+    "/capabilities/return": {},
+    "/evaluation/": {},
+    "/tasklist/api/userTask": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/tasklist/api/userTask/owner": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/configuration/api/config": {},
+    "/process/": {},
+    "/process/:definitionId/versions/:version/instance": {},
+    "/process/:definitionId/instance/:instanceId/tokens": {},
+    "/process/:definitionId/instance/:instanceId/variables": {},
+    "/process/:definitionId/versions/:version/instance/migration": {}
+  },
+  "put": {
+    "/configuration/": {},
+    "/tasklist/api/variable": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/tasklist/api/milestone": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true
+      }
+    },
+    "/process/:definitionId/instance/:instanceID": {},
+    "/process/:definitionId/instance/:instanceID/instanceState": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
+    "/process/:definitionId/versions/:version/start-form": {},
+    "/process/:definitionId/user-tasks/:fileName": {},
+    "/process/:definitionId/script-tasks/:fileName": {},
+    "/resources/process/:definitionId/images/:fileName": {},
+    "/resources/process/:definitionId/instance/:instanceId/file/:fileName": {
+      "queryParams": {
+        "mimeType": true
+      }
+    }
+  },
+  "delete": {
+    "/configuration/": {},
+    "/logging": {},
+    "/logging/standard": {},
+    "/logging/process": {},
+    "/logging/process/:definitionId": {},
+    "/logging/process/:definitionId/instance/:instanceId": {},
+    "/process/:definitionId": {},
+    "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {}
+  }
+}

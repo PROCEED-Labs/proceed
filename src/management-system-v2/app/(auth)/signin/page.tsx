@@ -1,10 +1,16 @@
-import { getProviders } from '@/app/api/auth/[...nextauth]/auth-options';
+import { getProviders } from '@/lib/auth';
 import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
+import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
+import { env } from '@/lib/ms-config/env-vars';
+import db from '@/lib/data/db';
+
+const dayInMS = 1000 * 60 * 60 * 24;
 
 // take in search query
-const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: string } }) => {
+const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }> }) => {
+  const searchParams = await props.searchParams;
   const { session } = await getCurrentUser();
   const isGuest = session?.user.isGuest;
 
@@ -13,9 +19,12 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
     redirect(callbackUrl);
   }
 
-  let providers = getProviders();
+  // NOTE: expiration should be the same as the expiration for sign in mails
+  const guestReferenceToken = isGuest
+    ? generateGuestReferenceToken({ guestId: session.user.id }, new Date(Date.now() + dayInMS))
+    : undefined;
 
-  providers = providers.filter((provider) => !isGuest || 'development-users' !== provider.id);
+  let providers = getProviders();
 
   providers = providers.toSorted((a, b) => {
     if (a.id === 'guest-signin') return 1;
@@ -37,7 +46,32 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
   if (!session) userType = 'none' as const;
   else userType = isGuest ? ('guest' as const) : ('user' as const);
 
-  return <SignIn providers={providers} userType={userType} />;
+  let logoUrl;
+  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+    const org = await db.space.findFirst({
+      where: {
+        isOrganization: true,
+      },
+      select: {
+        spaceLogo: true,
+      },
+    });
+    // TODO: show url if it's not in the public directory
+    if (org?.spaceLogo?.startsWith('public/')) {
+      logoUrl = org.spaceLogo.replace('public/', '/');
+    }
+  }
+
+  return (
+    <SignIn
+      providers={providers}
+      userType={userType}
+      guestReferenceToken={guestReferenceToken}
+      logoUrl={logoUrl}
+    />
+  );
 };
 
 export default SignInPage;
+
+export const dynamic = 'force-dynamic';

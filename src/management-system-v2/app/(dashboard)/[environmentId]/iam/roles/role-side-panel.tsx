@@ -6,12 +6,14 @@ import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import { FilteredRole } from './role-page';
-import { AuthenticatedUser } from '@/lib/data/user-schema';
 import UserAvatar from '@/components/user-avatar';
 import { userRepresentation } from '@/lib/utils';
+import { RoleWithMembers } from '@/lib/data/role-schema';
+
+export type MemberInfo = RoleWithMembers['members'][number];
 
 const RoleContent: FC<{
-  role: (Omit<FilteredRole, 'members'> & { members: AuthenticatedUser[] }) | null;
+  role: (Omit<FilteredRole, 'members'> & { members: MemberInfo[] }) | null;
 }> = ({ role }) => {
   return (
     <>
@@ -33,8 +35,12 @@ const RoleContent: FC<{
             </>
           )}
 
-          <Typography.Title>Members</Typography.Title>
-          <Typography.Text>{role.members.length}</Typography.Text>
+          {role.name.value !== '@everyone' && role.name.value !== '@gues' && (
+            <>
+              <Typography.Title>Members</Typography.Title>
+              <Typography.Text>{role.members.length}</Typography.Text>
+            </>
+          )}
 
           <Typography.Title>Last Edited</Typography.Title>
           <Typography.Text>{role.lastEditedOn.toUTCString()}</Typography.Text>
@@ -45,12 +51,17 @@ const RoleContent: FC<{
           {role.members.length > 0 && (
             <>
               <Typography.Title>Members</Typography.Title>
-              {role.members.map((user) => (
-                <Space>
-                  <UserAvatar user={user} avatarProps={{ size: 30 }} />
-                  <Typography.Text>{userRepresentation(user)}</Typography.Text>
-                </Space>
-              ))}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.5rem' }}>
+                {role.members.map((user) => (
+                  <div
+                    key={user.id}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                  >
+                    <UserAvatar user={user} size={30} />
+                    <Typography.Text>{userRepresentation(user)}</Typography.Text>
+                  </div>
+                ))}
+              </div>
             </>
           )}
         </>
@@ -62,7 +73,7 @@ const RoleContent: FC<{
 };
 
 type RoleSidePanelProps = PropsWithChildren<{
-  role: (FilteredRole & { members: AuthenticatedUser[] }) | null;
+  role: (FilteredRole & { members: MemberInfo[] }) | null;
   setShowMobileRoleSider: Dispatch<SetStateAction<boolean>>;
   showMobileRoleSider: boolean;
 }>;

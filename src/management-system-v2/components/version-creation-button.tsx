@@ -9,22 +9,24 @@ import FormSubmitButton from './form-submit-button';
 type VersionModalProps = {
   show: boolean;
   close: (values?: { versionName: string; versionDescription: string }) => void;
+  loading?: boolean;
 };
-const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
+export const VersionModal: React.FC<VersionModalProps> = ({ show, close, loading }) => {
   const [form] = Form.useForm();
 
   return (
     <Modal
-      title="Create New Version"
+      title="Release a new Process Version"
       open={show}
       onCancel={() => {
-        close();
+        if (!loading) close();
       }}
       footer={[
         <Button
           key="cancel"
+          disabled={loading}
           onClick={() => {
-            close();
+            if (!loading) close();
           }}
         >
           Cancel
@@ -33,7 +35,10 @@ const VersionModal: React.FC<VersionModalProps> = ({ show, close }) => {
           key="submit"
           form={form}
           onSubmit={close}
-          submitText="Create Version"
+          submitText="Release Version"
+          buttonProps={{
+            loading,
+          }}
         ></FormSubmitButton>,
       ]}
     >
@@ -66,25 +71,33 @@ type VersionCreationButtonProps = ButtonProps & {
 const VersionCreationButton = forwardRef<HTMLAnchorElement, VersionCreationButtonProps>(
   ({ createVersion, ...props }, ref) => {
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     return (
       <>
         <Button
           ref={ref}
+          loading={false}
           {...props}
           onClick={() => {
             setIsVersionModalOpen(true);
           }}
         ></Button>
         <VersionModal
-          close={(values) => {
-            setIsVersionModalOpen(false);
-
+          close={async (values) => {
             if (values) {
-              createVersion(values);
+              const createResult = createVersion(values);
+              if (createResult instanceof Promise) {
+                setLoading(true);
+                await createResult;
+                setLoading(false);
+              }
             }
+
+            setIsVersionModalOpen(false);
           }}
           show={isVersionModalOpen}
+          loading={loading}
         ></VersionModal>
       </>
     );

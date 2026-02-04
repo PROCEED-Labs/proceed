@@ -1,6 +1,6 @@
 import { getCurrentUser } from '@/components/auth';
-import { getTokenHash, notExpired } from '@/lib/change-email/utils';
-import { getVerificationToken } from '@/lib/data/legacy/verification-tokens';
+import { getTokenHash, notExpired } from '@/lib/email-verification-tokens/utils';
+import { getEmailVerificationToken } from '@/lib/data/db/iam/verification-tokens';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import ChangeEmailCard from './change-email-card';
@@ -10,7 +10,8 @@ import Content from '@/components/content';
 
 const searchParamsSchema = z.object({ email: z.string().email(), token: z.string() });
 
-export default async function ChangeEmailPage({ searchParams }: { searchParams: unknown }) {
+export default async function ChangeEmailPage(props: { searchParams: Promise<unknown> }) {
+  const searchParams = await props.searchParams;
   const parsedSearchParams = searchParamsSchema.safeParse(searchParams);
   if (!parsedSearchParams.success) redirect('/');
   const { email, token } = parsedSearchParams.data;
@@ -37,14 +38,14 @@ export default async function ChangeEmailPage({ searchParams }: { searchParams: 
   if (session.user.isGuest) redirect('/');
   const previousEmail = session.user.email;
 
-  const verificationToken = getVerificationToken({
+  const verificationToken = await getEmailVerificationToken({
     identifier: email,
     token: await getTokenHash(token),
   });
 
   if (
     !verificationToken ||
-    !verificationToken.updateEmail ||
+    verificationToken.type !== 'change_email' ||
     verificationToken.userId !== userId ||
     !(await notExpired(verificationToken))
   )

@@ -102,8 +102,8 @@ describe('ProceedEngine', () => {
   it('calls given callbacks for executed process', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(scriptTaskBPMN);
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded, onTokenEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded, onTokenEnded);
 
     await sleep(1000);
 
@@ -119,8 +119,8 @@ describe('ProceedEngine', () => {
   it('contains added information from proceed in token and logs for executed process', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(scriptTaskBPMN);
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded, onTokenEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded, onTokenEnded);
 
     await hasEnded;
 
@@ -195,8 +195,8 @@ describe('ProceedEngine', () => {
     let onEnded1;
     const hasEnded1 = new Promise((resolve) => (onEnded1 = resolve));
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded1);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded1);
     expect(engine.instanceIDs.length).toBe(1);
 
     await hasEnded1;
@@ -205,7 +205,7 @@ describe('ProceedEngine', () => {
     const hasEnded2 = new Promise((resolve) => (onEnded2 = resolve));
 
     expect(() => {
-      engine.startProcessVersion(123, {}, onStarted, onEnded2);
+      engine.startProcessVersion('123', {}, onStarted, onEnded2);
     }).not.toThrow();
     expect(engine.instanceIDs.length).toBe(1);
 
@@ -218,9 +218,9 @@ describe('ProceedEngine', () => {
     let onEnded1;
     const hasEnded1 = new Promise((resolve) => (onEnded1 = resolve));
 
-    await engine.deployProcessVersion(0, 123);
+    await engine.deployProcessVersion('0', '123');
     const onStarted1 = jest.fn();
-    engine.startProcessVersion(123, {}, onStarted1, onEnded1);
+    engine.startProcessVersion('123', {}, onStarted1, onEnded1);
     expect(engine.instanceIDs.length).toBe(1);
 
     await hasEnded1;
@@ -230,9 +230,9 @@ describe('ProceedEngine', () => {
     let onEnded2;
     const hasEnded2 = new Promise((resolve) => (onEnded2 = resolve));
 
-    await engine.deployProcessVersion(0, 456);
+    await engine.deployProcessVersion('0', '456');
     const onStarted2 = jest.fn();
-    engine.startProcessVersion(456, {}, onStarted2, onEnded2);
+    engine.startProcessVersion('456', {}, onStarted2, onEnded2);
     expect(engine.instanceIDs.length).toBe(1);
 
     await hasEnded2;
@@ -248,8 +248,8 @@ describe('ProceedEngine', () => {
   it('calls given network-service in a script task', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(scriptTaskBPMN);
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded);
 
     await hasEnded;
 
@@ -260,8 +260,8 @@ describe('ProceedEngine', () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(userTaskBPMN);
     const userTaskID = 'Task_1y4wd2q';
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded);
 
     await sleep(500);
 
@@ -285,8 +285,8 @@ describe('ProceedEngine', () => {
   it('takes variables input on a userTask', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(userTaskBPMN);
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded);
 
     await sleep(500);
 
@@ -317,8 +317,8 @@ describe('ProceedEngine', () => {
   it('can be stopped through api function', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(userTaskBPMN);
 
-    await engine.deployProcessVersion(0, 123);
-    engine.startProcessVersion(123, {}, onStarted, onEnded);
+    await engine.deployProcessVersion('0', '123');
+    engine.startProcessVersion('123', {}, onStarted, onEnded);
 
     await sleep(500);
 
@@ -345,9 +345,9 @@ describe('ProceedEngine', () => {
       log: [],
     };
 
-    await engine.deployProcessVersion(0, 123);
+    await engine.deployProcessVersion('0', '123');
     engine.startProcessVersion(
-      123,
+      '123',
       {},
       instance,
       () => {

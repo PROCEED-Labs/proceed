@@ -27,6 +27,60 @@ export type DefinitionsInfos = {
    * - definitions targetNamespace
    */
   targetNamespace?: string;
+  /**
+   * - definitions creatorName
+   */
+  creatorName?: string;
+  /**
+   * - definitions userDefinedId
+   */
+  userDefinedId?: string;
+  /**
+   * - definitions creatorUsername
+   */
+  creatorUsername?: string;
+  /**
+   * - definitions creationDate
+   */
+  creationDate?: string;
+};
+/**
+ * An object containing information about a variable that might exist during the instance of a process
+ */
+export type Variable = {
+  /**
+   * - variable name
+   */
+  name: string;
+  /**
+   * - a description of the variable
+   */
+  description?: string;
+  /**
+   * - the type of the value of the variable
+   */
+  dataType: string;
+  /**
+   * - expected formatting for variables with type text (e.g. url,
+   * email, ...)
+   */
+  textFormat?: string;
+  /**
+   * - the value that the variable should have when none is manually set at startup
+   */
+  defaultValue?: string;
+  /**
+   * - if the variable has to be initialized when an instance is started
+   */
+  requiredAtInstanceStartup?: boolean;
+  /**
+   * - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+   */
+  enum?: string;
+  /**
+   * - if the variable can be reassigned after having been set once
+   */
+  const?: boolean;
 };
 /**
  * An object containing properties from defined companies
@@ -192,17 +246,6 @@ export type ResourceInfos = {
   description?: string;
 };
 /**
- * An object containing necessary values for duration
- */
-export type DurationValues = {
-  years: number | null;
-  months: number | null;
-  days: number | null;
-  hours: number | null;
-  minutes: number | null;
-  seconds: number | null;
-};
-/**
  * Returns id of the given process definition
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -236,7 +279,12 @@ export function getDefinitionsName(bpmn: string | object): Promise<string | unde
  * @property {string} [exporter] - definitions exporter
  * @property {string} [exporterVersion] - definitions exporterVersion
  * @property {string} [targetNamespace] - definitions targetNamespace
- */
+ * @property {string} [creatorName] - definitions creatorName
+ * @property {string} [userDefinedId] - definitions userDefinedId
+ * @property {string} [creatorUsername] - definitions creatorUsername
+ * @property {string} [creationDate] - definitions creationDate
+
+*/
 /**
  * Gets the 'definitions' root element from the given BPMN XML
  *
@@ -255,14 +303,15 @@ export function getImports(bpmn: string | object): Promise<object[]>;
  * Returns the version information of the given bpmn process definition
  *
  * @param {string|object} bpmn - the process definition as XML string or BPMN-moddle Object
- * @returns {(Promise.<{version?: number, name?: string, description?: string, versionBasedOn?: number}>)} - The version information if it exists
+ * @returns {(Promise.<{versionId?: string, name?: string, description?: string, versionBasedOn?: string, versionCreatedOn?: string }>)} - The version information if it exists
  * @throws {Error} will throw if the definition contains a version that is not a number
  */
 export function getDefinitionsVersionInformation(bpmn: string | object): Promise<{
-  version?: number;
+  versionId?: string;
   name?: string;
   description?: string;
-  versionBasedOn?: number;
+  versionBasedOn?: string;
+  versionCreatedOn?: string;
 }>;
 /**
  * Get all process ids from a BPMN definitions/object.
@@ -308,6 +357,50 @@ export function getProcessDocumentation(bpmn: string | object): Promise<string>;
  */
 export function getProcessDocumentationByObject(processObject: object): string;
 /**
+ * An object containing information about a variable that might exist during the instance of a process
+ *
+ * @typedef Variable
+ *
+ * @type {object}
+ * @property {string} name - variable name
+ * @property {string} [description] - a description of the variable
+ * @property {string} dataType - the type of the value of the variable
+ * @property {string} [textFormat] - expected formatting for variables with type text (e.g. url,
+ * email, ...)
+ * @property {string} [defaultValue] - the value that the variable should have when none is manually set at startup
+ * @property {boolean} [requiredAtInstanceStartup] - if the variable has to be initialized when an instance is started
+ * @property {string} [enum] - enumeration of the values that the variable is allowed to have (a string with values separated by ';')
+ * @property {boolean} [const] - if the variable can be reassigned after having been set once
+ */
+/**
+ * Parses the variables from a bpmn-moddle element (variables are only expected to be defined on process elements)
+ *
+ * @param {object} element
+ * @returns {Variable[]} array with all variables
+ */
+export function getVariablesFromElement(element: object): Variable[];
+/**
+ * Get the variables for given element id (variables are only expected to be defined on process elements)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {Promise<Variable[]>} array with all variables
+ */
+export function getVariablesFromElementById(
+  bpmn: string | object,
+  elementId: string,
+): Promise<Variable[]>;
+/**
+ * Get the file names for the start forms of all processes,
+ * (The attribute 'uiForNontypedStartEventsFileName' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [processId: string]: string}> } an object (a map) with all processIds as keys
+ */
+export function getStartFormFileNameMapping(bpmn: string | object): Promise<{
+  [processId: string]: string;
+}>;
+/**
  * Get all fileName for all userTasks,
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
@@ -329,6 +422,18 @@ export function getUserTaskFileNameMapping(bpmn: string | object): Promise<{
  */
 export function getAllUserTaskFileNamesAndUserTaskIdsMapping(bpmn: string | object): Promise<{
   [userTaskFileName: string]: string[];
+}>;
+/**
+ * Get all fileName for all scriptTasks,
+ * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ */
+export function getScriptTaskFileNameMapping(bpmn: string | object): Promise<{
+  [scriptTaskId: string]: {
+    fileName?: string;
+  };
 }>;
 /**
  * Returns a xml with Diagram Elements just from the given subprocess and their nested Processes
@@ -373,7 +478,7 @@ export function getSubprocessContent(bpmn: string, subprocessId: string): Promis
  *
  * @param {object} bpmnObj - The BPMN XML as converted bpmn-moddle object with toBpmnObject
  * @param {string} callActivityId - The id of the callActivity
- * @returns { { definitionId: string, processId: string, version: number } } An Object with the definition, process id and version
+ * @returns { { definitionId: string, processId: string, versionId: string } } An Object with the definition, process id and version
  * @throws An Error if the callActivity id does not exist
  * @throws If the callActivity has no 'calledElement' attribute
  * @throws If the targetNamespace for a callActivity could not be found
@@ -385,14 +490,14 @@ export function getTargetDefinitionsAndProcessIdForCallActivityByObject(
 ): {
   definitionId: string;
   processId: string;
-  version: number;
+  versionId: string;
 };
 /**
  * Get all definitionIds for all imported Processes used in callActivities
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {boolean} [dontThrow] - whether to throw errors or not in retrieving process ids in call activities
- * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, version: number }}> } an object (a map) with all callActivityIds as keys
+ * @returns { Promise.<{ [callActivityId: string]: { definitionId: string, processId: string, versionId: string }}> } an object (a map) with all callActivityIds as keys
  * @throws see function: {@link getTargetDefinitionsAndProcessIdForCallActivityByObject}
  */
 export function getDefinitionsAndProcessIdForEveryCallActivity(
@@ -402,7 +507,7 @@ export function getDefinitionsAndProcessIdForEveryCallActivity(
   [callActivityId: string]: {
     definitionId: string;
     processId: string;
-    version: number;
+    versionId: string;
   };
 }>;
 /**
@@ -478,7 +583,7 @@ export function getTaskConstraintMapping(bpmn: string | object): Promise<{
  * and its name and description for human identification
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string }> } object containing the identifying information
+ * @returns { Promise.<{ id: string, originalId?: string, processIds: string[], name: string, description: string, userDefinedId: string }> } object containing the identifying information
  */
 export function getIdentifyingInfos(bpmn: string | object): Promise<{
   id: string;
@@ -486,6 +591,7 @@ export function getIdentifyingInfos(bpmn: string | object): Promise<{
   processIds: string[];
   name: string;
   description: string;
+  userDefinedId: string;
 }>;
 /**
  * Returns the definitions object of the process
@@ -651,6 +757,20 @@ export function getPerformersFromElement(element: object): any[];
  * @returns {Array} array with all performers
  */
 export function getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+/**
+ * Returrns the roles and users that may be owners of a specific element
+ *
+ * @param {string} elementId id of the element to get the potential owners for
+ * @param {(string|object)} bpmn the bpmn containing the element
+ * @returns {{ user: string[], roles: string[] }} the potential owners of the element
+ */
+export function getPotentialOwnersFromElementById(
+  elementId: string,
+  bpmn: string | object,
+): {
+  user: string[];
+  roles: string[];
+};
 /**
  * Parses ISO Duration String to number of years, months, days, hours, minutes and seconds
  * @param {string} isoDuration

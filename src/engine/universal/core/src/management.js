@@ -49,7 +49,7 @@ const Management = {
    *
    * @param {String} definitionId
    * @param {Number} version
-   * @returns {Engine} the instance of
+   * @returns {Promise<Engine>} the instance of
    */
   async ensureProcessEngineWithVersion(definitionId, version) {
     const engine = this.ensureProcessEngine(definitionId);
@@ -65,7 +65,7 @@ const Management = {
   /**
    * Creates a new engine instance for execution of the given process version.
    * @param {string} definitionId The name of the file the process to start is stored in
-   * @param {number} version the version of the process to start
+   * @param {string} version the version of the process to start
    * @param {object} variables The process variables for the execution
    * @param {string} [activityID] The optional id of the activity to start execution at (if not at the beginning)
    * @param {function} [onStarted] an optional callback that should be called when the instance starts
@@ -281,18 +281,58 @@ const Management = {
    */
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
+    let userTasks = [];
+    const scriptTaskTokens = [];
 
+    /** @type {ReturnType<Engine['getInstance'] | undefined>} */
+    let bpmnProcessInstance = undefined;
+    /** @type {InstanceType<typeof Engine> | undefined} */
     const existingEngine = this.getEngineWithID(instanceId);
+
     if (existingEngine) {
       instanceInformation = existingEngine.getInstanceInformation(instanceId);
-      this.removeInstance(instanceId);
+      userTasks = existingEngine.userTasks.filter(
+        (userTask) => userTask.processInstance.id === instanceId,
+      );
+
+      bpmnProcessInstance = existingEngine.getInstance(instanceId);
     } else {
       instanceInformation = (await distribution.db.getArchivedInstances(definitionId))[instanceId];
+      userTasks = instanceInformation.userTasks;
 
       if (!enableInterruptedInstanceRecovery) {
         // remove intermediate state when the instance recovery is not used; when it is finally implemented this should be removed
         await distribution.db.deleteArchivedInstance(definitionId, instanceId);
       }
+    }
+
+    if (!instanceInformation) throw new Error("Couldn't find instance information");
+
+    const bpmn = await distribution.db.getProcessVersion(
+      definitionId,
+      instanceInformation.processVersion,
+    );
+    const bpmnObj = await toBpmnObject(bpmn);
+
+    for (const token of instanceInformation.tokens) {
+      const currentFlowElement = getElementById(bpmnObj, token.currentFlowElementId);
+      if (currentFlowElement.$type === 'bpmn:ScriptTask' && token.state == 'PAUSED') {
+        scriptTaskTokens.push(token);
+      }
+    }
+
+    if (existingEngine && scriptTaskTokens.length == 0) {
+      this.removeInstance(instanceId);
+      bpmnProcessInstance = undefined;
+    }
+
+    // If a token was paused on a scriptTask and the instance doesn't exist anymore, than the
+    // script probably also doesn't exist on the script executor, thus we can't resume process.
+    if (scriptTaskTokens.length > 0 && !bpmnProcessInstance) {
+      // TODO: maybe handle this case better
+      throw new Error(
+        'Trying to resume an instance which was stopped on a script task, but the instance was deleted.',
+      );
     }
 
     const resumedTokens = instanceInformation.tokens.map((token) => {
@@ -301,10 +341,15 @@ const Management = {
         token.state === 'READY' ||
         token.state === 'DEPLOYMENT-WAITING' ||
         token.state === 'PAUSED';
+      const isScriptTask = scriptTaskTokens.includes(token);
+
+      let tokenState = token.state;
+      if (isScriptTask) tokenState = 'RUNNING';
+      else if (tokenActive) tokenState = 'READY';
 
       return {
         tokenId: token.tokenId,
-        state: tokenActive ? 'READY' : token.state,
+        state: tokenState,
         currentFlowElementId: token.currentFlowElementId,
         deciderStorageRounds: token.deciderStorageRounds,
         deciderStorageTime: token.deciderStorageTime,
@@ -312,28 +357,57 @@ const Management = {
       };
     });
 
-    const resumedInstanceInformation = {
-      ...instanceInformation,
-      tokens: resumedTokens,
-    };
+    if (scriptTaskTokens.length > 0) {
+      bpmnProcessInstance.resume();
 
-    const { processVersion, importedInstance } = this.importInstance(resumedInstanceInformation);
+      for (const resumedToken of resumedTokens) {
+        bpmnProcessInstance.updateToken(resumedToken.tokenId, resumedToken);
+      }
 
-    const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      for (const resumedToken of resumedTokens) {
+        bpmnProcessInstance.continueToken(resumedToken.tokenId);
+      }
 
-    engine.startProcessVersion(
-      processVersion,
-      importedInstance.variables,
-      importedInstance,
-      (newInstance) => {
-        engine._log.info({
-          msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
-          instanceId: resumedInstanceInformation.instanceId,
-        });
-      },
-    );
+      for (const scriptTaskToken of scriptTaskTokens) {
+        bpmnProcessInstance.resumeFlowNode(
+          scriptTaskToken.tokenId,
+          scriptTaskToken.currentFlowElementId,
+        );
+      }
 
-    return engine;
+      return existingEngine;
+    } else {
+      const resumedInstanceInformation = {
+        ...instanceInformation,
+        tokens: resumedTokens,
+      };
+
+      const { processVersion, importedInstance } = this.importInstance(resumedInstanceInformation);
+      /** @type {Engine} */
+      const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+
+      engine.startProcessVersion(
+        processVersion,
+        importedInstance.variables,
+        importedInstance,
+        (newInstance) => {
+          engine.userTasks.push(
+            ...userTasks
+              .filter((userTask) => userTask.state !== 'PAUSED')
+              .map((userTask) => ({
+                ...userTask,
+                processInstance: newInstance,
+              })),
+          );
+          engine._log.info({
+            msg: `Resuming process instance. Id = ${resumedInstanceInformation.processInstanceId}`,
+            instanceId: resumedInstanceInformation.instanceId,
+          });
+        },
+      );
+
+      return engine;
+    }
   },
 
   /**
@@ -365,6 +439,7 @@ const Management = {
       }
     }
 
+    /** @type {Engine} */
     const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
     // transform instance information into the form used by the neo-engine
     const { processVersion, importedInstance } = this.importInstance(instance);
@@ -497,7 +572,7 @@ const Management = {
    * Return the engine running a process that is defined in the file with the given definitionId
    *
    * @param {String} definitionId name of the file the process description is stored in
-   * @returns {Engine|undefined} - the engine running instances of the process with the given id
+   * @returns {Engine | undefined} The engine running instances of the process with the given id
    */
   getEngineWithDefinitionId(definitionId) {
     return this._engines.find((engine) => engine.definitionId === definitionId);
@@ -521,24 +596,17 @@ const Management = {
     const allInactiveUserTasks = this._engines.flatMap((engine) => engine.getInactiveUserTasks());
     // get inactive userTasks of already archived instances
     const allProcesses = await distribution.db.getAllProcesses();
-    const allArchivedInstances = await allProcesses.reduce(async (acc, currentDefinitionId) => {
-      const archivedInstancesForDefinitionId =
-        await distribution.db.getArchivedInstances(currentDefinitionId);
 
-      const nonDuplicateArchivedInstancesForDefinitionId = {};
+    const allArchivedInstances = await Promise.all(
+      allProcesses.map(async (definitionId) => {
+        const instances = await distribution.db.getArchivedInstances(definitionId);
+        return Object.entries(instances)
+          .filter(([instanceId]) => !this.getEngineWithID(instanceId))
+          .map(([_, instance]) => instance);
+      }),
+    );
 
-      Object.keys(archivedInstancesForDefinitionId).forEach((instanceId) => {
-        const executingEngine = this.getEngineWithID(instanceId);
-        if (!executingEngine) {
-          nonDuplicateArchivedInstancesForDefinitionId[instanceId] =
-            archivedInstancesForDefinitionId[instanceId];
-        }
-      });
-
-      return { ...acc, ...nonDuplicateArchivedInstancesForDefinitionId };
-    }, {});
-
-    const allArchivedUserTasks = Object.values(allArchivedInstances).flatMap((archivedInstance) => {
+    const allArchivedUserTasks = allArchivedInstances.flat().flatMap((archivedInstance) => {
       if (archivedInstance.userTasks) {
         const instanceUserTasks = archivedInstance.userTasks.map((uT) => {
           const userTaskToken = archivedInstance.tokens.find(
@@ -551,6 +619,7 @@ const Management = {
               priority: userTaskToken.priority,
               progress: userTaskToken.currentFlowNodeProgress.value,
               performers: userTaskToken.performers,
+              actualOwner: userTaskToken.actualOwner,
             };
           } else {
             const userTaskLogEntry = archivedInstance.log.find(
@@ -562,6 +631,7 @@ const Management = {
               priority: userTaskLogEntry.priority,
               progress: userTaskLogEntry.progress.value,
               performers: userTaskLogEntry.performers,
+              actualOwner: userTaskLogEntry.actualOwner,
             };
           }
         });

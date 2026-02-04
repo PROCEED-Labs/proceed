@@ -31,7 +31,11 @@ module.exports = (path) => {
     const image = Buffer.from(body.data);
     await db.saveImage(definitionId, fileName, image);
 
-    return '';
+    return {
+      statusCode: 200,
+      mimeType: 'text',
+      response: '',
+    };
   });
 
   network.get(`${path}/process/:definitionId/images/`, { cors: true }, async (req) => {
@@ -41,4 +45,40 @@ module.exports = (path) => {
 
     return JSON.stringify(imageFileNames);
   });
+
+  network.get(
+    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
+    { cors: true },
+    async (req) => {
+      const { definitionId, instanceId, fileName } = req.params;
+
+      const { mimeType, data } = await db.getInstanceFile(definitionId, instanceId, fileName);
+
+      return {
+        statusCode: 200,
+        mimeType,
+        response: data,
+      };
+    },
+  );
+
+  network.put(
+    `${path}/process/:definitionId/instance/:instanceId/file/:fileName`,
+    { cors: true },
+    async (req) => {
+      const { definitionId, instanceId, fileName } = req.params;
+      const { mimeType } = req.query;
+      const { body } = req;
+
+      const file = Buffer.from(body);
+
+      const path = await db.saveInstanceFile(definitionId, instanceId, fileName, mimeType, file);
+
+      return {
+        statusCode: 200,
+        mimeType: 'text',
+        response: path,
+      };
+    },
+  );
 };

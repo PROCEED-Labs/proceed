@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 const { System } = require('./system.ts');
 const { generateUniqueTaskID } = require('./utils.ts');
+const { v4 } = require('uuid');
 
 /**
  * @memberof module:@proceed/system
@@ -129,6 +130,42 @@ class Data extends System {
   }
 
   /**
+   * Return all script-tasks for given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to read all script-tasks from
+   * @param {object|null} options The options for the read operation
+   */
+  async getAllScriptTasks(definitionId, options) {
+    return this.read(`${definitionId}/script-tasks/`, options);
+  }
+
+  /**
+   * Read the script for the given script-task in given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to read from
+   * @param {string} fileName the fileName of the script-task
+   * @param {object|null} options The options for the read operation
+   */
+  async readScriptTaskScript(definitionId, fileName, options) {
+    return this.read(`${definitionId}/script-tasks/${fileName}.js`, options);
+  }
+
+  /**
+   * Write the script for the given fileName in the given process
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to write in
+   * @param {string} fileName The fileName to store the script in
+   * @param {string} script The script to store
+   * @param {object|null} options The options for the write operation
+   */
+  async writeScriptTaskScript(definitionId, fileName, script, options) {
+    return this.write(`${definitionId}/script-tasks/${fileName}.js`, script, options);
+  }
+
+  /**
    * Store image at given path
    * @async
    * @param {string} definitionId The definitionId of the process to write in
@@ -159,6 +196,58 @@ class Data extends System {
    */
   async readImage(definitionId, fileName, options) {
     return this.read(`${definitionId}/images/${fileName}`, options);
+  }
+
+  /**
+   * Store file at given path in a process instance
+   *
+   * @async
+   * @param {string} definitionId The definitionId of the process to write in
+   * @param {string} instanceId the instance of the process to write in
+   * @param {string} fileName The fileName to store the image in
+   * @param {string} fileType The type of the file to store
+   * @param {Buffer} file The file to store
+   * @param {object|null} options The options for the write operation
+   */
+  async writeInstanceFile(definitionId, instanceId, fileName, fileType, file, options) {
+    // generate a unique name to prevent file name collisions
+    let name = v4();
+    if (fileName.includes('.')) {
+      const fileType = fileName.split('.').pop();
+      name += '.' + fileType;
+    }
+
+    // keep track of mime types to use those when the file is requested later on
+    const fileInfos =
+      (await this.read(`${definitionId}/instances/${instanceId}/data/files.json`)) || {};
+
+    fileInfos[name] = fileType;
+
+    await this.write(
+      `${definitionId}/instances/${instanceId}/data/files.json`,
+      JSON.stringify(fileInfos),
+    );
+
+    await this.write(`${definitionId}/instances/${instanceId}/data/${name}`, file, options);
+
+    // return the REST path that can be used to request the file through the api
+    return `resources/process/${definitionId}/instance/${instanceId}/file/${name}`;
+  }
+
+  async readInstanceFile(definitionId, instanceId, fileName, options) {
+    const fileInfos = await this.read(`${definitionId}/instances/${instanceId}/data/files.json`);
+
+    if (!fileInfos || !fileInfos[fileName])
+      throw new Error(`File ${fileName} does not exist in instance ${instanceId}!`);
+
+    const mimeType = fileInfos[fileName];
+
+    const data = await this.read(
+      `${definitionId}/instances/${instanceId}/data/${fileName}`,
+      options,
+    );
+
+    return { mimeType, data };
   }
 
   /**

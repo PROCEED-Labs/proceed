@@ -147,6 +147,13 @@ class Messaging extends System {
     return listenPromise;
   }
 
+  async onConnect(url, connectionOptions, cb) {
+    const taskID = generateUniqueTaskID();
+    connectionOptions = JSON.stringify(connectionOptions);
+    this.commandResponse(taskID, cb);
+    this.commandRequest(taskID, ['messaging_on_connect', [url, connectionOptions]]);
+  }
+
   /**
    * Close a connection to a messaging server
    *
@@ -391,6 +398,7 @@ class Messaging extends System {
     // options are optional (we don't use them here but we provide the same signature as the http _serve method)
     if (typeof options === 'function') {
       callback = options;
+      options = {};
     }
 
     // map the REST path to a topic
@@ -430,6 +438,7 @@ class Messaging extends System {
           const params = {};
           const pathSegments = path.split('/').filter((segment) => !!segment);
           const topicSegments = topic
+            .split(this._baseTopic + '/')[1]
             .split('/')
             .slice(3)
             .filter((segment) => !!segment);
@@ -440,26 +449,45 @@ class Messaging extends System {
             }
           }
 
+          this._logger.info(
+            `Request received via Messaging System (REST-API Mapping). ID: ${request.id} Request: ${request.method} ${path}`,
+          );
+
           // call the handler for the called "endpoint"
           const res = await callback({ body: request.body, params, query: request.query || {} });
 
           // handle the different ways in which the handlers might return their results
           let sendResponse = res;
           let statusCode = 200;
+          let mimeType = undefined;
+          let isBuffer = false;
           if (typeof res === 'object') {
             sendResponse = res.response;
             statusCode = res.statusCode || 200;
+            mimeType = res.mimeType;
           }
 
-          if (Buffer.isBuffer(sendResponse)) sendResponse = sendResponse.toString();
+          if (Buffer.isBuffer(sendResponse)) {
+            if (mimeType && mimeType.startsWith('text')) {
+              sendResponse = sendResponse.toString();
+            } else {
+              sendResponse = Array.from(new Uint8Array(sendResponse));
+              isBuffer = true;
+            }
+          }
 
           // answer the request on the same topic using the same id
           await this.publish(topic, {
             type: 'response',
             id: request.id,
             statusCode,
+            mimeType,
+            bodyIsBuffer: isBuffer,
             body: sendResponse,
           });
+          this._logger.info(
+            `Response sent    via Messaging System (REST-API Mapping). ID: ${request.id} Response: ${statusCode}`,
+          );
         }
       } catch (err) {
         if (this._logger)
@@ -499,7 +527,7 @@ class Messaging extends System {
       );
     } catch (err) {
       if (!this._firstServeHasFailed) {
-        logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
+        this._logger.warn(`Setting up the REST to messaging mapping has failed. ${err}`);
       }
     }
   }

@@ -87,17 +87,14 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
     ...process.inEditingBy?.find(
       (e) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
     ),
+    name: '',
   };
   console.log('inEditing', inEditing, process.inEditingBy);
 
   // Get name of user who is editing
   if (inEditing.userId) {
     const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
-    (inEditing as any).name = user
-      ? Object.hasOwn(user, 'username')
-        ? (user as any).username
-        : ''
-      : '';
+    inEditing.name = user ? (Object.hasOwn(user, 'username') ? (user as any).username : '') : '';
   }
 
   // Since the user is able to minimize and close the page, everything is in a
@@ -117,7 +114,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
             process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
             folder={folder}
             versionName={selectedVersion?.name}
-            inEditing={inEditing}
+            inEditing={inEditing as any}
           />
         }
         timelineComponent={

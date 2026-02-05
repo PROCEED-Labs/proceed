@@ -83,16 +83,19 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
     ? process.versions.find((version: any) => version.id === selectedVersionId)
     : undefined;
 
-  const inEditing = {
-    ...process.inEditingBy?.find(
-      (e) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
-    ),
-    name: '',
-  };
+  const inEditing =
+    (process.inEditingBy?.length ?? 0) > 0
+      ? {
+          ...((process.inEditingBy as any)?.find(
+            (e: any) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
+          ) as any),
+          name: '',
+        }
+      : null;
   console.log('inEditing', inEditing, process.inEditingBy);
 
   // Get name of user who is editing
-  if (inEditing.userId) {
+  if (inEditing) {
     const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
     inEditing.name = user ? (Object.hasOwn(user, 'username') ? (user as any).username : '') : '';
   }

@@ -94,8 +94,6 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
     inEditing = undefined;
   }
 
-  console.log('inEditing', inEditing, process.inEditingBy);
-
   // Get name of user who is editing
   if (inEditing?.userId) {
     const user = await getUserById(inEditing.userId, { throwIfNotFound: false });

@@ -106,6 +106,7 @@ const Input: UserComponent<InputProps> = ({
   const [labelHovered, setLabelHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
   const [editingDefault, setEditingDefault] = useState(false);
+  const [inputHovered, setInputHovered] = useState(false);
   const { handleDelete } = useDeleteControl();
   const blockDragging = useEditorStateStore((state) => state.blockDragging);
   const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
@@ -150,8 +151,43 @@ const Input: UserComponent<InputProps> = ({
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
           alignItems: labelPosition === 'left' ? 'baseline' : undefined,
+          position: 'relative',
         }}
+        onMouseEnter={() => setInputHovered(true)}
+        onMouseLeave={() => setInputHovered(false)}
       >
+        {editingEnabled && inputHovered && (
+          <button
+            style={{
+              position: 'absolute',
+              top: '-10px',
+              right: '8px',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: 'white',
+              fontSize: '14px',
+              width: '28px',
+              height: '28px',
+              border: 'none',
+              borderRadius: '4px',
+              backgroundColor: 'rgba(0, 0, 0, 0.80)',
+              padding: '4px',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            }}
+            onClick={handleDelete}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            }}
+          >
+            <DeleteOutlined />
+          </button>
+        )}
         {labelPosition !== 'none' && (
           <div
             style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}
@@ -165,7 +201,6 @@ const Input: UserComponent<InputProps> = ({
                   key: 'edit',
                   icon: <EditOutlined onClick={() => setTextEditing(true)} />,
                 },
-                { key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> },
               ]}
               onDoubleClick={() => setTextEditing(true)}
             >

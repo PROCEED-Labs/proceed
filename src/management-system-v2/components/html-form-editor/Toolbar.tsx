@@ -16,6 +16,7 @@ import styles from './index.module.scss';
 import useEditorControls from './use-editor-controls';
 import useEditorStateStore from './use-editor-state-store';
 import { useEditor } from '@craftjs/core';
+import { addDefaultElements } from '.';
 
 export type EditorLayout = 'computer' | 'mobile';
 
@@ -95,7 +96,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   Modal.confirm({
                     title: 'Reset Form',
                     content:
-                      'Are you sure you want to reset the form to default content? This will remove all elements.',
+                      'Are you sure you want to reset the form to the default template? This will replace all current elements.',
                     okText: 'Reset',
                     okType: 'danger',
                     cancelText: 'Cancel',
@@ -105,6 +106,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                       rootNode.data.nodes.forEach((nodeId: string) => {
                         actions.delete(nodeId);
                       });
+                      // Add default elements back
+                      addDefaultElements(actions, query);
                     },
                   });
                 }}

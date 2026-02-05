@@ -29,6 +29,8 @@ import { Element } from '@craftjs/core';
 
 import { defaultElements, exportElements } from './elements';
 import useEditorStateStore from './use-editor-state-store';
+import Row from './elements/Row';
+import Column from './elements/Column';
 
 const { Text, SubmitButton, Table, CheckBoxOrRadioGroup, Input, Container } = defaultElements;
 
@@ -55,6 +57,13 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
 
     useEffect(() => {
       actions.deserialize(json);
+
+      // Check if ROOT is empty, add default elements
+      const rootNode = query.node('ROOT').get();
+      if (rootNode.data.nodes.length === 0) {
+        addDefaultElements(actions, query);
+      }
+
       onInit();
     }, [json]);
 
@@ -69,6 +78,44 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
 );
 
 EditorContent.displayName = 'EditorContent';
+
+const addDefaultElements = (actions: any, query: any) => {
+  const rootNodeId = 'ROOT';
+
+  // Helper function to add element wrapped in Row and Column
+  const addElementToRoot = (element: React.ReactElement) => {
+    // Create Row
+    const rowTree = query.parseReactElement(<Element is={Row} canvas />).toNodeTree();
+    actions.addNodeTree(rowTree, rootNodeId);
+
+    // Get the newly created row ID
+    const rootNode = query.node(rootNodeId).get();
+    const rowId = rootNode.data.nodes[rootNode.data.nodes.length - 1];
+
+    // Create Column inside Row
+    const columnTree = query.parseReactElement(<Element is={Column} canvas />).toNodeTree();
+    actions.addNodeTree(columnTree, rowId);
+
+    // Get the newly created column ID
+    const rowNode = query.node(rowId).get();
+    const columnId = rowNode.data.nodes[rowNode.data.nodes.length - 1];
+
+    // Add the actual element inside Column
+    const elementTree = query.parseReactElement(element).toNodeTree();
+    actions.addNodeTree(elementTree, columnId);
+  };
+
+  // Add all meeded elements now
+  addElementToRoot(
+    <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>' />,
+  );
+
+  addElementToRoot(<Text />);
+
+  addElementToRoot(<Input />);
+
+  addElementToRoot(<SubmitButton />);
+};
 
 const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
   (
@@ -259,3 +306,4 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
 HtmlFormEditor.displayName = 'HtmlFormEditor';
 
 export default HtmlFormEditor;
+export { addDefaultElements };

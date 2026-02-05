@@ -51,6 +51,8 @@ type CheckBoxOrRadioButtonProps = WithRequired<
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
   onEdit?: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
 };
 
 const getNewElementLabel = (type: CheckBoxOrRadioButtonProps['type']) => {
@@ -149,6 +151,8 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   onChange,
   onLabelChange,
   onEdit,
+  onDelete,
+  canDelete = true,
 }) => {
   const id = useId();
   const [hovered, setHovered] = useState(false);
@@ -180,6 +184,11 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
             },
+            editingEnabled &&
+              canDelete && {
+                icon: <DeleteOutlined onClick={onDelete} />,
+                key: 'delete',
+              },
           ]}
           onDoubleClick={() => setTextEditing(true)}
         >
@@ -511,6 +520,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                     setCurrentValue(value);
                     setEditTarget(index);
                   }}
+                  onDelete={() => handleRemoveButton(index)}
+                  canDelete={data.length >= 2}
                 />
               </div>
             ),

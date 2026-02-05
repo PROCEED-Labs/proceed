@@ -84,15 +84,20 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
     : undefined;
 
   const inEditing = {
-    ...(process.inEditingBy as any)?.find(
-      (e: any) => e.userId !== userId && e.timestamp + 15000 > Date.now(),
+    ...process.inEditingBy?.find(
+      (e) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
     ),
   };
+  console.log('inEditing', inEditing, process.inEditingBy);
 
   // Get name of user who is editing
-  if (inEditing) {
+  if (inEditing.userId) {
     const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
-    inEditing.name = user ? (Object.hasOwn(user, 'username') ? (user as any).username : '') : '';
+    (inEditing as any).name = user
+      ? Object.hasOwn(user, 'username')
+        ? (user as any).username
+        : ''
+      : '';
   }
 
   // Since the user is able to minimize and close the page, everything is in a

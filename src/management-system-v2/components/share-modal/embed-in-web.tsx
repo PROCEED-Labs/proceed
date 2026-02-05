@@ -135,7 +135,6 @@ const ModelerShareModalOptionEmdedInWeb = ({
             <TextArea
               rows={2}
               value={iframeCode}
-              // @ts-expect-error fieldSizing works but isn't recognized as a valid field
               style={{ backgroundColor: 'rgb(245,245,245)', fieldSizing: 'content' }}
             />
           </div>

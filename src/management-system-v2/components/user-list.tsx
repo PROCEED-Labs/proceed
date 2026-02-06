@@ -164,7 +164,7 @@ const UserList: FC<UserListProps> = ({
               onMouseEnter: () => setHoveredRowId(element.id),
               onMouseLeave: () => setHoveredRowId(null),
             }),
-            pagination: { position: ['bottomCenter'] },
+            pagination: { placement: ['bottomCenter'] },
             rowKey: 'id',
             loading,
           }}

@@ -289,7 +289,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
         <Alert
           style={{ margin: '0 5px' }}
           type="warning"
-          message="This view is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
+          title="This view is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
         />
       </div>
     );

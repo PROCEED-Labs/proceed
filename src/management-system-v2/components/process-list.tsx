@@ -538,7 +538,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
         scroll: {
           y: scrollY,
         },
-        pagination: { position: ['bottomCenter'], pageSize: 20 },
+        pagination: { placement: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
           onContextMenu: () => {
             if (selection.includes(item.id)) {

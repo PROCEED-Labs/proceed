@@ -159,7 +159,7 @@ const SavedEnginesList = ({
       <EngineStatusContext.Provider value={setEnginesStatus}>
         <ElementList
           tableProps={{
-            pagination: { pageSize: 10, position: ['bottomCenter'] },
+            pagination: { pageSize: 10, placement: ['bottomCenter'] },
             expandable: {
               rowExpandable: (record) => {
                 const status = enginesStatus[record.id];

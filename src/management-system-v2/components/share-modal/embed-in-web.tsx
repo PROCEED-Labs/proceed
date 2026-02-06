@@ -94,7 +94,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   if (processes.length > 1) {
     return (
-      <Alert type="info" message="Embedding is only available when a single process is selected" />
+      <Alert type="info" title="Embedding is only available when a single process is selected" />
     );
   }
 
@@ -108,7 +108,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
     );
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Checkbox
         checked={embeddingUrl.length > 0 && allowIframeTimestamp > 0}
         onChange={handleAllowEmbeddingChecked}

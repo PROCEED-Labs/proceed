@@ -54,7 +54,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </>
           )}
           <>
-            <Divider type="vertical" />
+            <Divider orientation="vertical" />
             <Button
               type="text"
               icon={
@@ -76,7 +76,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
 
           {editingEnabled && (
             <>
-              <Divider type="vertical" />
+              <Divider orientation="vertical" />
               <Button
                 danger
                 disabled={!selected}

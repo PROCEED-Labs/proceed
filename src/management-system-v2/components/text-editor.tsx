@@ -54,7 +54,7 @@ const TextEditor = ({
       />
       <div style={{ display: 'flex', justifyContent: 'start' }}>
         <Tabs
-          tabPosition="bottom"
+          tabPlacement="bottom"
           tabBarStyle={{ marginTop: 0 }}
           tabBarGutter={0}
           defaultActiveKey="editor"

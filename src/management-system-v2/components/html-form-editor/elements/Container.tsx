@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 
-import { InputNumber, ColorPicker, Empty } from 'antd';
+import { InputNumber, ColorPicker, Empty, Space } from 'antd';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
@@ -79,16 +79,19 @@ export const ContainerSettings = () => {
       <Setting
         label="Padding"
         control={
-          <InputNumber
-            min={0}
-            addonAfter="px"
-            value={padding}
-            onChange={(val) =>
-              setProp((props: ContainerProps) => {
-                props.padding = val;
-              })
-            }
-          />
+          <Space.Compact style={{ display: 'flex' }}>
+            <InputNumber
+              min={0}
+              style={{ flex: 1 }}
+              value={padding}
+              onChange={(val) =>
+                setProp((props: ContainerProps) => {
+                  props.padding = val;
+                })
+              }
+            />
+            <Space.Addon>px</Space.Addon>
+          </Space.Compact>
         }
       />
       <Setting
@@ -108,16 +111,19 @@ export const ContainerSettings = () => {
       <Setting
         label="Border Thickness"
         control={
-          <InputNumber
-            min={0}
-            addonAfter="px"
-            value={borderThickness}
-            onChange={(val) =>
-              setProp((props: ContainerProps) => {
-                props.borderThickness = val;
-              })
-            }
-          />
+          <Space.Compact style={{ display: 'flex' }}>
+            <InputNumber
+              min={0}
+              style={{ flex: 1 }}
+              value={borderThickness}
+              onChange={(val) =>
+                setProp((props: ContainerProps) => {
+                  props.borderThickness = val;
+                })
+              }
+            />
+            <Space.Addon>px</Space.Addon>
+          </Space.Compact>
         }
       />
       <Setting

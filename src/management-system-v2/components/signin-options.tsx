@@ -195,7 +195,7 @@ export function SigninOptions({
           </Form>
 
           <Alert
-            message="Note: Simply sign in with your e-mail address and we will send you an access link."
+            title="Note: Simply sign in with your e-mail address and we will send you an access link."
             type="info"
           />
         </>

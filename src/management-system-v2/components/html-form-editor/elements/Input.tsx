@@ -218,7 +218,7 @@ export const InputSettings = () => {
         label="Label"
         control={
           <Select
-            style={{ display: 'block' }}
+            style={{ display: 'flex' }}
             options={[
               { value: 'top', label: 'Above' },
               { value: 'left', label: 'Left' },

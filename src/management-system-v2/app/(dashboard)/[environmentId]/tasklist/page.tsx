@@ -94,7 +94,7 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
 
   return (
     <Content title="Tasklist">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
         <Tasklist userId={userId} userTasks={mappedUserTasks}></Tasklist>
       </Space>
     </Content>

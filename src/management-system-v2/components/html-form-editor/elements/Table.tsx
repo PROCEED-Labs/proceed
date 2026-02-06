@@ -463,7 +463,7 @@ const Table: UserComponent<TableProps> = ({
         createPortal(
           <>
             <Divider>Cell Settings</Divider>
-            <Space style={{ width: '100%' }} direction="vertical" align="center">
+            <Space style={{ width: '100%' }} orientation="vertical" align="center">
               <Space.Compact>
                 <SidebarButton
                   action="add-row-above"

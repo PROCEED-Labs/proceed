@@ -170,7 +170,7 @@ export default function ToolbarPlugin() {
           icon={<RedoOutlined />}
           onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
         />
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
         <Button
           className={'toolbar-item spaced '}
           aria-label="Format Bold"
@@ -209,7 +209,7 @@ export default function ToolbarPlugin() {
             editor.dispatchCommand(TOGGLE_LINK_COMMAND, isLink ? null : { url: newLink });
           }}
         />
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
         <Button
           className="toolbar-item spaced"
           aria-label="Left Align"
@@ -239,6 +239,7 @@ export default function ToolbarPlugin() {
             <Select
               options={linkOptions}
               value={linkType}
+              popupMatchSelectWidth={false}
               onChange={(type) => {
                 setLinkType(type);
                 setLink('');

@@ -237,7 +237,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
               }}
               tableProps={{
                 rowKey: 'id',
-                pagination: { position: ['bottomCenter'], pageSize: numberOfRows },
+                pagination: { placement: ['bottomCenter'], pageSize: numberOfRows },
               }}
             />
           )}

@@ -285,7 +285,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
           {permissionCategory.permissions.map((permission, idx) => (
             <Fragment key={permission.key}>
               <Row align="top" justify="space-between" wrap={false}>
-                <Space direction="vertical" size={0}>
+                <Space orientation="vertical" size={0}>
                   <Typography.Text strong>{permission.title}</Typography.Text>
                   <Typography.Text type="secondary">{permission.description}</Typography.Text>
                 </Space>

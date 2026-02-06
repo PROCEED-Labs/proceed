@@ -84,7 +84,7 @@ export const SubmitButtonSettings = () => {
         label="Color"
         control={
           <Select
-            style={{ display: 'block' }}
+            style={{ display: 'flex' }}
             options={[
               { value: 'default', label: 'White' },
               { value: 'primary', label: 'Blue' },
@@ -103,7 +103,7 @@ export const SubmitButtonSettings = () => {
         label="Use Full Width"
         control={
           <Checkbox
-            value={block}
+            checked={block}
             onChange={(e) => {
               setProp((props: SubmitButtonProps) => {
                 props.block = e.target.checked;

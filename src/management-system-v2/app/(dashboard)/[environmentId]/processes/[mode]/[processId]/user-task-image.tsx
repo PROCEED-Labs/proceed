@@ -18,6 +18,7 @@ import { useFileManager } from '@/lib/useFileManager';
 import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
 
 import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+import { DeleteButton } from '@/components/html-form-editor/DeleteButton';
 
 type ImageProps = {
   src?: string;
@@ -126,38 +127,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
         onMouseOver={() => editingEnabled && setShowOverlay(true)}
         onMouseOut={() => editingEnabled && setShowOverlay(false)}
       >
-        {editingEnabled && showOverlay && (
-          <button
-            style={{
-              position: 'absolute',
-              top: '-10px',
-              right: '8px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'white',
-              fontSize: '14px',
-              width: '28px',
-              height: '28px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(0, 0, 0, 0.80)',
-              padding: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            }}
-            onClick={handleDelete}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            }}
-          >
-            <DeleteOutlined />
-          </button>
-        )}
+        <DeleteButton show={editingEnabled && showOverlay} onClick={handleDelete} />
         <img
           ref={imageRef}
           style={{ width: width && `${width}%` }}

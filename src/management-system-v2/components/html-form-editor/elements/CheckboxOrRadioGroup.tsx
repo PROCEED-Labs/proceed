@@ -29,6 +29,7 @@ import { WithRequired } from '@/lib/typescript-utils';
 import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
+import { DeleteButton } from '../DeleteButton';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -460,38 +461,10 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         onMouseEnter={() => setHoveredGroup(true)}
         onMouseLeave={() => setHoveredGroup(false)}
       >
-        {editingEnabled && hoveredGroup && editTarget === undefined && (
-          <button
-            style={{
-              position: 'absolute',
-              top: '-10px',
-              right: '8px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'white',
-              fontSize: '14px',
-              width: '28px',
-              height: '28px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(0, 0, 0, 0.80)',
-              padding: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            }}
-            onClick={handleDelete}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            }}
-          >
-            <DeleteOutlined />
-          </button>
-        )}
+        <DeleteButton
+          show={editingEnabled && hoveredGroup && editTarget === undefined}
+          onClick={handleDelete}
+        />
         <div className={`user-task-form-input-group variable-${variable}`}>
           {dataWithPreviews.map(
             ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (

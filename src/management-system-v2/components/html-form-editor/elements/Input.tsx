@@ -9,6 +9,7 @@ import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
+import { DeleteButton } from '../DeleteButton';
 
 type InputProps = {
   label?: string;
@@ -156,38 +157,7 @@ const Input: UserComponent<InputProps> = ({
         onMouseEnter={() => setInputHovered(true)}
         onMouseLeave={() => setInputHovered(false)}
       >
-        {editingEnabled && inputHovered && (
-          <button
-            style={{
-              position: 'absolute',
-              top: '-10px',
-              right: '8px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'white',
-              fontSize: '14px',
-              width: '28px',
-              height: '28px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(0, 0, 0, 0.80)',
-              padding: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            }}
-            onClick={handleDelete}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            }}
-          >
-            <DeleteOutlined />
-          </button>
-        )}
+        <DeleteButton show={editingEnabled && inputHovered} onClick={handleDelete} />
         {labelPosition !== 'none' && (
           <div
             style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}

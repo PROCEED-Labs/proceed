@@ -24,6 +24,7 @@ import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useDeleteControl } from './utils';
+import { DeleteButton } from '../DeleteButton';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -437,38 +438,7 @@ const Table: UserComponent<TableProps> = ({
         onMouseEnter={() => setHoveredTable(true)}
         onMouseLeave={() => setHoveredTable(false)}
       >
-        {editingEnabled && hoveredTable && !targetCell && (
-          <button
-            style={{
-              position: 'absolute',
-              top: '-10px',
-              right: '8px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              color: 'white',
-              fontSize: '14px',
-              width: '28px',
-              height: '28px',
-              border: 'none',
-              borderRadius: '4px',
-              backgroundColor: 'rgba(0, 0, 0, 0.80)',
-              padding: '4px',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
-            }}
-            onClick={handleDelete}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(34, 34, 34, 0.8)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-            }}
-          >
-            <DeleteOutlined />
-          </button>
-        )}
+        <DeleteButton show={editingEnabled && hoveredTable && !targetCell} onClick={handleDelete} />
         <table
           className="user-task-form-table"
           ref={(r) => {

@@ -17,7 +17,7 @@ import useEditorControls from './use-editor-controls';
 import useEditorStateStore from './use-editor-state-store';
 import { useEditor } from '@craftjs/core';
 import { addDefaultElements } from '.';
-
+import { getDefaultStateSnapshot, extractStructure } from '.';
 export type EditorLayout = 'computer' | 'mobile';
 
 type ToolbarProps = {
@@ -34,83 +34,34 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
 
   // Check if the changes have been made to default content to enable the button
-  const { query, actions, isDefault } = useEditor((state) => {
-    const rootNode = state.nodes['ROOT'];
+  const { query, actions } = useEditor((state, query) => {
+    // Return a trigger value that changes whenever nodes change
+    return {
+      nodeCount: Object.keys(state.nodes).length,
+    };
+  });
 
-    // Check if current state matches exactly the default state
-    const hasDefaultStructure = rootNode?.data?.nodes?.length === 4;
+  const isDefault = (() => {
+    try {
+      const currentState = query.serialize();
+      const defaultStructure = getDefaultStateSnapshot();
 
-    if (!hasDefaultStructure) {
-      return { isDefault: false };
-    }
-
-    // Define expected default element types and props
-    const expectedElements = [
-      {
-        elementType: 'Text',
-        text: '<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>',
-      },
-      {
-        elementType: 'Text',
-        text: 'New Text Element',
-      },
-      {
-        elementType: 'Input',
-        label: 'New Input',
-        inputType: 'text',
-        labelPosition: 'top',
-        defaultValue: '',
-      },
-      {
-        elementType: 'SubmitButton',
-        title: 'Submit',
-        buttonType: 'primary',
-        block: false,
-      },
-    ];
-
-    // Check each row matches expected default
-    const isDefault = rootNode.data.nodes.every((rowId: string, index: number) => {
-      const row = state.nodes[rowId];
-      if (!row || row.data.nodes.length !== 1) return false;
-
-      const columnId = row.data.nodes[0];
-      const column = state.nodes[columnId];
-      if (!column || column.data.nodes.length !== 1) return false;
-
-      const elementId = column.data.nodes[0];
-      const element = state.nodes[elementId];
-      if (!element) return false;
-
-      const expected = expectedElements[index];
-      const actualElementType = element.data.displayName || element.data.name;
-
-      // Check if type matches
-      if (actualElementType !== expected.elementType) return false;
-
-      // Check props
-      if (expected.elementType === 'Text') {
-        return element.data.props.text === expected.text;
-      } else if (expected.elementType === 'Input') {
-        return (
-          element.data.props.label === expected.label &&
-          element.data.props.type === expected.inputType &&
-          element.data.props.labelPosition === expected.labelPosition &&
-          (element.data.props.defaultValue || '') === expected.defaultValue
-        );
-      } else if (expected.elementType === 'SubmitButton') {
-        return (
-          element.data.props.title === expected.title &&
-          element.data.props.type === expected.buttonType &&
-          (element.data.props.block || false) === expected.block
-        );
+      if (!defaultStructure) {
+        return false;
       }
 
-      return true;
-    });
+      // Extract current structure
+      const currentStructure = extractStructure(JSON.parse(currentState));
 
-    return { isDefault };
-  });
+      // Deep compare structures
+      const matches = JSON.stringify(currentStructure) === JSON.stringify(defaultStructure);
+
+      return matches;
+    } catch (error) {
+      console.error('Error checking isDefault:', error);
+      return false;
+    }
+  })();
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 

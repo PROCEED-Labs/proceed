@@ -51,6 +51,62 @@ export interface HtmlFormEditorRef extends EditorContentRef {
   getHtml: () => string;
 }
 
+// Store the default state structure
+let defaultStateStructure: any = null;
+
+export const setDefaultStateSnapshot = (serializedState: string) => {
+  const state = JSON.parse(serializedState);
+  // Extract only the structure and props, ignoring node IDs because they are generated randomly
+  defaultStateStructure = extractStructure(state);
+};
+
+export const getDefaultStateSnapshot = () => {
+  return defaultStateStructure;
+};
+
+// Helper to extract structure without node IDs
+export const extractStructure = (state: any) => {
+  const structure: any = {
+    rows: [],
+    totalElements: 0,
+  };
+
+  const rootNode = state.ROOT;
+  if (!rootNode) return structure;
+
+  rootNode.nodes.forEach((rowId: string) => {
+    const row = state[rowId];
+    if (!row || !row.nodes) return;
+
+    const rowData: any = {
+      columnCount: row.nodes.length,
+      elements: [],
+    };
+
+    // Check all columns in the row
+    row.nodes.forEach((columnId: string) => {
+      const column = state[columnId];
+      if (!column || !column.nodes) return;
+
+      // Check all elements in the column
+      column.nodes.forEach((elementId: string) => {
+        const element = state[elementId];
+        if (!element) return;
+
+        rowData.elements.push({
+          type: element.data?.displayName || element.data?.name || element.type?.resolvedName,
+          props: element.props || element.data?.props || {},
+        });
+        structure.totalElements++;
+      });
+    });
+
+    structure.rows.push(rowData);
+  });
+
+  return structure;
+};
+
 const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () => void }>(
   ({ json, onInit }, ref) => {
     const { query, actions } = useEditor();
@@ -62,6 +118,24 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
       const rootNode = query.node('ROOT').get();
       if (rootNode.data.nodes.length === 0) {
         addDefaultElements(actions, query);
+
+        // Capture the default state snapshot after adding elements
+        // Use requestAnimationFrame to make sure that DOM is updated
+        requestAnimationFrame(() => {
+          const snapshot = query.serialize();
+          setDefaultStateSnapshot(snapshot);
+        });
+      } else {
+        // If there are already elements, capture snapshot anyway (for page reload)
+        const currentState = query.serialize();
+        const existingSnapshot = getDefaultStateSnapshot();
+        if (!existingSnapshot) {
+          // Count elements to see if it matches default structure
+          const nodeCount = Object.keys(JSON.parse(currentState)).length;
+          if (nodeCount >= 12 && nodeCount <= 14) {
+            setDefaultStateSnapshot(currentState);
+          }
+        }
       }
 
       onInit();
@@ -105,7 +179,7 @@ const addDefaultElements = (actions: any, query: any) => {
     actions.addNodeTree(elementTree, columnId);
   };
 
-  // Add all meeded elements now
+  // Add all needed elements now
   addElementToRoot(
     <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>' />,
   );

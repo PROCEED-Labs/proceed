@@ -27,11 +27,13 @@ type PlannedDurationModalProperties = {
   durationValues: DurationValues;
   show: boolean;
   close: (values?: DurationValues) => void;
+  title?: string;
 };
 export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
   durationValues,
   show,
   close,
+  title,
 }) => {
   const [form] = Form.useForm();
 
@@ -63,7 +65,7 @@ export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
 
   return (
     <Modal
-      title="Edit Planned Duration"
+      title={title || 'Edit Planned Duration'}
       className={styles.PlannedDurationModal}
       width={getModalWidth()}
       style={{ maxWidth: '400px' }}
@@ -107,12 +109,14 @@ type PlannedDurationInputProperties = {
   timePlannedDuration: string;
   onChange: (changedTimePlannedDuration: string) => void;
   readOnly?: boolean;
+  title?: string;
 };
 
 const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
   timePlannedDuration,
   onChange,
   readOnly = false,
+  title,
 }) => {
   const [isPlannedDurationModalOpen, setIsPlannedDurationModalOpen] = useState(false);
 
@@ -172,6 +176,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
       <PlannedDurationModal
         durationValues={durationValues}
         show={isPlannedDurationModalOpen}
+        title={title}
         close={(values) => {
           if (values) {
             const timeFormalExpression = calculateTimeFormalExpression(values);
@@ -221,9 +226,15 @@ export const TimerEventButton: React.FC<TimerEventButtonProps> = ({ element }) =
     }
   }, [element]);
 
+  // Determine title based on event type
+  const isStartEvent = element && bpmnIs(element, 'bpmn:StartEvent');
+  const title = isStartEvent
+    ? 'Edit Trigger Interval for Timer Start Event'
+    : 'Edit Wait Duration of Timer Event';
+
   return (
     <>
-      <Tooltip title="Edit Wait Duration of Timer Event">
+      <Tooltip title={title}>
         <Button
           icon={<ClockCircleOutlined />}
           onClick={() => setIsPlannedDurationModalOpen(true)}
@@ -232,6 +243,7 @@ export const TimerEventButton: React.FC<TimerEventButtonProps> = ({ element }) =
       <PlannedDurationModal
         durationValues={durationValues}
         show={isPlannedDurationModalOpen}
+        title={title}
         close={async (values) => {
           if (modeler && element && values) {
             const modeling = modeler.getModeling();

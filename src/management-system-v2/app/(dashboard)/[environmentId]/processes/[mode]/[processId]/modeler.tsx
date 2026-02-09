@@ -8,7 +8,7 @@ import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
-import { App } from 'antd';
+import { Alert, App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
@@ -32,9 +32,10 @@ type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: Process;
   folder?: Folder;
+  inEditing?: { userId: string; name: string; timestamp: number };
 };
 
-const Modeler = ({ versionName, process, folder, ...divProps }: ModelerProps) => {
+const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
   const query = useSearchParams();
@@ -92,7 +93,21 @@ const Modeler = ({ versionName, process, folder, ...divProps }: ModelerProps) =>
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView && !isListView;
+  const canEdit = !selectedVersionId && !showMobileView && !isListView && !inEditing;
+
+  useEffect(() => {
+    if (!canEdit) {
+      return;
+    }
+    // Implement a ping to an endpoint to mark the editing session alive.
+    const interval = setInterval(() => {
+      fetch(`/api/private/${environment.spaceId}/processes/${process.id}/ping`, {
+        method: 'POST',
+      });
+    }, 1000 * 5);
+
+    return () => clearInterval(interval);
+  }, [canEdit, environment.spaceId, process.id]);
 
   // We shouldn't get to a place where the event listener isn't removed, since the debounce will
   // always be fired, as it doesn't get cancelled when process.id changes
@@ -336,6 +351,17 @@ const Modeler = ({ versionName, process, folder, ...divProps }: ModelerProps) =>
   return (
     <CanEditContext.Provider value={canEdit}>
       <div className={styles.Modeler} style={{ height: '100%' }}>
+        {inEditing && (
+          <Alert
+            message={
+              'This process is currently being edited by ' +
+              (inEditing.name ?? 'a user') +
+              '. No changes can be made while it is being edited.'
+            }
+            type="warning"
+            closable
+          />
+        )}
         {!minimized && (
           <>
             {loaded && (

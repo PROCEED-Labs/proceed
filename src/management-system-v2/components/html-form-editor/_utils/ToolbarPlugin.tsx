@@ -11,11 +11,20 @@ import {
   AlignLeftOutlined,
   AlignRightOutlined,
   AlignCenterOutlined,
+  OrderedListOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { mergeRegister } from '@lexical/utils';
 import { $isLinkNode, TOGGLE_LINK_COMMAND, LinkNode } from '@lexical/link';
+import {
+  INSERT_ORDERED_LIST_COMMAND,
+  INSERT_UNORDERED_LIST_COMMAND,
+  REMOVE_LIST_COMMAND,
+  $isListNode,
+  ListNode,
+} from '@lexical/list';
 
 import {
   $getSelection,
@@ -47,6 +56,8 @@ export default function ToolbarPlugin() {
   const [isLink, setIsLink] = useState(false);
   const [link, setLink] = useState('');
   const [linkType, setLinkType] = useState<'url' | 'variable'>('url');
+  const [isOrderedList, setIsOrderedList] = useState(false);
+  const [isUnorderedList, setIsUnorderedList] = useState(false);
 
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -55,6 +66,31 @@ export default function ToolbarPlugin() {
       setIsBold(selection.hasFormat('bold'));
       setIsItalic(selection.hasFormat('italic'));
       setIsUnderline(selection.hasFormat('underline'));
+
+      // Check for list formatting
+      const anchorNode = selection.anchor.getNode();
+      let element =
+        anchorNode.getKey() === 'root' ? anchorNode : anchorNode.getTopLevelElementOrThrow();
+
+      const elementKey = element.getKey();
+      const elementDOM = editor.getElementByKey(elementKey);
+
+      setIsOrderedList(false);
+      setIsUnorderedList(false);
+
+      if (elementDOM !== null) {
+        let parent: ReturnType<typeof element.getParent> | typeof element = element;
+        while (parent) {
+          if ($isListNode(parent)) {
+            const parentList = parent as ListNode;
+            const type = parentList.getListType();
+            setIsOrderedList(type === 'number');
+            setIsUnorderedList(type === 'bullet');
+            break;
+          }
+          parent = parent.getParent();
+        }
+      }
 
       const nodes = selection.getNodes();
       let isLink = nodes.length > 0;
@@ -86,7 +122,7 @@ export default function ToolbarPlugin() {
         } else setLink(link as string);
       } else setLink('');
     }
-  }, []);
+  }, [editor]);
 
   useEffect(() => {
     return mergeRegister(
@@ -151,6 +187,22 @@ export default function ToolbarPlugin() {
     ),
   };
 
+  const formatBulletList = () => {
+    if (isUnorderedList) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+    } else {
+      editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND, undefined);
+    }
+  };
+
+  const formatNumberedList = () => {
+    if (isOrderedList) {
+      editor.dispatchCommand(REMOVE_LIST_COMMAND, undefined);
+    } else {
+      editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND, undefined);
+    }
+  };
+
   return (
     <div className="toolbar" ref={toolbarRef} onMouseDown={(e) => e.stopPropagation()}>
       <div>
@@ -208,6 +260,23 @@ export default function ToolbarPlugin() {
             setLink(newLink);
             editor.dispatchCommand(TOGGLE_LINK_COMMAND, isLink ? null : { url: newLink });
           }}
+        />
+        <Divider orientation="vertical" />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Numbered List"
+          style={{ backgroundColor: isOrderedList ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<OrderedListOutlined />}
+          onClick={formatNumberedList}
+        />
+        <Button
+          className={'toolbar-item spaced '}
+          aria-label="Bulleted List"
+          style={{ backgroundColor: isUnorderedList ? '#a9a9a94d' : undefined }}
+          type="text"
+          icon={<UnorderedListOutlined />}
+          onClick={formatBulletList}
         />
         <Divider orientation="vertical" />
         <Button

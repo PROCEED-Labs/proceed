@@ -1,14 +1,15 @@
 import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting, VariableSetting } from './utils';
+import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
+import { DeleteButton } from '../DeleteButton';
 
 type InputProps = {
   label?: string;
@@ -106,7 +107,8 @@ const Input: UserComponent<InputProps> = ({
   const [labelHovered, setLabelHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
   const [editingDefault, setEditingDefault] = useState(false);
-
+  const [inputHovered, setInputHovered] = useState(false);
+  const { handleDelete } = useDeleteControl();
   const blockDragging = useEditorStateStore((state) => state.blockDragging);
   const unblockDragging = useEditorStateStore((state) => state.unblockDragging);
   useEffect(() => {
@@ -150,8 +152,12 @@ const Input: UserComponent<InputProps> = ({
           display: 'flex',
           flexDirection: labelPosition === 'top' ? 'column' : 'row',
           alignItems: labelPosition === 'left' ? 'baseline' : undefined,
+          position: 'relative',
         }}
+        onMouseEnter={() => setInputHovered(true)}
+        onMouseLeave={() => setInputHovered(false)}
       >
+        <DeleteButton show={editingEnabled && inputHovered} onClick={handleDelete} />
         {labelPosition !== 'none' && (
           <div
             style={{ marginRight: labelPosition === 'left' ? '8px' : 0, position: 'relative' }}

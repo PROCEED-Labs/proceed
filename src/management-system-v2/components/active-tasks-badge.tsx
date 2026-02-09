@@ -8,9 +8,14 @@ import { Badge } from 'antd';
 type ActiveTasksBadgeProps = {
   activeSpace: { spaceId: string; isOrganization: boolean };
   onIcon?: boolean;
+  pollingInterval: number;
 };
-const ActiveTasksBadge: React.FC<ActiveTasksBadgeProps> = ({ activeSpace, onIcon }) => {
-  const { userTasks } = useUserTasks(activeSpace, 2000, {
+const ActiveTasksBadge: React.FC<ActiveTasksBadgeProps> = ({
+  activeSpace,
+  onIcon,
+  pollingInterval,
+}) => {
+  const { userTasks } = useUserTasks(activeSpace, pollingInterval, {
     allowedStates: ['READY', 'ACTIVE'],
     hideUnassignedTasks: activeSpace.isOrganization,
     hideNonOwnableTasks: true,

@@ -15,7 +15,7 @@ import { getUserRoles } from './data/roles';
 
 function useUserTasks(
   space: { spaceId: string; isOrganization: boolean },
-  fetchInterval = 1000,
+  fetchInterval = 10000,
   filter?: {
     allowedStates?: string[];
     hideUnassignedTasks?: boolean;

@@ -109,7 +109,7 @@ const onBuild = process.env.NEXT_PHASE === 'phase-production-build';
 // TODO: make this not async, it's not that good for performance
 async function _getMSConfig() {
   // To make every page that calls this function dynamic
-  headers();
+  await headers();
 
   // NOTE: maybe ensuring defaults all the time isn't necessary, but it's the best way to avoid
   // development issues, where a config is added and not in the db

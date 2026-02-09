@@ -1,5 +1,5 @@
-.Zoombar :global {
-  .ant-input {
+.Zoombar {
+  :global(.ant-input) {
     border: none !important;
     width: 75px;
     background-color: #eeeeee;
@@ -7,7 +7,7 @@
     text-align: center;
   }
 
-  .ant-btn-compact-item {
+  :global(.ant-btn-compact-item) {
     border: none !important;
     background-color: #eeeeee;
   }

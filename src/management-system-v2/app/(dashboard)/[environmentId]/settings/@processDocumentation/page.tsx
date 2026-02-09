@@ -4,7 +4,8 @@ import SettingsInjector from '../settings-injector';
 import Wrapper from './wrapper';
 import { getSettings } from './settings';
 
-const Page = async ({ params }: { params: { environmentId: string } }) => {
+const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const {
     activeEnvironment: { spaceId },
   } = await getCurrentEnvironment(params.environmentId);

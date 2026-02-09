@@ -6,7 +6,8 @@ import Tasklist from './tasklist';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 
-const TasklistPage = async ({ params }: { params: { environmentId: string } }) => {
+const TasklistPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+  const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
     return notFound();
@@ -33,10 +34,15 @@ const TasklistPage = async ({ params }: { params: { environmentId: string } }) =
     return notFound();
   }
 
+  let pollingInterval = 5000;
+  if (Number.isInteger(automationSettings.tasklist?.pollingInterval)) {
+    pollingInterval = automationSettings.tasklist.pollingInterval;
+  }
+
   return (
     <Content title="Tasklist">
       <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
-        <Tasklist userId={userId} />
+        <Tasklist userId={userId} pollingInterval={pollingInterval} />
       </Space>
     </Content>
   );

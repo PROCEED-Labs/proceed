@@ -2,7 +2,7 @@ import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
-import { Alert, App, Grid, Modal } from 'antd';
+import { Alert, App, Button, Grid, Modal } from 'antd';
 import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 
 import { LuImage, LuMilestone } from 'react-icons/lu';
@@ -142,7 +142,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   const editingEnabled = useCanEdit();
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
+  const [modalKey, setModalKey] = useState(0);
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
 
@@ -243,10 +243,31 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       modalApi.confirm({
         title: 'You have unsaved changes!',
         content: 'Are you sure you want to close without saving?',
+        okText: 'Discard Changes',
+        okType: 'default',
+        cancelText: 'Cancel',
         onOk: () => {
           setHasUnsavedChanges(false);
+          // Increment key to force editor remount and discard changes
+          setModalKey((prev) => prev + 1);
           onClose();
         },
+        footer: (_, { OkBtn, CancelBtn }) => (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <CancelBtn />
+            <OkBtn />
+
+            <Button
+              type="primary"
+              onClick={async () => {
+                Modal.destroyAll();
+                await handleSave();
+              }}
+            >
+              Save
+            </Button>
+          </div>
+        ),
       });
     }
   };
@@ -275,7 +296,10 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   let title = <div>Html Form</div>;
 
   if (bpmnIs(affectedElement, 'bpmn:UserTask')) {
-    title = <span>User Task Form</span>;
+    const taskName = affectedElement?.businessObject.name
+      ? `: ${affectedElement?.businessObject.name}`
+      : '';
+    title = <span>User Task Form{taskName}</span>;
   } else if (bpmnIs(affectedElement, 'bpmn:Process')) {
     title = <span>Process Start Form</span>;
   }
@@ -308,9 +332,9 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       onCancel={handleClose}
       okButtonProps={{ disabled: !canEdit }}
       onOk={handleSave}
-      destroyOnClose
+      destroyOnHidden
     >
-      <EditorStoreProvider>
+      <EditorStoreProvider key={modalKey}>
         <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
       </EditorStoreProvider>
       {modalElement}

@@ -1,7 +1,7 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 
 import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import {
   TbRowInsertTop,
   TbRowInsertBottom,
@@ -22,12 +22,14 @@ import {
   SidebarButtonFactory,
   MenuItemFactoryFactory,
   VariableSetting,
+  useDeleteControl,
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
 import { EditOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
+import { DeleteButton } from '../DeleteButton';
 
 const checkboxValueHint =
   'This will be the value that is added to the variable associated with this group when the checkbox is checked at the time the form is submitted.';
@@ -50,6 +52,8 @@ type CheckBoxOrRadioButtonProps = WithRequired<
   onChange: () => void;
   onLabelChange: (newLabel: string) => void;
   onEdit?: () => void;
+  onDelete?: () => void;
+  canDelete?: boolean;
 };
 
 const getNewElementLabel = (type: CheckBoxOrRadioButtonProps['type']) => {
@@ -148,13 +152,14 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
   onChange,
   onLabelChange,
   onEdit,
+  onDelete,
+  canDelete = true,
 }) => {
   const id = useId();
   const [hovered, setHovered] = useState(false);
   const [textEditing, setTextEditing] = useState(false);
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
-
   return (
     <>
       <input
@@ -180,6 +185,11 @@ const CheckboxOrRadioButton: React.FC<CheckBoxOrRadioButtonProps> = ({
               icon: <EditOutlined onClick={() => setTextEditing(true)} />,
               key: 'edit',
             },
+            editingEnabled &&
+              canDelete && {
+                icon: <DeleteOutlined onClick={onDelete} />,
+                key: 'delete',
+              },
           ]}
           onDoubleClick={() => setTextEditing(true)}
         >
@@ -224,7 +234,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
   const [editTarget, setEditTarget] = useState<number>();
   const [hoveredAction, setHoveredAction] = useState<EditAction>();
   const [currentValue, setCurrentValue] = useState('');
-
+  const [hoveredGroup, setHoveredGroup] = useState(false);
+  const { handleDelete } = useDeleteControl();
   const variables = useEditorStateStore((state) => state.variables);
 
   const {
@@ -446,7 +457,14 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
         ref={(r) => {
           r && connect(r);
         }}
+        style={{ position: 'relative' }}
+        onMouseEnter={() => setHoveredGroup(true)}
+        onMouseLeave={() => setHoveredGroup(false)}
       >
+        <DeleteButton
+          show={editingEnabled && hoveredGroup && editTarget === undefined}
+          onClick={handleDelete}
+        />
         <div className={`user-task-form-input-group variable-${variable}`}>
           {dataWithPreviews.map(
             ({ label, value, checked, isAddPreview, isRemovePreview, isEditTarget }, index) => (
@@ -475,6 +493,8 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                     setCurrentValue(value);
                     setEditTarget(index);
                   }}
+                  onDelete={() => handleRemoveButton(index)}
+                  canDelete={data.length >= 2}
                 />
               </div>
             ),

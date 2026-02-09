@@ -1,4 +1,4 @@
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
@@ -14,33 +14,37 @@ import type { Process } from '@/lib/data/process-schema';
 import { redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById } from '@/lib/data/db/folders';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 type ProcessPageProps = {
-  params: { processId: string; environmentId: string; mode: string };
-  searchParams: { version?: string };
+  params: Promise<{ processId: string; environmentId: string; mode: string }>;
+  searchParams: Promise<{ version?: string }>;
 };
 
 type ProcessComponentProps = ProcessPageProps & {
   isListView?: boolean;
 };
 
-const ProcessComponent = async ({
-  params: { processId, environmentId },
-  searchParams,
-  isListView,
-}: ProcessComponentProps) => {
+const ProcessComponent = async (props: ProcessComponentProps) => {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
+
+  const { processId, environmentId } = params;
+
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
+
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const { userId } = await getCurrentUser();
 
   const selectedVersionId = searchParams.version;
   // Only load BPMN if no version selected (for latest version)
   const process = await getProcess(processId, !selectedVersionId);
 
   // For list view: check for redirect
-  if (isListView) {
+  if (props.isListView) {
     // If no version specified but released versions exist, redirect to last released version
     if (!searchParams.version && process.versions.length > 0) {
       const lastVersionId = process.versions[process.versions.length - 1].id;
@@ -76,8 +80,25 @@ const ProcessComponent = async ({
     ? await getProcessBPMN(processId, environmentId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
-    ? process.versions.find((version) => version.id === selectedVersionId)
+    ? process.versions.find((version: any) => version.id === selectedVersionId)
     : undefined;
+
+  let inEditing = {
+    ...((process.inEditingBy as any)?.find(
+      (e: any) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
+    ) as any),
+    name: '',
+  };
+
+  if (!inEditing.userId) {
+    inEditing = undefined;
+  }
+
+  // Get name of user who is editing
+  if (inEditing?.userId) {
+    const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
+    inEditing.name = user ? (Object.hasOwn(user, 'username') ? (user as any).username : '') : '';
+  }
 
   // Since the user is able to minimize and close the page, everything is in a
   // client component from here.
@@ -96,6 +117,7 @@ const ProcessComponent = async ({
             process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
             folder={folder}
             versionName={selectedVersion?.name}
+            inEditing={inEditing}
           />
         }
         timelineComponent={
@@ -111,7 +133,8 @@ const ProcessComponent = async ({
 };
 
 const Process = async (props: ProcessPageProps) => {
-  const isListView = props.params.mode === 'list';
+  const params = await props.params;
+  const isListView = params.mode === 'list';
   return <ProcessComponent {...props} isListView={isListView} />;
 };
 

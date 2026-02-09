@@ -12,6 +12,14 @@ export const settings: SettingGroup = {
       value: true,
     },
     {
+      key: 'taskPollingInterval',
+      name: 'Task Polling Interval',
+      type: 'number',
+      description:
+        'Controls the frequency with which the Management System checks if you have open tasks.',
+      value: 10000,
+    },
+    {
       key: 'tasklist',
       name: 'Task List',
       children: [
@@ -21,6 +29,13 @@ export const settings: SettingGroup = {
           type: 'boolean',
           description: 'Controls whether this view is activated in this space.',
           value: true,
+        },
+        {
+          key: 'pollingInterval',
+          name: 'Polling Interval',
+          type: 'number',
+          description: 'Controls the frequency with which the data in tasklist is updated.',
+          value: 5000,
         },
       ],
     },

@@ -5,12 +5,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { environmentId, definitionId, instanceId, fileName },
-  }: {
-    params: { environmentId: string; definitionId: string; instanceId: string; fileName: string };
+  context: {
+    params: Promise<{
+      environmentId: string;
+      definitionId: string;
+      instanceId: string;
+      fileName: string;
+    }>;
   },
 ) {
+  const { environmentId, definitionId, instanceId, fileName } = await context.params;
   const session = await auth();
   if (!session) throw new UnauthorizedError();
 

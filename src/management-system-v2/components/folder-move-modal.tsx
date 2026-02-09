@@ -30,7 +30,7 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
         title={`Move ${selectedElements.length} Item${selectedElements.length > 1 && 's'} to a Folder`}
         open={open}
         width={600}
-        destroyOnClose
+        destroyOnHidden
         centered
         onCancel={onCancel}
         footer={(_, { CancelBtn }) => (

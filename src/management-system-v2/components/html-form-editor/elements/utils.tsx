@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -16,10 +17,27 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
 import useEditorStateStore from '../use-editor-state-store';
 import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
+import useEditorControls from '../use-editor-controls';
+import { useNode } from '@craftjs/core';
+
+// Default delete function which can be called from component of any element
+export const useDeleteControl = () => {
+  const { id } = useNode((node) => ({
+    id: node.id,
+  }));
+  const { deleteElement } = useEditorControls();
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteElement(id);
+  };
+
+  return { handleDelete };
+};
 
 export const Setting: React.FC<{
   label?: string;
-  control: ReactElement;
+  control: ReactElement<any>;
   style?: React.CSSProperties;
   disabled?: boolean;
   compact?: boolean;
@@ -169,7 +187,7 @@ export const Overlay: React.FC<OverlayProps> = ({
         getIframe()?.contentWindow?.removeEventListener('mousemove', onHide);
       };
     }
-  }, [show]);
+  }, [show, onHide]);
 
   return (
     <>

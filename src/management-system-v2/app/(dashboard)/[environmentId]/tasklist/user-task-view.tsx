@@ -105,7 +105,7 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
     addOwner,
     getTaskListEntryHtml,
     submitFile,
-  } = useUserTasks(space, 1000);
+  } = useUserTasks(space, Infinity);
 
   const { data: html } = useQuery({
     queryFn: async () => {

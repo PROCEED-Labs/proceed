@@ -116,6 +116,7 @@ const ModelerToolbar = ({
   const { isListView, processContextPath } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const selectedElement = modeler
     ? selectedElementId
@@ -305,7 +306,11 @@ const ModelerToolbar = ({
                 );
               }}
               options={(isListView ? [] : [LATEST_VERSION])
-                .concat(process.versions ?? [])
+                .concat(
+                  (process.versions ?? []).sort((a, b) => {
+                    return b.createdOn.getTime() - a.createdOn.getTime();
+                  }),
+                )
                 .map(({ id, name }) => ({
                   value: id,
                   label: name,
@@ -459,14 +464,16 @@ const ModelerToolbar = ({
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
-      <XmlEditor
-        bpmn={xmlEditorBpmn}
-        canSave={!selectedVersionId}
-        onClose={() => setXmlEditorBpmn(undefined)}
-        onSaveXml={handleXmlEditorSave}
-        process={process}
-        versionName={versionName}
-      />
+      {!!xmlEditorBpmn && (
+        <XmlEditor
+          bpmn={xmlEditorBpmn}
+          canSave={!selectedVersionId}
+          onClose={() => setXmlEditorBpmn(undefined)}
+          onSaveXml={handleXmlEditorSave}
+          process={process}
+          versionName={versionName}
+        />
+      )}
 
       {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
         <>
@@ -487,6 +494,7 @@ const ModelerToolbar = ({
             open={showFlowNodeConditionModal}
             onClose={() => setShowFlowNodeConditionModal(false)}
             element={selectedElement}
+            readOnly={isListView || !editingEnabled || !isExecutable}
           />
         </>
       )}

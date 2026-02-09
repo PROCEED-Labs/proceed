@@ -44,10 +44,13 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 import ActiveTasksBadge from '@/components/active-tasks-badge';
 
-const DashboardLayout = async ({
-  children,
-  params,
-}: PropsWithChildren<{ params: { environmentId: string } }>) => {
+const DashboardLayout = async (
+  props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
+) => {
+  const params = await props.params;
+
+  const { children } = props;
+
   const { userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
@@ -176,7 +179,10 @@ const DashboardLayout = async ({
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
-    if (automationSettings.task_editor?.active !== false) {
+    if (
+      msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE &&
+      automationSettings.task_editor?.active !== false
+    ) {
       childRegex = '/tasks($|/)';
       children.push({
         key: 'task-editor',
@@ -186,24 +192,33 @@ const DashboardLayout = async ({
       });
     }
 
+    let pollingInterval = 10000;
+
+    if (Number.isInteger(automationSettings.taskPollingInterval)) {
+      pollingInterval = automationSettings.taskPollingInterval;
+    }
+
     layoutMenuItems.push({
       key: 'tasklist',
       label: (
         <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/tasklist`)}>
           My Tasks
-          <ActiveTasksBadge activeSpace={activeEnvironment} />
+          <ActiveTasksBadge activeSpace={activeEnvironment} pollingInterval={pollingInterval} />
         </Link>
       ),
       icon: (
         <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
           <CheckSquareOutlined />
-          <ActiveTasksBadge activeSpace={activeEnvironment} onIcon />
+          <ActiveTasksBadge
+            activeSpace={activeEnvironment}
+            onIcon
+            pollingInterval={pollingInterval}
+          />
         </Link>
       ),
-      extra: 'Test',
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
-      children,
+      children: children.length ? children : undefined,
     });
   }
 

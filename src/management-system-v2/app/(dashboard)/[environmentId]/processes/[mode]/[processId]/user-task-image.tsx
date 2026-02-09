@@ -3,11 +3,13 @@ import { useEditor, useNode, UserComponent } from '@craftjs/core';
 import { Button, Input, InputNumber, Select, Space, Upload } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
+import { DeleteOutlined } from '@ant-design/icons';
 
 import { useParams } from 'next/navigation';
 import {
   ContextMenu,
   Setting,
+  useDeleteControl,
   VariableSelection,
 } from '@/components/html-form-editor/elements/utils';
 import { fallbackImage, useImageUpload } from '@/components/image-upload';
@@ -16,6 +18,7 @@ import { useFileManager } from '@/lib/useFileManager';
 import useEditorStateStore from '@/components/html-form-editor/use-editor-state-store';
 
 import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+import { DeleteButton } from '@/components/html-form-editor/DeleteButton';
 
 type ImageProps = {
   src?: string;
@@ -53,7 +56,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
   const imageRef = useRef<HTMLImageElement>(null);
 
   const [showOverlay, setShowOverlay] = useState(false);
-
+  const { handleDelete } = useDeleteControl();
   const {
     connectors: { connect },
     actions: { setProp },
@@ -124,6 +127,7 @@ export const EditImage: UserComponent<ImageProps> = ({ src, width, definitionId 
         onMouseOver={() => editingEnabled && setShowOverlay(true)}
         onMouseOut={() => editingEnabled && setShowOverlay(false)}
       >
+        <DeleteButton show={editingEnabled && showOverlay} onClick={handleDelete} />
         <img
           ref={imageRef}
           style={{ width: width && `${width}%` }}

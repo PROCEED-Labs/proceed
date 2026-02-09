@@ -35,9 +35,10 @@ const sortValueMap = {
 
 type TasklistProps = {
   userId: string;
+  pollingInterval: number;
 };
 
-const Tasklist: React.FC<TasklistProps> = ({ userId }) => {
+const Tasklist: React.FC<TasklistProps> = ({ userId, pollingInterval }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
@@ -56,7 +57,7 @@ const Tasklist: React.FC<TasklistProps> = ({ userId }) => {
 
   const space = useEnvironment();
 
-  const { userTasks } = useUserTasks(space, 1000, {
+  const { userTasks } = useUserTasks(space, pollingInterval, {
     hideNonOwnableTasks: true,
     hideUnassignedTasks: false,
   });

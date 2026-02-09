@@ -194,3 +194,11 @@
 .red:not(.djs-connection) .djs-visual > :nth-child(1) {
   fill: #ffd3d3ff !important;
 }
+
+.active-tasks-icon-badge {
+  display: none !important;
+}
+
+.ant-menu-inline-collapsed .active-tasks-icon-badge {
+  display: block !important;
+}

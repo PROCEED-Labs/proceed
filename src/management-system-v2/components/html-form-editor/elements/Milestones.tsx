@@ -1,6 +1,8 @@
 import { UserComponent, useNode } from '@craftjs/core';
 import useEditorStateStore from '../use-editor-state-store';
-
+import { DeleteOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import { useDeleteControl, Overlay } from './utils';
 export const ExportMilestones: UserComponent = () => {
   return (
     <div className="user-task-form-milestones">
@@ -31,6 +33,9 @@ const Milestones: UserComponent = () => {
     connectors: { connect },
   } = useNode();
 
+  const [hovered, setHovered] = useState(false);
+  const { handleDelete } = useDeleteControl();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
   const milestones = useEditorStateStore((state) => state.milestones);
 
   return (
@@ -39,28 +44,36 @@ const Milestones: UserComponent = () => {
         r && connect(r);
       }}
       className="user-task-form-milestones"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <p>Update your Milestones:</p>
-      {milestones &&
-        milestones.map((milestone) => {
-          return (
-            <div className="user-task-form-milestone" key={milestone.id}>
-              <label>
-                Milestone ID: {milestone.id} | Name: {milestone.name} | Description:{' '}
-                {milestone.description}
-                <input
-                  disabled={true}
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={0}
-                  onChange={() => {}}
-                />
-                <output>0%</output>
-              </label>
-            </div>
-          );
-        })}
+      <Overlay
+        show={editingEnabled && hovered}
+        onHide={() => setHovered(false)}
+        controls={[{ key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> }]}
+      >
+        <p>Update your Milestones:</p>
+        {milestones &&
+          milestones.map((milestone) => {
+            return (
+              <div className="user-task-form-milestone" key={milestone.id}>
+                <label>
+                  Milestone ID: {milestone.id} | Name: {milestone.name} | Description:{' '}
+                  {milestone.description}
+                  <input
+                    disabled={true}
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={0}
+                    onChange={() => {}}
+                  />
+                  <output>0%</output>
+                </label>
+              </div>
+            );
+          })}
+      </Overlay>
     </div>
   );
 };

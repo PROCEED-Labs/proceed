@@ -218,7 +218,7 @@ export const TimerEventButton: React.FC<TimerEventButtonProps> = ({ element }) =
 
   return (
     <>
-      <Tooltip title="Edit Timer Event Duration">
+      <Tooltip title="Edit Wait Duration of Timer Event">
         <Button
           icon={<ClockCircleOutlined />}
           onClick={() => setIsPlannedDurationModalOpen(true)}

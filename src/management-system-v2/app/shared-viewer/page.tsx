@@ -23,9 +23,9 @@ import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
 
 interface PageProps {
-  searchParams: {
+  searchParams: Promise<{
     [key: string]: string[] | string | undefined;
-  };
+  }>;
 }
 
 /**
@@ -124,7 +124,8 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
-const SharedViewer = async ({ searchParams }: PageProps) => {
+const SharedViewer = async (props: PageProps) => {
+  const searchParams = await props.searchParams;
   const { token, version, settings } = searchParams;
   const { session, userId } = await getCurrentUser();
   if (typeof token !== 'string') {
@@ -168,7 +169,7 @@ const SharedViewer = async ({ searchParams }: PageProps) => {
     ({ isOwner, processData } = processInfo);
 
     if (!processData) {
-      return <ErrorMessage message="Process no longer exists" />;
+      return <ErrorMessage message="Process no longer exists!" />;
     }
 
     iframeMode = embeddedMode;

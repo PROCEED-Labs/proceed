@@ -1,14 +1,6 @@
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  createContext,
-  useContext,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import ModelerToolbar from './modeler-toolbar';
 import useModelerStateStore from './use-modeler-state-store';
@@ -16,7 +8,7 @@ import { debounce, spaceURL } from '@/lib/utils';
 import VersionToolbar from './version-toolbar';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
-import { App } from 'antd';
+import { Alert, App } from 'antd';
 import { is as bpmnIs, isAny as bpmnIsAny } from 'bpmn-js/lib/util/ModelUtil';
 import BPMNCanvas, { BPMNCanvasProps, BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { useEnvironment } from '@/components/auth-can';
@@ -34,16 +26,18 @@ import {
 import { Process } from '@/lib/data/process-schema';
 import { useProcessView } from './process-view-context';
 import { CanEditContext } from '@/lib/can-edit-context';
+import { Folder } from '@/lib/data/folder-schema';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
   process: Process;
+  folder?: Folder;
+  inEditing?: { userId: string; name: string; timestamp: number };
 };
 
-const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
+const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: ModelerProps) => {
   const pathname = usePathname();
   const environment = useEnvironment();
-  const [xmlEditorBpmn, setXmlEditorBpmn] = useState<string | undefined>(undefined);
   const query = useSearchParams();
   const router = useRouter();
   const { message: messageApi } = App.useApp();
@@ -59,6 +53,11 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
+  const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
+
+  useEffect(() => {
+    setIsExecutable(process.executable || false);
+  }, [process]);
 
   const { isListView, processContextPath } = useProcessView();
 
@@ -94,7 +93,21 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
 
   const showMobileView = useMobileModeler();
 
-  const canEdit = !selectedVersionId && !showMobileView && !isListView;
+  const canEdit = !selectedVersionId && !showMobileView && !isListView && !inEditing;
+
+  useEffect(() => {
+    if (!canEdit) {
+      return;
+    }
+    // Implement a ping to an endpoint to mark the editing session alive.
+    const interval = setInterval(() => {
+      fetch(`/api/private/${environment.spaceId}/processes/${process.id}/ping`, {
+        method: 'POST',
+      });
+    }, 1000 * 5);
+
+    return () => clearInterval(interval);
+  }, [canEdit, environment.spaceId, process.id]);
 
   // We shouldn't get to a place where the event listener isn't removed, since the debounce will
   // always be fired, as it doesn't get cancelled when process.id changes
@@ -332,17 +345,29 @@ const Modeler = ({ versionName, process, ...divProps }: ModelerProps) => {
   const bpmn = useMemo(
     () => ({ bpmn: process.bpmn }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [process.id, selectedVersionId],
+    [process.id, selectedVersionId, process.executable],
   );
 
   return (
     <CanEditContext.Provider value={canEdit}>
       <div className={styles.Modeler} style={{ height: '100%' }}>
+        {inEditing && (
+          <Alert
+            message={
+              'This process is currently being edited by ' +
+              (inEditing.name ?? 'a user') +
+              '. No changes can be made while it is being edited.'
+            }
+            type="warning"
+            closable
+          />
+        )}
         {!minimized && (
           <>
             {loaded && (
               <ModelerToolbar
                 process={process}
+                folder={folder}
                 canRedo={canRedo}
                 canUndo={canUndo}
                 versionName={versionName}

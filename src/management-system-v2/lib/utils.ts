@@ -2,8 +2,8 @@ import { AuthenticatedUser } from './data/user-schema';
 import z from 'zod';
 import parsePhoneNumberFromString, { CountryCode } from 'libphonenumber-js';
 
-export function generateDateString(date?: Date | string, includeTime: boolean = false): string {
-  if (!date) {
+export function generateDateString(_date?: Date | string, includeTime: boolean = false): string {
+  if (!_date) {
     return '';
   }
 
@@ -14,8 +14,44 @@ export function generateDateString(date?: Date | string, includeTime: boolean = 
     hour: includeTime ? 'numeric' : undefined,
     minute: includeTime ? 'numeric' : undefined,
   };
+  const date = typeof _date === 'string' ? new Date(_date) : _date;
 
-  return new Date(date).toLocaleDateString('en-UK', options);
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date passed to generateDateString');
+    return 'Invalid Date';
+  }
+
+  return Intl.DateTimeFormat(undefined, options).format();
+}
+
+export function generateNumberString(number?: number, options?: Intl.NumberFormatOptions): string {
+  if (!number) {
+    return '';
+  }
+
+  return Intl.NumberFormat(undefined, options).format(number);
+}
+
+// TODO: Use Intl.DurationFormat when it is widely supported
+export function generateDurationString(duration?: number): string {
+  if (!duration) {
+    return '';
+  }
+
+  if (!duration || duration < 1000) return '< 1s';
+
+  const days = Math.floor(duration / (3600000 * 24));
+  duration -= days * (3600000 * 24);
+  const hours = Math.floor(duration / 3600000);
+  duration -= hours * 3600000;
+  // Minutes part from the difference
+  const minutes = Math.floor(duration / 60000);
+  duration -= minutes * 60000;
+  //Seconds part from the difference
+  const seconds = Math.floor(duration / 1000);
+  duration -= seconds * 1000;
+
+  return `${days} Days, ${hours}h, ${minutes}min, ${seconds}s`;
 }
 
 export function generateTableDateString(date?: Date | string): string {
@@ -79,7 +115,7 @@ export function debounce(func: Function, timeout = 1000) {
   };
 
   /**
-   * Immediatly execute the debounced function and cancel any pending executions
+   * Immediately execute the debounced function and cancel any pending executions
    */
   debounced.immediate = (...args: any[]) => {
     clearTimeout(timer);
@@ -87,7 +123,7 @@ export function debounce(func: Function, timeout = 1000) {
   };
 
   /**
-   * Immediatly execute the debounced (async) function and cancel any pending executions
+   * Immediately execute the debounced (async) function and cancel any pending executions
    *
    * Allows the function to be awaited
    */
@@ -123,7 +159,7 @@ type ObjectSetArrayType = Array<JSONObject> & {
  * The uniqueness of an entry is determined by the values of the properties specified in the ids argument.
  *
  * Besides the standard array methods, the Set-Array provides the following methods:
- * - add(elements: JSONObject[] | JSONObject): JSONObject[] — Adds new elements to the end of the Set-Array. Duplicates will overwrite exisiting values.
+ * - add(elements: JSONObject[] | JSONObject): JSONObject[] — Adds new elements to the end of the Set-Array. Duplicates will overwrite existing values.
  * - has(element: JSONObject): boolean — Checks if the Set-Array contains a specific element.
  * - toArray(): JSONObject[] — Returns a copy of the Set-Array.
  *
@@ -136,7 +172,7 @@ export class ObjectSetArray {
 
   /**
    * @param array - The array to turn into a Set-Array. It should contain objects.
-   * @param ids - The properties that identify an object. If a single string is provided, the value of that property will be used to identify an object. If an array of strings is provided, the concatenated string of the values of those properties will be used to identify an object. If no ids are provided, all keys of the first object in the array will be used (therfore elements should be uniform).
+   * @param ids - The properties that identify an object. If a single string is provided, the value of that property will be used to identify an object. If an array of strings is provided, the concatenated string of the values of those properties will be used to identify an object. If no ids are provided, all keys of the first object in the array will be used (therefore elements should be uniform).
    *
    * @example
    * const array = [{ name: 'Alice', age: 20 }, { name: 'Alice', age: 20 }, { name: 'Alice', age: 24 }, { name: 'Bob', age: 30 }];
@@ -146,7 +182,7 @@ export class ObjectSetArray {
    *
    * const uniqueArray2 = new ObjectSetArray(array, 'name');
    *
-   * uniqueArray2.toArray(); // [{ name: 'Alice', age: 20 }, { name: 'Bob', age: 30 }] // First occurence of Alice is kept
+   * uniqueArray2.toArray(); // [{ name: 'Alice', age: 20 }, { name: 'Bob', age: 30 }] // First occurrence of Alice is kept
    */
   constructor(array: JSONObject[], ids: string | string[] | undefined) {
     /* Check if the passes array is an array of objects */
@@ -244,8 +280,8 @@ export class ObjectSetArray {
   private overwriteEntrys(elements: JSONObject[] | JSONObject) {
     const array = Array.isArray(elements) ? elements : [elements];
 
-    /* Find indicies of elements */
-    const indicies = array.map((element) =>
+    /* Find indices of elements */
+    const indices = array.map((element) =>
       this.array.findIndex((entry) => {
         for (const id of this.ids) {
           if (entry[id] !== element[id]) {
@@ -259,7 +295,7 @@ export class ObjectSetArray {
     const overwrittenElements: JSONObject[] = [];
 
     /* Overwrite elements */
-    indicies.forEach((index, i) => {
+    indices.forEach((index, i) => {
       if (index !== -1) {
         overwrittenElements.push(this.array[index]);
         this.array[index] = array[i];
@@ -285,14 +321,14 @@ export class ObjectSetArray {
   }
 
   /**
-   * Adds new elements to the end of the Set-Array. Duplicates will overwrite exisiting values.
+   * Adds new elements to the end of the Set-Array. Duplicates will overwrite existing values.
    *
    * @param elements — New elements to add to the array.
    *
    * @returns An array containing the (old) elements that were overwritten.
    */
   public add(elements: JSONObject[] | JSONObject) {
-    /* Elements could either overwrite an exisiting entry or be appended to the array if they are new */
+    /* Elements could either overwrite an existing entry or be appended to the array if they are new */
     const { duplicates: overwritingElements, newElements: appendingElements } =
       this.filterDuplicates(elements);
 
@@ -306,7 +342,7 @@ export class ObjectSetArray {
   }
   /**
    * Appends new elements to the end of an array, and returns the new length of the array.
-   * Duplicates will overwrite exisiting values.
+   * Duplicates will overwrite existing values.
    *
    * @param elements — New elements to add to the array.
    *
@@ -320,7 +356,7 @@ export class ObjectSetArray {
 
   /**
    * Inserts new elements at the start of an array, and returns the new length of the array.
-   * Duplicates will overwrite exisiting values.
+   * Duplicates will overwrite existing values.
    *
    * @param elements — New elements to add to the array.
    *
@@ -457,7 +493,7 @@ export class ObjectSetArray {
 export function getUniqueArray(array: JSONObject[], ids: string | string[] | undefined) {
   /* Helper function to get Array-Props on instance */
   return new ObjectSetArray(array, ids) as any as ObjectSetArrayType;
-  /* 
+  /*
   TODO:
   - Correct type on class itself rather than helper function
   - after using an array method that returns an array (returned array is wrapped in ObjectSetArray) - e.g. .map / .filter / ... - the proxy wraps it, so the return type should not be array but ObjectSetArray

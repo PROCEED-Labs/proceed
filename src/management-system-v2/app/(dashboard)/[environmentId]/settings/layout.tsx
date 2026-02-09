@@ -7,8 +7,7 @@ export default function Layout({
   params,
   ...children
 }: {
-  params: { environmentId: string };
-  children: React.ReactNode[];
+  params: Promise<{ environmentId: string }>;
 }) {
   // TODO: check if the user has the rights to change the settings
 

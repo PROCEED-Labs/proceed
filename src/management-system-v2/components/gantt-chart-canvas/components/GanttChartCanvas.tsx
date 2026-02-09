@@ -572,7 +572,7 @@ export const GanttChartCanvas = React.forwardRef<unknown, GanttChartCanvasProps>
     const gantt = useGanttChart(filteredElements, options);
 
     // Cache the time matrix to avoid recreating it on every render
-    const timeMatrixRef = useRef<TimeMatrix>();
+    const timeMatrixRef = useRef<TimeMatrix>(undefined);
 
     // Main rendering function - optimized for performance
     const renderChart = useCallback(() => {

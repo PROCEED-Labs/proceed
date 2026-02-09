@@ -9,31 +9,34 @@ import React, {
 } from 'react';
 import { createPortal } from 'react-dom';
 
-import { Button, Menu, MenuProps, Select, Space } from 'antd';
+import { Button, Input, Menu, MenuProps, Select, Space } from 'antd';
 import { useDndContext } from '@dnd-kit/core';
 
 import { truthyFilter } from '@/lib/typescript-utils';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
-import { useCanEdit } from '@/lib/can-edit-context';
 import useEditorStateStore from '../use-editor-state-store';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 export const Setting: React.FC<{
-  label: string;
-  control: ReactElement;
+  label?: string;
+  control: ReactElement<any>;
   style?: React.CSSProperties;
-}> = ({ label, control, style = {} }) => {
+  disabled?: boolean;
+  compact?: boolean;
+}> = ({ label, control, style = {}, disabled = false, compact = false }) => {
   const id = useId();
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
-  const clonedControl = React.cloneElement(control, { id, disabled: !editingEnabled });
+  const clonedControl = React.cloneElement(control, { id, disabled: disabled || !editingEnabled });
 
   return (
-    <div style={{ margin: '5px', ...style }}>
-      <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
-        {label}:
-      </label>
+    <div style={{ margin: compact ? undefined : '5px', ...style }}>
+      {label && (
+        <label htmlFor={id} style={{ minWidth: 'max-content', paddingRight: '5px' }}>
+          {label}:
+        </label>
+      )}
       {clonedControl}
     </div>
   );
@@ -50,7 +53,7 @@ type ContextMenuProps = React.PropsWithChildren<{
 export const ContextMenu: React.FC<ContextMenuProps> = ({ children, menu, onClose }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number }>();
 
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const id = useId();
   const blockDragging = useEditorStateStore((state) => state.blockDragging);
@@ -205,7 +208,7 @@ function SidebarButton<T extends string>({
   onClick,
   onHovered,
 }: SidebarButtonProps<T>) {
-  const editingEnabled = useCanEdit();
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   return (
     <Button
@@ -264,15 +267,19 @@ type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTyp
 type VariableSettingProps = {
   variable?: string;
   allowedTypes?: AllowedTypes;
-  onChange: (newVariableName?: string, newVariableType?: NonNullable<AllowedTypes>[number]) => void;
+  onChange: (
+    newVariableName?: string,
+    newVariableType?: NonNullable<AllowedTypes>[number],
+    newVariableFormat?: keyof typeof textFormatMap,
+  ) => void;
 };
 
-export const VariableSetting: React.FC<VariableSettingProps> = ({
-  variable,
-  allowedTypes,
-  onChange,
-}) => {
+export const VariableSelection: React.FC<
+  VariableSettingProps & { style?: React.CSSProperties }
+> = ({ variable, allowedTypes, onChange, style = {} }) => {
   const [showVariableForm, setShowVariableForm] = useState(false);
+
+  const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
 
   const { variables, updateVariables } = useEditorStateStore((state) => state);
 
@@ -283,47 +290,83 @@ export const VariableSetting: React.FC<VariableSettingProps> = ({
   );
 
   return (
-    <Setting
-      label="Variable"
-      control={
+    <>
+      <Select
+        value={variable}
+        style={{ display: 'block', ...style }}
+        title={getVariableTooltip(variables, variable)}
+        options={validVariables.map((v) => ({
+          label: v.name,
+          title: getVariableTooltip(variables, v.name),
+          value: v.name,
+        }))}
+        disabled={!editingEnabled}
+        onChange={(val) => {
+          const variable = variables.find((v) => v.name === val);
+          onChange(val, variable?.dataType, variable?.textFormat);
+        }}
+        dropdownRender={(menu) => (
+          <>
+            {menu}
+            <Space style={{ display: 'block', padding: '0 8px 4px' }}>
+              <Button block onClick={() => setShowVariableForm(true)}>
+                Add Variable
+              </Button>
+            </Space>
+          </>
+        )}
+      />
+      <ProcessVariableForm
+        open={showVariableForm}
+        variables={variables}
+        allowedTypes={allowedTypes}
+        onSubmit={(newVar) => {
+          updateVariables([...variables, newVar]);
+          setShowVariableForm(false);
+          onChange(newVar.name, newVar.dataType, newVar.textFormat);
+        }}
+        onCancel={() => setShowVariableForm(false)}
+      />
+    </>
+  );
+};
+
+export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolean }> = ({
+  variable,
+  allowedTypes,
+  onChange,
+  compact = false,
+}) => {
+  const { variables } = useEditorStateStore((state) => state);
+
+  const selectedVariable = variables?.find((v) => v.name === variable);
+
+  return (
+    <>
+      <Setting
+        label={compact ? undefined : 'Variable'}
+        compact={compact}
+        control={
+          <VariableSelection variable={variable} allowedTypes={allowedTypes} onChange={onChange} />
+        }
+      />
+
+      {!compact && selectedVariable ? (
         <>
-          <Select
-            value={variable}
-            style={{ display: 'block' }}
-            title={getVariableTooltip(variables, variable)}
-            options={validVariables.map((v) => ({
-              label: v.name,
-              title: getVariableTooltip(variables, v.name),
-              value: v.name,
-            }))}
-            onChange={(val) => {
-              const variableType = variables.find((v) => v.name === val)?.dataType;
-              onChange(val, variableType);
-            }}
-            dropdownRender={(menu) => (
-              <>
-                {menu}
-                <Space style={{ display: 'block', padding: '0 8px 4px' }}>
-                  <Button block onClick={() => setShowVariableForm(true)}>
-                    Add Variable
-                  </Button>
-                </Space>
-              </>
-            )}
+          <Setting
+            disabled
+            label="Type"
+            control={<Input value={typeLabelMap[selectedVariable.dataType]} />}
           />
-          <ProcessVariableForm
-            open={showVariableForm}
-            variables={variables}
-            allowedTypes={allowedTypes}
-            onSubmit={(newVar) => {
-              updateVariables([...variables, newVar]);
-              setShowVariableForm(false);
-              onChange(newVar.name, newVar.dataType);
-            }}
-            onCancel={() => setShowVariableForm(false)}
-          />
+          {!!selectedVariable.textFormat && (
+            <Setting
+              disabled
+              label="Format"
+              control={<Input value={textFormatMap[selectedVariable.textFormat]} />}
+            />
+          )}
         </>
-      }
-    />
+      ) : null}
+    </>
   );
 };

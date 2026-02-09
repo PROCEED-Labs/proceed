@@ -5,7 +5,7 @@ import { Checkbox, Form, Input, Modal } from 'antd';
 import useModelerStateStore from './use-modeler-state-store';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import languageExtension from './languageExtension.js';
+import languageExtension from './monaco-typescript-language-extension.js';
 import styles from './flow-condition-modal.module.scss';
 import cn from 'classnames';
 
@@ -36,9 +36,15 @@ type FlowConditionModalProps = {
   element?: Element;
   open: boolean;
   onClose: () => void;
+  readOnly?: boolean;
 };
 
-const FlowConditionModal: React.FC<FlowConditionModalProps> = ({ element, open, onClose }) => {
+const FlowConditionModal: React.FC<FlowConditionModalProps> = ({
+  element,
+  open,
+  onClose,
+  readOnly = false,
+}) => {
   const [description, setDescription] = useState('');
   const [isDefault, setIsDefault] = useState(false);
 
@@ -117,7 +123,11 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({ element, open, 
       >
         <Form layout="vertical">
           <Form.Item label="Description">
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+            <Input
+              value={description}
+              disabled={readOnly}
+              onChange={(e) => setDescription(e.target.value)}
+            />
           </Form.Item>
           <Form.Item label="Condition">
             <div
@@ -126,8 +136,8 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({ element, open, 
                 height: '32px',
                 padding: '0.25rem 0.6875rem',
                 borderRadius: '0.375rem',
-                cursor: isDefault ? 'not-allowed' : undefined,
-                backgroundColor: isDefault ? '#d9d9d9' : undefined,
+                cursor: isDefault || readOnly ? 'not-allowed' : undefined,
+                backgroundColor: isDefault || readOnly ? 'rgb(245, 245, 245)' : undefined,
               }}
             >
               <Editor
@@ -135,7 +145,7 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({ element, open, 
                 defaultLanguage="typescript"
                 theme="vs-light"
                 options={{
-                  readOnly: isDefault,
+                  readOnly: isDefault || readOnly,
                   automaticLayout: true,
                   fontSize: 14,
                   wordWrap: 'off',
@@ -157,12 +167,16 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({ element, open, 
                   minimap: { enabled: false },
                 }}
                 onMount={handleEditorMount}
-                className={cn({ [styles.DisabledConditionInput]: isDefault })}
+                className={cn({ [styles.DisabledConditionInput]: isDefault || readOnly })}
               />
             </div>
           </Form.Item>
           <Form.Item label="Default">
-            <Checkbox checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+            <Checkbox
+              checked={isDefault}
+              disabled={readOnly}
+              onChange={(e) => setIsDefault(e.target.checked)}
+            />
           </Form.Item>
         </Form>
       </Modal>

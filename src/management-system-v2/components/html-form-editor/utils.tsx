@@ -65,6 +65,26 @@ body {
   border-radius: 0.375rem;
 }
 
+.user-task-form-input input[type="file"] {
+  display: none;
+}
+.user-task-form-input .selected-files {
+  font-size: 14px;
+}
+.user-task-form-input .selected-files img {
+  max-width: 120px;
+  max-height: 120px;
+}
+.file-upload {
+  border: 1px solid #bbb;
+  border-radius: 5px;
+  display: inline-block;
+  width: fit-content;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
 .user-task-form-table {
   text-align: left;
   width: 100%;

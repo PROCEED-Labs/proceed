@@ -20,9 +20,17 @@ export async function httpRequest(
   const url = new URL(endpoint, machineAddress).toString();
   const response = await fetch(url, options);
 
-  if (!response.ok) throw new Error(`HTTP request failed with status ${response.status}`);
-
   const contentType = response.headers.get('content-type') || '';
+
+  if (!response.ok) {
+    let errorMessage = `HTTP request failed with status ${response.status}.`;
+
+    let reason = '';
+    if (contentType.includes('text')) reason = await response.text();
+    if (reason) errorMessage += ` Reason: ${reason}`;
+
+    throw new Error(errorMessage);
+  }
 
   if (response.headers.get('content-type')?.includes('application/json')) {
     return response.json();
@@ -33,6 +41,7 @@ export async function httpRequest(
   ) {
     return await response.text();
   } else if (
+    contentType.includes('application/pdf') ||
     contentType.includes('image/') ||
     contentType.includes('audio/') ||
     contentType.includes('video/')

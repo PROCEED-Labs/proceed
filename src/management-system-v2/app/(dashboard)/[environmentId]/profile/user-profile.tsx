@@ -1,6 +1,6 @@
 'use client';
 
-import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useState } from 'react';
+import { DetailedHTMLProps, FC, HTMLAttributes, ReactNode, use, useEffect, useState } from 'react';
 import {
   Space,
   Card,
@@ -13,10 +13,11 @@ import {
   Input,
   theme,
   Button,
+  Image,
 } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import ConfirmationButton from '@/components/confirmation-button';
 import UserDataModal from './user-data-modal';
 import { User } from '@/lib/data/user-schema';
@@ -28,6 +29,9 @@ import { z } from 'zod';
 import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import ImageUpload, { fallbackImage } from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
 import ChangeUserPasswordModal from './change-password-modal';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -41,6 +45,24 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
   const {
     token: { colorTextDisabled, colorBgContainerDisabled },
   } = theme.useToken();
+  const { download: getProfileUrl } = useFileManager({ entityType: EntityType.PROFILE_PICTURE });
+  const [avatarUrl, setAvatarURl] = useState<string | undefined>();
+  const session = useSession();
+
+  useEffect(() => {
+    async function getAvatar() {
+      if (!userData.isGuest && userData.profileImage) {
+        const response = await getProfileUrl({
+          entityId: userData.id,
+          filePath: userData.profileImage,
+        });
+        if (response.fileUrl) {
+          setAvatarURl(response.fileUrl);
+        }
+      }
+    }
+    getAvatar();
+  }, [userData]);
 
   const [changeNameModalOpen, setChangeNameModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState<ReactNode | undefined>(undefined);
@@ -139,7 +161,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
         closeIcon={null}
         onCancel={() => setChangeEmailModalOpen(false)}
         onOk={changeEmailForm.submit}
-        destroyOnClose
+        destroyOnHidden
       >
         <Alert
           type="info"
@@ -173,9 +195,42 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
               afterClose={() => setErrorMessage(null)}
             />
           )}
-          <Typography.Title level={3}>Profile data</Typography.Title>
+          <Typography.Title level={3}>Profile Settings</Typography.Title>
 
-          <UserAvatar user={userData} size={90} style={{ marginBottom: '1rem' }} />
+          <div
+            style={{
+              height: '120px',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <ImageUpload
+              config={{
+                entityType: EntityType.PROFILE_PICTURE,
+                entityId: userData.id,
+              }}
+              initialFileName={(!userData.isGuest && userData.profileImage) || undefined}
+              onImageUpdate={async (newFilePath) => {
+                session.update(null);
+                if (newFilePath) {
+                  messageApi.success({ content: 'Profile picture updated' });
+                  getProfileUrl({ entityId: userData.id, filePath: newFilePath });
+                } else {
+                  // Image was removed
+                  messageApi.success({ content: 'Profile picture was deleted' });
+                  setAvatarURl(undefined);
+                }
+              }}
+              imagePreview={(fileUrl) => (
+                <UserAvatar user={{ ...userData, profileImage: fileUrl }} size={90} />
+              )}
+              onUploadFail={() => messageApi.error('Error uploading image')}
+              imageProps={{
+                alt: 'Profile Picture',
+              }}
+            />
+          </div>
 
           <div
             style={{
@@ -200,7 +255,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
                 <Alert
                   message={
                     <>
-                      To change your profile data <Link href="/signin">Sign in</Link>
+                      To change your profile settings <Link href="/signin">Sign in</Link>
                     </>
                   }
                   type="info"

@@ -1,14 +1,14 @@
-.PropertiesPanel :global {
-  .ant-input-number-input,
-  .ant-input,
-  .ant-input-group-addon,
-  .ant-input-number-group-addon,
-  .ant-select-selection-item,
-  .ant-table.ant-table-middle {
+.PropertiesPanel {
+  :global(.ant-input-number-input),
+  :global(.ant-input),
+  :global(.ant-input-group-addon),
+  :global(.ant-input-number-group-addon),
+  :global(.ant-select-selection-item),
+  :global(.ant-table.ant-table-middle) {
     font-size: 0.75rem !important;
   }
 
-  .ant-input-number-group-addon {
+  :global(.ant-input-number-group-addon) {
     padding-inline: 0px !important;
 
     .ant-select {
@@ -17,21 +17,27 @@
   }
 
   /* Needed to allow setting width of child (.ant-input-number-group-addon) with display: table-cell */
-  .ant-input-number-wrapper {
+  :global(.ant-input-number-wrapper) {
     table-layout: fixed;
   }
 
-  .ant-input-group-addon,
-  .ant-input-number-group-addon {
+  :global(.ant-input-group-addon),
+  :global(.ant-input-number-group-addon) {
     width: 4rem !important;
   }
 
-  .ant-input-affix-wrapper {
+  :global(.ant-input-affix-wrapper) {
     font-size: 0.75rem !important;
   }
 
-  .ant-btn-text:not(:disabled):not(.ant-btn-disabled):hover {
+  :global(.ant-btn-text):not(:disabled):not(.ant-btn-disabled):hover {
     background-color: white;
+  }
+}
+
+.PropertiesPanel {
+  .SizeSectionTitle {
+    font-size: 0.85rem;
   }
 }
 

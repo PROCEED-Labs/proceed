@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Space, Table } from 'antd';
+import { Button, Divider, Space, Table } from 'antd';
 
 import {
   DeleteOutlined,
@@ -11,7 +11,7 @@ import {
 
 import useProcessVariables from '../use-process-variables';
 import ProcessVariableForm from './process-variable-form';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 
 type VariableDefinitionProps = {
   readOnly?: boolean;
@@ -42,6 +42,9 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = ({ readOnly = fals
 
   return (
     <Space direction="vertical" style={{ width: '100%' }}>
+      <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+        <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>Variables</span>
+      </Divider>
       {variables.length > 0 && (
         <Table
           scroll={{ x: true }}
@@ -63,7 +66,13 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = ({ readOnly = fals
               title: 'Data Type',
               dataIndex: 'dataType',
               key: 'type',
-              render: (_, record) => <Space>{typeLabelMap[record.dataType]}</Space>,
+              render: (_, record) => {
+                let label = typeLabelMap[record.dataType];
+                if (record.textFormat) {
+                  label += ` (${textFormatMap[record.textFormat]})`;
+                }
+                return <Space>{label}</Space>;
+              },
             },
             {
               title: 'Default Value',

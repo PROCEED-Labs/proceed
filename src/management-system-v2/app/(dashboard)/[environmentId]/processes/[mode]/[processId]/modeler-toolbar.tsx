@@ -26,9 +26,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { isUserErrorResponse } from '@/lib/user-error';
-import ScriptEditor from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/script-editor';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../../processes-helper';
 import { EnvVarsContext } from '@/components/env-vars-context';
@@ -39,16 +37,27 @@ import { TimerEventButton, isTimerEvent } from './planned-duration-input';
 import XmlEditor from './xml-editor';
 import UserTaskEditor, { canHaveForm } from './user-task-editor';
 import { useProcessView } from './process-view-context';
+import { useCanEdit } from '@/lib/can-edit-context';
+import { Element } from 'bpmn-js/lib/model/Types';
+import { ScriptTaskEditorEnvironment } from './script-task-editor/script-task-editor-environment';
+import { Folder } from '@/lib/data/folder-schema';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
 type ModelerToolbarProps = {
   process: Process;
+  folder?: Folder;
   canUndo: boolean;
   canRedo: boolean;
   versionName?: string;
 };
-const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolbarProps) => {
+const ModelerToolbar = ({
+  process,
+  folder,
+  canRedo,
+  canUndo,
+  versionName,
+}: ModelerToolbarProps) => {
   const processId = process.id;
 
   const router = useRouter();
@@ -61,8 +70,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
 
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
-  const [showScriptTaskEditor, setShowScriptTaskEditor] = useState(false);
   const [showFlowNodeConditionModal, setShowFlowNodeConditionModal] = useState(false);
+  const [selectedScriptTask, setSelectedScriptTask] = useState<Element | undefined>();
 
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareModalDefaultOpenTab, setShareModalDefaultOpenTab] =
@@ -71,6 +80,8 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const enableTimelineView = useTimelineViewStore((state) => state.enableTimelineView);
 
   const [ganttEnabled, setGanttEnabled] = useState<boolean | null>(null);
+
+  const editingEnabled = useCanEdit();
 
   // Fetch gantt view settings
   useEffect(() => {
@@ -105,6 +116,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const { isListView, processContextPath } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
   const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
   const selectedElement = modeler
     ? selectedElementId
@@ -137,9 +149,9 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
   const modalOpen =
     showUserTaskEditor ||
     showPropertiesPanel ||
-    showScriptTaskEditor ||
     shareModalOpen ||
-    !!xmlEditorBpmn;
+    !!xmlEditorBpmn ||
+    !!selectedScriptTask;
 
   useEffect(() => {
     if (modalOpen) {
@@ -302,7 +314,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
             />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
-                <Tooltip title="Create New Version">
+                <Tooltip title="Release a new Version of the Process">
                   <VersionCreationButton
                     icon={<PlusOutlined />}
                     createVersion={createProcessVersion}
@@ -351,7 +363,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                     <Tooltip title="Edit Script Task">
                       <Button
                         icon={<FormOutlined />}
-                        onClick={() => setShowScriptTaskEditor(true)}
+                        onClick={() => setSelectedScriptTask(selectedElement)}
                       />
                     </Tooltip>
                   )) ||
@@ -436,7 +448,7 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
                 isOpen={showPropertiesPanel}
                 close={handlePropertiesPanelToggle}
                 selectedElement={selectedElement}
-                readOnly={isListView}
+                readOnly={isListView || !editingEnabled}
               />
             )}
           </Space>
@@ -448,14 +460,16 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}
       />
-      <XmlEditor
-        bpmn={xmlEditorBpmn}
-        canSave={!selectedVersionId}
-        onClose={() => setXmlEditorBpmn(undefined)}
-        onSaveXml={handleXmlEditorSave}
-        process={process}
-        versionName={versionName}
-      />
+      {!!xmlEditorBpmn && (
+        <XmlEditor
+          bpmn={xmlEditorBpmn}
+          canSave={!selectedVersionId}
+          onClose={() => setXmlEditorBpmn(undefined)}
+          onSaveXml={handleXmlEditorSave}
+          process={process}
+          versionName={versionName}
+        />
+      )}
 
       {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
         <>
@@ -465,17 +479,18 @@ const ModelerToolbar = ({ process, canRedo, canUndo, versionName }: ModelerToolb
             onClose={() => setShowUserTaskEditor(false)}
           />
 
-          <ScriptEditor
-            processId={processId}
-            open={showScriptTaskEditor}
-            onClose={() => setShowScriptTaskEditor(false)}
-            selectedElement={selectedElement}
+          <ScriptTaskEditorEnvironment
+            process={process}
+            folder={folder}
+            selectedElement={selectedScriptTask}
+            close={() => setSelectedScriptTask(undefined)}
           />
 
           <FlowConditionModal
             open={showFlowNodeConditionModal}
             onClose={() => setShowFlowNodeConditionModal(false)}
             element={selectedElement}
+            readOnly={isListView || !editingEnabled || !isExecutable}
           />
         </>
       )}

@@ -276,7 +276,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
               {!breakpoint.xs && (
                 <Space>
                   <Button type="primary" onClick={() => setOpenCreateOrUpdateModal(true)}>
-                    Create Html Form
+                    Create Task
                   </Button>
                 </Space>
               )}
@@ -324,7 +324,6 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
                         setOpenUserAssignmentModal(false);
                       }}
                       onCancel={() => setOpenUserAssignmentModal(false)}
-                      onClose={() => setOpenUserAssignmentModal(false)}
                       okButtonProps={{ loading: assigning }}
                     >
                       <Cascader
@@ -396,12 +395,11 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
       />
       <Modal
         open={openCreateOrUpdateModal}
-        title={initialData ? 'Update Html Form' : 'Create Html Form'}
-        onClose={() => handleCloseCreateOrUpdateModal()}
+        title={initialData ? 'Update Task' : 'Create Task'}
         onCancel={() => handleCloseCreateOrUpdateModal()}
         onOk={handleCreateOrUpdateForm}
         okButtonProps={{ loading: adding }}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form
           form={form}

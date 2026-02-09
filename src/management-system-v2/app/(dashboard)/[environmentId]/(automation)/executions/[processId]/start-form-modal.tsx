@@ -3,7 +3,7 @@ import { UserTaskForm } from '../../../tasklist/user-task-view';
 
 type StartFormModalProps = {
   html?: string;
-  onSubmit: (variables: { [key: string]: any }) => void;
+  onSubmit: (variables: { [key: string]: any }) => Promise<void>;
   onCancel: () => void;
 };
 

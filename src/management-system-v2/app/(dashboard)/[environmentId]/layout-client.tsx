@@ -131,8 +131,8 @@ const Layout: FC<
     check(layoutMenuItems);
 
     setSelected(sel);
-    setOpen(op);
-  }, [pathname]);
+    if (!collapsed) setOpen(op);
+  }, [pathname, collapsed]);
 
   // remove the error message about the unknown item entries that is logged by ant-design
   function toMenuItem(item: ExtendedMenuItem): MenuItemType {

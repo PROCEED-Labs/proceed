@@ -364,7 +364,7 @@ export default function ProcessDeploymentView({
 
         <StartFormModal
           html={startForm}
-          onSubmit={(submitVariables) => {
+          onSubmit={async (submitVariables) => {
             const versionId = getLatestDeployment(deploymentInfo).versionId;
 
             const mappedVariables: Record<string, { value: any }> = {};
@@ -375,7 +375,7 @@ export default function ProcessDeploymentView({
             );
 
             // start the instance with the initial variable values from the start form
-            wrapServerCall({
+            await wrapServerCall({
               fn: () => startInstance(versionId, mappedVariables),
 
               onSuccess: async (instanceId) => {

@@ -19,7 +19,7 @@ const GuestWarningButton = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElem
             footer: null,
             icon: null,
             styles: {
-              content: {
+              container: {
                 background: token.colorWarningBg,
                 borderColor: token.colorWarningBorder,
                 padding: '8px 12px',

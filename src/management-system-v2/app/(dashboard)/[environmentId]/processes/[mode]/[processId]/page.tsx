@@ -1,4 +1,4 @@
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Wrapper from './wrapper';
 import styles from './page.module.scss';
 import Modeler from './modeler';
@@ -14,6 +14,7 @@ import type { Process } from '@/lib/data/process-schema';
 import { redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById } from '@/lib/data/db/folders';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 type ProcessPageProps = {
   params: Promise<{ processId: string; environmentId: string; mode: string }>;
@@ -36,6 +37,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
   //console.log('processId', processId);
   //console.log('query', searchParams);
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+  const { userId } = await getCurrentUser();
 
   const selectedVersionId = searchParams.version;
   // Only load BPMN if no version selected (for latest version)
@@ -78,8 +80,25 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
     ? await getProcessBPMN(processId, environmentId, selectedVersionId)
     : process.bpmn;
   const selectedVersion = selectedVersionId
-    ? process.versions.find((version) => version.id === selectedVersionId)
+    ? process.versions.find((version: any) => version.id === selectedVersionId)
     : undefined;
+
+  let inEditing = {
+    ...((process.inEditingBy as any)?.find(
+      (e: any) => e.userId !== userId && (e.timestamp ?? 0) + 15000 > Date.now(),
+    ) as any),
+    name: '',
+  };
+
+  if (!inEditing.userId) {
+    inEditing = undefined;
+  }
+
+  // Get name of user who is editing
+  if (inEditing?.userId) {
+    const user = await getUserById(inEditing.userId, { throwIfNotFound: false });
+    inEditing.name = user ? (Object.hasOwn(user, 'username') ? (user as any).username : '') : '';
+  }
 
   // Since the user is able to minimize and close the page, everything is in a
   // client component from here.
@@ -98,6 +117,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
             process={{ ...process, bpmn: selectedVersionBpmn as string } as Process}
             folder={folder}
             versionName={selectedVersion?.name}
+            inEditing={inEditing}
           />
         }
         timelineComponent={

@@ -22,6 +22,9 @@ import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } fr
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
+import { DeleteOutlined } from '@ant-design/icons';
+import { useDeleteControl } from './utils';
+import { DeleteButton } from '../DeleteButton';
 
 const defaultHeaderContent =
   '<b><strong class="text-style-bold" style="white-space: pre-wrap;">Header Cell</strong></b>';
@@ -161,7 +164,8 @@ const Table: UserComponent<TableProps> = ({
 
   const [targetCell, setTargetCell] = useState<{ row: number; col: number }>();
   const [hoveredAction, setHoveredAction] = useState<CellAction>();
-
+  const [hoveredTable, setHoveredTable] = useState(false);
+  const { handleDelete } = useDeleteControl();
   useEffect(() => {
     if (!isSelected) {
       setTargetCell(undefined);
@@ -428,36 +432,44 @@ const Table: UserComponent<TableProps> = ({
         setHoveredAction(undefined);
       }}
     >
-      <table
-        className="user-task-form-table"
-        ref={(r) => {
-          r && connect(r);
-        }}
+      {/* Just show one delete button for whole table on its upper left corner */}
+      <div
+        style={{ position: 'relative' }}
+        onMouseEnter={() => setHoveredTable(true)}
+        onMouseLeave={() => setHoveredTable(false)}
       >
-        <thead>
-          <TableRow
-            rowIndex={0}
-            tableRowData={tableDataWithPreviews[0]}
-            onUpdateContent={handleCellEdit}
-            onEditCell={(row, col) => {
-              setTargetCell({ row, col });
-            }}
-          />
-        </thead>
-        <tbody>
-          {[...Array(tableDataWithPreviews.length - 1).keys()].map((index) => (
+        <DeleteButton show={editingEnabled && hoveredTable && !targetCell} onClick={handleDelete} />
+        <table
+          className="user-task-form-table"
+          ref={(r) => {
+            r && connect(r);
+          }}
+        >
+          <thead>
             <TableRow
-              key={`row-${index}`}
-              rowIndex={index + 1}
-              tableRowData={tableDataWithPreviews[index + 1]}
+              rowIndex={0}
+              tableRowData={tableDataWithPreviews[0]}
               onUpdateContent={handleCellEdit}
               onEditCell={(row, col) => {
                 setTargetCell({ row, col });
               }}
             />
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {[...Array(tableDataWithPreviews.length - 1).keys()].map((index) => (
+              <TableRow
+                key={`row-${index}`}
+                rowIndex={index + 1}
+                tableRowData={tableDataWithPreviews[index + 1]}
+                onUpdateContent={handleCellEdit}
+                onEditCell={(row, col) => {
+                  setTargetCell({ row, col });
+                }}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
       {isSelected &&
         targetCell &&
         createPortal(

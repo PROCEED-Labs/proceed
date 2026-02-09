@@ -14,13 +14,14 @@ import { getProcesses } from '@/lib/data/db/process';
 import styles from './page.module.scss';
 import ResponsiveGrid from './responsive-grid';
 
-const StartPage = async ({ params }: { params: { environmentId: string } }) => {
+const StartPage = async ({ params }: { params: Promise<{ environmentId: string }> }) => {
+  const { environmentId } = await params;
   const msConfig = await getMSConfig();
 
   // Get favorite processes if process documentation is active
   let favoriteProcesses: { id: string; name: string; lastEditedOn: Date }[] = [];
   if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE) {
-    const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+    const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
     const favs = await getUsersFavourites();
 
     if (favs && favs.length > 0) {

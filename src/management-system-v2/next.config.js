@@ -27,7 +27,7 @@ const nextConfig = {
     return [
       {
         source: '/',
-        destination: '/processes',
+        destination: '/start',
         // Permanent redirects get cached by browsers for a lifetime, so they
         // are effectively a de-commision of the old URL.
         // https://lists.w3.org/Archives/Public/ietf-http-wg/2017OctDec/0363.html
@@ -37,6 +37,10 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
+      {
+        source: '/start',
+        destination: '/my/start',
+      },
       {
         source: '/processes',
         destination: '/my/processes/editor',

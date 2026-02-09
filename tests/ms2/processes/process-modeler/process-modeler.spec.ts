@@ -341,6 +341,6 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
-  await newPage.waitForURL(/processes/);
+  await newPage.waitForURL(/processes\/editor/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

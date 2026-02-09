@@ -58,7 +58,7 @@ const MyTasksSection = () => {
             href={tile.href}
             style={{ textDecoration: 'none', width: '200px' }}
           >
-            <Card hoverable style={{ textAlign: 'center' }}>
+            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
               {tile.icon}
               <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
             </Card>
@@ -76,12 +76,12 @@ const ProcessesSection = () => {
   const tiles = [
     {
       title: 'Process Editor',
-      href: `/${environmentId}/processes`,
+      href: `/${environmentId}/processes/editor`,
       icon: <EditOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
     {
       title: 'Process List',
-      href: `/${environmentId}/processes`,
+      href: `/${environmentId}/processes/list`,
       icon: <CopyOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
     },
   ];
@@ -110,7 +110,7 @@ const ProcessesSection = () => {
             href={tile.href}
             style={{ textDecoration: 'none', width: '200px' }}
           >
-            <Card hoverable style={{ textAlign: 'center' }}>
+            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
               {tile.icon}
               <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
             </Card>
@@ -167,7 +167,7 @@ const AutomationsSection = () => {
             href={tile.href}
             style={{ textDecoration: 'none', width: '200px' }}
           >
-            <Card hoverable style={{ textAlign: 'center' }}>
+            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
               {tile.icon}
               <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
             </Card>
@@ -219,7 +219,7 @@ const PersonalSection = () => {
             href={tile.href}
             style={{ textDecoration: 'none', width: '200px' }}
           >
-            <Card hoverable style={{ textAlign: 'center' }}>
+            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
               {tile.icon}
               <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
             </Card>
@@ -266,7 +266,7 @@ const HomeSection = () => {
             href={tile.href}
             style={{ textDecoration: 'none', width: '200px' }}
           >
-            <Card hoverable style={{ textAlign: 'center' }}>
+            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
               {tile.icon}
               <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
             </Card>

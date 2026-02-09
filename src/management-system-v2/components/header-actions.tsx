@@ -136,7 +136,7 @@ const HeaderActions: FC = () => {
                             spaceId: space?.id ?? '',
                             isOrganization: space?.isOrganization ?? false,
                           },
-                          `/processes`,
+                          `/start`,
                         )}
                       >
                         {label}
@@ -153,7 +153,7 @@ const HeaderActions: FC = () => {
             onChange={(spaceId) => {
               const space = userSpaces.find((s) => s.id === spaceId)!;
               router.push(
-                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/processes'),
+                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/start'),
               );
             }}
             defaultValue={activeSpace.spaceId}

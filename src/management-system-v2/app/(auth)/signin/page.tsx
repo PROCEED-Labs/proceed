@@ -14,7 +14,7 @@ const SignInPage = async ({ searchParams }: { searchParams: { callbackUrl: strin
   const isGuest = session?.user.isGuest;
 
   if (session?.user && !isGuest) {
-    const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
+    const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/start`;
     redirect(callbackUrl);
   }
 

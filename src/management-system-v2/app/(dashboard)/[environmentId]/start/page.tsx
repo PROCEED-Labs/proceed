@@ -1,6 +1,12 @@
 import Content from '@/components/content';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { MyTasksSection, ProcessesSection, AutomationsSection, PersonalSection, HomeSection } from './sections';
+import {
+  MyTasksSection,
+  ProcessesSection,
+  AutomationsSection,
+  PersonalSection,
+  HomeSection,
+} from './sections';
 import FavoriteProcessesSection from './favorite-processes-section';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getUsersFavourites } from '@/lib/data/users';
@@ -21,7 +27,11 @@ const StartPage = async ({ params }: { params: { environmentId: string } }) => {
       const allProcesses = await getProcesses(activeEnvironment.spaceId, ability, false);
       favoriteProcesses = allProcesses
         .filter((process) => favs.includes(process.id))
-        .map((process) => ({ id: process.id, name: process.name, lastEditedOn: process.lastEditedOn }));
+        .map((process) => ({
+          id: process.id,
+          name: process.name,
+          lastEditedOn: process.lastEditedOn,
+        }));
     }
   }
 

@@ -13,11 +13,12 @@ import { validate as uuidValidate } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  { params: { spaceId, configSetId } }: { params: { spaceId: string; configSetId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string }> },
 ) {
   // Answer - Success: 200 OK, Body: List of all versions of one configuration [ "1", "2", "latest"]
   // Answer - Error: 404 Not Found
   try {
+    const { spaceId, configSetId } = await params;
     //TODO: find and return versions
     let queryId = uuidValidate(configSetId)
       ? configSetId
@@ -31,11 +32,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params: { spaceId, configSetId } }: { params: { spaceId: string; configSetId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string }> },
 ) {
   // Answer - Success: 200 OK
   // Answer - Error: 409 Invalid input. Body contains the reason. For example, id was given, shortName already exists, syntax invalid, etc.
   try {
+    const { spaceId, configSetId } = await params;
     const body: Config = await request.json();
     ConfigZod.parse(body);
     let usingId = uuidValidate(configSetId);
@@ -75,12 +77,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params: { configSetId } }: { params: { configSetId: string } },
+  { params }: { params: Promise<{ configSetId: string }> },
 ) {
   // Answer - Success: 200 OK
   // Answer - Error: 400 Bad Request, Body: contains the reason
 
   try {
+    const { configSetId } = await params;
     await removeParentConfiguration(configSetId, false);
     return NextResponse.json({ message: 'Success!' });
   } catch (error: any) {

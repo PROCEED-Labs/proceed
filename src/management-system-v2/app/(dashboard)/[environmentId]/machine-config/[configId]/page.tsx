@@ -9,27 +9,26 @@ import MachineConfigViewClient from './page-client';
 import { getCurrentEnvironment } from '@/components/auth';
 
 type MachineConfigProps = {
-  params: { environmentId: string; configId: string };
-  searchParams: { [key: string]: string | string[] | undefined };
+  params: Promise<{ environmentId: string; configId: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-const MachineConfigView: React.FC<MachineConfigProps> = async ({
-  params: { environmentId, configId },
-  searchParams,
-}) => {
+const MachineConfigView: React.FC<MachineConfigProps> = async ({ params, searchParams }) => {
+  const { environmentId, configId } = await params;
+  const searchParamsResolved = await searchParams;
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
   if (activeEnvironment.isOrganization) {
     await syncOrganizationUsers(activeEnvironment.spaceId);
   }
-  const selectedVersionId = searchParams.version as string | undefined;
-  const source = searchParams.source as string | undefined;
+  const selectedVersionId = searchParamsResolved.version as string | undefined;
+  const source = searchParamsResolved.source as string | undefined;
 
   // collect all machine dataset version selections
   const machineDatasetVersions: Record<string, string> = {};
-  Object.keys(searchParams).forEach((key) => {
+  Object.keys(searchParamsResolved).forEach((key) => {
     if (key.startsWith('machineVersion_')) {
       const datasetId = key.replace('machineVersion_', '');
-      machineDatasetVersions[datasetId] = searchParams[key] as string;
+      machineDatasetVersions[datasetId] = searchParamsResolved[key] as string;
     }
   });
 

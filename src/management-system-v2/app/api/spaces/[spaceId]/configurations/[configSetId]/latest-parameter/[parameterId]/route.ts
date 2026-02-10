@@ -20,15 +20,14 @@ import { parameterToProp } from '@/app/(dashboard)/[environmentId]/machine-confi
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { configSetId, parameterId },
-  }: { params: { configSetId: string; parameterId: string } },
+  { params }: { params: Promise<{ configSetId: string; parameterId: string }> },
 ) {
   // Answer - Success: 200 OK, Body: one parameter of one configuration ({id, key, type, content[], parentId, parameters[], parentType, linkedParameters[]})
   // Answer - Error: 404 Not Found
 
   const searchParams = request.nextUrl.searchParams;
   try {
+    const { configSetId, parameterId } = await params;
     const parameter = await nestedParametersFromStorage([parameterId]);
 
     if (searchParams.get('aas-format') === 'true') {
@@ -43,11 +42,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  {
-    params: { spaceId, configSetId, parameterId },
-  }: { params: { spaceId: string; configSetId: string; parameterId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string; parameterId: string }> },
 ) {
   try {
+    const { spaceId, configSetId, parameterId } = await params;
     let queryId = uuidValidate(configSetId)
       ? configSetId
       : await getConfigIdFromShortName(configSetId, spaceId);
@@ -111,11 +109,10 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  {
-    params: { spaceId, configSetId, parameterId },
-  }: { params: { spaceId: string; configSetId: string; parameterId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string; parameterId: string }> },
 ) {
   try {
+    const { spaceId, configSetId, parameterId } = await params;
     let queryId = uuidValidate(configSetId)
       ? configSetId
       : await getConfigIdFromShortName(configSetId, spaceId);

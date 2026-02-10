@@ -25,9 +25,10 @@ import { validate as uuidValidate, v4 } from 'uuid';
 
 export async function POST(
   request: NextRequest,
-  { params: { spaceId, configSetId } }: { params: { spaceId: string; configSetId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string }> },
 ) {
   try {
+    const { spaceId, configSetId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const subParameterOf = searchParams.get('asSubParameterOf');
     const aasFormat = searchParams.get('aas-format');
@@ -47,7 +48,6 @@ export async function POST(
           changeableByUser: true,
           usedAsInputParameterIn: true,
           valueType: true,
-          subParameters: true,
         })
         .strict()
         .parse(body);
@@ -88,11 +88,12 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params: { spaceId, configSetId } }: { params: { spaceId: string; configSetId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string }> },
 ) {
   // Answer - Success: 200 OK, Body: List of all versions of one configuration ({ id, shortname, name, versions: [ {id, name, createdOn, description, versionBasedOn }, ... ])
   // Answer - Error: 404 Not Found
   try {
+    const { spaceId, configSetId } = await params;
     // TODO embed versions
     let queryId = uuidValidate(configSetId)
       ? configSetId

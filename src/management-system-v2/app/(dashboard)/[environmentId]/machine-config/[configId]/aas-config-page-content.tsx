@@ -435,7 +435,7 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({
     data.forEach((item) => {
       keys.push(item.key);
       if (item.children && item.children.length > 0) {
-        const itemTitle = item.title as React.ReactElement;
+        const itemTitle = item.title as any;
         if (itemTitle?.props?.type != 'meta') {
           //console.log(itemTitle?.props?.element.name);
           keys = keys.concat(getAllKeys(item.children));

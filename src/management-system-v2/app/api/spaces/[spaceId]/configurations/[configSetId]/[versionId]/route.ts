@@ -5,13 +5,12 @@ import { validate as uuidValidate, v4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  {
-    params: { spaceId, configSetId, versionId },
-  }: { params: { spaceId: string; configSetId: string; versionId: string } },
+  { params }: { params: Promise<{ spaceId: string; configSetId: string; versionId: string }> },
 ) {
   // Answer - Success: 200 OK, Body: one version of one configuration, same as export
   // Answer - Error: 404 Not Found
   try {
+    const { spaceId, configSetId, versionId } = await params;
     if (versionId === 'latest') {
       const searchParams = request.nextUrl.searchParams;
       let queryId = uuidValidate(configSetId)

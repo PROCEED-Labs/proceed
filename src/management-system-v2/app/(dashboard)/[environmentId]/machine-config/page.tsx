@@ -19,13 +19,14 @@ export type ListItem = Config;
 const MachineConfigPage = async ({
   params,
 }: {
-  params: { environmentId: string; folderId?: string };
+  params: Promise<{ environmentId: string; folderId?: string }>;
 }) => {
   if (!env.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE) {
     return notFound();
   }
+  const { environmentId } = await params;
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
 

@@ -33,7 +33,6 @@ import { buildLinkedInputParametersFromIds } from '../configuration-helper';
 import { getConfigurationCategories } from '@/lib/data/db/machine-config';
 import { useEnvironment } from '../../../../../components/auth-can';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import { IntegrityErrorModal } from '../../iam/users/create-users';
 export type CreateParameterModalReturnType = {
   name: string;
   value: string;
@@ -196,17 +195,6 @@ const AasCreateParameterModal = <T extends CreateParameterModalReturnType>({
       // Validate Failed
     }
   };
-  if (error) {
-    return (
-      <IntegrityErrorModal
-        open={open}
-        close={() => {
-          setError(null);
-          onCancel();
-        }}
-      />
-    );
-  }
 
   return (
     <Modal
@@ -272,6 +260,16 @@ const AasCreateParameterModal = <T extends CreateParameterModalReturnType>({
       </Form>
     </Modal>
   );
+};
+
+// helper function to generate name from display name
+const generateNameFromDisplayName = (displayName: string): string => {
+  if (!displayName) return '';
+  return displayName
+    .replace(/\s+/g, '-')
+    .replace(/[^a-zA-Z0-9\-_+]/g, '')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-+/g, '-');
 };
 
 type CreateParameterInputsProps = {
@@ -425,16 +423,6 @@ const ParameterInputs = ({
   // description language change
   const handleDescriptionLanguageChange = (language: Localization) => {
     setCurrentDescriptionLanguage(language);
-  };
-
-  // helper function to generate name from display name
-  const generateNameFromDisplayName = (displayName: string): string => {
-    if (!displayName) return '';
-    return displayName
-      .replace(/\s+/g, '-')
-      .replace(/[^a-zA-Z0-9\-_+]/g, '')
-      .replace(/^-+|-+$/g, '')
-      .replace(/-+/g, '-');
   };
 
   // validation rule for name field
@@ -706,16 +694,16 @@ const ParameterInputs = ({
                           other input parameter and is never changed automatically.
                         </div>
                         <div style={{ marginTop: '8px' }}>
-                          <strong>Manual:</strong> When the linked parameter's value is updated,
-                          this value will be cleared and can be manually set again.
+                          <strong>Manual:</strong> When the linked parameter&apos;s value is
+                          updated, this value will be cleared and can be manually set again.
                         </div>
                         <div style={{ marginTop: '8px' }}>
                           <strong>Linked:</strong> The value is always identical to the linked
-                          parameter's value. Any linked value change will be copied over.
+                          parameter&apos;s value. Any linked value change will be copied over.
                         </div>
                         <div style={{ marginTop: '8px' }}>
                           <strong>Formula:</strong> A JSONata formula can be used to automatically
-                          update this value whenever one of the linked parameter's values is
+                          update this value whenever one of the linked parameter&apos;s values is
                           updated.
                         </div>
                       </>

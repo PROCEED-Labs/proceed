@@ -16,8 +16,9 @@ export type ListItem = Config;
 
 export async function GET(
   request: NextRequest,
-  { params: { spaceId } }: { params: { spaceId: string } },
+  { params }: { params: Promise<{ spaceId: string }> },
 ) {
+  const { spaceId } = await params;
   const searchParams = request.nextUrl.searchParams;
 
   // Answer - Success: 200 OK, Body: List of all existing configurations ([ {id, shortname, name, categories }, ... ])
@@ -42,8 +43,9 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params: { spaceId } }: { params: { spaceId: string } },
+  { params }: { params: Promise<{ spaceId: string }> },
 ) {
+  const { spaceId } = await params;
   //TODOs:
   //  - error if transformation of request body to json fails (but no check of content-type header is json)
   //  - error if id is inside body

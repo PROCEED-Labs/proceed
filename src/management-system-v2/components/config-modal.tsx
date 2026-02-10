@@ -4,9 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Form, Input, App, Collapse, CollapseProps, Checkbox, Select } from 'antd';
 import { UserError } from '@/lib/user-error';
 import { getConfigurationCategories } from '@/lib/data/db/machine-config';
-import { string } from 'zod';
 import { useEnvironment } from './auth-can';
-import { IntegrityErrorModal } from '@/app/(dashboard)/[environmentId]/iam/users/create-users';
 
 type ConfigModalProps<T extends { name: string; description: string }> = {
   open: boolean;
@@ -31,7 +29,6 @@ const ConfigModal = <T extends { name: string; description: string }>({
 }: ConfigModalProps<T>) => {
   const [form] = Form.useForm();
   const formRef = useRef(null);
-  const [error, setError] = useState<Error | UserError | null>(null);
   const environment = useEnvironment();
   const [submitting, setSubmitting] = useState(false);
   const [categories, setCategories] = useState<
@@ -89,7 +86,7 @@ const ConfigModal = <T extends { name: string; description: string }>({
         const res = await onSubmit(mergedValues);
         if (res?.error) {
           // UserError was thrown by the server
-          setError(res.error);
+          // setError(res.error);
           //message.open({ type: 'error', content: res.error.message });
         }
       } catch (e) {
@@ -104,18 +101,6 @@ const ConfigModal = <T extends { name: string; description: string }>({
       // Validate Failed
     }
   };
-
-  if (error) {
-    return (
-      <IntegrityErrorModal
-        open={open}
-        close={() => {
-          setError(null);
-          onCancel();
-        }}
-      />
-    );
-  }
 
   return (
     <Modal

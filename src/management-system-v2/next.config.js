@@ -11,7 +11,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    nodeMiddleware: true,
   },
   redirects: async () => {
     return [

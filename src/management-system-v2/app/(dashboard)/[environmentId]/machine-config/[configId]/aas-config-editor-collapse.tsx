@@ -266,7 +266,12 @@ export const useCollapseItems = (
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <span style={{ fontWeight: 600, color: hasChanges && processedConfig.templateId ? '#0d6efd' : undefined }}>
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: hasChanges && processedConfig.templateId ? '#0d6efd' : undefined,
+                  }}
+                >
                   {param.displayName.find((item) => item.language === currentLanguage)?.text ||
                     param.name}
                 </span>
@@ -274,7 +279,7 @@ export const useCollapseItems = (
                   <span
                     style={{
                       fontSize: '12px',
-                      color: hasChanges && processedConfig.templateId  ? '#4d94ff' : '#666',
+                      color: hasChanges && processedConfig.templateId ? '#4d94ff' : '#666',
                       fontWeight: 'normal',
                       marginTop: '4px',
                     }}
@@ -395,7 +400,12 @@ export const useCollapseItems = (
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                <span style={{ fontWeight: 600, color: childHasChanges && processedConfig.templateId ? '#0d6efd' : undefined }}>
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: childHasChanges && processedConfig.templateId ? '#0d6efd' : undefined,
+                  }}
+                >
                   {child.displayName.find((item) => item.language === currentLanguage)?.text ||
                     child.name}
                 </span>
@@ -403,7 +413,7 @@ export const useCollapseItems = (
                   <span
                     style={{
                       fontSize: '12px',
-                      color: childHasChanges && processedConfig.templateId  ? '#4d94ff' : '#666',
+                      color: childHasChanges && processedConfig.templateId ? '#4d94ff' : '#666',
                       fontWeight: 'normal',
                       marginTop: '4px',
                     }}

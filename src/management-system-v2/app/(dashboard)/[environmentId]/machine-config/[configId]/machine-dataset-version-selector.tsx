@@ -33,7 +33,7 @@ const MachineDatasetVersionSelector: React.FC<MachineDatasetVersionSelectorProps
   const handleVersionChange = async (fullVersionNumber: string) => {
     try {
       const searchParams = new URLSearchParams(query);
-      
+
       if (fullVersionNumber === 'latest') {
         // remove all param if latest is selected
         searchParams.delete(`machineVersion_${machineDatasetId}`);
@@ -86,11 +86,11 @@ const MachineDatasetVersionSelector: React.FC<MachineDatasetVersionSelectorProps
     displayedValue = selectedVersionFromUrl;
   } else if (mainVersionFromUrl && mainVersionFromUrl !== 'latest') {
     // if main version is selected but no machine version in URL then find the latest machine version under that parent version
-    const versionsUnderParent = availableVersions.filter(version => {
+    const versionsUnderParent = availableVersions.filter((version) => {
       const majorVersion = version.split('.')[0];
       return majorVersion === mainVersionFromUrl;
     });
-    
+
     // use the first one in array already sorted descending, so it's the latest
     displayedValue = versionsUnderParent.length > 0 ? versionsUnderParent[0] : 'latest';
   } else {
@@ -119,13 +119,12 @@ const MachineDatasetVersionSelector: React.FC<MachineDatasetVersionSelectorProps
         onClick={(e) => e.stopPropagation()}
         options={versionsWithLatest.map((version) => ({
           value: version,
-          label: version === 'latest' ? (
-            <span style={{ fontStyle: 'italic' }}>
-              {'Latest'}
-            </span>
-          ) : (
-            `v${version}`
-          ),
+          label:
+            version === 'latest' ? (
+              <span style={{ fontStyle: 'italic' }}>{'Latest'}</span>
+            ) : (
+              `v${version}`
+            ),
         }))}
       />
     </Tooltip>

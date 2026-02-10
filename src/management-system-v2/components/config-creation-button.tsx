@@ -59,7 +59,6 @@ export const ConfigCreationModal: React.FC<
     if (config && 'storeId' in config) {
       router.push(spaceURL(environment, `/machine-config/${config.storeId}`)); //TODO refactoring not using term "machine config"
       router.refresh();
-
     } else {
       router.refresh();
     }

@@ -222,7 +222,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   const contextMenuItems: MenuProps['items'] = useMemo(() => {
     let items: MenuProps['items'] = [];
 
-    if (rightClickedType === 'config' && parentConfig.templateId ) {
+    if (rightClickedType === 'config' && parentConfig.templateId) {
       items.push(
         {
           label: 'Create a Target Dataset',
@@ -270,14 +270,15 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           // onClick: () => setOpenModal('machine-config'),
           onClick: async () => {
             const { name, displayName } = generateMachineDatasetNames(parentConfig);
-            
+
             try {
               await addMachineDataSet(parentConfig, name, displayName);
               app.message.success(`Machine Dataset "${displayName}" created successfully.`);
               router.refresh();
             } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Failed to create machine dataset';
-              app.message.error(errorMessage);            
+              const errorMessage =
+                error instanceof Error ? error.message : 'Failed to create machine dataset';
+              app.message.error(errorMessage);
             }
           },
           disabled: !editMode, // TODO

@@ -12,12 +12,7 @@ type ReleaseButtonProps = {
 const ReleaseButton: React.FC<ReleaseButtonProps> = ({ disabled, onClick, loading }) => {
   return (
     <Tooltip title={disabled ? 'No permission to create release' : 'Create Release'}>
-      <Button 
-        icon={<ShareAltOutlined />} 
-        disabled={disabled}
-        loading={loading}
-        onClick={onClick}
-      >
+      <Button icon={<ShareAltOutlined />} disabled={disabled} loading={loading} onClick={onClick}>
         Release
       </Button>
     </Tooltip>

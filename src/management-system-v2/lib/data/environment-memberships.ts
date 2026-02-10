@@ -22,6 +22,8 @@ import { env } from '../ms-config/env-vars';
 import { AuthenticatedUser, AuthenticatedUserSchema, User } from './user-schema';
 import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
+import { asyncForEach } from '../helpers/javascriptHelpers';
+import { removeParameter, syncOrganizationUsers } from './db/machine-config';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -137,6 +139,8 @@ export async function removeUsersFromEnvironment(environmentId: string, userIdsI
     for (const userId of userIds) {
       await removeMember(environmentId, userId, ability);
     }
+    // removing user from organizational config
+    await syncOrganizationUsers(environmentId);
   } catch (_) {
     return userError('Error removing users from environment');
   }

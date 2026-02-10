@@ -1,6 +1,7 @@
 const path = require('path');
 
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
@@ -50,6 +51,7 @@ const nextConfig = {
         'iam',
         'profile',
         'projects',
+        'machine-config',
         'settings',
       ].map((folder) => ({
         // TODO: when building techserver separately, this can be set to rewrite

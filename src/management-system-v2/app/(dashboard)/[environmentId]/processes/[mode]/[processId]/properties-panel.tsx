@@ -36,7 +36,10 @@ import DescriptionSection from './description-section';
 import PlannedCostInput from './planned-cost-input';
 import { checkIfProcessExistsByName, updateProcessMetaData } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
-import { PotentialOwner, ResponsibleParty } from './potential-owner';
+import {
+  PotentialOwner,
+  ResponsibleParty,
+} from '@/components/competence/potential-owner/potential-owner';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import { getBackgroundColor, getBorderColor, getTextColor } from '@/lib/helpers/bpmn-js-helpers';
 import { Shape } from 'bpmn-js/lib/model/Types';
@@ -45,6 +48,7 @@ import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import VariableDefinition from './variable-definition';
+import SuggestPotentialOwner from '@/components/competence/potential-owner/suggest-potential-owner';
 import IsExecutableSection from './is-executable';
 
 // Elements that should not display the planned duration field
@@ -504,6 +508,10 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
                   modeler={modeler}
                   readOnly={readOnly || !isExecutable}
                 />
+                {env.PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE && (
+                  <SuggestPotentialOwner selectedElement={selectedElement} modeler={modeler} />
+                )}
+                <Divider />
               </>
             )}
             <VariableDefinition readOnly={readOnly || !isExecutable} />

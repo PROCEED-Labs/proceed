@@ -87,7 +87,7 @@ import MoveToFolderModal from '../folder-move-modal';
 import { FolderTree } from '../FolderTree';
 import { ContextActions, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
-import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
+import { useInitialisePotentialOwnerStore } from '@/components/competence/potential-owner/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
 
 // TODO: improve ordering

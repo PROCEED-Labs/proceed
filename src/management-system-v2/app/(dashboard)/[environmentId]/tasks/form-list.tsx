@@ -38,8 +38,8 @@ import {
 import { defaultForm } from '@/components/html-form-editor/utils';
 import usePotentialOwnerStore, {
   useInitialisePotentialOwnerStore,
-} from '../processes/[mode]/[processId]/use-potentialOwner-store';
-import { generateOptions } from '../processes/[mode]/[processId]/potential-owner';
+} from '@/components/competence/potential-owner/use-potentialOwner-store';
+import { generateOptions } from '@/components/competence/potential-owner/potential-owner';
 import { DefaultOptionType } from 'antd/es/cascader';
 import { addUserTasks } from '@/lib/data/user-tasks';
 

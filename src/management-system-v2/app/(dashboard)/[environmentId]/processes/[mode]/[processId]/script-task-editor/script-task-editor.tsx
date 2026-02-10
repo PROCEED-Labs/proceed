@@ -1,14 +1,6 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-  forwardRef,
-} from 'react';
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Button,
@@ -275,10 +267,15 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                   <IoExtensionPuzzleOutline style={{ transform: 'translateY(2px)' }} size={15} />
                 }
                 onClick={() => setSelectedEditor('blockly')}
+                disabled={!canEdit}
               >
                 No-Code Block Editor
               </Button>
-              <Button icon={<FormOutlined size={15} />} onClick={() => setSelectedEditor('JS')}>
+              <Button
+                icon={<FormOutlined size={15} />}
+                onClick={() => setSelectedEditor('JS')}
+                disabled={!canEdit}
+              >
                 JavaScript Editor
               </Button>
             </Space>

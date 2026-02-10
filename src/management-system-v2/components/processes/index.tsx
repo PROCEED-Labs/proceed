@@ -604,9 +604,17 @@ const Processes = ({
                               {!isListView && canCreateProcess && (
                                 <Tooltip placement="top" title={'Release Process'}>
                                   <VersionCreationButton
+                                    processId={selectedRowElements[0].id}
                                     type="text"
                                     icon={<BsFileEarmarkCheck />}
-                                    createVersion={createVersionFromList}
+                                    createVersion={(values, deploy) => {
+                                      if (values) {
+                                        createVersionFromList({
+                                          ...values,
+                                          processId: selectedRowElements[0].id,
+                                        });
+                                      }
+                                    }}
                                   ></VersionCreationButton>
                                 </Tooltip>
                               )}
@@ -947,6 +955,7 @@ const Processes = ({
         }}
       />
       <VersionModal
+        processId={rowClickedProcess || ''}
         close={(values) => {
           setOpenVersionModal(false);
 

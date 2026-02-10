@@ -5,7 +5,9 @@ import {
   getProcessConstraints,
   getStartEvents,
   getTaskConstraintMapping,
+  setDefinitionsVersionInformation,
   toBpmnObject,
+  toBpmnXml,
 } from '@proceed/bpmn-helper';
 // TODO: remove this ignore once the decider is typed
 // @ts-ignore
@@ -14,8 +16,9 @@ import { Engine } from './machines';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';
-import { asyncForEach } from '../helpers/javascriptHelpers';
+import { asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
 import { UserFacingError } from '../user-error';
+import { toCustomUTCString } from '../helpers/timeHelper';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
@@ -40,6 +43,7 @@ async function deployProcessToMachines(
       return Promise.all(
         processesExportData!.map(async (exportData) => {
           const version = Object.values(exportData.versions)[0];
+
           await engineRequest({
             method: 'post',
             endpoint: '/process/',
@@ -47,8 +51,9 @@ async function deployProcessToMachines(
             engine,
           });
 
+          let startForm = Promise.resolve();
           if (version.startForm) {
-            engineRequest({
+            startForm = engineRequest({
               method: 'put',
               endpoint: '/process/:definitionId/versions/:version/start-form',
               pathParams: {
@@ -99,7 +104,7 @@ async function deployProcessToMachines(
             }),
           );
 
-          await Promise.all([...scripts, ...userTasks, ...images]);
+          await Promise.all([...scripts, ...userTasks, ...images, startForm]);
         }),
       );
     });
@@ -208,7 +213,7 @@ export async function deployProcess(
 ) {
   if (machines.length === 0) throw new UserFacingError('No machines available for deployment');
 
-  const processesExportData = await prepareExport(
+  let processesExportData = await prepareExport(
     {
       type: 'bpmn',
       subprocesses: true,
@@ -226,10 +231,34 @@ export async function deployProcess(
     spaceId,
   );
 
+  // when deploying the latest version as a test deployment make sure it contains version
+  // information
+  processesExportData = await asyncMap(processesExportData, async (process) => {
+    let versions = process.versions;
+
+    if ('latest' in process.versions) {
+      const versionCreatedOn = toCustomUTCString(new Date());
+      const { latest } = versions;
+      latest.name = 'Latest';
+      const bpmnObj = await toBpmnObject(latest.bpmn);
+      await setDefinitionsVersionInformation(bpmnObj, {
+        versionId: '_latest',
+        versionName: 'Latest',
+        versionDescription: 'Test version for the current state of the bpmn in the modeler',
+        versionCreatedOn,
+      });
+      latest.bpmn = await toBpmnXml(bpmnObj);
+      process.versions._latest = latest;
+      delete process.versions.latest;
+    }
+
+    return { ...process, versions };
+  });
+
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, machines);
+    await staticDeployment(definitionId, version || '_latest', processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, machines);
+    await dynamicDeployment(definitionId, version || '_latest', processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };

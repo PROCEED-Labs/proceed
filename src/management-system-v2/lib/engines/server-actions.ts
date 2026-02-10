@@ -49,6 +49,7 @@ import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
+import { engineRequest } from './endpoints';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -78,12 +79,33 @@ export async function getCorrectTargetEngines(
   return engines;
 }
 
+export async function getExtendedEngines(spaceId: string) {
+  const engines = await getCorrectTargetEngines(spaceId);
+
+  let extendedEngines = await asyncMap(engines, async (engine) => {
+    const { name } = (await engineRequest({
+      engine,
+      method: 'get',
+      endpoint: '/machine/:properties',
+      pathParams: { properties: 'name' },
+    })) as { name: string };
+
+    return { ...engine, name };
+  });
+
+  const uniqueEngines: Record<string, (typeof extendedEngines)[number]> = {};
+
+  extendedEngines.forEach((engine) => (uniqueEngines[engine.id] = engine));
+
+  return Object.values(uniqueEngines);
+}
+
 export async function deployProcess(
   definitionId: string,
   versionId: string,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
-  _forceEngine?: SpaceEngine | 'PROCEED',
+  _forceEngine?: Engine | 'PROCEED',
 ) {
   try {
     // TODO: manage permissions for deploying a process

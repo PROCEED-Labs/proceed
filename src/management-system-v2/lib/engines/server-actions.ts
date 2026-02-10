@@ -2,7 +2,6 @@
 
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
-  DeployedProcessInfo,
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
   getDeployment as fetchDeployment,
@@ -11,7 +10,7 @@ import {
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
@@ -46,8 +45,6 @@ import {
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
-import { getUsersInSpace } from '../data/db/iam/memberships';
-import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 import { engineRequest } from './endpoints';
 

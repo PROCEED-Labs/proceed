@@ -55,10 +55,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
   const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
 
-  useEffect(() => {
-    setIsExecutable(process.executable || false);
-  }, [process]);
-
   const { isListView, processContextPath } = useProcessView();
 
   /// Derived State
@@ -285,6 +281,14 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
           'The sub-process that was open does not exist anymore. Switched to the main process view.',
         );
       }
+    }
+
+    // set the executable value for the currently open version
+    const root = modeler.current?.getCurrentRoot();
+    if (root && bpmnIs(root, 'bpmn:Process')) {
+      const executable = root.businessObject.isExecutable;
+      console.log(executable);
+      setIsExecutable(executable || false);
     }
   }, [messageApi, subprocessId]);
 

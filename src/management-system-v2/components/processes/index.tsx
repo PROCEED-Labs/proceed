@@ -643,7 +643,7 @@ const Processes = ({
                                   ></VersionCreationButton>
                                 </Tooltip>
                               )}
-                              {
+                              {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
                                 <Tooltip placement="top" title="Start Instance">
                                   <Button
                                     type="text"
@@ -653,7 +653,7 @@ const Processes = ({
                                     }}
                                   />
                                 </Tooltip>
-                              }
+                              )}
                             </div>
                           )}
 

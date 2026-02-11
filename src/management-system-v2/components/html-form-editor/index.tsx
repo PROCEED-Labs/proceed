@@ -29,6 +29,8 @@ import { Element } from '@craftjs/core';
 
 import { defaultElements, exportElements } from './elements';
 import useEditorStateStore from './use-editor-state-store';
+import Row from './elements/Row';
+import Column from './elements/Column';
 
 const { Text, SubmitButton, Table, CheckBoxOrRadioGroup, Input, Container } = defaultElements;
 
@@ -49,12 +51,93 @@ export interface HtmlFormEditorRef extends EditorContentRef {
   getHtml: () => string;
 }
 
+// Store the default state structure
+let defaultStateStructure: any = null;
+
+export const setDefaultStateSnapshot = (serializedState: string) => {
+  const state = JSON.parse(serializedState);
+  // Extract only the structure and props, ignoring node IDs because they are generated randomly
+  defaultStateStructure = extractStructure(state);
+};
+
+export const getDefaultStateSnapshot = () => {
+  return defaultStateStructure;
+};
+
+// Helper to extract structure without node IDs
+export const extractStructure = (state: any) => {
+  const structure: any = {
+    rows: [],
+    totalElements: 0,
+  };
+
+  const rootNode = state.ROOT;
+  if (!rootNode) return structure;
+
+  rootNode.nodes.forEach((rowId: string) => {
+    const row = state[rowId];
+    if (!row || !row.nodes) return;
+
+    const rowData: any = {
+      columnCount: row.nodes.length,
+      elements: [],
+    };
+
+    // Check all columns in the row
+    row.nodes.forEach((columnId: string) => {
+      const column = state[columnId];
+      if (!column || !column.nodes) return;
+
+      // Check all elements in the column
+      column.nodes.forEach((elementId: string) => {
+        const element = state[elementId];
+        if (!element) return;
+
+        rowData.elements.push({
+          type: element.data?.displayName || element.data?.name || element.type?.resolvedName,
+          props: element.props || element.data?.props || {},
+        });
+        structure.totalElements++;
+      });
+    });
+
+    structure.rows.push(rowData);
+  });
+
+  return structure;
+};
+
 const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () => void }>(
   ({ json, onInit }, ref) => {
     const { query, actions } = useEditor();
 
     useEffect(() => {
       actions.deserialize(json);
+
+      // Check if ROOT is empty, add default elements
+      const rootNode = query.node('ROOT').get();
+      if (rootNode.data.nodes.length === 0) {
+        addDefaultElements(actions, query);
+
+        // Capture the default state snapshot after adding elements
+        // Use requestAnimationFrame to make sure that DOM is updated
+        requestAnimationFrame(() => {
+          const snapshot = query.serialize();
+          setDefaultStateSnapshot(snapshot);
+        });
+      } else {
+        // If there are already elements, capture snapshot anyway (for page reload)
+        const currentState = query.serialize();
+        const existingSnapshot = getDefaultStateSnapshot();
+        if (!existingSnapshot) {
+          // Count elements to see if it matches default structure
+          const nodeCount = Object.keys(JSON.parse(currentState)).length;
+          if (nodeCount >= 12 && nodeCount <= 14) {
+            setDefaultStateSnapshot(currentState);
+          }
+        }
+      }
+
       onInit();
     }, [json]);
 
@@ -69,6 +152,44 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
 );
 
 EditorContent.displayName = 'EditorContent';
+
+const addDefaultElements = (actions: any, query: any) => {
+  const rootNodeId = 'ROOT';
+
+  // Helper function to add element wrapped in Row and Column
+  const addElementToRoot = (element: React.ReactElement) => {
+    // Create Row
+    const rowTree = query.parseReactElement(<Element is={Row} canvas />).toNodeTree();
+    actions.addNodeTree(rowTree, rootNodeId);
+
+    // Get the newly created row ID
+    const rootNode = query.node(rootNodeId).get();
+    const rowId = rootNode.data.nodes[rootNode.data.nodes.length - 1];
+
+    // Create Column inside Row
+    const columnTree = query.parseReactElement(<Element is={Column} canvas />).toNodeTree();
+    actions.addNodeTree(columnTree, rowId);
+
+    // Get the newly created column ID
+    const rowNode = query.node(rowId).get();
+    const columnId = rowNode.data.nodes[rowNode.data.nodes.length - 1];
+
+    // Add the actual element inside Column
+    const elementTree = query.parseReactElement(element).toNodeTree();
+    actions.addNodeTree(elementTree, columnId);
+  };
+
+  // Add all needed elements now
+  addElementToRoot(
+    <Text text='<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>' />,
+  );
+
+  addElementToRoot(<Text />);
+
+  addElementToRoot(<Input />);
+
+  addElementToRoot(<SubmitButton />);
+};
 
 const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
   (
@@ -259,3 +380,4 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
 HtmlFormEditor.displayName = 'HtmlFormEditor';
 
 export default HtmlFormEditor;
+export { addDefaultElements };

@@ -40,3 +40,7 @@ export const UserTaskInputSchema = z.object({
 export type UserTaskInput = z.infer<typeof UserTaskInputSchema>;
 
 export type UserTask = UserTaskInput;
+
+export type ExtendedTaskListEntry = Omit<UserTask, 'actualOwner'> & {
+  actualOwner: { id: string; name: string; userName?: string }[];
+};

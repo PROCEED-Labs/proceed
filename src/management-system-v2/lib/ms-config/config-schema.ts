@@ -39,6 +39,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
   'STORAGE_CLOUD_BUCKET_NAME',
 
+  'PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE',
   // Variables that aren't implemented yet
   // 'PRISMA_???',
 ] satisfies (keyof MergedSchemas)[];
@@ -60,6 +61,14 @@ export const msConfigSchema = {
           'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_GANTT_ACTIVE',
       }),
     PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE: z.string().default('FALSE').transform(boolParser),
+    PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE: z
+      .string()
+      .default('FALSE')
+      .transform(boolParser)
+      .refine((val) => !val || process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE, {
+        message:
+          'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE',
+      }),
     PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
 
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),

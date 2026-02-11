@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './layout.module.scss';
-import { FC, PropsWithChildren, createContext, use, useEffect, useState } from 'react';
+import { FC, PropsWithChildren, createContext, useEffect, useState } from 'react';
 import {
   Alert,
   Layout as AntLayout,
@@ -131,8 +131,8 @@ const Layout: FC<
     check(layoutMenuItems);
 
     setSelected(sel);
-    setOpen(op);
-  }, [pathname]);
+    if (!collapsed) setOpen(op);
+  }, [pathname, collapsed]);
 
   // remove the error message about the unknown item entries that is logged by ant-design
   function toMenuItem(item: ExtendedMenuItem): MenuItemType {

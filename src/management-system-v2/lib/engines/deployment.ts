@@ -324,6 +324,17 @@ export async function getDeployments(engines: Engine[], entries?: string) {
   return deployments as DeployedProcessInfo[];
 }
 
+export async function getDeployment(engine: Engine, definitionId: string) {
+  const deployment = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId',
+    engine,
+    pathParams: { definitionId },
+  });
+
+  return deployment as DeployedProcessInfo;
+}
+
 export async function getProcessImageFromMachine(
   engine: Engine,
   definitionId: string,

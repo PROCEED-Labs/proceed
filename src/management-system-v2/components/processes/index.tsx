@@ -25,7 +25,7 @@ import {
   MenuProps,
   Typography,
 } from 'antd';
-import { InfoCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
 
 import { ComponentProps, use, useMemo, useRef, useState, useTransition } from 'react';
 import {
@@ -57,7 +57,7 @@ import {
 import ProcessModal from '@/components/process-modal';
 import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
-import { Process, ProcessMetadata } from '@/lib/data/process-schema';
+import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
 import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
@@ -89,11 +89,13 @@ import { ContextActions, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
-import { useVersionAndDeploy } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
+import {
+  VersionSelectionModal,
+  useVersionAndDeploy,
+} from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
 import { EnvVarsContext } from '../env-vars-context';
 import EngineSelection from '../engine-selection';
 import StartFormModal from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/start-form-modal';
-import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 // TODO: improve ordering
 export type ProcessActions = {
@@ -174,6 +176,7 @@ const Processes = ({
   const [exportModalTab, setExportModalTab] = useState<'bpmn' | 'share-public-link' | undefined>(
     undefined,
   );
+  const [showVersionSelectionModal, setShowVersionSelectionModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -497,8 +500,10 @@ const Processes = ({
     startForm,
     cancelStartForm,
     versionToDeploy,
+    setVersionToDeploy,
     cancelDeploy,
     startInstance,
+    autoStartInstance,
   } = useVersionAndDeploy(selectedProcessId, isExecutable, async (versionId) => {
     return await wrapServerCall({
       fn: () => getProcessBPMN(selectedProcessId!, space.spaceId, versionId),
@@ -638,6 +643,17 @@ const Processes = ({
                                   ></VersionCreationButton>
                                 </Tooltip>
                               )}
+                              {
+                                <Tooltip placement="top" title="Start Instance">
+                                  <Button
+                                    type="text"
+                                    icon={<PlayCircleOutlined />}
+                                    onClick={() => {
+                                      setShowVersionSelectionModal(true);
+                                    }}
+                                  />
+                                </Tooltip>
+                              }
                             </div>
                           )}
 
@@ -1026,6 +1042,17 @@ const Processes = ({
       />
 
       <AddUserControls name={'process-list'} />
+
+      <VersionSelectionModal
+        show={showVersionSelectionModal}
+        processId={selectedProcessId}
+        onOk={(version) => {
+          setVersionToDeploy(version);
+          autoStartInstance();
+          setShowVersionSelectionModal(false);
+        }}
+        onClose={() => setShowVersionSelectionModal(false)}
+      />
     </>
   );
 };

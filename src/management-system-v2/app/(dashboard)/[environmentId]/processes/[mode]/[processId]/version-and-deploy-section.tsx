@@ -1,4 +1,15 @@
-import { App, Button, Select, SelectProps, Tooltip } from 'antd';
+import {
+  Alert,
+  App,
+  Button,
+  Modal,
+  Select,
+  SelectProps,
+  Skeleton,
+  Space,
+  Tooltip,
+  Typography,
+} from 'antd';
 import { PlusOutlined, ExperimentOutlined, CaretRightOutlined } from '@ant-design/icons';
 
 import { useEnvironment } from '@/components/auth-can';
@@ -10,23 +21,32 @@ import { useProcessView } from './process-view-context';
 import useMobileModeler from '@/lib/useMobileModeler';
 import VersionCreationButton from '@/components/version-creation-button';
 import EngineSelection from '@/components/engine-selection';
-import { use, useState } from 'react';
-import { isUserErrorResponse } from '@/lib/user-error';
+import { use, useMemo, useState } from 'react';
+import { isUserError, isUserErrorResponse } from '@/lib/user-error';
 
 import {
   createVersion,
   updateProcess,
   getProcessBPMN,
   getProcessHtmlFormHTML,
+  getProcess,
 } from '@/lib/data/processes';
 import useModelerStateStore from './use-modeler-state-store';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { deployProcess } from '@/lib/engines/server-actions';
 import { EnvVarsContext } from '@/components/env-vars-context';
 import StartFormModal from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/start-form-modal';
-import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
+import {
+  getElementsByTagName,
+  getStartFormFileNameMapping,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import useProcessVariables from './use-process-variables';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { useQuery } from '@tanstack/react-query';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { setSelected } from 'blockly/core/common';
+import BPMNCanvas from '@/components/bpmn-canvas';
 
 export const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -347,6 +367,119 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
         </>
       )}
     </>
+  );
+};
+
+export const VersionSelectionModal: React.FC<{
+  show: boolean;
+  onOk: (version: string) => void;
+  onClose: () => void;
+  processId: string | undefined;
+}> = ({ show, onOk, onClose, processId }) => {
+  const environment = useEnvironment();
+
+  const { data, isLoading } = useQuery({
+    queryFn: async () => {
+      if (processId) {
+        const metadata = await getProcess(processId, environment.spaceId);
+        if (isUserErrorResponse(metadata)) throw metadata.error;
+
+        const bpmn = await getProcessBPMN(processId, environment.spaceId);
+        if (isUserErrorResponse(bpmn)) throw bpmn.error;
+
+        const latestVersion = {
+          label: 'Latest',
+          value: 'latest',
+          versionId: 'latest',
+          versionName: 'Latest',
+          versionDescription: 'Current editing state of the process.',
+          bpmn,
+          executable: metadata.executable,
+        };
+        const versions = await asyncMap(metadata.versions, async (version) => {
+          const bpmn = await getProcessBPMN(processId, environment.spaceId, version.id);
+          if (isUserErrorResponse(bpmn)) throw bpmn.error;
+
+          const bpmnObj = await toBpmnObject(bpmn);
+          const processEls = getElementsByTagName(bpmnObj, 'bpmn:Process');
+
+          let executable = false;
+
+          if (processEls.length === 1) {
+            executable = processEls[0].isExecutable || false;
+          }
+
+          return {
+            label: version.name,
+            value: version.id,
+            versionId: version.id,
+            versionName: version.name,
+            versionDescription: version.description,
+            bpmn,
+            executable,
+          };
+        });
+
+        return [latestVersion, ...versions];
+      }
+
+      return [];
+    },
+    queryKey: ['process_executable_versions', environment.spaceId, processId],
+    enabled: show && !!processId,
+  });
+
+  const [selectedVersionId, setSelectedVersionId] = useState('latest');
+
+  const selectedVersion = useMemo(() => {
+    if (data && selectedVersionId) {
+      const version = data.find((v) => v.versionId === selectedVersionId);
+      return version;
+    }
+  }, [data, selectedVersionId]);
+
+  return (
+    <Modal
+      open={show}
+      onCancel={() => {
+        setSelectedVersionId('latest');
+        onClose();
+      }}
+      title="Please select a version to start"
+      okText="Deploy and Start"
+      okButtonProps={{
+        disabled: !selectedVersion || !selectedVersion.executable,
+      }}
+      onOk={() => onOk(selectedVersionId)}
+    >
+      {isLoading ? (
+        <Skeleton />
+      ) : (
+        <Space style={{ width: '100%' }} direction="vertical">
+          <Select
+            options={data}
+            defaultValue={'latest'}
+            popupMatchSelectWidth={false}
+            value={selectedVersionId}
+            onChange={(id) => setSelectedVersionId(id)}
+            optionRender={({ data: { versionName, versionDescription } }) => (
+              <Tooltip placement="right" title={versionDescription}>
+                {versionName}
+              </Tooltip>
+            )}
+          />
+          {selectedVersion && (
+            <Space style={{ width: '100%' }} direction="vertical">
+              <Alert message={selectedVersion.versionDescription} type="info"></Alert>
+              {!selectedVersion.executable && (
+                <Alert message="This version is not executable." type="warning" />
+              )}
+              <BPMNCanvas type="viewer" bpmn={{ bpmn: selectedVersion.bpmn }} />
+            </Space>
+          )}
+        </Space>
+      )}
+    </Modal>
   );
 };
 

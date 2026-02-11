@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
+import prisma from '@/lib/data/db';
 
 // Define the schema for tool parameters
 export const schema = {};
@@ -18,5 +19,10 @@ export const metadata = {
 
 // Tool implementation
 export default async function getProcesses({}: InferSchema<typeof schema>) {
-  return `[{id: "74393", name: "Vacation Application", versions: 5, lastModified: "2025-01-15T10:23:45Z"}, {id: "83920", name: "Expense Reimbursement", versions: 3, lastModified: "2025-02-20T14:12:30Z"}]`;
+  const result = await prisma.process.findMany({
+    select: { id: true, name: true, description: true, lastEditedOn: true },
+    take: 100,
+  });
+
+  return result ?? `Error: No processes found.`;
 }

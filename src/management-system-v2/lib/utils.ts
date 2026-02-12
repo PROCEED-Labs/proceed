@@ -553,3 +553,9 @@ export function zodPhoneNumber(defaultCountry: CountryCode = 'DE') {
     return z.NEVER;
   });
 }
+
+export function possiblyNumber(str: string): number | string {
+  if (str === '') return str;
+  const num = Number(str);
+  return Number.isFinite(num) ? num : str;
+}

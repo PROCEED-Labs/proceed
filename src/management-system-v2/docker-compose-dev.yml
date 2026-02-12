@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:17.7
     container_name: postgres_database_proceed_development
     environment:
       POSTGRES_DB: proceed_db

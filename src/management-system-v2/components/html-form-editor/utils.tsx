@@ -130,7 +130,6 @@ body {
   display: flex;
   align-items: center;
 }
-
 .user-task-form-milestone input[type="range"] {
   margin: 5px 10px;
 }

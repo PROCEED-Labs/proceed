@@ -59,6 +59,7 @@ export const globalPersonalSpaceRules = Object.freeze(
     'Machine',
     'Environment',
     'Setting',
+    'MachineConfig',
   ]),
 );
 

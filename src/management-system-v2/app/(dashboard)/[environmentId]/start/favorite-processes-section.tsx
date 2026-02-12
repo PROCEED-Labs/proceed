@@ -10,6 +10,10 @@ import { useEnvironment } from '@/components/auth-can';
 import { OverflowTooltipTitle } from '@/components/overflow-tooltip';
 import ProceedLoadingIndicator from '@/components/loading-proceed';
 
+import cn from 'classnames';
+
+import styles from './favorite-processes-section.module.scss';
+
 const CARD_WIDTH = 225;
 const CARD_GAP = 16;
 const PADDING_LEFT = 70;
@@ -105,7 +109,7 @@ const ProcessCard = ({
           router.push(spaceURL(space, url));
         }}
       >
-        <div className="favorite-process-bpmn-preview">
+        <div className={cn(styles.FavoriteProcessPreview)}>
           {isVisible ? (
             <Suspense fallback={loader}>
               <LazyBPMNViewer
@@ -118,14 +122,6 @@ const ProcessCard = ({
           ) : (
             loader
           )}
-          <style jsx>{`
-            .favorite-process-bpmn-preview {
-              height: 100%;
-            }
-            .favorite-process-bpmn-preview :global(*) {
-              cursor: pointer !important;
-            }
-          `}</style>
         </div>
       </Card>
     </div>
@@ -217,12 +213,10 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
   return (
     <div
       ref={containerRef}
+      className={styles.FavoritesSection}
       style={{
-        marginBottom: '1.5rem',
-        textAlign: 'left',
         paddingLeft: `${PADDING_LEFT}px`,
         paddingRight: `${RIGHT_BUTTON_SPACE}px`,
-        overflow: 'hidden',
       }}
     >
       <div style={{ position: 'relative' }}>
@@ -259,20 +253,14 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
             </Space>
           )}
         </div>
-        <div style={{ position: 'relative' }}>
+        <div className={styles.Carousel}>
           {showLeftArrow && (
             <Button
               shape="circle"
               icon={<DoubleLeftOutlined />}
               onClick={() => scroll('left')}
-              style={{
-                position: 'absolute',
-                left: `-${PADDING_LEFT / 2 + 16}px`,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 10,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
+              className={styles.CarouselButton}
+              style={{ left: `-${PADDING_LEFT / 2 + 16}px` }}
             />
           )}
           <div
@@ -295,14 +283,8 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
               shape="circle"
               icon={<DoubleRightOutlined />}
               onClick={() => scroll('right')}
-              style={{
-                position: 'absolute',
-                left: `${listWidth + 20}px`,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                zIndex: 10,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              }}
+              className={styles.CarouselButton}
+              style={{ left: `${listWidth + 20}px` }}
             />
           )}
         </div>

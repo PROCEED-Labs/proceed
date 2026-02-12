@@ -10,12 +10,13 @@ import {
   BarChartOutlined,
   NodeExpandOutlined,
   LaptopOutlined,
-  EditFilled,
   FormOutlined,
 } from '@ant-design/icons';
 import { AppstoreOutlined } from '@ant-design/icons';
 import { UserOutlined } from '@ant-design/icons';
 import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
+
+import styles from './sections.module.scss';
 
 type MyTasksSectionProps = {
   showTaskEditor: boolean;
@@ -29,46 +30,35 @@ const MyTasksSection: React.FC<MyTasksSectionProps> = ({ showTaskEditor }) => {
     {
       title: 'Task List',
       href: `/${environmentId}/tasklist`,
-      icon: <CheckSquareOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <CheckSquareOutlined className={styles.TileIcon} />,
       condition: true,
     },
     {
       title: 'Task Editor',
       href: `/${environmentId}/tasks`,
-      icon: <FormOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <FormOutlined className={styles.TileIcon} />,
       condition: showTaskEditor,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
+    <div className={styles.Section}>
       <h2>
-        <CheckSquareOutlined style={{ marginRight: '8px' }} />
+        <CheckSquareOutlined className={styles.SectionIcon} />
         My Tasks
       </h2>
       <p>
         Manage your running or planned tasks in the Task List.<br></br>
         Edit your existing tasks using the Task Editor.
       </p>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '26px',
-        }}
-      >
+      <div className={styles.TileGroup}>
         {tiles.map(
           (tile) =>
             tile.condition && (
-              <Link
-                key={tile.title}
-                href={tile.href}
-                style={{ textDecoration: 'none', width: '200px' }}
-              >
-                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+              <Link key={tile.title} href={tile.href} className={styles.Tile}>
+                <Card hoverable className={styles.TileCard}>
                   {tile.icon}
-                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                  <h3 className={styles.TileCardTitle}>{tile.title}</h3>
                 </Card>
               </Link>
             ),
@@ -91,46 +81,35 @@ const ProcessesSection: React.FC<ProcessSectionProps> = ({ showList, showEditor 
     {
       title: 'Process Editor',
       href: `/${environmentId}/processes/editor`,
-      icon: <EditOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <EditOutlined className={styles.TileIcon} />,
       condition: showEditor,
     },
     {
       title: 'Process List',
       href: `/${environmentId}/processes/list`,
-      icon: <CopyOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <CopyOutlined className={styles.TileIcon} />,
       condition: showList,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
+    <div className={styles.Section}>
       <h2>
-        <PartitionOutlined style={{ marginRight: '8px' }} />
+        <PartitionOutlined className={styles.SectionIcon} />
         My Processes
       </h2>
       <p>
         Create, edit and organize your BPMN processes with the Process Editor. <br></br>
         Browse already versioned, released processes in the Process List
       </p>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '26px',
-        }}
-      >
+      <div className={styles.TileGroup}>
         {tiles.map(
           (tile) =>
             tile.condition && (
-              <Link
-                key={tile.title}
-                href={tile.href}
-                style={{ textDecoration: 'none', width: '200px' }}
-              >
-                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+              <Link key={tile.title} href={tile.href} className={styles.Tile}>
+                <Card hoverable className={styles.TileCard}>
                   {tile.icon}
-                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                  <h3 className={styles.TileCardTitle}>{tile.title}</h3>
                 </Card>
               </Link>
             ),
@@ -158,52 +137,41 @@ const AutomationsSection: React.FC<AutomationSectionProps> = ({
     {
       title: 'Dashboard',
       href: `/${environmentId}/executions-dashboard`,
-      icon: <BarChartOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <BarChartOutlined className={styles.TileIcon} />,
       condition: showDashboard,
     },
     {
       title: 'Executions',
       href: `/${environmentId}/executions`,
-      icon: <NodeExpandOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <NodeExpandOutlined className={styles.TileIcon} />,
       condition: showExecutions,
     },
     {
       title: 'Process Engines',
       href: `/${environmentId}/engines`,
-      icon: <LaptopOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <LaptopOutlined className={styles.TileIcon} />,
       condition: showEngines,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
+    <div className={styles.Section}>
       <h2>
-        <PlaySquareOutlined style={{ marginRight: '8px' }} />
+        <PlaySquareOutlined className={styles.SectionIcon} />
         Automations
       </h2>
       <p>
         Observe your running automations on the Dashboard, deploy your automation processes
         <br></br>in the Executions tab, and manage your connected engines in Process Engines.
       </p>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '26px',
-        }}
-      >
+      <div className={styles.TileGroup}>
         {tiles.map(
           (tile) =>
             tile.condition && (
-              <Link
-                key={tile.title}
-                href={tile.href}
-                style={{ textDecoration: 'none', width: '200px' }}
-              >
-                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+              <Link key={tile.title} href={tile.href} className={styles.Tile}>
+                <Card hoverable className={styles.TileCard}>
                   {tile.icon}
-                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                  <h3 className={styles.TileCardTitle}>{tile.title}</h3>
                 </Card>
               </Link>
             ),
@@ -221,42 +189,31 @@ const PersonalSection = () => {
     {
       title: 'My Profile',
       href: `/${environmentId}/profile`,
-      icon: <UserOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <UserOutlined className={styles.TileIcon} />,
     },
     {
       title: 'My Spaces',
       href: `/${environmentId}/spaces`,
-      icon: <AppstoreOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <AppstoreOutlined className={styles.TileIcon} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
+    <div className={styles.Section}>
       <h2>
-        <UserOutlined style={{ marginRight: '8px' }} />
+        <UserOutlined className={styles.SectionIcon} />
         Personal
       </h2>
       <p>
         Change your user profile information or<br></br>
         manage the different personal spaces you created.
       </p>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '26px',
-        }}
-      >
+      <div className={styles.TileGroup}>
         {tiles.map((tile) => (
-          <Link
-            key={tile.title}
-            href={tile.href}
-            style={{ textDecoration: 'none', width: '200px' }}
-          >
-            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+          <Link key={tile.title} href={tile.href} className={styles.Tile}>
+            <Card hoverable className={styles.TileCard}>
               {tile.icon}
-              <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+              <h3 className={styles.TileCardTitle}>{tile.title}</h3>
             </Card>
           </Link>
         ))}
@@ -273,37 +230,26 @@ const HomeSection = () => {
     {
       title: 'Settings',
       href: `/${environmentId}/settings`,
-      icon: <SettingOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      icon: <SettingOutlined className={styles.TileIcon} />,
     },
   ];
 
   return (
-    <div style={{ marginBottom: '1.5rem', textAlign: 'left', paddingLeft: '70px' }}>
+    <div className={styles.Section}>
       <h2>
-        <HomeOutlined style={{ marginRight: '8px' }} />
+        <HomeOutlined className={styles.SectionIcon} />
         Home
       </h2>
       <p>
         Adjust the visual settings of your space <br></br>
         and create custom navigation links for easier access.
       </p>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '26px',
-        }}
-      >
+      <div className={styles.TileGroup}>
         {tiles.map((tile) => (
-          <Link
-            key={tile.title}
-            href={tile.href}
-            style={{ textDecoration: 'none', width: '200px' }}
-          >
-            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+          <Link key={tile.title} href={tile.href} className={styles.Tile}>
+            <Card hoverable className={styles.TileCard}>
               {tile.icon}
-              <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+              <h3 className={styles.TileCardTitle}>{tile.title}</h3>
             </Card>
           </Link>
         ))}

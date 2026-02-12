@@ -157,7 +157,11 @@ const DashboardLayout = async (
     'process-automation',
   );
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+  if (
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active
+  ) {
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 

@@ -26,7 +26,6 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
   } = await getCurrentEnvironment(environmentId);
 
   const documentationSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
-  console.log(documentationSettings);
 
   if (isUserErrorResponse(documentationSettings)) return notFound();
 

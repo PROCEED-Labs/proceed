@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
+import { Suspense, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Space } from 'antd';
 import { StarOutlined, DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';
@@ -25,7 +25,18 @@ type FavoriteProcess = {
   lastEditedOn: Date;
 };
 
-type SortType = 'lastEdited' | 'alphabetical';
+const sortTypes = [
+  {
+    name: 'lastEdited',
+    label: 'Last Edited',
+  },
+  {
+    name: 'alphabetical',
+    label: 'Alphabetical',
+  },
+] as const;
+
+type SortType = (typeof sortTypes)[number]['name'];
 
 type FavoriteProcessesSectionProps = {
   processes: FavoriteProcess[];
@@ -138,7 +149,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
   const [showRightArrow, setShowRightArrow] = useState(false);
   const [visibleCardCount, setVisibleCardCount] = useState(6);
 
-  const getSortedProcesses = () => {
+  const displayedProcesses = useMemo(() => {
     const sorted = [...processes];
     if (sortType === 'lastEdited') {
       sorted.sort(
@@ -148,28 +159,18 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
       sorted.sort((a, b) => a.name.localeCompare(b.name));
     }
     return sorted;
-  };
-
-  const displayedProcesses = getSortedProcesses();
-
-  const calculateVisibleCards = useCallback(() => {
-    if (!containerRef.current) return;
-    const containerWidth = containerRef.current.clientWidth;
-    const availableWidth = containerWidth - PADDING_LEFT - RIGHT_BUTTON_SPACE;
-    const cardWithGap = CARD_WIDTH + CARD_GAP;
-    const count = Math.max(2, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
-    setVisibleCardCount(count);
-  }, []);
-
-  const updateArrowsVisibility = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
-      setShowLeftArrow(scrollLeft > 0);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
-    }
-  }, []);
+  }, [processes, sortType]);
 
   useEffect(() => {
+    const calculateVisibleCards = () => {
+      if (!containerRef.current) return;
+      const containerWidth = containerRef.current.clientWidth;
+      const availableWidth = containerWidth - PADDING_LEFT - RIGHT_BUTTON_SPACE;
+      const cardWithGap = CARD_WIDTH + CARD_GAP;
+      const count = Math.max(2, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
+      setVisibleCardCount(count);
+    };
+
     calculateVisibleCards();
     const resizeObserver = new ResizeObserver(() => {
       calculateVisibleCards();
@@ -178,9 +179,17 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
       resizeObserver.observe(containerRef.current);
     }
     return () => resizeObserver.disconnect();
-  }, [calculateVisibleCards]);
+  }, []);
 
   useEffect(() => {
+    const updateArrowsVisibility = () => {
+      if (scrollContainerRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+        setShowLeftArrow(scrollLeft > 0);
+        setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 1);
+      }
+    };
+
     const container = scrollContainerRef.current;
     if (container) {
       updateArrowsVisibility();
@@ -191,7 +200,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
         container.removeEventListener('scroll', updateArrowsVisibility);
       }
     };
-  }, [displayedProcesses, updateArrowsVisibility]);
+  }, [displayedProcesses]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -236,20 +245,16 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
           </h2>
           {displayedProcesses.length >= 2 && (
             <Space size="small" style={{ flexShrink: 0 }}>
-              <Button
-                type={sortType === 'lastEdited' ? 'primary' : 'default'}
-                onClick={() => setSortType('lastEdited')}
-                size="small"
-              >
-                Last Edited
-              </Button>
-              <Button
-                type={sortType === 'alphabetical' ? 'primary' : 'default'}
-                onClick={() => setSortType('alphabetical')}
-                size="small"
-              >
-                Alphabetical
-              </Button>
+              {sortTypes.map((type) => (
+                <Button
+                  key={type.name}
+                  type={sortType === type.name ? 'primary' : 'default'}
+                  onClick={() => setSortType(type.name)}
+                  size="small"
+                >
+                  {type.label}
+                </Button>
+              ))}
             </Space>
           )}
         </div>

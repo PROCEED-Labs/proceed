@@ -17,7 +17,11 @@ import { AppstoreOutlined } from '@ant-design/icons';
 import { UserOutlined } from '@ant-design/icons';
 import { HomeOutlined, SettingOutlined } from '@ant-design/icons';
 
-const MyTasksSection = () => {
+type MyTasksSectionProps = {
+  showTaskEditor: boolean;
+};
+
+const MyTasksSection: React.FC<MyTasksSectionProps> = ({ showTaskEditor }) => {
   const params = useParams();
   const environmentId = params.environmentId as string;
 
@@ -26,11 +30,13 @@ const MyTasksSection = () => {
       title: 'Task List',
       href: `/${environmentId}/tasklist`,
       icon: <CheckSquareOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: true,
     },
     {
       title: 'Task Editor',
-      href: `/${environmentId}/tasklist`,
+      href: `/${environmentId}/tasks`,
       icon: <FormOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showTaskEditor,
     },
   ];
 
@@ -52,24 +58,32 @@ const MyTasksSection = () => {
           gap: '26px',
         }}
       >
-        {tiles.map((tile) => (
-          <Link
-            key={tile.title}
-            href={tile.href}
-            style={{ textDecoration: 'none', width: '200px' }}
-          >
-            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
-              {tile.icon}
-              <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
-            </Card>
-          </Link>
-        ))}
+        {tiles.map(
+          (tile) =>
+            tile.condition && (
+              <Link
+                key={tile.title}
+                href={tile.href}
+                style={{ textDecoration: 'none', width: '200px' }}
+              >
+                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+                  {tile.icon}
+                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                </Card>
+              </Link>
+            ),
+        )}
       </div>
     </div>
   );
 };
 
-const ProcessesSection = () => {
+type ProcessSectionProps = {
+  showList: boolean;
+  showEditor: boolean;
+};
+
+const ProcessesSection: React.FC<ProcessSectionProps> = ({ showList, showEditor }) => {
   const params = useParams();
   const environmentId = params.environmentId as string;
 
@@ -78,11 +92,13 @@ const ProcessesSection = () => {
       title: 'Process Editor',
       href: `/${environmentId}/processes/editor`,
       icon: <EditOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showEditor,
     },
     {
       title: 'Process List',
       href: `/${environmentId}/processes/list`,
       icon: <CopyOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showList,
     },
   ];
 
@@ -104,24 +120,37 @@ const ProcessesSection = () => {
           gap: '26px',
         }}
       >
-        {tiles.map((tile) => (
-          <Link
-            key={tile.title}
-            href={tile.href}
-            style={{ textDecoration: 'none', width: '200px' }}
-          >
-            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
-              {tile.icon}
-              <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
-            </Card>
-          </Link>
-        ))}
+        {tiles.map(
+          (tile) =>
+            tile.condition && (
+              <Link
+                key={tile.title}
+                href={tile.href}
+                style={{ textDecoration: 'none', width: '200px' }}
+              >
+                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+                  {tile.icon}
+                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                </Card>
+              </Link>
+            ),
+        )}
       </div>
     </div>
   );
 };
 
-const AutomationsSection = () => {
+type AutomationSectionProps = {
+  showDashboard: boolean;
+  showExecutions: boolean;
+  showEngines: boolean;
+};
+
+const AutomationsSection: React.FC<AutomationSectionProps> = ({
+  showDashboard,
+  showExecutions,
+  showEngines,
+}) => {
   const params = useParams();
   const environmentId = params.environmentId as string;
 
@@ -130,16 +159,19 @@ const AutomationsSection = () => {
       title: 'Dashboard',
       href: `/${environmentId}/executions-dashboard`,
       icon: <BarChartOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showDashboard,
     },
     {
       title: 'Executions',
       href: `/${environmentId}/executions`,
       icon: <NodeExpandOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showExecutions,
     },
     {
       title: 'Process Engines',
       href: `/${environmentId}/engines`,
       icon: <LaptopOutlined style={{ fontSize: '22px', marginBottom: '8px' }} />,
+      condition: showEngines,
     },
   ];
 
@@ -161,18 +193,21 @@ const AutomationsSection = () => {
           gap: '26px',
         }}
       >
-        {tiles.map((tile) => (
-          <Link
-            key={tile.title}
-            href={tile.href}
-            style={{ textDecoration: 'none', width: '200px' }}
-          >
-            <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
-              {tile.icon}
-              <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
-            </Card>
-          </Link>
-        ))}
+        {tiles.map(
+          (tile) =>
+            tile.condition && (
+              <Link
+                key={tile.title}
+                href={tile.href}
+                style={{ textDecoration: 'none', width: '200px' }}
+              >
+                <Card hoverable style={{ textAlign: 'center', border: '1.5px solid #d9d9d9' }}>
+                  {tile.icon}
+                  <h3 style={{ marginTop: '8px' }}>{tile.title}</h3>
+                </Card>
+              </Link>
+            ),
+        )}
       </div>
     </div>
   );

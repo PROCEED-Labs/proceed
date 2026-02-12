@@ -90,7 +90,7 @@ import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
 import {
-  VersionSelectionModal,
+  VersionAndEngineSelectionModal,
   useVersionAndDeploy,
 } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
 import { EnvVarsContext } from '../env-vars-context';
@@ -500,10 +500,8 @@ const Processes = ({
     startForm,
     cancelStartForm,
     versionToDeploy,
-    setVersionToDeploy,
     cancelDeploy,
     startInstance,
-    autoStartInstance,
   } = useVersionAndDeploy(selectedProcessId, isExecutable, async (versionId) => {
     return await wrapServerCall({
       fn: () => getProcessBPMN(selectedProcessId!, space.spaceId, versionId),
@@ -1043,16 +1041,17 @@ const Processes = ({
 
       <AddUserControls name={'process-list'} />
 
-      <VersionSelectionModal
-        show={showVersionSelectionModal}
-        processId={selectedProcessId}
-        onOk={(version) => {
-          setVersionToDeploy(version);
-          autoStartInstance();
-          setShowVersionSelectionModal(false);
-        }}
-        onClose={() => setShowVersionSelectionModal(false)}
-      />
+      {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
+        <VersionAndEngineSelectionModal
+          show={showVersionSelectionModal}
+          processId={selectedProcessId}
+          onOk={(version, engine) => {
+            deployVersion(engine, true, version);
+            setShowVersionSelectionModal(false);
+          }}
+          onClose={() => setShowVersionSelectionModal(false)}
+        />
+      )}
     </>
   );
 };

@@ -11,7 +11,7 @@ type EngineSelectionProps = {
   onSubmit: (engine: Engine) => Promise<void>;
 };
 
-const automaticDeploymentId = '__automatic_engine_selection__';
+export const automaticDeploymentId = '__automatic_engine_selection__';
 
 const automaticDeployment = {
   name: 'Automatic',
@@ -19,76 +19,88 @@ const automaticDeployment = {
   isAutomaticDeployment: true,
 } as const;
 
-const EngineSelection: React.FC<EngineSelectionProps> = ({ open, onClose, onSubmit }) => {
+export const useExtendedEngines = (disabled = false) => {
   const environment = useEnvironment();
 
   const { data } = useQuery({
-    queryFn: async () => {
-      const engines = await getExtendedEngines(environment.spaceId);
-
-      return [automaticDeployment, ...engines];
-    },
-    queryKey: [environment.spaceId, automaticDeploymentId],
+    queryFn: async () => await getExtendedEngines(environment.spaceId),
+    queryKey: ['extended-engines', environment.spaceId],
+    enabled: !disabled,
   });
 
-  const [selected, setSelected] = useState(automaticDeploymentId);
+  if (!data) return;
+  if (!data.length) return data;
+
+  return [automaticDeployment, ...data];
+};
+
+type SelectableEngines = ReturnType<typeof useExtendedEngines>;
+
+export const EngineSelection: React.FC<{
+  selectedEngineId?: string;
+  engines: NonNullable<SelectableEngines>;
+  onChange: (selectedId: string) => void;
+}> = ({ selectedEngineId = automaticDeploymentId, engines, onChange }) => {
+  if (!engines.length) {
+    return <Alert type="warning" message="Could not find an engine to deploy the process to." />;
+  }
+
+  return (
+    <Select
+      style={{ width: '100%' }}
+      options={engines}
+      fieldNames={{ label: 'name', value: 'id' }}
+      value={selectedEngineId || automaticDeploymentId}
+      onChange={onChange}
+    />
+  );
+};
+
+const EngineSelectionModal: React.FC<EngineSelectionProps> = ({ open, onSubmit, onClose }) => {
+  const engines = useExtendedEngines();
+
+  const [selectedId, setSelectedId] = useState(automaticDeploymentId);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (data) {
-      if (data.length === 1) {
+    if (engines) {
+      if (engines.length === 1) {
         onClose();
-        setSelected(automaticDeploymentId);
+        setSelectedId(automaticDeploymentId);
         return;
       }
 
-      const target = data.find((e) => e.id === selected);
+      const target = engines.find((e) => e.id === selectedId);
       if (target) {
         setLoading(true);
         if ('isAutomaticDeployment' in target) {
-          await onSubmit(data.find((e) => e.id !== automaticDeploymentId) as Engine);
+          await onSubmit(engines.find((e) => e.id !== automaticDeploymentId) as Engine);
         } else {
           await onSubmit(target);
         }
-        setSelected(automaticDeploymentId);
+        setSelectedId(automaticDeploymentId);
         setLoading(false);
       }
     }
   };
 
-  let content = <Skeleton active />;
-
-  if (data) {
-    // the data includes no entry except the "Automatic Entry" so there are no engines to deploy to
-    if (data.length === 1) {
-      content = (
-        <Alert type="warning" message="Could not find an engine to deploy the process to." />
-      );
-    } else {
-      content = (
-        <Select
-          style={{ width: '100%' }}
-          options={data}
-          fieldNames={{ label: 'name', value: 'id' }}
-          value={selected}
-          onChange={(value) => setSelected(value)}
-        />
-      );
-    }
-  }
-
   return (
     <Modal
       open={open}
+      centered
       title="Select an Engine"
       onCancel={onClose}
       onOk={handleSubmit}
-      okText={data?.length === 1 ? 'Ok' : 'Deploy'}
-      okButtonProps={{ loading, disabled: !data }}
+      okText={engines?.length === 1 ? 'Ok' : 'Deploy'}
+      okButtonProps={{ loading, disabled: !engines?.length }}
     >
-      {content}
+      {engines ? (
+        <EngineSelection selectedEngineId={selectedId} engines={engines} onChange={setSelectedId} />
+      ) : (
+        <Skeleton active />
+      )}
     </Modal>
   );
 };
 
-export default EngineSelection;
+export default EngineSelectionModal;

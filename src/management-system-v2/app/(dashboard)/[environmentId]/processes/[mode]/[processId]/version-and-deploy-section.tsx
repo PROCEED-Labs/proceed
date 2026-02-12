@@ -2,6 +2,7 @@ import {
   Alert,
   App,
   Button,
+  Card,
   Modal,
   Select,
   SelectProps,
@@ -10,7 +11,8 @@ import {
   Tooltip,
   Typography,
 } from 'antd';
-import { PlusOutlined, ExperimentOutlined, CaretRightOutlined } from '@ant-design/icons';
+import { PlusOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { IoPlayOutline } from 'react-icons/io5';
 
 import { useEnvironment } from '@/components/auth-can';
 import { Process } from '@/lib/data/process-schema';
@@ -20,9 +22,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useProcessView } from './process-view-context';
 import useMobileModeler from '@/lib/useMobileModeler';
 import VersionCreationButton from '@/components/version-creation-button';
-import EngineSelection from '@/components/engine-selection';
+import EngineSelectionModal, {
+  EngineSelection,
+  automaticDeploymentId,
+  useExtendedEngines,
+} from '@/components/engine-selection';
 import { use, useMemo, useState } from 'react';
-import { isUserError, isUserErrorResponse } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 import {
   createVersion,
@@ -162,7 +168,7 @@ export function useVersionAndDeploy(
     setDeployTo(undefined);
   };
 
-  const deployVersion = async (engine: Engine) => {
+  const deployVersion = async (engine: Engine, autoStart = false, version?: string) => {
     if (!env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return;
 
     if (!isExecutable) {
@@ -170,11 +176,13 @@ export function useVersionAndDeploy(
       return;
     }
 
+    const toDeploy = version || versionToDeploy;
+
     await wrapServerCall({
       fn: async () =>
         await deployProcess(
           processId,
-          versionToDeploy === 'latest' ? '' : versionToDeploy,
+          toDeploy === 'latest' ? '' : toDeploy,
           environment.spaceId,
           'dynamic',
           engine,
@@ -182,9 +190,9 @@ export function useVersionAndDeploy(
       onSuccess: async () => {
         message.success('Process Deployed');
         let path = `/executions/${processId}`;
-        if (autoStartInstance) {
+        if (autoStart || autoStartInstance) {
           setAutoStartInstance(false);
-          const bpmn = await getBpmn(versionToDeploy === 'latest' ? undefined : versionToDeploy);
+          const bpmn = await getBpmn(toDeploy === 'latest' ? undefined : toDeploy);
 
           if (bpmn) {
             const [startFormId] = Object.values(await getStartFormFileNameMapping(bpmn));
@@ -201,6 +209,7 @@ export function useVersionAndDeploy(
                 return;
               }
 
+              setVersionToDeploy(toDeploy);
               setStartForm(startForm);
               setDeployTo(engine);
               return;
@@ -208,7 +217,7 @@ export function useVersionAndDeploy(
           }
           const instanceId = await startInstanceOnMachine(
             processId,
-            versionToDeploy === 'latest' ? '_latest' : versionToDeploy,
+            toDeploy === 'latest' ? '_latest' : toDeploy,
             engine,
           );
           path += `?instance=${instanceId}`;
@@ -345,7 +354,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           ) : (
             <Tooltip title="Deploy and Start">
               <Button
-                icon={<CaretRightOutlined />}
+                icon={<IoPlayOutline />}
                 onClick={() => {
                   autoStartInstance();
                   setVersionToDeploy(selectedVersion.id);
@@ -353,7 +362,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
               />
             </Tooltip>
           )}
-          <EngineSelection
+          <EngineSelectionModal
             open={!!versionToDeploy}
             onClose={cancelDeploy}
             onSubmit={deployVersion}
@@ -370,13 +379,17 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
   );
 };
 
-export const VersionSelectionModal: React.FC<{
+export const VersionAndEngineSelectionModal: React.FC<{
   show: boolean;
-  onOk: (version: string) => void;
+  onOk: (version: string, engine: Engine) => void;
   onClose: () => void;
   processId: string | undefined;
 }> = ({ show, onOk, onClose, processId }) => {
   const environment = useEnvironment();
+
+  const engines = useExtendedEngines();
+
+  const [selectedEngineId, setSelectedEngineId] = useState<string>(automaticDeploymentId);
 
   const { data, isLoading } = useQuery({
     queryFn: async () => {
@@ -443,20 +456,31 @@ export const VersionSelectionModal: React.FC<{
       open={show}
       onCancel={() => {
         setSelectedVersionId('latest');
+        setSelectedEngineId(automaticDeploymentId);
         onClose();
       }}
-      title="Please select a version to start"
+      title="Please select a version and an engine"
       okText="Deploy and Start"
       okButtonProps={{
-        disabled: !selectedVersion || !selectedVersion.executable,
+        disabled: !selectedVersion || !selectedVersion.executable || !engines || !engines.length,
       }}
-      onOk={() => onOk(selectedVersionId)}
+      onOk={() => {
+        setSelectedEngineId(automaticDeploymentId);
+        if (!engines) return;
+        let engine = engines.find((e) => e.id === selectedEngineId);
+        if (engine && 'isAutomaticDeployment' in engine) {
+          engine = engines.find((e) => e.id !== selectedEngineId);
+        }
+        onOk(selectedVersionId, engine as Engine);
+      }}
     >
-      {isLoading ? (
+      {isLoading || !engines ? (
         <Skeleton />
       ) : (
         <Space style={{ width: '100%' }} direction="vertical">
+          <Typography.Text>Version:</Typography.Text>
           <Select
+            style={{ width: '100%' }}
             options={data}
             defaultValue={'latest'}
             popupMatchSelectWidth={false}
@@ -470,11 +494,17 @@ export const VersionSelectionModal: React.FC<{
           />
           {selectedVersion && (
             <Space style={{ width: '100%' }} direction="vertical">
-              <Alert message={selectedVersion.versionDescription} type="info"></Alert>
+              <Card>{selectedVersion.versionDescription}</Card>
               {!selectedVersion.executable && (
                 <Alert message="This version is not executable." type="warning" />
               )}
               <BPMNCanvas type="viewer" bpmn={{ bpmn: selectedVersion.bpmn }} />
+              <Typography.Text>Engine:</Typography.Text>
+              <EngineSelection
+                selectedEngineId={selectedEngineId}
+                engines={engines}
+                onChange={setSelectedEngineId}
+              />
             </Space>
           )}
         </Space>

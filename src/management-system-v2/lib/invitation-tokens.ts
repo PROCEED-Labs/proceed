@@ -8,6 +8,7 @@ import { addMember, isMember } from './data/db/iam/memberships';
 import { getUserByEmail } from './data/db/iam/users';
 import { getRoleById } from './data/db/iam/roles';
 import { addRoleMappings } from './data/db/iam/role-mappings';
+import { syncOrganizationUsers } from './data/db/machine-config';
 
 const baseInvitationSchema = {
   spaceId: z.string(),
@@ -70,4 +71,6 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
       );
     }
   }
+
+  await syncOrganizationUsers(organization.id);
 }

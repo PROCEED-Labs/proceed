@@ -213,7 +213,7 @@ class Data extends System {
     // generate a unique name to prevent file name collisions
     let name = v4();
     if (fileName.includes('.')) {
-      const fileType = fileName.split('.').pop();
+      const fileType = fileName.split('.').slice(1).join('.');
       name += '.' + fileType;
     }
 

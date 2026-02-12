@@ -33,3 +33,5 @@ export async function GET(request: NextRequest, props: { params: Promise<{ space
     name: space.name,
   });
 }
+
+export const dynamic = 'force-dynamic';

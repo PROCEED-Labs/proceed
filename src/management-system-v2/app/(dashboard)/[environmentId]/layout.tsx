@@ -22,6 +22,8 @@ import {
   AppstoreOutlined,
   ProductOutlined,
   FormOutlined,
+  ToolOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
@@ -44,6 +46,8 @@ import { customLinkIcons } from '@/lib/custom-links/icons';
 import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
+import ActiveTasksBadge from '@/components/active-tasks-badge';
+import { syncOrganizationUsers } from '@/lib/data/db/machine-config';
 
 const DashboardLayout = async (
   props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
@@ -52,10 +56,15 @@ const DashboardLayout = async (
 
   const { children } = props;
 
-  const { userId, systemAdmin, user } = await getCurrentUser();
+  const { session, userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
+
+  // Trigger syncOrganizationUsers if user just signed in and this is an organizational space
+  if ((session as any)?.justSignedIn && activeEnvironment.isOrganization) {
+    await syncOrganizationUsers(activeEnvironment.spaceId);
+  }
 
   const userEnvironments: Environment[] = [];
   if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
@@ -165,14 +174,30 @@ const DashboardLayout = async (
       });
     }
 
+    let pollingInterval = 10000;
+
+    if (Number.isInteger(automationSettings.taskPollingInterval)) {
+      pollingInterval = automationSettings.taskPollingInterval;
+    }
+
     layoutMenuItems.push({
       key: 'tasklist',
       label: (
         <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/tasklist`)}>
           My Tasks
+          <ActiveTasksBadge activeSpace={activeEnvironment} pollingInterval={pollingInterval} />
         </Link>
       ),
-      icon: <CheckSquareOutlined />,
+      icon: (
+        <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
+          <CheckSquareOutlined />
+          <ActiveTasksBadge
+            activeSpace={activeEnvironment}
+            onIcon
+            pollingInterval={pollingInterval}
+          />
+        </Link>
+      ),
       selectedRegex: '/tasklist($|/)',
       openRegex: childRegex,
       children: children.length ? children : undefined,
@@ -265,6 +290,14 @@ const DashboardLayout = async (
     }
   }
 
+  if (msConfig.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE && can('view', 'MachineConfig')) {
+    layoutMenuItems.push({
+      key: 'machine-config',
+      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Configurations</Link>,
+      icon: <ToolOutlined />,
+    });
+  }
+
   if (
     activeEnvironment.isOrganization &&
     (can('manage', 'User') ||
@@ -301,6 +334,20 @@ const DashboardLayout = async (
       });
     }
 
+    // Data view under Organization
+    const dataRegex = `/machine-config/${activeEnvironment.spaceId}($|/)`;
+    childRegex = !childRegex ? dataRegex : `(${childRegex})|(${dataRegex})`;
+    children.push({
+      key: 'organization-data',
+      label: (
+        <Link href={spaceURL(activeEnvironment, `/machine-config/${activeEnvironment.spaceId}`)}>
+          Data
+        </Link>
+      ),
+      icon: <DatabaseOutlined />,
+      selectedRegex: dataRegex,
+    });
+
     if (can('manage', 'User')) {
       const userRegex = '/iam/users($|/)';
       childRegex = !childRegex ? userRegex : `(${childRegex})|(${userRegex})`;
@@ -336,7 +383,8 @@ const DashboardLayout = async (
   if (msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     const profileRegex = '/profile($|/)';
     const spacesRegex = '/spaces($|/)';
-    const regex = `(${profileRegex})|(${spacesRegex})`;
+    const personalDataRegex = `/machine-config/${userId}($|/)`;
+    const regex = `(${profileRegex})|(${spacesRegex})|(${personalDataRegex})`;
     layoutMenuItems.push({
       key: 'iam-personal',
       label: 'Personal',
@@ -363,6 +411,18 @@ const DashboardLayout = async (
           ),
           icon: <AppstoreOutlined />,
           selectedRegex: spacesRegex,
+        },
+        {
+          key: 'personal-data',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Data</GuestWarningButton>
+          ) : (
+            <Link href={spaceURL(activeEnvironment, `/machine-config/${userId}?source=personal`)}>
+              Data
+            </Link>
+          ),
+          icon: <DatabaseOutlined />,
+          selectedRegex: personalDataRegex,
         },
       ],
     });

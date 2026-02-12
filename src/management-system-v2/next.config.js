@@ -1,6 +1,7 @@
 const path = require('path');
 
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
@@ -11,7 +12,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    nodeMiddleware: true,
   },
   redirects: async () => {
     return [
@@ -55,6 +55,7 @@ const nextConfig = {
         'iam',
         'profile',
         'projects',
+        'machine-config',
         'settings',
         'start',
       ].map((folder) => ({

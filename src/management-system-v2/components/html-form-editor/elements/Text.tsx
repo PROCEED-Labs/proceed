@@ -1,11 +1,12 @@
-import { useNode, UserComponent } from '@craftjs/core';
+import { useEditor, useNode, UserComponent } from '@craftjs/core';
 
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 import EditableText from '../_utils/EditableText';
 import { ContextMenu, Overlay } from './utils';
 import { useState } from 'react';
 import useEditorStateStore from '../use-editor-state-store';
+import { useDeleteControl } from './utils';
 
 type TextProps = {
   text?: string;
@@ -20,6 +21,7 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
   const [textEditing, setTextEditing] = useState(false);
 
   const editingEnabled = useEditorStateStore((state) => state.editingEnabled);
+  const { handleDelete } = useDeleteControl();
 
   return (
     <ContextMenu menu={[]}>
@@ -32,7 +34,10 @@ const Text: UserComponent<TextProps> = ({ text = '' }) => {
         <Overlay
           show={editingEnabled && hovered && !textEditing}
           onHide={() => setHovered(false)}
-          controls={[{ key: 'edit', icon: <EditOutlined onClick={() => setTextEditing(true)} /> }]}
+          controls={[
+            { key: 'edit', icon: <EditOutlined onClick={() => setTextEditing(true)} /> },
+            { key: 'delete', icon: <DeleteOutlined onClick={handleDelete} /> },
+          ]}
           onDoubleClick={() => setTextEditing(true)}
         >
           <EditableText

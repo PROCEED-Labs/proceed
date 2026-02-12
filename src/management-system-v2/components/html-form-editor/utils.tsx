@@ -130,7 +130,6 @@ body {
   display: flex;
   align-items: center;
 }
-
 .user-task-form-milestone input[type="range"] {
   margin: 5px 10px;
 }
@@ -325,6 +324,30 @@ export const iframeDocument = `
 
       .sub-element-remove-preview {
         background-color: rgba(255,0,0,0.33);
+      }
+
+      .container-element-delete-button {
+        position: absolute;
+        top: -10px;
+        right: 8px;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: white;
+        font-size: 14px;
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 4px;
+        background-color: rgba(0, 0, 0, 0.80);
+        padding: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .container-element-delete-button:hover {
+        background-color: rgba(34, 34, 34, 0.8);
       }
 
       ${styles}

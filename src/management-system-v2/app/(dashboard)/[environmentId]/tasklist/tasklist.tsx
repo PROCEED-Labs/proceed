@@ -9,7 +9,7 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import UserTaskView, { ExtendedTaskListEntry } from './user-task-view';
+import UserTaskView from './user-task-view';
 import { ItemType } from 'antd/es/menu/interface';
 import {
   FilterOrSortButton,
@@ -19,6 +19,9 @@ import {
   StatusSelection,
   stateOrder,
 } from './components';
+import useUserTasks from '@/lib/use-user-tasks';
+import { useEnvironment } from '@/components/auth-can';
+import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 
 const sortValues = ['startTime', 'deadline', 'progress', 'priority', 'state'] as const;
 type SortValue = (typeof sortValues)[number];
@@ -31,11 +34,11 @@ const sortValueMap = {
 } as const;
 
 type TasklistProps = {
-  userTasks: ExtendedTaskListEntry[];
   userId: string;
+  pollingInterval: number;
 };
 
-const Tasklist: React.FC<TasklistProps> = ({ userTasks, userId }) => {
+const Tasklist: React.FC<TasklistProps> = ({ userId, pollingInterval }) => {
   const breakpoint = Grid.useBreakpoint();
 
   const [selectedUserTaskID, setSelectedUserTaskID] = useState<string | null>(null);
@@ -52,12 +55,20 @@ const Tasklist: React.FC<TasklistProps> = ({ userTasks, userId }) => {
     value: SortValue;
   }>({ ascending: true, value: 'startTime' });
 
+  const space = useEnvironment();
+
+  const { userTasks } = useUserTasks(space, pollingInterval, {
+    hideNonOwnableTasks: true,
+    hideUnassignedTasks: false,
+  });
+
   const filteredAndSortedUserTasks = useMemo(() => {
-    const showingUserTasks = userTasks.filter((uT) => {
+    const showingUserTasks = (userTasks || []).filter((uT) => {
       return (
         uT.id === selectedUserTaskID ||
         (stateSelectionFilter.includes(uT.state) &&
-          (ownerSelectionFilter.includes('unassigned') ||
+          (!space.isOrganization ||
+            ownerSelectionFilter.includes('unassigned') ||
             uT.potentialOwners?.user?.length ||
             uT.potentialOwners?.roles?.length) &&
           uT.priority >= priorityRangeFilter[0] &&
@@ -152,12 +163,12 @@ const Tasklist: React.FC<TasklistProps> = ({ userTasks, userId }) => {
         }}
       />
     ),
-    Owners: (
+    Owners: space.isOrganization ? (
       <OwnerSelection
         selectedValues={ownerSelectionFilter}
         onSelectionChange={(selectedValues) => setOwnerSelectionFilter(selectedValues)}
       />
-    ),
+    ) : undefined,
     Users: (
       <PerformerSelection
         type="User"
@@ -175,16 +186,18 @@ const Tasklist: React.FC<TasklistProps> = ({ userTasks, userId }) => {
       />
     ),
   }).reduce((curr, [label, content], index) => {
-    if (index > 0) {
-      curr.push({ type: 'divider' });
-    }
+    if (content) {
+      if (index > 0) {
+        curr.push({ type: 'divider' });
+      }
 
-    curr.push({
-      key: index,
-      type: 'group',
-      label,
-      children: [{ key: `${index}-1`, label: content }],
-    });
+      curr.push({
+        key: index,
+        type: 'group',
+        label,
+        children: [{ key: `${index}-1`, label: content }],
+      });
+    }
 
     return curr;
   }, [] as ItemType[]);

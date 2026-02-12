@@ -10,27 +10,6 @@
     position: relative;
     z-index: 0;
   }
-  /*
-  :global(.ant-layout-content)::after {
-    content: '';
-    position: fixed;
-    top: 55%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 9%;
-    height: 7%;
-    background-image: url('/proceed-icon.png');
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    opacity: 0.3;
-    z-index: -1;
-    pointer-events: none;
-  }
-
-  :global(.ant-card) {
-    border: 1px solid #999;
-  }*/
 }
 
 .gridContainer {

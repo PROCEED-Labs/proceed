@@ -2,28 +2,20 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import styles from './page.module.scss';
+import { Grid } from 'antd';
 
 type ResponsiveGridProps = {
   children: ReactNode;
 };
 
 const ResponsiveGrid = ({ children }: ResponsiveGridProps) => {
-  const [isSingleColumn, setIsSingleColumn] = useState(false);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(max-width: 1035px)');
-    setIsSingleColumn(mediaQuery.matches);
-
-    const handler = (e: MediaQueryListEvent) => setIsSingleColumn(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
-  }, []);
+  const breakpoint = Grid.useBreakpoint();
 
   return (
     <div
       className={styles.gridContainer}
       style={{
-        gridTemplateColumns: isSingleColumn ? '1fr' : '1fr 1fr',
+        gridTemplateColumns: !breakpoint.lg ? '1fr' : '1fr 1fr',
       }}
     >
       {children}

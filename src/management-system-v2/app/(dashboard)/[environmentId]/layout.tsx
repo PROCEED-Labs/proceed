@@ -307,7 +307,7 @@ const DashboardLayout = async (
           <ToolOutlined />
         </Link>
       ),
-      selectedRegex: '/machine-config($|/)',
+      selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/)`,
     });
   }
 
@@ -396,7 +396,8 @@ const DashboardLayout = async (
   if (msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     const profileRegex = '/profile($|/)';
     const spacesRegex = '/spaces($|/)';
-    const personalDataRegex = `/machine-config/${userId}($|/)`;
+    // Only match if the url contains the source=personal query parameter
+    const personalDataRegex = `/machine-config/${userId}\\?source=personal($|&)`;
     const regex = `(${profileRegex})|(${spacesRegex})|(${personalDataRegex})`;
     layoutMenuItems.push({
       key: 'iam-personal',
@@ -442,7 +443,10 @@ const DashboardLayout = async (
   }
 
   if (!activeEnvironment.isOrganization) {
-    const regex = '/settings($|/)';
+    const settingsRegex = '/settings($|/)';
+    // Match only the base path without query parameters, or with query params that don't include source=personal
+    const personalHomeDataRegex = `/machine-config/${activeEnvironment.spaceId}(?!\\?source=personal)($|\\?)`;
+    const regex = `(${settingsRegex})|(${personalHomeDataRegex})`;
     layoutMenuItems.push({
       key: 'personal-space-home',
       label: 'Home',
@@ -458,7 +462,21 @@ const DashboardLayout = async (
             <SpaceLink href="/settings">Settings</SpaceLink>
           ),
           icon: <SettingOutlined />,
-          selectedRegex: regex,
+          selectedRegex: settingsRegex,
+        },
+        {
+          key: 'personal-home-space-data',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Data</GuestWarningButton>
+          ) : (
+            <Link
+              href={spaceURL(activeEnvironment, `/machine-config/${activeEnvironment.spaceId}`)}
+            >
+              Data
+            </Link>
+          ),
+          icon: <DatabaseOutlined />,
+          selectedRegex: personalHomeDataRegex,
         },
       ],
     });

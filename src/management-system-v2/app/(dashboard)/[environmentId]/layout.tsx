@@ -297,8 +297,17 @@ const DashboardLayout = async (
   if (msConfig.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE && can('view', 'MachineConfig')) {
     layoutMenuItems.push({
       key: 'machine-config',
-      label: <Link href={spaceURL(activeEnvironment, `/machine-config`)}>Configurations</Link>,
-      icon: <ToolOutlined />,
+      label: (
+        <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/machine-config`)}>
+          Configurations
+        </Link>
+      ),
+      icon: (
+        <Link href={spaceURL(activeEnvironment, `/machine-config`)}>
+          <ToolOutlined />
+        </Link>
+      ),
+      selectedRegex: '/machine-config($|/)',
     });
   }
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 
-import { Button, Divider, Form, Input, Space } from 'antd';
+import { Button, Divider, Form, Input, Space, Typography } from 'antd';
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
@@ -13,6 +13,7 @@ type CustomPropertyFormProperties = {
   onChange: (name: string, value?: any, oldName?: string) => void;
   readOnly?: boolean;
 };
+
 const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
   isCreationForm,
   customMetaData,
@@ -77,39 +78,57 @@ const CustomPropertyForm: React.FC<CustomPropertyFormProperties> = ({
       }}
       disabled={readOnly}
     >
-      <Space direction="vertical" size={0} style={{ flexGrow: 1 }}>
-        <Form.Item
-          name="name"
-          rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
-          style={{ margin: 0, flexGrow: 1 }}
-        >
-          <Input
-            name="Name"
-            addonBefore="Name"
-            placeholder="Custom Name"
-            onBlur={() => {
-              // Skip debounce and change value immediately
-              if (submittable) {
-                clearTimeout(timeoutId);
-                changeValues();
-              }
-            }}
-          />
-        </Form.Item>
+      <Space orientation="vertical" size={0} style={{ flexGrow: 1 }}>
+        <Space.Compact style={{ width: '100%', marginBottom: '2px' }}>
+          <Space.Addon style={{ fontSize: '0.75rem', width: '75px' }}>
+            <Typography.Text style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}>
+              Name
+            </Typography.Text>
+          </Space.Addon>
+          <Form.Item
+            name="name"
+            rules={[{ required: true }, { validator: (_, value) => validateName(value) }]}
+            style={{ margin: 0, flexGrow: 1 }}
+            noStyle
+          >
+            <Input
+              name="Name"
+              placeholder="Custom Name"
+              onBlur={() => {
+                // Skip debounce and change value immediately
+                if (submittable) {
+                  clearTimeout(timeoutId);
+                  changeValues();
+                }
+              }}
+            />
+          </Form.Item>
+        </Space.Compact>
 
-        <Form.Item name="value" rules={[{ required: true }]} style={{ margin: 0, width: '100%' }}>
-          <Input
-            addonBefore="Value"
-            placeholder="Custom Value"
-            onBlur={() => {
-              // Skip debounce and change value immediately
-              if (submittable) {
-                clearTimeout(timeoutId);
-                changeValues();
-              }
-            }}
-          />
-        </Form.Item>
+        <Space.Compact style={{ width: '100%' }}>
+          <Space.Addon style={{ fontSize: '0.75rem', width: '75px' }}>
+            <Typography.Text style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}>
+              Value
+            </Typography.Text>
+          </Space.Addon>
+          <Form.Item
+            name="value"
+            rules={[{ required: true }]}
+            style={{ margin: 0, width: '100%' }}
+            noStyle
+          >
+            <Input
+              placeholder="Custom Value"
+              onBlur={() => {
+                // Skip debounce and change value immediately
+                if (submittable) {
+                  clearTimeout(timeoutId);
+                  changeValues();
+                }
+              }}
+            />
+          </Form.Item>
+        </Space.Compact>
       </Space>
       <Form.Item style={{ marginRight: 0, marginLeft: '1rem' }}>
         <Button type="text" style={{ padding: 0, fontSize: '0.75rem' }}>
@@ -188,7 +207,7 @@ const CustomPropertySection: React.FC<CustomPropertySectionProperties> = ({
   let timeoutId: string | number | NodeJS.Timeout | undefined = undefined;
   return (
     <Space
-      direction="vertical"
+      orientation="vertical"
       style={{ width: '100%' }}
       role="group"
       aria-labelledby="custom-properties-title"

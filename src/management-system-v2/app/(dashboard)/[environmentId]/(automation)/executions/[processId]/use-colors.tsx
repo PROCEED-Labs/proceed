@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { RefObject, useCallback, useEffect, useRef } from 'react';
 
 import { ColorOptions, flowElementsStyling } from './instance-coloring';
 import { InstanceInfo } from '@/lib/engines/deployment';

@@ -6,7 +6,7 @@ const ProcessSkeleton = () => {
   return (
     <Content>
       <Space
-        direction="vertical"
+        orientation="vertical"
         size="large"
         style={{ display: 'flex', textAlign: 'center', marginTop: '2rem' }}
       >

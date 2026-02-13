@@ -41,14 +41,14 @@ const VariableDefinition: React.FC<VariableDefinitionProps> = ({ readOnly = fals
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Divider style={{ display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
         <span style={{ marginRight: '0.3em', marginBottom: '0.1rem' }}>Variables</span>
       </Divider>
       {variables.length > 0 && (
         <Table
           scroll={{ x: true }}
-          pagination={{ pageSize: 5, position: ['bottomCenter'] }}
+          pagination={{ pageSize: 5, placement: ['bottomCenter'] }}
           rowKey="name"
           columns={[
             {

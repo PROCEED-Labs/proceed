@@ -224,7 +224,7 @@ const AasContent: React.FC<MachineDataViewProps> = ({
       `}</style>
 
       <Space
-        direction="vertical"
+        orientation="vertical"
         style={{
           display: 'flex',
           width: '100%',

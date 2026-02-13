@@ -2,7 +2,6 @@ import Link from 'next/link';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { AreaChartOutlined, AppstoreOutlined, LeftSquareOutlined } from '@ant-design/icons';
 import { MdOutlineComputer } from 'react-icons/md';
-import { AiOutlineDatabase } from 'react-icons/ai';
 import { FaUsers } from 'react-icons/fa';
 import { RiAdminFill } from 'react-icons/ri';
 import { type ReactNode } from 'react';

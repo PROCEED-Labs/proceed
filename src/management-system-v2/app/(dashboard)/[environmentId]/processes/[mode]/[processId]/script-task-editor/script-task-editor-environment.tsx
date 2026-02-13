@@ -445,7 +445,7 @@ export function ScriptTaskEditorEnvironment({
             <Alert
               style={{ margin: '0 5px' }}
               type="warning"
-              message="This editor is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
+              title="This editor is read-only because the process is not marked as executable (Property Panel -> Automation Tab)."
             />
           </div>
         );
@@ -551,7 +551,7 @@ export function ScriptTaskEditorEnvironment({
           <Tabs
             items={tabItems}
             activeKey={activeScriptEditor}
-            tabPosition="left"
+            tabPlacement="start"
             className={styles.Tabs}
             onChange={(key) => editorRefs.current.get(key)?.fillContainer()}
             renderTabBar={() => <></>}

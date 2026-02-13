@@ -1,4 +1,4 @@
-import { ComponentProps, FC, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
+import { ComponentProps, PropsWithChildren, ReactNode, forwardRef, useState } from 'react';
 import { Button, Modal, Tooltip, Typography } from 'antd';
 import { useAddControlCallback } from '@/lib/controls-store';
 

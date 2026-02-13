@@ -205,7 +205,7 @@ export function useExportProcess(
             const dataUrl = URL.createObjectURL(urlOrBlob.blob);
 
             app.message.success(
-              <Space direction="vertical">
+              <Space orientation="vertical">
                 <img src={dataUrl} style={{ maxWidth: '5rem', maxHeight: '5rem' }} />
                 Copied to clipboard
               </Space>,
@@ -320,12 +320,12 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
 
   if (type === 'pdf' && processes.length > 1) {
     return (
-      <Alert type="info" message="PDF export is only available when a single process is selected" />
+      <Alert type="info" title="PDF export is only available when a single process is selected" />
     );
   }
 
   return (
-    <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>
+    <Space orientation="vertical" style={{ gap: '1rem', width: '100%' }}>
       {onlyOneProcess && (
         <Select
           value={selectedVersionId || '-1'}
@@ -343,7 +343,7 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
         />
       )}
 
-      <Space direction="vertical">
+      <Space orientation="vertical">
         <Checkbox.Group
           onChange={(checkedValues) =>
             setState((prev) => {
@@ -358,7 +358,7 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
           value={selectedOptions}
           style={{ width: '100%' }}
         >
-          <Space direction="vertical">
+          <Space orientation="vertical">
             {getSubOptions(hasSelection)[type].map(({ label, value, tooltip }) => (
               <Checkbox value={value} key={label}>
                 <Tooltip placement="right" title={tooltip}>

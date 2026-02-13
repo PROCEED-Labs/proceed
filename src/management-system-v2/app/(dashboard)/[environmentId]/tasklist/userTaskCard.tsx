@@ -115,7 +115,7 @@ const UserTaskCard = ({
           )}
         </>
       }
-      bordered={false}
+      variant="borderless"
       className={cn(styles.UserTaskCard, { [styles.selected]: selected })}
       classNames={{
         body: styles.UserTaskCardBody,

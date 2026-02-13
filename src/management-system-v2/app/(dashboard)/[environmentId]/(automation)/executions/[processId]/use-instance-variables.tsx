@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import {
-  ProcessVariable,
-  ProcessVariableSchema,
-  textFormatMap,
-} from '@/lib/process-variable-schema';
+import { ProcessVariable, ProcessVariableSchema } from '@/lib/process-variable-schema';
 
 export type Variable = {
   name: string;

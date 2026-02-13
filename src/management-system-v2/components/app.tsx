@@ -8,7 +8,6 @@ import { App as AntDesignApp } from 'antd';
 import { SessionProvider } from 'next-auth/react';
 import { PublicMSConfig } from '@/lib/ms-config/config-schema';
 import { EnvVarsProvider } from './env-vars-context';
-import '@ant-design/v5-patch-for-react-19';
 
 const queryClient = new QueryClient();
 

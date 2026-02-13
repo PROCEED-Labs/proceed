@@ -1,7 +1,6 @@
 import React, { useEffect, useId, useMemo, useState } from 'react';
 
-import { Divider, Input, MenuProps, Space, Tooltip } from 'antd';
-import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Divider, Input, MenuProps, Space, Tooltip, Typography } from 'antd';
 import {
   TbRowInsertTop,
   TbRowInsertBottom,
@@ -26,7 +25,7 @@ import {
 } from './utils';
 import { WithRequired } from '@/lib/typescript-utils';
 
-import { EditOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteButton } from '../DeleteButton';
@@ -130,6 +129,7 @@ export const ExportCheckboxOrRadioGroup: React.FC<CheckBoxOrRadioGroupProps> = (
     <div className={`user-task-form-input-group variable-${variable}`}>
       {data.map((entry) => (
         <ExportCheckboxOrRadioButton
+          key={`${entry.label}.${entry.value}`}
           type={type}
           variable={variable}
           label={entry.label}
@@ -382,19 +382,23 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                 alignItems: 'center',
               }}
             >
-              <Input
-                addonBefore="Value"
-                addonAfter={valueTooltip}
-                style={{ width: '250px' }}
-                value={currentValue}
-                onChange={(e) => setCurrentValue(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
-                  e.stopPropagation();
-                }}
-                onBlur={() => handleValueChange(editTarget, currentValue)}
-              />
+              <Space.Compact>
+                <Space.Addon>
+                  <Typography.Text>Value</Typography.Text>
+                </Space.Addon>
+                <Input
+                  style={{ width: '250px' }}
+                  value={currentValue}
+                  onChange={(e) => setCurrentValue(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleValueChange(editTarget, currentValue);
+                    e.stopPropagation();
+                  }}
+                  onBlur={() => handleValueChange(editTarget, currentValue)}
+                />
+                <Space.Addon>{valueTooltip}</Space.Addon>
+              </Space.Compact>
             </div>
           ),
         },
@@ -503,7 +507,7 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
             createPortal(
               <>
                 <Divider>{type === 'checkbox' ? 'Checkbox' : 'Radio'} Settings</Divider>
-                <Space style={{ width: '100%' }} direction="vertical" align="center">
+                <Space style={{ width: '100%' }} orientation="vertical" align="center">
                   <Space.Compact>
                     <SidebarButton
                       action="add-above"
@@ -561,22 +565,27 @@ const CheckBoxOrRadioGroup: UserComponent<CheckBoxOrRadioGroupProps> = ({
                       onHovered={setHoveredAction}
                     />
                   </Space.Compact>
-                  <Space.Compact>
-                    <Setting
-                      label="Value"
-                      control={
+                  <Setting
+                    label="Value"
+                    control={
+                      <Space.Compact>
                         <Input
-                          addonAfter={valueTooltip}
                           value={currentValue}
+                          disabled={!editingEnabled}
                           onChange={(e) => setCurrentValue(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
                           onBlur={() =>
                             editTarget !== undefined && handleValueChange(editTarget, currentValue)
                           }
                         />
-                      }
-                    />
-                  </Space.Compact>
+                        <Space.Addon>
+                          <Typography.Text disabled={!editingEnabled}>
+                            {valueTooltip}
+                          </Typography.Text>
+                        </Space.Addon>
+                      </Space.Compact>
+                    }
+                  />
                 </Space>
               </>,
               document.getElementById('sub-element-settings-toolbar')!,

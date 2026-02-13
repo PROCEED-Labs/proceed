@@ -3,12 +3,11 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import styles from './chatbot.module.scss';
 import Scrollbar from './scrollbar';
 import Message from './chat-message';
-import { Button, Input } from 'antd';
+import { Button } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import TextArea from 'antd/es/input/TextArea';
 import { useChatStore } from '@/lib/chat-messages-store';
 import cn from 'classnames';
-import { useIntervalLock } from '@/lib/useIntervalLock';
 
 type ChatBotType = {};
 

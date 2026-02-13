@@ -21,4 +21,6 @@ const SpaceLink = forwardRef<
   );
 });
 
+SpaceLink.displayName = 'SpaceLink';
+
 export default SpaceLink;

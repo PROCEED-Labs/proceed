@@ -31,7 +31,7 @@ const VersionToolbar = ({ processId, readOnly }: VersionToolbarProps) => {
         transform: 'translateY(-50%)',
       }}
     >
-      <Space.Compact size="large" direction="vertical">
+      <Space.Compact size="large" orientation="vertical">
         <AuthCan create Process>
           <Tooltip title="Create a new Process using this Version">
             <ProcessCreationButton

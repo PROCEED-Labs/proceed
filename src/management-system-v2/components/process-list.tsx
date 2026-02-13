@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Grid,
-  Row,
-  TableColumnType,
-  TableColumnsType,
-  TableProps,
-  Tooltip,
-  Typography,
-} from 'antd';
+import { Button, Grid, Row, TableColumnType, TableColumnsType, TableProps, Tooltip } from 'antd';
 import React, {
   useCallback,
   FC,
@@ -538,7 +529,7 @@ const ProcessManagementList: FC<ProcessManagementListProps> = ({
         scroll: {
           y: scrollY,
         },
-        pagination: { position: ['bottomCenter'], pageSize: 20 },
+        pagination: { placement: ['bottomCenter'], pageSize: 20 },
         onRow: (item) => ({
           onContextMenu: () => {
             if (selection.includes(item.id)) {

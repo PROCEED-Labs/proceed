@@ -288,8 +288,8 @@ const ModelerToolbar = ({
             <Select
               popupMatchSelectWidth={false}
               placeholder="Select Version"
-              showSearch
-              filterOption={filterOption}
+              showSearch={{ filterOption }}
+              variant="borderless"
               value={selectedVersion.id}
               onChange={(value) => {
                 // change the version info in the query but keep other info (e.g. the currently open subprocess)
@@ -413,7 +413,7 @@ const ModelerToolbar = ({
                   ></Button>
                 </Tooltip>
               )}
-              <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
+              <Divider orientation="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
               <Tooltip title="View Process Documentation">
                 <Button
                   aria-label="view-documentation"

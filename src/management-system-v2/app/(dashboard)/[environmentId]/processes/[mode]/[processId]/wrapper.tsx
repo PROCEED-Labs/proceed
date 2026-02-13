@@ -31,11 +31,7 @@ import { isPlane } from 'bpmn-js/lib/util/DrilldownUtil';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { spaceURL } from '@/lib/utils';
 import { updateProcess } from '@/lib/data/processes';
-import usePotentialOwnerStore, {
-  UserType,
-  RoleType,
-  useInitialisePotentialOwnerStore,
-} from './use-potentialOwner-store';
+import { useInitialisePotentialOwnerStore } from './use-potentialOwner-store';
 import { useProcessView } from './process-view-context';
 
 type SubprocessInfo = {
@@ -51,14 +47,7 @@ type WrapperProps = PropsWithChildren<{
   // potentialOwner: { user: UserType; roles: RoleType };
 }>;
 
-const Wrapper = ({
-  children,
-  processName,
-  processes,
-  modelerComponent,
-  timelineComponent,
-  // potentialOwner: { user, roles },
-}: WrapperProps) => {
+const Wrapper = ({ processName, processes, modelerComponent, timelineComponent }: WrapperProps) => {
   // TODO: check if params is correct after fix release. And maybe don't need
   // refresh in processes.tsx anymore?
   const { processId } = useParams();
@@ -163,8 +152,7 @@ const Wrapper = ({
               variant="borderless"
               popupMatchSelectWidth={false}
               placeholder="Select Process"
-              showSearch
-              filterOption={filterOption}
+              showSearch={{ filterOption }}
               value={{
                 value: processId,
                 label: 'Process List',

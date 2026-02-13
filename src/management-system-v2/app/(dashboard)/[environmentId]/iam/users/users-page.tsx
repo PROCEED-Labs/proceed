@@ -160,7 +160,7 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
               <Space>
                 <InviteUserButton />
                 <Button type="primary" onClick={() => setCreateUserModalOpen(true)}>
-                  CreateUser
+                  Create User
                 </Button>
               </Space>
             }

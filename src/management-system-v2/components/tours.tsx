@@ -1,8 +1,8 @@
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC } from 'react';
 import ScrollBar from './scrollbar';
-import { Button, Tour } from 'antd';
+import { Button } from 'antd';
 import { useTourRefStore } from '@/lib/tourRefStore';
 
 type TutorialTourType = {

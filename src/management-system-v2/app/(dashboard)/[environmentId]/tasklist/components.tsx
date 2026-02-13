@@ -107,7 +107,7 @@ export const FilterOrSortButton: React.FC<FilterOrSortButtonProps> = ({ type, it
       autoFocus
       trigger={['click']}
       menu={{ items }}
-      overlayStyle={{ width: type === 'Filter' ? '18rem' : undefined }}
+      styles={{ root: { width: type === 'Filter' ? '18rem' : undefined } }}
     >
       <Button>
         <div className={styles.DropdownButton}>

@@ -97,6 +97,7 @@ import { useCollapseItems } from './aas-config-editor-collapse';
 import LanguageDropdown from './language-dropdown';
 import { Localization } from '@/lib/data/locale';
 import PreviewFeatureModal from '../preview-feature-modal';
+import { Without } from '@dnd-kit/utilities';
 const { Text } = Typography;
 
 type MachineDataViewProps = {
@@ -218,8 +219,10 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
 
   // TODO use FuzzySearch
   // currently only ignores capitalization
-  const filterOption: SelectProps['filterOption'] = (input, option) =>
-    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
+  const filterOption: Exclude<SelectProps['showSearch'], undefined | boolean>['filterOption'] = (
+    input,
+    option,
+  ) => ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
   const setUserPreferences = useUserPreferences.use.addPreferences();
   const openTreeItemsInConfigs = useUserPreferences.use['tech-data-open-tree-items']();
@@ -1422,9 +1425,8 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
                   <Select
                     popupMatchSelectWidth={false}
                     placeholder="Select Version"
-                    showSearch
+                    showSearch={{ filterOption }}
                     loading={loadingVersions}
-                    filterOption={filterOption}
                     style={{ minWidth: '150px' }}
                     value={selectedVersionId || 'latest'}
                     onChange={handleVersionSelect}
@@ -1580,7 +1582,7 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
                   }
                 }}
                 trigger={['click']}
-                dropdownRender={() => (
+                popupRender={() => (
                   <div
                     style={{
                       background: '#fff',

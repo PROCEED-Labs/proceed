@@ -283,7 +283,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
 
               {/* DIVIDER BLOCK */}
               <SelectionActions count={selectedForms.length} readOnly={false}>
-                <Space split={<Divider type="vertical" />}>
+                <Space separator={<Divider orientation="vertical" />}>
                   <div>
                     {selectedForms.length === 1 && (
                       <Tooltip placement="top" title={'Open Editor'}>

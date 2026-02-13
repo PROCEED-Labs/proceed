@@ -32,6 +32,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         {/** TODO: correct image url */}
         <Image
           // TODO: use engine endpoint to get the image
+          alt="Image linked to the element"
           src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
             pathParams: {
               definitionId: info.process.definitionId,
@@ -59,7 +60,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   statusEntries.push([
     'Current state:',
-    status && statusType && <Alert type={statusType} message={status} showIcon />,
+    status && statusType && <Alert type={statusType} title={status} showIcon />,
   ]);
 
   // from ./src/management-system/src/frontend/components/deployments/activityInfo/ActivityStatusInformation.vue

@@ -22,7 +22,6 @@ import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } fr
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
-import { DeleteOutlined } from '@ant-design/icons';
 import { useDeleteControl } from './utils';
 import { DeleteButton } from '../DeleteButton';
 
@@ -475,7 +474,7 @@ const Table: UserComponent<TableProps> = ({
         createPortal(
           <>
             <Divider>Cell Settings</Divider>
-            <Space style={{ width: '100%' }} direction="vertical" align="center">
+            <Space style={{ width: '100%' }} orientation="vertical" align="center">
               <Space.Compact>
                 <SidebarButton
                   action="add-row-above"

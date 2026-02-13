@@ -184,7 +184,11 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
 
   return (
     <>
-      <Divider style={{ margin: '10px 0px', fontSize: '0.8rem' }} orientation="left">
+      <Divider
+        style={{ margin: '10px 0px', fontSize: '0.8rem' }}
+        orientation="horizontal"
+        titlePlacement="left"
+      >
         Nested Parameters
       </Divider>
       <Table<Parameter>

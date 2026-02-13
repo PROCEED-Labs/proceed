@@ -54,7 +54,7 @@ const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }>
 
   return (
     <Space
-      direction="vertical"
+      orientation="vertical"
       style={{ width: '100%' }}
       role="group"
       aria-labelledby="description-title"

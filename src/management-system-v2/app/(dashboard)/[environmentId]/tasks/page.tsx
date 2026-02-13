@@ -30,7 +30,7 @@ const FormsPage = async (props: { params: Promise<{ environmentId: string }> }) 
 
   return (
     <Content title="Forms">
-      <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+      <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
         <FormList data={htmlForms} />
       </Space>
     </Content>

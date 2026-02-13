@@ -1,13 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  DeleteOutlined,
-  InfoCircleOutlined,
-  // UnorderedListOutlined,
-  // AppstoreOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, InfoCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { Space, Button, Breakpoint, Grid, FloatButton, Tooltip, App, TableProps } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 import HeaderActions from './header-actions';
@@ -237,7 +231,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
               }}
               tableProps={{
                 rowKey: 'id',
-                pagination: { position: ['bottomCenter'], pageSize: numberOfRows },
+                pagination: { placement: ['bottomCenter'], pageSize: numberOfRows },
               }}
             />
           )}

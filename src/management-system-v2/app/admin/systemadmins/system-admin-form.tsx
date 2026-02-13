@@ -76,9 +76,7 @@ export function SystemAdminCreation({
   return (
     <Form {...formProps} onFinish={addAdmins} initialValues={{ role: 'admin' }}>
       <Form.Item name="role" style={{ maxWidth: '30ch' }}>
-        <Select>
-          <Select.Option value="admin">Admin</Select.Option>
-        </Select>
+        <Select options={[{ label: 'Admin', value: 'admin' }]} />
       </Form.Item>
       <Button type="primary" htmlType="submit" loading={adding}>
         Add admin{usersPicked.length > 1 ? 's' : ''}

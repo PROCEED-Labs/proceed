@@ -216,7 +216,7 @@ const Layout: FC<
             }}
             title="You need to set your password"
             hint={
-              <Alert message="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
+              <Alert title="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
             }
             modalProps={{ closable: false }}
           />
@@ -345,12 +345,12 @@ const Layout: FC<
           closable={false}
           open={showLoginRequest}
           onCancel={() => setShowLoginRequest(false)}
-          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, container: { padding: 0 } }}
         >
           <Alert
             type="warning"
             style={{ zIndex: '1000' }}
-            message={
+            title={
               <>
                 To store and change settings,{' '}
                 <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>

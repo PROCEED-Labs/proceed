@@ -196,7 +196,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
   return (
     <>
       <Space
-        direction="vertical"
+        orientation="vertical"
         style={{ width: '100%' }}
         role="group"
         aria-labelledby="milestones-title"
@@ -208,7 +208,7 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
         </Divider>
         {milestones.length > 0 && (
           <Table
-            pagination={{ pageSize: 5, position: ['bottomCenter'] }}
+            pagination={{ pageSize: 5, placement: ['bottomCenter'] }}
             rowKey="id"
             columns={[
               {

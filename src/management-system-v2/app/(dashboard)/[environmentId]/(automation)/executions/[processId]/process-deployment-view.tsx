@@ -170,6 +170,7 @@ export default function ProcessDeploymentView({
                     ? selectedInstance.processInstanceId
                     : undefined
                 }
+                variant="borderless"
                 onSelect={(value) => setSelectedInstanceId(value)}
                 options={instances?.map((instance, idx) => ({
                   value: instance.processInstanceId,

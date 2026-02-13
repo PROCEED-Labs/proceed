@@ -195,7 +195,7 @@ const HeaderActions: FC = () => {
         onOk={() => signIn()}
       >
         <Alert
-          message="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
+          title="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
           type="warning"
           style={{ marginBottom: '1rem' }}
         />

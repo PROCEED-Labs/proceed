@@ -1,13 +1,10 @@
 'use client';
 
 import React, { ComponentProps, FC, ReactNode, useState } from 'react';
-import { Space, Button, Table, Grid } from 'antd';
-import { UnorderedListOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { Space, Table, Grid } from 'antd';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import Bar from '@/components/bar';
-import styles from './user-list.module.scss';
 import { useUserPreferences } from '@/lib/user-preferences';
-import cn from 'classnames';
 import ElementList from './item-list-view';
 import UserAvatar from './user-avatar';
 import SelectionActions from './selection-actions';
@@ -164,7 +161,7 @@ const UserList: FC<UserListProps> = ({
               onMouseEnter: () => setHoveredRowId(element.id),
               onMouseLeave: () => setHoveredRowId(null),
             }),
-            pagination: { position: ['bottomCenter'] },
+            pagination: { placement: ['bottomCenter'] },
             rowKey: 'id',
             loading,
           }}

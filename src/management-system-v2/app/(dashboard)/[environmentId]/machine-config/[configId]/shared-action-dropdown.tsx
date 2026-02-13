@@ -59,7 +59,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
         placement="bottom"
         mouseEnterDelay={0.1}
         mouseLeaveDelay={0.2}
-        overlayClassName="custom-dropdown-overlay"
+        classNames={{ root: 'custom-dropdown-overlay' }}
         menu={{
           items: [
             {

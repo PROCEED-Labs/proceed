@@ -335,9 +335,11 @@ const ProcessModal = <
               }
               type="warning"
               showIcon
-              closable
+              closable={{
+                closeIcon: true,
+                onClose: () => setShowCollisions(false),
+              }}
               style={{ marginBottom: 16 }}
-              onClose={() => setShowCollisions(false)}
             />
           )}
           <Form

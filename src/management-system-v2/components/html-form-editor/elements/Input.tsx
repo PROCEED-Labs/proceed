@@ -1,14 +1,13 @@
 import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
-import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
 import { DeleteButton } from '../DeleteButton';
 
 type InputProps = {
@@ -213,10 +212,6 @@ export const InputSettings = () => {
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
   }));
-
-  const { variables } = useProcessVariables();
-
-  const selectedVariable = variables.find((v) => v.name === variable);
 
   return (
     <>

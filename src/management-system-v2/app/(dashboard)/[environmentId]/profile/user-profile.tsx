@@ -190,8 +190,8 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
                 closeIcon: (
                   <CloseOutlined style={{ position: 'absolute', top: '10px', right: '10px' }} />
                 ),
+                afterClose: () => setErrorMessage(null),
               }}
-              afterClose={() => setErrorMessage(null)}
             />
           )}
           <Typography.Title level={3}>Profile Settings</Typography.Title>

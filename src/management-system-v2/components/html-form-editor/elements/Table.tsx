@@ -22,7 +22,6 @@ import { ContextMenu, MenuItemFactoryFactory, Overlay, SidebarButtonFactory } fr
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import useEditorStateStore from '../use-editor-state-store';
-import { DeleteOutlined } from '@ant-design/icons';
 import { useDeleteControl } from './utils';
 import { DeleteButton } from '../DeleteButton';
 

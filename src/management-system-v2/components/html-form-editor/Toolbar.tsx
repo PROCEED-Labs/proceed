@@ -7,7 +7,6 @@ import {
   MobileOutlined,
   UndoOutlined,
   RedoOutlined,
-  DeleteOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
 
@@ -31,10 +30,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   iframeLayout,
   onLayoutChange,
 }) => {
-  const { canUndo, canRedo, undo, redo, selected, deleteElement } = useEditorControls();
+  const { canUndo, canRedo, undo, redo } = useEditorControls();
 
   // Check if the changes have been made to default content to enable the button
-  const { query, actions } = useEditor((state, query) => {
+  const { query, actions } = useEditor((state) => {
     // Return a trigger value that changes whenever nodes change
     return {
       nodeCount: Object.keys(state.nodes).length,

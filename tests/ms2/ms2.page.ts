@@ -10,14 +10,14 @@ export class MS2Page {
 
   async login() {
     await mockClipboardAPI(this.page);
-    await this.page.goto('/signin?callbackUrl=/processes');
+    await this.page.goto('/signin?callbackUrl=/start');
 
     const guestSigninButton = this.page.getByRole('button', { name: 'Create a Process' });
     await expect(guestSigninButton).toBeVisible();
     await guestSigninButton.click();
 
-    // url that doesn't contain 'callbackUrl' but has 'processes'
-    await this.page.waitForURL(/^(?:(?!callbackUrl).)*?processes/);
+    // url that doesn't contain 'callbackUrl' but has 'start'
+    await this.page.waitForURL(/^(?:(?!callbackUrl).)*?start/);
   }
 
   async readClipboard(readAsText) {

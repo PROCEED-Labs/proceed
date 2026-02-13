@@ -1,0 +1,25 @@
+.FavoritesSection {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  overflow: hidden;
+
+  .Carousel {
+    position: relative;
+
+    .FavoriteProcessPreview {
+      height: 100%;
+
+      :global(*) {
+        cursor: pointer !important;
+      }
+    }
+
+    .CarouselButton {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+}

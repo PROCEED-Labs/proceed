@@ -120,7 +120,7 @@ const SignIn: FC<{
               onFinish={(values) =>
                 signIn(guestProvider.id, {
                   ...values,
-                  callbackUrl: callbackUrl || '/processes?createprocess',
+                  callbackUrl: callbackUrl || '/start',
                 })
               }
               key={guestProvider.id}
@@ -142,7 +142,7 @@ const SignIn: FC<{
         {userType === 'guest' && guestProvider && (
           <>
             {divider}
-            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+            <Button href="/start" style={{ marginBottom: verticalGap }}>
               Continue as Guest
             </Button>
 

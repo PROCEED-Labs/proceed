@@ -258,10 +258,7 @@ const Layout: FC<
                         height: '64px',
                       }}
                     >
-                      <Link
-                        className={styles.LogoContainer}
-                        href={spaceURL(activeSpace, `/processes`)}
-                      >
+                      <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/start`)}>
                         <Image
                           src={imageSource}
                           alt="PROCEED Logo"

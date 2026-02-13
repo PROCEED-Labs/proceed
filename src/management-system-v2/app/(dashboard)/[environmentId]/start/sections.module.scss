@@ -1,0 +1,35 @@
+.Section {
+  margin-bottom: 1.5rem;
+  text-align: left;
+  padding-left: 70px;
+
+  .SectionIcon {
+    margin-right: 8px;
+  }
+
+  .TileGroup {
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 26px;
+
+    .Tile {
+      text-decoration: none;
+      width: 200px;
+
+      .TileCard {
+        text-align: center;
+        border: 1.5px solid #d9d9d9;
+
+        .TileCardTitle {
+          margin-top: 8px;
+        }
+      }
+
+      .TileIcon {
+        font-size: 22px;
+        margin-bottom: 8px;
+      }
+    }
+  }
+}

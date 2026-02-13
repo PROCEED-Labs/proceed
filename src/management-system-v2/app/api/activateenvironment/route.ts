@@ -24,5 +24,5 @@ export const GET = async (req: Request) => {
   }
 
   // Redirects don't work inside try/cath
-  redirect(`/${activationId}/processes`);
+  redirect(`/${activationId}/start`);
 };

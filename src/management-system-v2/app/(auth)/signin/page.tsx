@@ -15,7 +15,7 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
   const isGuest = session?.user.isGuest;
 
   if (session?.user && !isGuest) {
-    const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/processes`;
+    const callbackUrl = searchParams.callbackUrl ?? `/${session.user.id}/start`;
     redirect(callbackUrl);
   }
 

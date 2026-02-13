@@ -54,7 +54,7 @@ const EnvironmentsPage: FC<{
             width: 100,
             render: (id, environment) => (
               <Space>
-                <Link href={`/${id}/processes`}>
+                <Link href={`/${id}/start`}>
                   <Button>Enter</Button>
                 </Link>
                 {environment.isOrganization && (

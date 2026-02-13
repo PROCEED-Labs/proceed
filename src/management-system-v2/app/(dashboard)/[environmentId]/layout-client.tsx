@@ -28,7 +28,7 @@ import SpaceLink from '@/components/space-link';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
 import useMSLogo from '@/lib/use-ms-logo';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { MenuItemType } from 'antd/es/menu/interface';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
@@ -106,8 +106,10 @@ const Layout: FC<
   // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
   const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
-  const pathname = usePathname();
-
+  const pathnameBase = usePathname();
+  // Also check the query paramters
+  const searchParams = useSearchParams();
+  const pathname = pathnameBase + (searchParams?.toString() ? `?${searchParams}` : '');
   const [selected, setSelected] = useState<string[]>([]);
   const [open, setOpen] = useState<string[]>([]);
 

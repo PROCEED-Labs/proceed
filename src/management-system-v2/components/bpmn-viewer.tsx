@@ -6,7 +6,6 @@ import BPMNCanvas, { BPMNCanvasRef } from './bpmn-canvas';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useEnvironment } from './auth-can';
-import style from './bpmn-viewer.module.scss';
 import { useLazyRendering } from './scrollbar';
 import ProceedLoadingIndicator from './loading-proceed';
 

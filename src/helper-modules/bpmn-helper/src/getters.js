@@ -231,7 +231,7 @@ async function getUserTaskFileNameMapping(bpmn) {
 }
 
 /**
- * Get all fileName for all scriptTasks,
+ * Get all fileName and taskName for all scriptTasks,
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
@@ -244,6 +244,7 @@ async function getScriptTaskFileNameMapping(bpmn) {
   scriptTasks.forEach((task) => {
     mapping[task.id] = {
       fileName: task.fileName,
+      taskName: task.name
     };
   });
   return mapping;

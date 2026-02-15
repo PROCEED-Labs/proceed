@@ -15,15 +15,11 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
 import { Folder } from '@/lib/data/folder-schema';
 
-function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: string) {
-  if (knownFileName) {
-    return knownFileName;
-  } else if (
-    element &&
-    typeof element.businessObject.fileName === 'string' &&
-    element.businessObject.fileName.length > 0
-  ) {
-    return element.businessObject.fileName;
+function getScriptTaskLabel(element?: Element | ElementLike, knownTaskName?: string) {
+  if (knownTaskName) {
+    return knownTaskName;
+  } else if (element && element.businessObject.name) {
+    return element.businessObject.name;
   } else {
     return '< Unnamed >';
   }
@@ -59,10 +55,10 @@ function folderPathContentsToTreeStructure({
       }
 
       if (child.type === 'process') {
-        node.children = child.scriptTasks.map((fileName) =>
+        node.children = child.scriptTasks.map((scriptTask) =>
           generateTreeNode({
-            name: getScriptTaskLabel(undefined, fileName),
-            id: `${child.id} ${fileName}`,
+            name: scriptTask.taskName,
+            id: `${child.id} ${scriptTask.fileName}`, // Use fileName in ID
             type: 'scriptTask',
           }),
         );
@@ -84,7 +80,7 @@ type FolderTreeDataType =
       type: 'process';
       id: string;
       name: string;
-      scriptTasks: string[];
+      scriptTasks: Array<{ fileName: string; taskName: string }>;
     }
   | {
       type: 'folder';
@@ -433,10 +429,10 @@ export function ScriptTaskEditorEnvironment({
 
   if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
     // Non-editable case
-    title = `Script Task: ${currentTreeNode.element.label}`;
+    title = `Script Task: ${currentTreeNode.element.name}`;
 
     if (currentTreeNode.element.isInThisProcess && canEdit) {
-      title = `Edit Script Task: ${currentTreeNode.element.label}`;
+      title = `Edit Script Task: ${currentTreeNode.element.name}`;
 
       if (!isExecutable) {
         title = (
@@ -510,11 +506,11 @@ export function ScriptTaskEditorEnvironment({
                 if (node.element.type !== 'process' || node.element.id === process.id) continue;
 
                 node.isLeaf = false;
-                node.children = node.element.scriptTasks.map((scriptTaskFileName) =>
+                node.children = node.element.scriptTasks.map((scriptTask) =>
                   generateTreeNode({
-                    name: scriptTaskFileName,
-                    label: scriptTaskFileName,
-                    id: `${node.element.id} ${scriptTaskFileName}`,
+                    name: scriptTask.fileName,
+                    label: scriptTask.taskName,
+                    id: `${node.element.id} ${scriptTask.fileName}`,
                     type: 'scriptTask',
                     isInThisProcess: false,
                   }),

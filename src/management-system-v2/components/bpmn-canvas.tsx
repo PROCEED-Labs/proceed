@@ -20,7 +20,7 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import type Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
-
+import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
 import {
   ResourceViewModule,
   ResourceModelingModule,
@@ -81,6 +81,10 @@ export type BPMNCanvasProps = {
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
+  /** Called when a shape is added to the modeler */
+  onShapeAdded?: (element: Element) => void;
+  /** Function to determine if reference restoration should be skipped (e.g., for paste event) */
+  shouldSkipReferenceRestore?: (element: BpmnElement) => boolean;
 };
 
 const fitViewport = (modeler: ModelerType | NavigatedViewerType) => {
@@ -123,6 +127,8 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onZoom,
       onShapeRemove,
       onShapeRemoveUndo,
+      onShapeAdded,
+      shouldSkipReferenceRestore,
       resizeWithContainer,
       className,
     },
@@ -297,16 +303,25 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           },
         );
 
-        // Redo recreates the deleted shape
+        // Redo recreates the deleted shape (it will also fires for paste, but will skip those)
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
-            if (event.context.shape.businessObject)
-              onShapeRemoveUndo?.(event.context.shape.businessObject);
+            if (!event.context.shape.businessObject) return;
+            // Check if it should skip reference restoration (for paste event)
+            if (shouldSkipReferenceRestore?.(event.context.shape as BpmnElement)) {
+              return;
+            }
+            // Otherwise, restore references (for redo event after delete)
+            onShapeRemoveUndo?.(event.context.shape.businessObject);
           },
         );
       }
 
+      // Handle shape added (for paste event)
+      modeler.current!.on('shape.added', (event: { element: Element }) => {
+        if (!loadingXML.current) onShapeAdded?.(event.element);
+      });
       modeler.current!.on('import.done', _onLoaded);
       modeler.current!.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
         'selection.changed',
@@ -322,8 +337,11 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.off('import.done', _onLoaded);
         modeler.current!.off('commandStack.changed', commandStackChanged);
         modeler.current!.off('selection.changed', selectionChanged);
+        if (type === 'modeler') {
+          modeler.current!.off('shape.added');
+        }
       };
-    }, [type, onLoaded, onChange, onSelectionChange, onZoom]);
+    }, [type, onLoaded, onChange, onSelectionChange, onZoom, onShapeAdded]);
 
     useEffect(() => {
       const m = modeler.current!;

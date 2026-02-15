@@ -202,7 +202,7 @@ declare const _exports: {
   getScriptTaskFileNameMapping(bpmn: string | object): Promise<{
     [scriptTaskId: string]: {
       fileName?: string;
-      taskName?:string
+      taskName?: string;
     };
   }>;
   getSubprocess(bpmn: string | object, subprocessId: string): Promise<string>;

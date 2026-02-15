@@ -244,7 +244,7 @@ async function getScriptTaskFileNameMapping(bpmn) {
   scriptTasks.forEach((task) => {
     mapping[task.id] = {
       fileName: task.fileName,
-      taskName: task.name
+      taskName: task.name,
     };
   });
   return mapping;

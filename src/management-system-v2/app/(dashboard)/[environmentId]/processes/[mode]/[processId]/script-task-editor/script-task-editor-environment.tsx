@@ -456,7 +456,12 @@ export function ScriptTaskEditorEnvironment({
   if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
     // Use label for header (which is either taskName or "< Unnamed >")
     const headerLabel = currentTreeNode.element.label;
-    const isUnnamed = !headerLabel || headerLabel === '< Unnamed >';
+    // Check if it is unnamed, label will be "< Unnamed >" or "Unnamed Script Task"
+    const isUnnamed =
+      !headerLabel ||
+      headerLabel.trim() === '' ||
+      headerLabel === '< Unnamed >' ||
+      headerLabel === 'Unnamed Script Task';
 
     const taskLabel = isUnnamed ? (
       <span style={{ fontStyle: 'italic' }}>{'< Unnamed >'}</span>

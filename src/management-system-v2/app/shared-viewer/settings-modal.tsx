@@ -78,7 +78,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ checkedSettings, onConfir
         onCancel={handleCancel}
       >
         <Checkbox.Group value={checked} onChange={handleSettingsChange}>
-          <Space direction="vertical">
+          <Space orientation="vertical">
             {settings.map(({ label, value, tooltip }) => (
               <Tooltip placement="right" title={tooltip} key={label}>
                 <Checkbox value={value}>{label}</Checkbox>

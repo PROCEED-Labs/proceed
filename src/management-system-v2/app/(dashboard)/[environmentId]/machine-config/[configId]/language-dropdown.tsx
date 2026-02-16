@@ -11,16 +11,16 @@ type LanguageDropdownProps = {
 const LanguageDropdown = ({ currentLanguage, onLanguageChange }: LanguageDropdownProps) => {
   return (
     <Select
-      showSearch
+      showSearch={{
+        optionFilterProp: 'label',
+        filterOption: (input, option) =>
+          (option?.label ?? '').toLowerCase().includes(input.toLowerCase()),
+      }}
       value={currentLanguage}
       onChange={onLanguageChange}
       options={languageItemsSelect}
       style={{ width: 195 }}
       placeholder="Select Language"
-      optionFilterProp="label"
-      filterOption={(input, option) =>
-        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-      }
       labelRender={(props) => (
         <Space size={8} style={{ maxWidth: '150px', overflow: 'hidden' }}>
           <GlobalOutlined style={{ color: 'black' }} />

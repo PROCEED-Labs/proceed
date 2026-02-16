@@ -145,7 +145,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
       className={linksDisabled ? styles.DisabledAnchors : ''}
       {...anchorProps}
       items={tableOfContents}
-    ></Anchor>
+    />
   ) : (
     <></>
   );

@@ -15,6 +15,7 @@ import {
   message,
   InputNumber,
   Tooltip,
+  Typography,
 } from 'antd';
 import type { TabsProps } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -278,7 +279,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       children: (
         <>
           <Space
-            direction="vertical"
+            orientation="vertical"
             style={{ width: '100%' }}
             role="group"
             aria-labelledby="general-title"
@@ -289,28 +290,44 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             General
           </span>
         </Divider> */}
-            <Input
-              name="Name"
-              placeholder="Element Name"
-              style={{ fontSize: '0.85rem' }}
-              addonBefore="Name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={handleNameChange}
-              disabled={readOnly}
-            />
-
-            {selectedElement.type === 'bpmn:Process' && (
+            <Space.Compact style={{ width: '100%' }}>
+              <Space.Addon style={{ width: '65px' }}>
+                <Typography.Text
+                  style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}
+                >
+                  Name
+                </Typography.Text>
+              </Space.Addon>
               <Input
-                name="ID"
-                placeholder="User Defined ID"
+                name="Name"
+                placeholder="Element Name"
                 style={{ fontSize: '0.85rem' }}
-                addonBefore="ID"
-                value={userDefinedId}
-                onChange={(e) => setUserDefinedId(e.target.value)}
-                onBlur={handleUserDefinedIdChange}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={handleNameChange}
                 disabled={readOnly}
               />
+            </Space.Compact>
+
+            {selectedElement.type === 'bpmn:Process' && (
+              <Space.Compact style={{ width: '100%' }}>
+                <Space.Addon>
+                  <Typography.Text
+                    style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}
+                  >
+                    ID
+                  </Typography.Text>
+                </Space.Addon>
+                <Input
+                  name="ID"
+                  placeholder="User Defined ID"
+                  style={{ fontSize: '0.85rem' }}
+                  value={userDefinedId}
+                  onChange={(e) => setUserDefinedId(e.target.value)}
+                  onBlur={handleUserDefinedIdChange}
+                  disabled={readOnly}
+                />
+              </Space.Compact>
             )}
 
             <div
@@ -346,7 +363,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             selectedElement={selectedElement}
             readOnly={readOnly}
           ></MilestoneSelectionSection>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Divider style={{ fontSize: '0.85rem' }}>Properties</Divider>
             <PlannedCostInput
               costsPlanned={
@@ -399,7 +416,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
 
           {selectedElement.type !== 'bpmn:Process' &&
             selectedElement.type !== 'bpmn:Collaboration' && (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <Divider style={{ fontSize: '0.85rem' }}>Colors</Divider>
                 <Space>
                   <ColorPicker
@@ -446,37 +463,49 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
             'bpmn:TextAnnotation',
             'proceed:GenericResource',
           ]) && (
-            <Space direction="vertical">
+            <Space orientation="vertical" style={{ width: '100%' }}>
               <Divider style={{ fontSize: '0.85rem' }}>
                 Dimensions{' '}
                 <Tooltip title="It is only possible to change the size of Tasks and Text Annotations. Please note: changing the dimensions of an element does not automatically trigger a redesign and may therefore disrupt existing layouts and connections.">
                   <ExclamationCircleOutlined style={{ paddingRight: '3px', color: 'orange' }} />
                 </Tooltip>
               </Divider>
-              <Space>
+              <Space.Compact style={{ width: '100%' }}>
+                <Space.Addon>
+                  <Typography.Text
+                    style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}
+                  >
+                    Width
+                  </Typography.Text>
+                </Space.Addon>
                 <InputNumber
                   name="Width"
                   placeholder="Element Width"
-                  style={{ fontSize: '0.85rem' }}
-                  addonBefore="Width"
+                  style={{ fontSize: '0.85rem', flex: 1 }}
                   value={elementWidth}
                   disabled={readOnly}
                   onChange={(val) => setElementWidth(val || 0)}
                   onBlur={handleWidthChange}
                 />
-              </Space>
-              <Space>
+              </Space.Compact>
+              <Space.Compact style={{ width: '100%' }}>
+                <Space.Addon>
+                  <Typography.Text
+                    style={{ width: '40px', textAlign: 'center', fontSize: '0.75rem' }}
+                  >
+                    Height
+                  </Typography.Text>
+                </Space.Addon>
                 <InputNumber
                   name="Height"
                   placeholder="Element Height"
-                  style={{ fontSize: '0.85rem' }}
-                  addonBefore="Height"
+                  style={{ fontSize: '0.85rem', flex: 1 }}
                   value={elementHeight}
                   disabled={readOnly}
                   onChange={(val) => setElementHeight(val || 0)}
                   onBlur={handleHeightChange}
                 />
-              </Space>
+              </Space.Compact>
             </Space>
           )}
         </>
@@ -491,7 +520,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
       children: (
         <>
           <Space
-            direction="vertical"
+            orientation="vertical"
             style={{ width: '100%' }}
             role="group"
             aria-labelledby="general-title"
@@ -517,7 +546,7 @@ const PropertiesPanelContent: React.FC<PropertiesPanelContentProperties> = ({
   return (
     <>
       <Space
-        direction="vertical"
+        orientation="vertical"
         size="large"
         style={{ width: '100%', fontSize: '0.75rem', marginTop: '-40px' }}
         className={styles.PropertiesPanel}

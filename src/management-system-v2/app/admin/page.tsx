@@ -25,11 +25,11 @@ export default async function AdminDashboard() {
 
   return (
     <Content title="MS admin dashboard">
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Card bordered={false} style={cardStyle}>
+      <Space orientation="vertical" style={{ width: '100%' }}>
+        <Card variant="borderless" style={cardStyle}>
           <Statistic title="Users" value={usersAmount} />
         </Card>
-        <Card bordered={false} style={cardStyle}>
+        <Card variant="borderless" style={cardStyle}>
           <Statistic title="Spaces" value={spacesAmount} />
         </Card>
       </Space>

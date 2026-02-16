@@ -1,6 +1,6 @@
 'use client';
 
-import { Input, InputProps, Select, SelectProps } from 'antd';
+import { Input, InputProps, Select, SelectProps, Space } from 'antd';
 import {
   CountryCode,
   getCountries,
@@ -43,16 +43,17 @@ export default function PhoneInput(
   });
 
   return (
-    <Input
-      {...props}
-      addonBefore={
+    <Space.Compact block>
+      <Space.Addon style={{ padding: '0' }}>
         <Select<CountryCode, ReturnType<typeof getCountryOption>>
-          showSearch
+          showSearch={{
+            filterOption: (input, option) =>
+              !!option?.value.toLowerCase().includes(input.toLowerCase()),
+          }}
           options={getCountries().map(getCountryOption)}
-          filterOption={(input, option) =>
-            !!option?.value.toLowerCase().includes(input.toLowerCase())
-          }
-          style={{ minWidth: '8rem' }}
+          style={{ minWidth: '7.5rem', padding: '5px' }}
+          styles={{ content: { display: 'flex', justifyContent: 'center' } }}
+          variant="borderless"
           value={country}
           onChange={(country) => {
             setCountry(country);
@@ -66,16 +67,19 @@ export default function PhoneInput(
           }}
           {...props.selectProps}
         />
-      }
-      onChange={(e) => {
-        const number = e.target.value;
-        setValue(number);
+      </Space.Addon>
+      <Input
+        {...props}
+        onChange={(e) => {
+          const number = e.target.value;
+          setValue(number);
 
-        const code = getCountryCallingCode(country);
-        e.target.value = `+${code} ${number}`;
-        props.onChange?.(e);
-      }}
-      value={value}
-    />
+          const code = getCountryCallingCode(country);
+          e.target.value = `+${code} ${number}`;
+          props.onChange?.(e);
+        }}
+        value={value}
+      />
+    </Space.Compact>
   );
 }

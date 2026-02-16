@@ -163,7 +163,11 @@ const AasParamLinks: React.FC<CustomFieldProps> = ({
   return (
     <>
       <>
-        <Divider style={{ margin: '0px 0px 10px 0px', fontSize: '0.8rem' }} orientation="left">
+        <Divider
+          style={{ margin: '0px 0px 10px 0px', fontSize: '0.8rem' }}
+          orientation="horizontal"
+          titlePlacement="left"
+        >
           Linked Parameters
         </Divider>
         {editable && (

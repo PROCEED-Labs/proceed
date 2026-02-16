@@ -52,6 +52,8 @@ const SettingsForm = ({ settings, updateSettings }: SettingsFormProps) => {
                 style={{ margin: '0', width: 'max-content' }}
               >
                 <Select
+                  defaultValue={'info'}
+                  popupMatchSelectWidth={false}
                   options={[
                     { value: 'error' },
                     { value: 'warn' },

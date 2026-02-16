@@ -115,7 +115,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
   return (
     <>
       <Table
-        pagination={{ position: ['bottomCenter'] }}
+        pagination={{ placement: ['bottomCenter'] }}
         rowKey="name"
         scroll={{ x: true }}
         columns={columns}

@@ -13,7 +13,6 @@ import {
   Input,
   theme,
   Button,
-  Image,
 } from 'antd';
 import styles from './user-profile.module.scss';
 import { RightOutlined } from '@ant-design/icons';
@@ -29,7 +28,7 @@ import { z } from 'zod';
 import { requestEmailChange as serverRequestEmailChange } from '@/lib/email-verification-tokens/server-actions';
 import Link from 'next/link';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import ImageUpload, { fallbackImage } from '@/components/image-upload';
+import ImageUpload from '@/components/image-upload';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import ChangeUserPasswordModal from './change-password-modal';
@@ -165,7 +164,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
       >
         <Alert
           type="info"
-          message="We'll send you a verification link to your new email address."
+          title="We'll send you a verification link to your new email address."
           style={{ marginBottom: '1rem' }}
         />
         <Form
@@ -180,19 +179,19 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
         </Form>
       </Modal>
 
-      <Space direction="vertical" className={styles.Container}>
+      <Space orientation="vertical" className={styles.Container}>
         <Card className={styles.Card} style={{ margin: 'auto' }}>
           {errorMessage && (
             <Alert
               style={{ marginBottom: '1rem', paddingRight: '20px' }}
-              message={errorMessage}
+              title={errorMessage}
               type="error"
               closable={{
                 closeIcon: (
                   <CloseOutlined style={{ position: 'absolute', top: '10px', right: '10px' }} />
                 ),
+                afterClose: () => setErrorMessage(null),
               }}
-              afterClose={() => setErrorMessage(null)}
             />
           )}
           <Typography.Title level={3}>Profile Settings</Typography.Title>
@@ -253,7 +252,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
                 }}
               >
                 <Alert
-                  message={
+                  title={
                     <>
                       To change your profile settings <Link href="/signin">Sign in</Link>
                     </>
@@ -343,7 +342,7 @@ const UserProfile: FC<{ userData: User; userHasPassword: boolean }> = ({
             />
           </div>
 
-          <Space direction="vertical">
+          <Space orientation="vertical">
             <Button onClick={() => setChangePasswordModalOpen(true)}>
               {userHasPassword ? 'Change Password' : 'Set Password'}
             </Button>

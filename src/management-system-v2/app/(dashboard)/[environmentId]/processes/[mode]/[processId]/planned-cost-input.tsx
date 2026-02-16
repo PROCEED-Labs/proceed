@@ -1,5 +1,4 @@
-import { Input, Select } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { Input, Select, Space } from 'antd';
 import React, { useEffect, useState } from 'react';
 import styles from './planned-cost-input.module.scss';
 
@@ -33,11 +32,8 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
 
   const [isEditing, setIsEditing] = useState(false);
   return (
-    <Input
-      type={!isEditing ? 'text' : 'number'}
-      className={styles.PlannedCostInput}
-      style={{ width: '100%' }}
-      addonBefore={
+    <Space.Compact style={{ width: '100%' }}>
+      <Space.Addon style={{ padding: 0, border: 0 }}>
         <Select
           suffixIcon={null}
           value={costsPlanned.currency}
@@ -49,32 +45,46 @@ const PlannedCostInput: React.FC<PlannedCostInputProperties> = ({
               onInput({ value: costsPlanned.value, currency: value });
             }
           }}
-          dropdownStyle={{ width: '7rem' }}
+          style={{
+            height: '28.85px',
+            width: '65px',
+            backgroundColor: 'inherit',
+            fontSize: '0.75rem',
+          }}
+          styles={{
+            popup: { root: { width: '7rem' } },
+            content: { display: 'flex', justifyContent: 'center', margin: 0 },
+          }}
           disabled={readOnly}
-        ></Select>
-      }
-      placeholder="Planned Cost"
-      onFocus={() => setIsEditing(true)}
-      onChange={(val) => {
-        setCostsPlanned({
-          value: parseInt(val.target.value) || undefined,
-          currency: costsPlanned.currency,
-        });
-      }}
-      onBlur={() => {
-        setIsEditing(false);
-        onInput(costsPlanned);
-      }}
-      value={
-        !isEditing && costsPlanned.value
-          ? generateNumberString(costsPlanned.value, {
-              style: 'currency',
-              currency: costsPlanned.currency,
-            })
-          : costsPlanned.value
-      }
-      disabled={readOnly}
-    />
+        />
+      </Space.Addon>
+      <Input
+        type={!isEditing ? 'text' : 'number'}
+        className={styles.PlannedCostInput}
+        style={{ height: '28.85px', width: '100%' }}
+        placeholder="Planned Cost"
+        onFocus={() => setIsEditing(true)}
+        onChange={(val) => {
+          setCostsPlanned({
+            value: parseInt(val.target.value) || undefined,
+            currency: costsPlanned.currency,
+          });
+        }}
+        onBlur={() => {
+          setIsEditing(false);
+          onInput(costsPlanned);
+        }}
+        value={
+          !isEditing && costsPlanned.value
+            ? generateNumberString(costsPlanned.value, {
+                style: 'currency',
+                currency: costsPlanned.currency,
+              })
+            : costsPlanned.value
+        }
+        disabled={readOnly}
+      />
+    </Space.Compact>
   );
 };
 

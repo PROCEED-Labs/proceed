@@ -11,7 +11,7 @@ import {
   toCaslResource,
   resourceAction,
 } from '@/lib/ability/caslAbility';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { SpaceContext } from '@/app/(dashboard)/[environmentId]/layout-client';
 import { EnvVarsContext } from './env-vars-context';
 import { session } from '@/lib/no-iam-user';

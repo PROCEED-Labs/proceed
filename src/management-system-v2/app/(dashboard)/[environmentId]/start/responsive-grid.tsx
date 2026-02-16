@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode } from 'react';
 import styles from './page.module.scss';
 import { Grid } from 'antd';
 

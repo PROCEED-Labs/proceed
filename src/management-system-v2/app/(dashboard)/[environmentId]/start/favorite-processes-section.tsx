@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useState, useRef, useEffect, useMemo } from 'react';
 import { Card, Button, Space } from 'antd';
 import { StarOutlined, DoubleRightOutlined, DoubleLeftOutlined } from '@ant-design/icons';
 import { LazyBPMNViewer } from '@/components/bpmn-viewer';

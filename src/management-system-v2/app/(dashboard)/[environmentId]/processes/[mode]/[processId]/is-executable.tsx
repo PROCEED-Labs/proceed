@@ -35,7 +35,7 @@ const IsExecutableSection: React.FC<IsExecutableSectionProps> = ({ modeler, read
   };
 
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
+    <Space orientation="vertical" style={{ width: '100%' }}>
       <Space>
         {loading ? (
           <Spin style={{ width: '16px' }} size="small" />

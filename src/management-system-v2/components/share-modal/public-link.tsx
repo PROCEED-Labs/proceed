@@ -168,13 +168,13 @@ const ModelerShareModalOptionPublicLink = ({
     return (
       <Alert
         type="info"
-        message="Public Link sharing is only available when a single process is selected"
+        title="Public Link sharing is only available when a single process is selected"
       />
     );
   }
 
   return (
-    <Space direction="vertical" style={{ gap: '1rem', width: '100%' }}>
+    <Space orientation="vertical" style={{ gap: '1rem', width: '100%' }}>
       <Checkbox checked={isShareLinkChecked} onChange={handleShareLinkChecked} disabled={!process}>
         Share Process with Public Link
       </Checkbox>

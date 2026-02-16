@@ -124,7 +124,7 @@ const ReleaseModal: React.FC<ReleaseModalProps> = ({
         disabled: !hasAnyChanges,
       }}
     >
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+      <Space orientation="vertical" style={{ width: '100%' }} size="large">
         <Text>
           Do you want to release the latest changes in this Tech Data Set as a new version?
         </Text>
@@ -139,7 +139,7 @@ const ReleaseModal: React.FC<ReleaseModalProps> = ({
             const hasActualChanges = tdsVersionInfo.hasChanges && versionChanged;
 
             return hasActualChanges ? (
-              <Space direction="vertical" style={{ width: '100%' }}>
+              <Space orientation="vertical" style={{ width: '100%' }}>
                 <Text>
                   There have been structural or content changes in Header, Target Dataset, or
                   Reference Dataset compared to the previous version.
@@ -167,12 +167,12 @@ const ReleaseModal: React.FC<ReleaseModalProps> = ({
         {/* Machine Datasets */}
         <div>
           <Title level={5}>Machine Datasets</Title>
-          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+          <Space orientation="vertical" style={{ width: '100%' }} size="middle">
             {machineDatasets.map((dataset) => (
               <div key={dataset.id}>
                 <Text strong>{dataset.name}: </Text>
                 {dataset.hasChanges ? (
-                  <Space direction="vertical" style={{ width: '100%', marginTop: 8 }}>
+                  <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }}>
                     <Text>
                       There have been structural or content changes compared to the previous
                       version.
@@ -199,7 +199,7 @@ const ReleaseModal: React.FC<ReleaseModalProps> = ({
 
         {isMqttConfigured && hasAnyChanges && (
           <Alert
-            message="After releasing, the configuration will automatically be sent to the MQTT server."
+            title="After releasing, the configuration will automatically be sent to the MQTT server."
             type="info"
             showIcon
             style={{ fontSize: '0.65rem' }}
@@ -207,7 +207,7 @@ const ReleaseModal: React.FC<ReleaseModalProps> = ({
         )}
         {!isMqttConfigured && hasAnyChanges && (
           <Alert
-            message="After releasing, the configuration will not be sent to a MQTT server, because there is no server configured in the settings."
+            title="After releasing, the configuration will not be sent to a MQTT server, because there is no server configured in the settings."
             type="warning"
             showIcon
             style={{ fontSize: '0.65rem' }}

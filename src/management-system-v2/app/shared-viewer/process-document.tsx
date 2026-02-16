@@ -159,6 +159,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               Overview Image
             </Title>
             <Image
+              alt="Elements overview image"
               style={{
                 width: 'auto',
                 maxWidth: '80%',

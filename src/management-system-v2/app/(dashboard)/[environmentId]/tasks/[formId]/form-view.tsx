@@ -67,7 +67,7 @@ const FormView: React.FC<FormViewProps> = ({ data }) => {
       }
     >
       <Space
-        direction="vertical"
+        orientation="vertical"
         size="large"
         style={{ display: 'flex', height: '100%', rowGap: 0 }}
       >

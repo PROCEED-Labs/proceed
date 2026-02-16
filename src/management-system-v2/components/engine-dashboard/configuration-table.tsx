@@ -157,7 +157,7 @@ export default function ConfigurationTable({
       <FormWrapper engine={engine} configuration={configuration}>
         <Tabs
           defaultActiveKey="general"
-          tabPosition="left"
+          tabPlacement="start"
           items={menuItems}
           className={styles.configurationTabs}
         />

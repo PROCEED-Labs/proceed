@@ -12,7 +12,7 @@ const Projects = async (props: { params: Promise<{ environmentId: string }> }) =
 
   return (
     <Content title="Projects">
-      <Space direction="vertical" size="large" style={{ display: 'flex' }}>
+      <Space orientation="vertical" size="large" style={{ display: 'flex' }}>
         <ProjectStats />
         <Processes
           processes={[]}

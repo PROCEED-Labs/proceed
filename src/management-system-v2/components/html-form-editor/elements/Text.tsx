@@ -1,4 +1,4 @@
-import { useEditor, useNode, UserComponent } from '@craftjs/core';
+import { useNode, UserComponent } from '@craftjs/core';
 
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 

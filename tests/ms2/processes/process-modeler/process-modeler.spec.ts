@@ -74,7 +74,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 
   // Open/close process select menu and process creation dialog
-  const processSelectMenu = page.getByText('Process List');
+  const processSelectMenu = page.locator('header').getByText('Process List');
 
   await processSelectMenu.click();
   await expect(page.getByRole('option', { name: 'Process Name' })).toBeVisible();

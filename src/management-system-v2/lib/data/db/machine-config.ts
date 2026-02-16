@@ -4539,12 +4539,18 @@ export async function getUserConfig(
   try {
     const userParam = await getUserParameter(userId, spaceId);
     if ('error' in userParam) throw userParam.error;
-    const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
-    userParam.changeableByUser = false;
-    dummyConfig.configType = 'dummy';
-    dummyConfig.content = [userParam];
-    dummyConfig.id = userId;
-    return dummyConfig;
+    const userData = extractParameterFromParameter(userParam, ['data']);
+    if (userData) {
+      const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
+      userParam.changeableByUser = true;
+      dummyConfig.configType = 'dummy';
+      // dummyConfig.content = userData?.subParameters;
+      dummyConfig.content = [userData];
+      dummyConfig.id = userId;
+      return dummyConfig;
+    } else {
+      throw userError(`Userdata element 'data' for UserId ${userId} not found.`);
+    }
   } catch (error) {
     return userError(
       error instanceof Error
@@ -4565,12 +4571,19 @@ export async function getUserPersonalConfig(
 ): Promise<Config | { error: UserError }> {
   try {
     const userParam = (await nestedParametersFromStorage([userId]))[0];
-    const dummyConfig = defaultConfiguration(userId, 'dummy userConfig');
-    userParam.changeableByUser = false;
-    dummyConfig.configType = 'dummy';
-    dummyConfig.content = [userParam];
-    dummyConfig.id = userId;
-    return dummyConfig;
+    const userData = extractParameterFromParameter(userParam, ['data']);
+    if (userData) {
+      userData.changeableByUser = true;
+      const dummyConfig = defaultConfiguration(userId, 'dummy userConfig');
+      // userParam.changeableByUser = false;
+      dummyConfig.configType = 'dummy';
+      // dummyConfig.content = userData?.subParameters;
+      dummyConfig.content = [userData];
+      dummyConfig.id = userId;
+      return dummyConfig;
+    } else {
+      throw userError(`Userdata element 'data' for UserId ${userId} not found.`);
+    }
   } catch (error) {
     return userError(
       error instanceof Error ? error.message : `user config cannot be loaded. \nUserID: ${userId}`,

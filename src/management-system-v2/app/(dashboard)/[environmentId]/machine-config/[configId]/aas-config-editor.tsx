@@ -97,7 +97,6 @@ import { useCollapseItems } from './aas-config-editor-collapse';
 import LanguageDropdown from './language-dropdown';
 import { Localization } from '@/lib/data/locale';
 import PreviewFeatureModal from '../preview-feature-modal';
-import { Without } from '@dnd-kit/utilities';
 const { Text } = Typography;
 
 type MachineDataViewProps = {

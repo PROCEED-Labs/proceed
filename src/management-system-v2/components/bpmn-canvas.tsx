@@ -303,12 +303,12 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
           },
         );
 
-        // Redo recreates the deleted shape (it will also fires for paste, but will skip those)
+        // Redo recreates the deleted shape (it will also fires for copy paste, but will skip those)
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
             if (!event.context.shape.businessObject) return;
-            // Check if it should skip reference restoration (for paste event)
+            // Check if it should skip reference restoration (for copy paste event)
             if (shouldSkipReferenceRestore?.(event.context.shape as BpmnElement)) {
               return;
             }

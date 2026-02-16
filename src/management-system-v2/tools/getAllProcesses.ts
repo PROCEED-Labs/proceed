@@ -18,11 +18,15 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcesses({}: InferSchema<typeof schema>) {
+export default async function getProcesses({ }: InferSchema<typeof schema>) {
   const result = await prisma.process.findMany({
     select: { id: true, name: true, description: true, lastEditedOn: true },
     take: 100,
   });
 
-  return result ?? `Error: No processes found.`;
+  if (!result) return `Error: No processes found.`;
+
+  return {
+    content: [{ type: 'text', text: JSON.stringify(result) }],
+  };
 }

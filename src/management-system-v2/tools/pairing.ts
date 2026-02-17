@@ -29,7 +29,7 @@ export const metadata = {
 export default async function getAccess({ code }: InferSchema<typeof schema>) {
   const pairingInfo = await getPairingInfo(code);
 
-  if (isUserErrorResponse(pairingInfo)) return `Error: ${pairingInfo.error.message}`;
+  if (isUserErrorResponse(pairingInfo)) return 'Error: Some other error'; //return `Error: ${pairingInfo.error.message}`;
 
   const secret = env.IAM_MCP_ACCESS_ENCRYPTION_SECRET;
 
@@ -38,7 +38,7 @@ export default async function getAccess({ code }: InferSchema<typeof schema>) {
       'The mcp pairing endpoint was accessed but there is no encryption secret. Please set IAM_GUEST_CONVERSION_REFERENCE_SECRET in the environment if you want to use MCP.',
     );
 
-    return 'Error: Something went wrong.';
+    return 'Error: MCP not enabled';
   }
 
   const payload = {

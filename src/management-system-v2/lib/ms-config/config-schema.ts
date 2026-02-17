@@ -91,7 +91,7 @@ export const msConfigSchema = {
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
     SHARING_ENCRYPTION_SECRET: z.string().default(''),
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
-    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string().default(''),
+    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string().optional().default(''),
 
     PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV: z
       .enum(['cloud', 'local'])
@@ -193,7 +193,7 @@ export const msConfigSchema = {
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
-    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string(),
+    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string().optional(),
     SCHEDULER_TOKEN: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     DATABASE_URL: z.string({
       required_error: 'DATABASE_URL not in environment variables, try running `yarn dev-ms-db`',

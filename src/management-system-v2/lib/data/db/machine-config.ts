@@ -686,7 +686,11 @@ export async function addParameter(
       ['identity-and-access-management', 'common-user-data'].toString()
     ) {
       // a new IAM common-user-data parameter is added
-      await addCommonUserDataPropagation(parameter, parameterPath.slice(2, -1), fullConfig);
+      await addCommonUserDataPropagation(
+        { ...parameter, origin: 'admin' },
+        parameterPath.slice(2, -1),
+        fullConfig,
+      );
     } else if (
       parameterPath.slice(0, -1).toString() == ['identity-and-access-management', 'user'].toString()
     ) {
@@ -1893,6 +1897,7 @@ export async function updateParameter(
     }
   }
 
+  const fullParentConfig = await getDeepConfigurationById(parentConfigId);
   // make sure to set backlinks
   if (changed.transformation) {
     await updateBacklinks(
@@ -1915,11 +1920,9 @@ export async function updateParameter(
           .includes(id),
     );
 
-    const parentConfig = await getDeepConfigurationById(parentConfigId);
-
     let removedLinkedInputParametersArray: LinkedParameter[] = buildLinkedInputParametersFromIds(
       removedIds,
-      parentConfig,
+      fullParentConfig,
     );
 
     await updateBacklinks(removedLinkedInputParametersArray, parameter, 'remove', parentConfigId);
@@ -1940,7 +1943,40 @@ export async function updateParameter(
     await updateParentConfig(parentConfigId, { hasChanges: true });
   }
 
+  const parameterPath = findPathToParameter(parameter.id, fullParentConfig, [], 'config');
+  if (
+    parentConfig.configType == 'organization' &&
+    parameterPath.slice(0, 2).toString() ==
+      ['identity-and-access-management', 'common-user-data'].toString()
+  ) {
+    await updateCommonUserDataPropagation(changes, parameterPath.slice(2), fullParentConfig);
+  }
+
   return { changedParameters };
+}
+
+async function updateCommonUserDataPropagation(
+  changes: Partial<StoredParameter>,
+  internalPath: string[],
+  orgConfig: Config,
+) {
+  const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
+  if (users) {
+    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+      const previousParameter = extractParameterFromParameter(userParameter, [
+        'data',
+        ...internalPath,
+      ]);
+      if (previousParameter) {
+        await updateParameter(previousParameter.id, changes, orgConfig.id);
+      } else {
+        // TODO error: user parameter could not be found. Error or create param?
+        // await addParameter(previousParameter.id, 'parameter', parameterCopy, orgConfig.id);
+      }
+    });
+  } else {
+    // TODO error for missing users parameter
+  }
 }
 
 /**
@@ -3006,6 +3042,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: 'system',
         hasChanges: false,
       };
       const childParameters: Parameter[] = [];
@@ -3034,6 +3071,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: 'system',
         hasChanges: false,
       };
       return newParameter;
@@ -3069,6 +3107,7 @@ export async function submodelElementToParameter(
           structureVisible,
           subParameters: [],
           changeableByUser,
+          origin: 'system',
           hasChanges: false,
         };
         return newParameter;
@@ -3088,6 +3127,7 @@ export async function submodelElementToParameter(
           usedAsInputParameterIn: [],
           subParameters: [],
           changeableByUser,
+          origin: 'system',
           hasChanges: false,
         };
         return newParameter;
@@ -3761,6 +3801,7 @@ export async function versioningCreateNewVersionForTargetOrReferenceSet(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: 'system',
       hasChanges: false,
     };
 
@@ -3883,6 +3924,7 @@ export async function versioningCreateNewVersion(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: 'system',
       hasChanges: false,
     } as Parameter;
 

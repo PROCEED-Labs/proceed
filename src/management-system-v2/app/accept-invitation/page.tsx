@@ -39,5 +39,5 @@ export default async function IvitationPage(props: { searchParams: Promise<{ tok
   if (result?.error === 'InvalidOrganization')
     return <Error title="This token is no longer valid" />;
 
-  return redirect(`/${invite.spaceId}/processes`);
+  return redirect(`/${invite.spaceId}/start`);
 }

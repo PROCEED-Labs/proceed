@@ -1,13 +1,12 @@
 import { z } from 'zod';
 import { ToolExtraArguments, type InferSchema } from 'xmcp';
-import prisma from '@/lib/data/db';
-import Ability from '@/lib/ability/abilityHelper';
 import { getProcessBpmn } from '@/lib/data/db/process';
+import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
 
 // Define the schema for tool parameters
-export const schema = {
+export const schema = toAuthorizationSchema({
   processId: z.string().describe('The ID of the process'),
-};
+});
 
 // Define tool metadata
 export const metadata = {
@@ -22,15 +21,13 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcessInfo(
-  { processId }: InferSchema<typeof schema>,
-  opts: ToolExtraArguments,
-) {
-  const { authInfo } = opts;
-  if (!authInfo) return 'Error: Missing authentication';
-
-  if (!authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
-
+export default async function getProcessInfo({ processId, token }: InferSchema<typeof schema>) {
+  try {
+    await verifyToken(token);
+  } catch (err) {
+    if (err instanceof Error) return err.message;
+    else return 'Error: Something went wrong';
+  }
   // TODO: maybe check if the user can access the specific process
 
   try {

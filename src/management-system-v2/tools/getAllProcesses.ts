@@ -1,10 +1,9 @@
-import { z } from 'zod';
-import { ToolExtraArguments, type InferSchema } from 'xmcp';
+import { type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
-import Ability from '@/lib/ability/abilityHelper';
+import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
 
 // Define the schema for tool parameters
-export const schema = {};
+export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
@@ -19,34 +18,43 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcesses(
-  {}: InferSchema<typeof schema>,
-  opts: ToolExtraArguments,
-) {
-  const { authInfo } = opts;
-  if (!authInfo || !authInfo.extra) return 'Error: Missing authentication';
+export default async function getProcesses({ token }: InferSchema<typeof schema>) {
+  try {
+    const { environmentId, ability } = await verifyToken(token);
 
-  if (!authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
+    console.log(
+      '\n\n\n========================= Start getProcesses =============================\n\n\n',
+    );
 
-  const { spaceId, ability } = authInfo.extra as {
-    spaceId: string;
-    userId: string;
-    ability: Ability;
-  };
+    let result = await prisma.process.findMany({
+      where: {
+        environmentId,
+      },
+      select: { id: true, name: true, description: true, lastEditedOn: true },
+      take: 100,
+    });
 
-  let result = await prisma.process.findMany({
-    where: {
-      environmentId: spaceId,
-    },
-    select: { id: true, name: true, description: true, lastEditedOn: true },
-    take: 100,
-  });
+    console.log(result);
 
-  result = ability ? ability.filter('view', 'Process', result) : result;
+    result = ability ? ability.filter('view', 'Process', result) : result;
 
-  if (!result) return `Error: No processes found.`;
+    console.log(result);
 
-  return {
-    content: [{ type: 'text', text: JSON.stringify(result) }],
-  };
+    if (!result) return `Error: No processes found.`;
+
+    return {
+      content: [{ type: 'text', text: JSON.stringify(result) }],
+    };
+
+    console.log(
+      '\n\n\n========================= End getProcesses =============================\n\n\n',
+    );
+  } catch (err) {
+    console.log(
+      '\n\n\n========================= Failed getProcesses =============================\n\n\n',
+    );
+
+    if (err instanceof Error) return err.message;
+    else return 'Error: Something went wrong';
+  }
 }

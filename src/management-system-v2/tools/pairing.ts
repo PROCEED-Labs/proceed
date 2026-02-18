@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { type InferSchema, type ToolExtraArguments } from 'xmcp';
+import { type InferSchema } from 'xmcp';
 import { getPairingInfo } from '@/lib/data/mcp-authorization';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -25,16 +25,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getAccess(
-  { code }: InferSchema<typeof schema>,
-  opts: ToolExtraArguments,
-) {
-  const { authInfo } = opts;
-  if (!authInfo) return 'Error: Missing authentication';
-
-  if (!authInfo.scopes.includes('read:authentication')) return 'Error: Cannot authenticate';
-  console.log(authInfo);
-
+export default async function getAccess({ code }: InferSchema<typeof schema>) {
   const pairingInfo = await getPairingInfo(code);
 
   if (isUserErrorResponse(pairingInfo)) return 'Error: Some other error'; //return `Error: ${pairingInfo.error.message}`;
@@ -55,7 +46,7 @@ export default async function getAccess(
     scope: [],
   };
 
-  const ttl = 15 * 60;
+  const ttl = 24 * 60 * 60;
 
   const token = jwt.sign(payload, secret, {
     issuer: 'PROCEED MS',

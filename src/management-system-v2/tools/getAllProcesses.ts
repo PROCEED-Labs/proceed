@@ -25,7 +25,7 @@ export default async function getProcesses(
   const { authInfo } = opts;
   if (!authInfo) return 'Error: Missing authentication';
 
-  if (authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
+  if (!authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
 
   console.log(authInfo);
 

@@ -20,6 +20,8 @@ import {
   SolutionOutlined,
   HomeOutlined,
   AppstoreOutlined,
+  ProductOutlined,
+  FormOutlined,
   ToolOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
@@ -143,47 +145,23 @@ const DashboardLayout = async (
     });
   }
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
-    const documentationSettings = await getSpaceSettingsValues(
-      activeEnvironment.spaceId,
-      'process-documentation',
-    );
-
-    if (documentationSettings.active !== false) {
-      const processRegex = '/processes($|/)';
-      let children: ExtendedMenuItems = [
-        documentationSettings.list?.active !== false && {
-          key: 'processes-list',
-          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
-          icon: <CopyOutlined />,
-          selectedRegex: '/processes/list($|/)',
-        },
-        documentationSettings.editor?.active !== false && {
-          key: 'processes-editor',
-          label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
-          icon: <EditOutlined />,
-          selectedRegex: '/processes/editor($|/)',
-        },
-      ].filter(truthyFilter);
-
-      if (children.length)
-        layoutMenuItems.push({
-          key: 'processes-group',
-          label: 'Processes',
-          icon: <PartitionOutlined />,
-          selectedRegex: processRegex,
-          openRegex: processRegex,
-          children,
-        });
-    }
-  }
+  layoutMenuItems.push({
+    key: 'start',
+    label: <Link href={spaceURL(activeEnvironment, `/start`)}>Start</Link>,
+    icon: <ProductOutlined />,
+    selectedRegex: '/start($|/)',
+  });
 
   const automationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation',
   );
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+  if (
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active !== false
+  ) {
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
@@ -194,8 +172,8 @@ const DashboardLayout = async (
       childRegex = '/tasks($|/)';
       children.push({
         key: 'task-editor',
-        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Editor</Link>,
-        icon: <EditOutlined />,
+        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Task Editor</Link>,
+        icon: <FormOutlined />,
         selectedRegex: childRegex,
       });
     }
@@ -228,6 +206,43 @@ const DashboardLayout = async (
       openRegex: childRegex,
       children: children.length ? children : undefined,
     });
+  }
+
+  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
+    const documentationSettings = await getSpaceSettingsValues(
+      activeEnvironment.spaceId,
+      'process-documentation',
+    );
+
+    if (documentationSettings.active !== false) {
+      const processRegex = '/processes($|/)';
+      let children: ExtendedMenuItems = [
+        documentationSettings.list?.active !== false && {
+          key: 'processes-list',
+          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>Process List</Link>,
+          icon: <CopyOutlined />,
+          selectedRegex: '/processes/list($|/)',
+        },
+        documentationSettings.editor?.active !== false && {
+          key: 'processes-editor',
+          label: (
+            <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Process Editor</Link>
+          ),
+          icon: <EditOutlined />,
+          selectedRegex: '/processes/editor($|/)',
+        },
+      ].filter(truthyFilter);
+
+      if (children.length)
+        layoutMenuItems.push({
+          key: 'processes-group',
+          label: 'My Processes',
+          icon: <PartitionOutlined />,
+          selectedRegex: processRegex,
+          openRegex: processRegex,
+          children,
+        });
+    }
   }
 
   if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {

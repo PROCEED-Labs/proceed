@@ -74,7 +74,7 @@ test('process modeler', async ({ processModelerPage, processListPage }) => {
   expect(expectedURLWithVersion.test(page.url())).toBeTruthy();
 
   // Open/close process select menu and process creation dialog
-  const processSelectMenu = page.getByText('Process List');
+  const processSelectMenu = page.locator('header').getByText('Process List');
 
   await processSelectMenu.click();
   await expect(page.getByRole('option', { name: 'Process Name' })).toBeVisible();
@@ -344,6 +344,6 @@ test('share-modal', async ({ processListPage, ms2Page }) => {
 
   //await newPage.getByRole('menuitem', { name: 'Processes' }).click();
   await newPage.getByRole('link', { name: 'Editor' }).click();
-  await newPage.waitForURL(/processes/);
+  await newPage.waitForURL(/processes\/editor/);
   await expect(newPage.locator(`tr[data-row-key="${newProcessId}"]`)).toBeVisible();
 });

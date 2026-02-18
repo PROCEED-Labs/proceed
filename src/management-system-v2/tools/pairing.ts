@@ -52,7 +52,7 @@ export default async function getAccess(
   const payload = {
     // TODO: check what the user can do and limit the scope
     environmentId: pairingInfo.environmentId,
-    scope: ['processes:read'],
+    scope: [],
   };
 
   const ttl = 15 * 60;

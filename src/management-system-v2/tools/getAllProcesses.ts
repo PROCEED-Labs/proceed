@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ToolExtraArguments, type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
+import Ability from '@/lib/ability/abilityHelper';
 
 // Define the schema for tool parameters
 export const schema = {};
@@ -23,16 +24,25 @@ export default async function getProcesses(
   opts: ToolExtraArguments,
 ) {
   const { authInfo } = opts;
-  if (!authInfo) return 'Error: Missing authentication';
+  if (!authInfo || !authInfo.extra) return 'Error: Missing authentication';
 
   if (!authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
 
-  console.log(authInfo);
+  const { spaceId, ability } = authInfo.extra as {
+    spaceId: string;
+    userId: string;
+    ability: Ability;
+  };
 
-  const result = await prisma.process.findMany({
+  let result = await prisma.process.findMany({
+    where: {
+      environmentId: spaceId,
+    },
     select: { id: true, name: true, description: true, lastEditedOn: true },
     take: 100,
   });
+
+  result = ability ? ability.filter('view', 'Process', result) : result;
 
   if (!result) return `Error: No processes found.`;
 

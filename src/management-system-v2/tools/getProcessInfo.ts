@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import { ToolExtraArguments, type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
+import Ability from '@/lib/ability/abilityHelper';
+import { getProcessBpmn } from '@/lib/data/db/process';
 
 // Define the schema for tool parameters
 export const schema = {
@@ -27,12 +29,14 @@ export default async function getProcessInfo(
   const { authInfo } = opts;
   if (!authInfo) return 'Error: Missing authentication';
 
-  if (authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
+  if (!authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
 
-  const result = await prisma.process.findUnique({
-    where: { id: processId },
-    select: { bpmn: true },
-  });
+  // TODO: maybe check if the user can access the specific process
 
-  return result?.bpmn ?? `Error: Process with ID ${processId} not found.`;
+  try {
+    const bpmn = await getProcessBpmn(processId);
+    return bpmn;
+  } catch (err) {
+    return `Error: Process with ID ${processId} not found.`;
+  }
 }

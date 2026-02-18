@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import { type InferSchema } from 'xmcp';
-import prisma from '@/lib/data/db';
+import { type InferSchema, type ToolExtraArguments } from 'xmcp';
 import { getPairingInfo } from '@/lib/data/mcp-authorization';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -20,13 +19,22 @@ export const metadata = {
   annotations: {
     title: 'Get Access',
     readOnlyHint: false,
-    destructiveHint: true,
+    destructiveHint: false,
     idempotentHint: false,
   },
 };
 
 // Tool implementation
-export default async function getAccess({ code }: InferSchema<typeof schema>) {
+export default async function getAccess(
+  { code }: InferSchema<typeof schema>,
+  opts: ToolExtraArguments,
+) {
+  const { authInfo } = opts;
+  if (!authInfo) return 'Error: Missing authentication';
+
+  if (authInfo.scopes.includes('read:authentication')) return 'Error: Cannot authenticate';
+  console.log(authInfo);
+
   const pairingInfo = await getPairingInfo(code);
 
   if (isUserErrorResponse(pairingInfo)) return 'Error: Some other error'; //return `Error: ${pairingInfo.error.message}`;

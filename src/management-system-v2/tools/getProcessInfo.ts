@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { type InferSchema } from 'xmcp';
+import { ToolExtraArguments, type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
 
 // Define the schema for tool parameters
@@ -20,7 +20,15 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcessInfo({ processId }: InferSchema<typeof schema>) {
+export default async function getProcessInfo(
+  { processId }: InferSchema<typeof schema>,
+  opts: ToolExtraArguments,
+) {
+  const { authInfo } = opts;
+  if (!authInfo) return 'Error: Missing authentication';
+
+  if (authInfo.scopes.includes('read:processes')) return 'Error: Missing authorization';
+
   const result = await prisma.process.findUnique({
     where: { id: processId },
     select: { bpmn: true },

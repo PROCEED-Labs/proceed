@@ -32,7 +32,7 @@ export default async function getAccess(
   const { authInfo } = opts;
   if (!authInfo) return 'Error: Missing authentication';
 
-  if (authInfo.scopes.includes('read:authentication')) return 'Error: Cannot authenticate';
+  if (!authInfo.scopes.includes('read:authentication')) return 'Error: Cannot authenticate';
   console.log(authInfo);
 
   const pairingInfo = await getPairingInfo(code);

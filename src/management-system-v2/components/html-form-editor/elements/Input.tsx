@@ -12,7 +12,7 @@ import { DeleteButton } from '../DeleteButton';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email' | 'url' | 'file';
+  type?: 'text' | 'number' | 'email' | 'url' | 'file' | 'date';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -237,7 +237,7 @@ export const InputSettings = () => {
 
       <VariableSetting
         variable={variable}
-        allowedTypes={['string', 'number', 'file']}
+        allowedTypes={['string', 'number', 'file', 'date']}
         onChange={(newVariable, newVariableType, newVariableTextFormat) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
@@ -252,6 +252,9 @@ export const InputSettings = () => {
                   break;
                 case 'file':
                   props.type = 'file';
+                  break;
+                case 'date':
+                  props.type = 'date';
                   break;
                 default:
                   props.type = 'text';

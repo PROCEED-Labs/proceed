@@ -33,10 +33,6 @@ export default async function getAccess({ code }: InferSchema<typeof schema>) {
   const secret = env.IAM_MCP_ACCESS_ENCRYPTION_SECRET;
 
   if (!secret) {
-    console.error(
-      'The mcp pairing endpoint was accessed but there is no encryption secret. Please set IAM_GUEST_CONVERSION_REFERENCE_SECRET in the environment if you want to use MCP.',
-    );
-
     return 'Error: MCP not enabled';
   }
 

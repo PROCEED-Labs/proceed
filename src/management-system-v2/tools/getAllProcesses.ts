@@ -22,10 +22,6 @@ export default async function getProcesses({ token }: InferSchema<typeof schema>
   try {
     const { environmentId, ability } = await verifyToken(token);
 
-    console.log(
-      '\n\n\n========================= Start getProcesses =============================\n\n\n',
-    );
-
     let result = await prisma.process.findMany({
       where: {
         environmentId,
@@ -34,26 +30,14 @@ export default async function getProcesses({ token }: InferSchema<typeof schema>
       take: 100,
     });
 
-    console.log(result);
-
     result = ability ? ability.filter('view', 'Process', result) : result;
-
-    console.log(result);
 
     if (!result) return `Error: No processes found.`;
 
     return {
       content: [{ type: 'text', text: JSON.stringify(result) }],
     };
-
-    console.log(
-      '\n\n\n========================= End getProcesses =============================\n\n\n',
-    );
   } catch (err) {
-    console.log(
-      '\n\n\n========================= Failed getProcesses =============================\n\n\n',
-    );
-
     if (err instanceof Error) return err.message;
     else return 'Error: Something went wrong';
   }

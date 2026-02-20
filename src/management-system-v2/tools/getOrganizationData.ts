@@ -40,7 +40,7 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
             entry.subParameters[0].subParameters.forEach((dataEntry) => {
               result.data[dataEntry.name] = {
                 description: dataEntry.description?.[0].text,
-                value: dataEntry.value,
+                value: (dataEntry as any).value,
                 unit: dataEntry.unitRef || undefined,
               };
             });
@@ -55,7 +55,7 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
                     iamEntry.subParameters.forEach((memberDataEntry) => {
                       result.commonMemberData[memberDataEntry.name] = {
                         description: memberDataEntry.description?.[0].text,
-                        value: memberDataEntry.value,
+                        value: (memberDataEntry as any).value,
                         unit: memberDataEntry.unitRef || undefined,
                       };
                     });

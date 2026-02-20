@@ -258,6 +258,7 @@ jobs:
       - name: Check branch-specific migration changes
         id: migration-diff-branch
         run: |
+          echo $(git log -1 | head)
           echo $(git rev-parse HEAD)
           echo $(git rev-parse HEAD~1)
 

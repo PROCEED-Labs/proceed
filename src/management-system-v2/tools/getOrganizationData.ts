@@ -25,7 +25,6 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
     const { environmentId, ability } = await verifyToken(token);
 
     const conf = await getDeepConfigurationById(environmentId, ability);
-    console.log(JSON.stringify(conf, null, 2));
 
     const result: Record<string, any> = {
       name: conf.shortName.value,

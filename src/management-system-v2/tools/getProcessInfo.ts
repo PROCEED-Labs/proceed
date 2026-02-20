@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ToolExtraArguments, type InferSchema } from 'xmcp';
+import { type InferSchema } from 'xmcp';
 import { getProcessBpmn } from '@/lib/data/db/process';
 import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
 

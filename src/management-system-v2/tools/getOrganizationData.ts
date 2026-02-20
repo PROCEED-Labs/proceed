@@ -8,11 +8,11 @@ export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-organization-info',
+  name: 'get-organization-data',
   description:
     'Gets data relevant to the organization referenced in the access token. This includes organization name, members and general organization and member data.',
   annotations: {
-    title: 'Get Organization Info',
+    title: 'Get Organization Data',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,

@@ -3,16 +3,17 @@ import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
 
 import { getUserParameter } from '@/lib/data/db/machine-config';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-user-info',
+  name: 'get-user-data',
   description: 'Gets data relevant to the user making the request.',
   annotations: {
-    title: 'Get User Info',
+    title: 'Get User Data',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -27,8 +28,19 @@ export default async function getUserData({ token }: InferSchema<typeof schema>)
     const userData = await getUserParameter(userId, environmentId);
     if (isUserErrorResponse(userData)) return userData.error.message;
 
+    const meta = await getUserById(userId);
+
+    if (meta.isGuest) return 'Error: Not allowed';
+
     const result: Record<string, any> = {
       name: userData.displayName[0].text,
+      meta: {
+        firstName: meta.firstName,
+        lastName: meta.lastName,
+        username: meta.username,
+        email: meta.email || undefined,
+        phoneNumber: meta.phoneNumber || undefined,
+      },
     };
 
     userData.subParameters[0].subParameters.forEach((par) => {

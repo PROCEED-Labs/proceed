@@ -37,9 +37,9 @@ export default async function getAccess({ code }: InferSchema<typeof schema>) {
   }
 
   const payload = {
-    // TODO: check what the user can do and limit the scope
     environmentId: pairingInfo.environmentId,
-    scope: [],
+    // this may be usable to stop chatgpt from asking for approval every time a tool is used
+    // scope: [],
   };
 
   const ttl = 24 * 60 * 60;

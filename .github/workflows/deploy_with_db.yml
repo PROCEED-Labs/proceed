@@ -258,6 +258,8 @@ jobs:
       - name: Check branch-specific migration changes
         id: migration-diff-branch
         run: |
+          echo $(git diff --name-only HEAD~1 HEAD)
+
           if git diff --name-only HEAD~1 HEAD | grep -q 'src/management-system-v2/prisma/migrations/.*\.sql$'; then
             echo "Branch-specific migration changes detected"
             echo "diff=true" >> "$GITHUB_OUTPUT"

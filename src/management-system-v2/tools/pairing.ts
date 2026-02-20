@@ -15,7 +15,7 @@ export const schema = {
 export const metadata = {
   name: 'get-access',
   description:
-    'Get a JWT that grants access to the other API tools. To check that the user can generate the JWT they have to provide a code generated through the MS UI.',
+    'Grants access to the other tools when given a valid code the user has to generate in the PROCEED UI. To generate the required code the user has to login to the UI, select "My Spaces" under "Personal" on the left hand side and click "Connect Chatbot" for the specific organization the mcp actions shall have access to on the page that has opened. Then the user has to paste the code into the chat.',
   annotations: {
     title: 'Get Access',
     readOnlyHint: false,

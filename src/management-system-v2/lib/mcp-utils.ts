@@ -20,10 +20,6 @@ export function toAuthorizationSchema<T extends Record<string, any>>(
 export async function verifyToken(token: string) {
   if (!token) throw new Error('Error: Missing access token');
 
-  console.log(
-    '\n\n\n========================= Start Token Verification =============================\n\n\n',
-  );
-
   const secret = env.IAM_MCP_ACCESS_ENCRYPTION_SECRET;
 
   if (!secret) {
@@ -35,28 +31,18 @@ export async function verifyToken(token: string) {
   }
 
   try {
-    console.log(token);
     const content = jwt.verify(token, secret);
-    console.log(content);
     if (typeof content === 'string') throw new Error('Error: Invalid access token');
     const { sub: userId, environmentId } = content;
-    console.log(userId, environmentId);
 
     if (!userId || !environmentId) throw new Error('Error: Invalid access token');
 
     const ability = await getAbilityForUser(userId, environmentId);
 
-    console.log(
-      '\n\n\n========================= End Token Verification =============================\n\n\n',
-    );
-
     return { userId, environmentId, ability };
   } catch (err) {
     // validation failed
     console.error('MCP token validation failed:', err);
-    console.log(
-      '\n\n\n========================= Failed Token Verification =============================\n\n\n',
-    );
     throw new Error('Error: Invalid access token');
   }
 }

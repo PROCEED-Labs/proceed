@@ -138,6 +138,74 @@ export async function copyParameter(
   return newId;
 }
 
+export async function linkedCopyParameter(
+  parameterId: string,
+  parentId: string,
+  parameterPath: string[],
+  parentPath: string[],
+  parentType: 'parameter' | 'config',
+) {
+  const storedParameterResult = await db.configParameter.findUnique({ where: { id: parameterId } });
+  const storedParameter = storedParameterResult?.data as StoredParameter;
+
+  if (!storedParameter) throw new Error(`Parameter with id ${parameterId} does not exist!`);
+
+  // this creates a deep clone of the element to prevent changes in the content of one to affect the other
+  console.log(storedParameter);
+  const copy = StoredParameterZod.parse(storedParameter);
+
+  const newId = v4();
+  copy.id = newId;
+  copy.parentId = parentId;
+  copy.parentType = parentType;
+  copy.transformation = {
+    transformationType: 'linked',
+    linkedInputParameters: {
+      $IN1: {
+        id: parameterId,
+        path: [...parameterPath, storedParameter.name],
+      },
+    },
+    action: '',
+  };
+  copy.usedAsInputParameterIn = [];
+
+  // TODO update parent with
+
+  // recursively copy all referenced parameters
+  copy.subParameters = await asyncMap(copy.subParameters, (id) =>
+    linkedCopyParameter(
+      id,
+      newId,
+      [...parameterPath, storedParameter.name],
+      [...parentPath, storedParameter.name],
+      'parameter',
+    ),
+  );
+
+  // Adding the linked parameter
+  await db.configParameter.create({ data: { id: copy.id, data: copy } });
+  // Adding the reference to the link in the parent
+  await db.configParameter.update({
+    where: { id: parameterId },
+    data: {
+      data: {
+        ...storedParameter,
+        usedAsInputParameterIn: [
+          // TODO remove filter later, currently removeParameter does not remove references in
+          // parameters where the linked values are retrieved from
+          ...storedParameter.usedAsInputParameterIn.filter(
+            (input) => input.path.toString() != [...parentPath, storedParameter.name].toString(),
+          ),
+          { id: copy.id, path: [...parentPath, storedParameter.name] },
+        ],
+      },
+    },
+  });
+
+  return newId;
+}
+
 /**
  * Creates a copy of a machine- or target-config and all its nested parameters to be pasted as child of a given parent. Stores the copied config.
  * @param configId ID of the config which is to be copied.
@@ -686,11 +754,21 @@ export async function addParameter(
       ['identity-and-access-management', 'common-user-data'].toString()
     ) {
       // a new IAM common-user-data parameter is added
-      await addCommonUserDataPropagation(
+      const linkedParams = await addCommonUserDataPropagation(
         { ...parameter, origin: 'admin' },
         parameterPath.slice(2, -1),
         fullConfig,
       );
+      // adding the linked parameter IDs to the original
+      // TODO maybe do this some what differently
+      const storedParameterResult = await db.configParameter.findUnique({
+        where: { id: parameter.id },
+      });
+      const storedParameter = storedParameterResult?.data as StoredParameter;
+      await db.configParameter.update({
+        where: { id: parameter.id },
+        data: { data: { ...storedParameter, usedAsInputParameterIn: linkedParams } },
+      });
     } else if (
       parameterPath.slice(0, -1).toString() == ['identity-and-access-management', 'user'].toString()
     ) {
@@ -705,20 +783,48 @@ async function addCommonUserDataPropagation(
   internalPath: string[],
   orgConfig: Config,
 ) {
+  const parameterCopyIds: LinkedParameter[] = [];
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
-    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+    await asyncForEach(users.subParameters, async (userParameter: Parameter) => {
       const parentParameter =
         internalPath.length === 0
           ? extractParameterFromParameter(userParameter, ['data'])
           : extractParameterFromParameter(userParameter, ['data', ...internalPath]);
       if (parentParameter) {
         // copy parameter
-        const parameterCopy = JSON.parse(JSON.stringify(parameter));
+        const parameterCopy: Parameter = JSON.parse(JSON.stringify(parameter));
         // create new ID for copied parameter
         parameterCopy.id = v4();
-        parameterCopy.changeableByUser = false;
+        // parameterCopy.changeableByUser = false;
+        // create linked transformation from the original parameter
+        parameterCopy.transformation = {
+          transformationType: 'linked',
+          linkedInputParameters: {
+            $IN1: {
+              id: parameter.id,
+              path: [
+                'identity-and-access-management',
+                'common-user-data',
+                ...internalPath,
+                parameter.name,
+              ],
+            },
+          },
+          action: '',
+        };
         await addParameter(parentParameter.id, 'parameter', parameterCopy, orgConfig.id);
+        parameterCopyIds.push({
+          id: parameterCopy.id,
+          path: [
+            'identity-and-access-management',
+            'user',
+            userParameter.name,
+            'data',
+            ...internalPath,
+            parameter.name,
+          ],
+        });
       } else {
         // TODO error: internal parent could not be determined
       }
@@ -726,8 +832,10 @@ async function addCommonUserDataPropagation(
   } else {
     // TODO error for missing users parameter
   }
+  return parameterCopyIds;
 }
 
+// TODO add transformation
 async function addUserParameterDataImport(parameter: Parameter, orgConfig: Config) {
   const dataParent = extractParameterFromParameter(parameter, ['data']);
   const commonUserData = extractParameter(orgConfig, [
@@ -738,13 +846,22 @@ async function addUserParameterDataImport(parameter: Parameter, orgConfig: Confi
     const subparameterKeys = await asyncMap(
       commonUserData.subParameters,
       async (commonUserParameter: Parameter) => {
-        return await copyParameter(commonUserParameter.id, dataParent.id, 'parameter');
+        // TODO handle IDs?
+        return await linkedCopyParameter(
+          commonUserParameter.id,
+          dataParent.id,
+          ['identity-and-access-management', 'common-user-data'],
+          ['identity-and-access-management', 'user', parameter.name, 'data'],
+          'parameter',
+        );
       },
     );
     await updateParameter(dataParent.id, { subParameters: subparameterKeys }, orgConfig.id);
-    asyncForEach(subparameterKeys, async (paramId) => {
-      await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
-    });
+    // TODO not necessary anymore, I think
+    // marking copied values as unchangeable
+    // asyncForEach(subparameterKeys, async (paramId) => {
+    //   await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
+    // });
   } else {
     // TODO error for missing users parameter
   }
@@ -1943,15 +2060,6 @@ export async function updateParameter(
     await updateParentConfig(parentConfigId, { hasChanges: true });
   }
 
-  const parameterPath = findPathToParameter(parameter.id, fullParentConfig, [], 'config');
-  if (
-    parentConfig.configType == 'organization' &&
-    parameterPath.slice(0, 2).toString() ==
-      ['identity-and-access-management', 'common-user-data'].toString()
-  ) {
-    await updateCommonUserDataPropagation(changes, parameterPath.slice(2), fullParentConfig);
-  }
-
   return { changedParameters };
 }
 
@@ -2864,6 +2972,7 @@ async function findParent(parameter: StoredParameter): Promise<{
 
 async function findParentConfig(parameter: StoredParameter): Promise<StoredConfig> {
   let parent;
+  console.log('SEARCHING FOR:', parameter);
 
   if (parameter.parentType === 'parameter') {
     const parentParameterResult = await db.configParameter.findUnique({

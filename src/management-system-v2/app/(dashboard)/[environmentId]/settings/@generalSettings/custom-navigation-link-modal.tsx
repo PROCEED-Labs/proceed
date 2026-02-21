@@ -172,11 +172,12 @@ export default function CustomLinkModal({
             />
           </Form.Item>
 
-          <Form.Item name="hostname" label="Host" required rules={[{ required: true }]}>
-            <Input
-              addonBefore={
+          <Form.Item label="Host" required htmlFor="navigation-link-modal-hostname-input">
+            <Space.Compact style={{ width: '100%' }}>
+              <Space.Addon style={{ padding: 0, border: 0 }}>
                 <Form.Item name="protocol" noStyle>
                   <Select
+                    style={{ flex: 0, backgroundColor: 'inherit', width: 'fit-content' }}
                     options={
                       [
                         { value: 'http:', label: 'HTTP://' },
@@ -187,8 +188,11 @@ export default function CustomLinkModal({
                     }
                   />
                 </Form.Item>
-              }
-            />
+              </Space.Addon>
+              <Form.Item name="hostname" required rules={[{ required: true }]} noStyle>
+                <Input id="navigation-link-modal-hostname-input" />
+              </Form.Item>
+            </Space.Compact>
           </Form.Item>
 
           <Form.Item name="port" label="Port">

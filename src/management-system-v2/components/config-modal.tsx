@@ -113,7 +113,7 @@ const ConfigModal = <T extends { name: string; description: string }>({
       }}
       // IMPORTANT: This prevents a modal being stored for every row in the
       // table.
-      destroyOnClose
+      destroyOnHidden
       okButtonProps={{ loading: submitting }}
       okText={okText}
       wrapProps={{ onDoubleClick: (e: MouseEvent) => e.stopPropagation() }}

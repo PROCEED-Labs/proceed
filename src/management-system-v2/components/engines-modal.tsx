@@ -1,4 +1,4 @@
-import { Form, Input, Modal, ModalProps, Select } from 'antd';
+import { Form, Input, Modal, ModalProps, Select, Space } from 'antd';
 
 type Protocol = 'http:' | 'https:' | 'mqtt:' | 'mqtts:';
 
@@ -90,16 +90,15 @@ const EnginesModal = ({
         <Form.Item name="name" label="Name" rules={[{ required: false }]}>
           <Input />
         </Form.Item>
-        <Form.Item
-          name="hostname"
-          label="Host"
-          rules={[{ required: true, message: 'Please input the Address!' }]}
-        >
-          <Input
-            addonBefore={
+
+        <Form.Item label="Host" required htmlFor="engine-modal-hostname-input">
+          <Space.Compact style={{ width: '100%' }}>
+            <Space.Addon style={{ padding: 0, border: 0 }}>
               <Form.Item name="protocol" noStyle>
                 <Select
                   defaultValue={'http:' satisfies Protocol}
+                  style={{ flex: 0, backgroundColor: 'inherit', width: 'fit-content' }}
+                  popupMatchSelectWidth={false}
                   options={
                     [
                       { value: 'http:', label: 'HTTP' },
@@ -110,9 +109,17 @@ const EnginesModal = ({
                   }
                 />
               </Form.Item>
-            }
-          />
+            </Space.Addon>
+            <Form.Item
+              name="hostname"
+              rules={[{ required: true, message: 'Please input the Address!' }]}
+              noStyle
+            >
+              <Input id="engine-modal-hostname-input" />
+            </Form.Item>
+          </Space.Compact>
         </Form.Item>
+
         <Form.Item name="port" label="Port" rules={[{ required: true }]} required>
           <Input />
         </Form.Item>

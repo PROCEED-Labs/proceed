@@ -56,7 +56,7 @@ const Content: FC<ContentProps> = ({
         >
           {/* Add icon into header for xs screens*/}
           {breakpoint.xs ? (
-            <SpaceLink href={`/processes`} className={styles.LogoContainer}>
+            <SpaceLink href={`/start`} className={styles.LogoContainer}>
               <Image
                 src={space.customLogo ?? '/proceed-icon.png'}
                 alt="PROCEED Logo"

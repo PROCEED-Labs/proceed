@@ -13,6 +13,7 @@ import {
   setUserPassword as _setUserPassword,
   getUserById,
 } from '@/lib/data/db/iam/users';
+import { revalidatePath } from 'next/cache';
 import { getEnvironmentById } from './db/iam/environments';
 import { hashPassword } from '../password-hashes';
 import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
@@ -77,6 +78,10 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
     const newUserData = AuthenticatedUserDataSchema.parse(newUserDataInput);
 
     await _updateUser(userId, { ...newUserData });
+
+    if ('favourites' in newUserData) {
+      revalidatePath('/', 'layout');
+    }
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

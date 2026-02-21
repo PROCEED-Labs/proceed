@@ -137,7 +137,7 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({
   return (
     <>
       <Space
-        direction="vertical"
+        orientation="vertical"
         style={{ width: '100%' }}
         role="group"
         aria-labelledby="user-task-performer-selection"
@@ -216,7 +216,7 @@ export const ResponsibleParty: FC<ResponsibilityProps> = ({
   return (
     <>
       <Space
-        direction="vertical"
+        orientation="vertical"
         style={{ width: '100%' }}
         role="group"
         aria-labelledby="responsibility-selection"

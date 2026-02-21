@@ -159,7 +159,7 @@ const SavedEnginesList = ({
       <EngineStatusContext.Provider value={setEnginesStatus}>
         <ElementList
           tableProps={{
-            pagination: { pageSize: 10, position: ['bottomCenter'] },
+            pagination: { pageSize: 10, placement: ['bottomCenter'] },
             expandable: {
               rowExpandable: (record) => {
                 const status = enginesStatus[record.id];
@@ -170,7 +170,10 @@ const SavedEnginesList = ({
                 if (!status.online) return;
 
                 return status.engines.map((engine) => (
-                  <Link href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}>
+                  <Link
+                    key={engine.id}
+                    href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}
+                  >
                     {engine.id}
                   </Link>
                 ));

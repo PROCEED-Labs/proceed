@@ -136,7 +136,7 @@ const HeaderActions: FC = () => {
                             spaceId: space?.id ?? '',
                             isOrganization: space?.isOrganization ?? false,
                           },
-                          `/processes`,
+                          `/start`,
                         )}
                       >
                         {label}
@@ -153,7 +153,7 @@ const HeaderActions: FC = () => {
             onChange={(spaceId) => {
               const space = userSpaces.find((s) => s.id === spaceId)!;
               router.push(
-                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/processes'),
+                spaceURL({ spaceId: space.id, isOrganization: space.isOrganization }, '/start'),
               );
             }}
             defaultValue={activeSpace.spaceId}
@@ -195,7 +195,7 @@ const HeaderActions: FC = () => {
         onOk={() => signIn()}
       >
         <Alert
-          message="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
+          title="Beware: If you continue as a guest, the processes you create will not be accessible on other devices and all your data will be automatically deleted after a few days. To save your data you have to sign in"
           type="warning"
           style={{ marginBottom: '1rem' }}
         />

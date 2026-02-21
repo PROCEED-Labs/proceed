@@ -1,10 +1,5 @@
 import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
-import { getEnvironmentById } from '@/lib/data/db/iam/environments';
-import { addMember, isMember } from '@/lib/data/db/iam/memberships';
-import { addRoleMappings } from '@/lib/data/db/iam/role-mappings';
-import { getRoleById } from '@/lib/data/db/iam/roles';
-import { getUserByEmail } from '@/lib/data/db/iam/users';
 import { acceptInvitation, getInvitation as getInvitationFromToken } from '@/lib/invitation-tokens';
 import { Result, ResultProps } from 'antd';
 import { redirect } from 'next/navigation';
@@ -44,5 +39,5 @@ export default async function IvitationPage(props: { searchParams: Promise<{ tok
   if (result?.error === 'InvalidOrganization')
     return <Error title="This token is no longer valid" />;
 
-  return redirect(`/${invite.spaceId}/processes`);
+  return redirect(`/${invite.spaceId}/start`);
 }

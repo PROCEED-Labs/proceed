@@ -4690,18 +4690,12 @@ export async function getUserConfig(
   try {
     const userParam = await getUserParameter(userId, spaceId);
     if ('error' in userParam) throw userParam.error;
-    const userData = extractParameterFromParameter(userParam, ['data']);
-    if (userData) {
-      const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
-      userParam.changeableByUser = true;
-      dummyConfig.configType = 'dummy';
-      // dummyConfig.content = userData?.subParameters;
-      dummyConfig.content = [userData];
-      dummyConfig.id = userId;
-      return dummyConfig;
-    } else {
-      throw userError(`Userdata element 'data' for UserId ${userId} not found.`);
-    }
+    const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
+    userParam.changeableByUser = true;
+    dummyConfig.configType = 'dummy';
+    dummyConfig.content = [userParam];
+    dummyConfig.id = userId;
+    return dummyConfig;
   } catch (error) {
     return userError(
       error instanceof Error

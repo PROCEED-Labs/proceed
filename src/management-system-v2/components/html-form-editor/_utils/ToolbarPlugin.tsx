@@ -27,6 +27,7 @@ import {
 } from '@lexical/list';
 
 import {
+  $createTextNode,
   $getSelection,
   $isRangeSelection,
   CAN_REDO_COMMAND,
@@ -42,6 +43,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { VariableSetting } from '../elements/utils';
 
 import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+import GlobalVariablePicker from '../elements/GlobalVariablePicker';
 
 const LowPriority = 1;
 
@@ -58,6 +60,16 @@ export default function ToolbarPlugin() {
   const [linkType, setLinkType] = useState<'url' | 'variable'>('url');
   const [isOrderedList, setIsOrderedList] = useState(false);
   const [isUnorderedList, setIsUnorderedList] = useState(false);
+
+  const insertGlobalVariable = (path: string) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const textNode = $createTextNode(`{%${path}%}`);
+        selection.insertNodes([textNode]);
+      }
+    });
+  };
 
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -301,6 +313,13 @@ export default function ToolbarPlugin() {
           onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')}
         />
       </div>
+      <Divider orientation="vertical" />
+      <GlobalVariablePicker
+        style={{ minWidth: '180px' }}
+        onChange={(path) => {
+          if (path) insertGlobalVariable(path);
+        }}
+      />
       {isLink && (
         <div style={{ margin: '5px' }}>
           Link:

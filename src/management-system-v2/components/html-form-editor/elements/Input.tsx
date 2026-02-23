@@ -2,6 +2,7 @@ import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
+import { GlobalVariableSetting } from './utils';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
@@ -16,6 +17,7 @@ type InputProps = {
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
+  globalVariable?: string;
 };
 
 export const ExportInput: UserComponent<InputProps> = ({
@@ -24,20 +26,21 @@ export const ExportInput: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
+  globalVariable,
 }) => {
   const inputId = useId();
 
-  if (!variable) variable = `__anonymous_variable_${inputId}__`;
+  const effectiveName = globalVariable || variable || `__anonymous_variable_${inputId}__`;
 
-  const value = defaultValue || `{%${variable}%}`;
+  const value = defaultValue || `{%${effectiveName}%}`;
 
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       type={type}
       defaultValue={value}
-      name={variable}
+      name={effectiveName}
     />
   );
 
@@ -93,6 +96,7 @@ const Input: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
+  globalVariable,
 }) => {
   const {
     connectors: { connect },
@@ -120,14 +124,16 @@ const Input: UserComponent<InputProps> = ({
     }
   }, [inputId, editingDefault]);
 
+  const effectiveName = globalVariable || variable;
+
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       disabled={!editingEnabled}
       type={type}
       value={defaultValue}
-      name={variable}
+      name={effectiveName}
       onClick={() => {
         if (!editingEnabled) return;
         setEditingDefault(true);
@@ -208,10 +214,16 @@ export const InputSettings = () => {
     actions: { setProp },
     labelPosition,
     variable,
+    globalVariable,
   } = useNode((node) => ({
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
+    globalVariable: node.data.props.globalVariable,
   }));
+
+  const [variableSource, setVariableSource] = useState<'process' | 'global'>(
+    globalVariable ? 'global' : 'process',
+  );
 
   return (
     <>
@@ -235,31 +247,66 @@ export const InputSettings = () => {
         }
       />
 
-      <VariableSetting
-        variable={variable}
-        allowedTypes={['string', 'number', 'file']}
-        onChange={(newVariable, newVariableType, newVariableTextFormat) =>
-          setProp((props: InputProps) => {
-            props.variable = newVariable;
-            if (newVariableTextFormat) props.type = newVariableTextFormat;
-            else {
-              switch (newVariableType) {
-                case 'string':
-                  props.type = 'text';
-                  break;
-                case 'number':
-                  props.type = 'number';
-                  break;
-                case 'file':
-                  props.type = 'file';
-                  break;
-                default:
-                  props.type = 'text';
-              }
-            }
-          })
+      <Setting
+        label="Variable Source"
+        control={
+          <Select
+            style={{ display: 'flex' }}
+            options={[
+              { value: 'process', label: 'Process Variable' },
+              { value: 'global', label: 'Global Data Object' },
+            ]}
+            value={variableSource}
+            onChange={(val) => {
+              setVariableSource(val);
+              // clear the other one
+              setProp((props: InputProps) => {
+                if (val === 'global') props.variable = undefined;
+                else props.globalVariable = undefined;
+              });
+            }}
+          />
         }
       />
+
+      {variableSource === 'process' ? (
+        <VariableSetting
+          variable={variable}
+          allowedTypes={['string', 'number', 'file']}
+          onChange={(newVariable, newVariableType, newVariableTextFormat) =>
+            setProp((props: InputProps) => {
+              props.variable = newVariable;
+              props.globalVariable = undefined;
+              if (newVariableTextFormat) props.type = newVariableTextFormat;
+              else {
+                switch (newVariableType) {
+                  case 'string':
+                    props.type = 'text';
+                    break;
+                  case 'number':
+                    props.type = 'number';
+                    break;
+                  case 'file':
+                    props.type = 'file';
+                    break;
+                  default:
+                    props.type = 'text';
+                }
+              }
+            })
+          }
+        />
+      ) : (
+        <GlobalVariableSetting
+          value={globalVariable}
+          onChange={(path) =>
+            setProp((props: InputProps) => {
+              props.globalVariable = path;
+              props.variable = undefined;
+            })
+          }
+        />
+      )}
     </>
   );
 };
@@ -277,6 +324,7 @@ Input.craft = {
     defaultValue: '',
     labelPosition: 'top',
     variable: undefined,
+    globalVariable: undefined,
   },
 };
 

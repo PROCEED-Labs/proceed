@@ -53,7 +53,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
-  //https://github.com/bpmn-io/moddle-xml/blob/main/lib/write.js
 
   const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
 

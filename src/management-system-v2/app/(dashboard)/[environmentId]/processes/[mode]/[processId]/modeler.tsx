@@ -53,7 +53,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   const incrementChangeCounter = useModelerStateStore((state) => state.incrementChangeCounter);
   const setZoomLevel = useModelerStateStore((state) => state.setZoomLevel);
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
-
   const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
 
   useEffect(() => {

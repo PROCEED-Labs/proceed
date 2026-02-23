@@ -99,11 +99,11 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
     roles.forEach((role) => {
       if (role.name.startsWith('@')) return;
 
-      const r = { name: role.name, members: [] };
+      const r = { name: role.name, members: [] as any[] };
       result.roles.push(r);
 
       role.members.forEach((member) => {
-        const m = result.members.find((mem) => mem.id === member.id);
+        const m = result.members.find((mem: { id: string }) => mem.id === member.id);
 
         if (!m) return;
 

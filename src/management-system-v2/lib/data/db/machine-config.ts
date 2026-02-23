@@ -151,7 +151,6 @@ export async function linkedCopyParameter(
   if (!storedParameter) throw new Error(`Parameter with id ${parameterId} does not exist!`);
 
   // this creates a deep clone of the element to prevent changes in the content of one to affect the other
-  console.log(storedParameter);
   const copy = StoredParameterZod.parse(storedParameter);
 
   const newId = v4();
@@ -2972,7 +2971,6 @@ async function findParent(parameter: StoredParameter): Promise<{
 
 async function findParentConfig(parameter: StoredParameter): Promise<StoredConfig> {
   let parent;
-  console.log('SEARCHING FOR:', parameter);
 
   if (parameter.parentType === 'parameter') {
     const parentParameterResult = await db.configParameter.findUnique({

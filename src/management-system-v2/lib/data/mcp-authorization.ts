@@ -9,6 +9,8 @@ import {
 import { isUserErrorResponse, userError } from '../user-error';
 import { getTokenHash } from '../email-verification-tokens/utils';
 
+import crypto from 'crypto';
+
 const getUserData = async () => {
   const { user } = await getCurrentUser();
 
@@ -30,7 +32,11 @@ export const getPairingCode = async (environmentId: string) => {
     // revoke codes that might have been generated before
     await _revokePairingCodes(userId, environmentId);
 
-    const code = crypto.randomUUID();
+    // generate a code
+    // using the same method as https://github.com/nextauthjs/cli to generate the code string
+    const gen = crypto.getRandomValues(new Uint8Array(32));
+    // @ts-expect-error
+    const code = Buffer.from(gen, 'base64').toString('base64');
     const expires = new Date(Date.now() + 10 * 60 * 1000);
 
     const codeHash = await getTokenHash(code);

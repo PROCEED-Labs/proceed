@@ -193,7 +193,9 @@ export const msConfigSchema = {
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
-    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string().optional(),
+    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z
+      .string()
+      .default('d0nb2+Jm1Ur1TQCAFrcH9M1FfRu6bJmL6LkuLslQUBE='),
     SCHEDULER_TOKEN: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     DATABASE_URL: z.string({
       required_error: 'DATABASE_URL not in environment variables, try running `yarn dev-ms-db`',

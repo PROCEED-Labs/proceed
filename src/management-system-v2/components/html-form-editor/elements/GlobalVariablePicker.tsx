@@ -20,7 +20,7 @@ export let cachedValueMap: Record<string, string> = {};
 const GlobalVariablePicker: React.FC<Props> = ({ onChange, disabled, style }) => {
   const [options, setOptions] = useState<{ label: string; value: string; title: string }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectKey, setSelectKey] = useState(0); // ADD: key to force remount
+  const [selectKey, setSelectKey] = useState(0); // key to force remount
 
   useEffect(() => {
     setLoading(true);
@@ -43,7 +43,7 @@ const GlobalVariablePicker: React.FC<Props> = ({ onChange, disabled, style }) =>
 
   return (
     <Select
-      key={selectKey} // ADD: changing key forces full remount = guaranteed reset
+      key={selectKey} // changing key forces full remount = guaranteed reset
       style={{ display: 'flex', ...style }}
       value={undefined}
       disabled={disabled}
@@ -51,7 +51,7 @@ const GlobalVariablePicker: React.FC<Props> = ({ onChange, disabled, style }) =>
       notFoundContent={loading ? <Spin size="small" /> : 'No global variables found'}
       options={loading ? [] : options}
       onChange={(path) => {
-        if (!path) return; // ADD: guard against undefined
+        if (!path) return; // guard against undefined
         onChange(path);
         setSelectKey((k) => k + 1);
       }}
@@ -62,4 +62,3 @@ const GlobalVariablePicker: React.FC<Props> = ({ onChange, disabled, style }) =>
 };
 
 export default GlobalVariablePicker;
-//////////

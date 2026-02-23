@@ -36,7 +36,6 @@ import {
   REDO_COMMAND,
   SELECTION_CHANGE_COMMAND,
   UNDO_COMMAND,
-  $isElementNode,
 } from 'lexical';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -223,7 +222,7 @@ export default function ToolbarPlugin() {
           icon={<RedoOutlined />}
           onClick={() => editor.dispatchCommand(REDO_COMMAND, undefined)}
         />
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
         <Button
           className={'toolbar-item spaced '}
           aria-label="Format Bold"
@@ -262,7 +261,7 @@ export default function ToolbarPlugin() {
             editor.dispatchCommand(TOGGLE_LINK_COMMAND, isLink ? null : { url: newLink });
           }}
         />
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
         <Button
           className={'toolbar-item spaced '}
           aria-label="Numbered List"
@@ -279,7 +278,7 @@ export default function ToolbarPlugin() {
           icon={<UnorderedListOutlined />}
           onClick={formatBulletList}
         />
-        <Divider type="vertical" />
+        <Divider orientation="vertical" />
         <Button
           className="toolbar-item spaced"
           aria-label="Left Align"
@@ -309,6 +308,7 @@ export default function ToolbarPlugin() {
             <Select
               options={linkOptions}
               value={linkType}
+              popupMatchSelectWidth={false}
               onChange={(type) => {
                 setLinkType(type);
                 setLink('');

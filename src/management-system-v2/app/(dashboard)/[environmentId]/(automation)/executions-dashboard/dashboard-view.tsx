@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, Fragment } from 'react';
 import useDeployments from './use-deployments';
 import { Card, Col, Row, Skeleton, Statistic } from 'antd';
 
@@ -97,7 +97,7 @@ const DashboardView: React.FC = () => {
   return (
     <>
       {Object.entries(stats).map(([name, entries]) => (
-        <>
+        <Fragment key={name}>
           <h3>{name}</h3>
           <Row key={name} gutter={16}>
             {entries.map((entry) => (
@@ -108,7 +108,7 @@ const DashboardView: React.FC = () => {
               </Col>
             ))}
           </Row>
-        </>
+        </Fragment>
       ))}
     </>
   );

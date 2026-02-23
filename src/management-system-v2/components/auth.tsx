@@ -139,7 +139,7 @@ export const getCurrentEnvironment = cache(
         default:
           if (opts.permissionErrorHandling.redirectUrl)
             return redirect(opts.permissionErrorHandling.redirectUrl);
-          else if (userId) return redirect(`/processes`);
+          else if (userId) return redirect(`/start`);
           //NOTE this needs to be removed for guest users
           else return redirect(`/api/auth/signin`);
       }

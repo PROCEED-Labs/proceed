@@ -1,19 +1,18 @@
 import { useEffect, useId, useState } from 'react';
 
 import { Select } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
 import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
-import useProcessVariables from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-process-variables';
 import { DeleteButton } from '../DeleteButton';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email' | 'url' | 'file';
+  type?: 'text' | 'number' | 'email' | 'url' | 'file' | 'date';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -214,17 +213,13 @@ export const InputSettings = () => {
     variable: node.data.props.variable,
   }));
 
-  const { variables } = useProcessVariables();
-
-  const selectedVariable = variables.find((v) => v.name === variable);
-
   return (
     <>
       <Setting
         label="Label"
         control={
           <Select
-            style={{ display: 'block' }}
+            style={{ display: 'flex' }}
             options={[
               { value: 'top', label: 'Above' },
               { value: 'left', label: 'Left' },
@@ -242,7 +237,7 @@ export const InputSettings = () => {
 
       <VariableSetting
         variable={variable}
-        allowedTypes={['string', 'number', 'file']}
+        allowedTypes={['string', 'number', 'file', 'date']}
         onChange={(newVariable, newVariableType, newVariableTextFormat) =>
           setProp((props: InputProps) => {
             props.variable = newVariable;
@@ -257,6 +252,9 @@ export const InputSettings = () => {
                   break;
                 case 'file':
                   props.type = 'file';
+                  break;
+                case 'date':
+                  props.type = 'date';
                   break;
                 default:
                   props.type = 'text';

@@ -108,7 +108,7 @@ const CustomNavigationLinks = ({
         columns={columns}
         dataSource={values}
         rowKey="id"
-        pagination={{ position: ['bottomCenter'] }}
+        pagination={{ placement: ['bottomCenter'] }}
       />
 
       <CustomLinkModal

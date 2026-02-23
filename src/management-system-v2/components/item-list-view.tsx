@@ -138,7 +138,7 @@ const ElementList = <T extends { id: string }>({
   return (
     <Table
       // size={breakpoint.xs ? 'large' : 'middle'}
-      pagination={{ position: ['bottomCenter'], pageSize: numberOfRows }}
+      pagination={{ placement: ['bottomCenter'], pageSize: numberOfRows }}
       {...tableProps}
       rowSelection={
         elementSelection && {

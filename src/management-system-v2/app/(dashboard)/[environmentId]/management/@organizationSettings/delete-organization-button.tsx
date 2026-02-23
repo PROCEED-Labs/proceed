@@ -22,7 +22,7 @@ const DeleteOrganizationButton = () => {
         content: 'Organization deleted',
         type: 'success',
       });
-      router.push('/processes');
+      router.push('/start');
     } catch (e) {
       let content = typeof e === 'string' ? e : 'Something went wrong';
 

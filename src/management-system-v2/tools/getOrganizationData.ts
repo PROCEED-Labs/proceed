@@ -2,6 +2,9 @@ import { type InferSchema } from 'xmcp';
 import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
 
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
+import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -31,9 +34,10 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
       data: {},
       commonMemberData: {},
       members: [],
+      roles: [],
     };
 
-    conf.content.forEach((entry) => {
+    await asyncForEach(conf.content, async (entry) => {
       switch (entry.name) {
         case 'organization':
           {
@@ -48,7 +52,7 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
           break;
         case 'identity-and-access-management':
           {
-            entry.subParameters.forEach((iamEntry) => {
+            await asyncForEach(entry.subParameters, async (iamEntry) => {
               switch (iamEntry.name) {
                 case 'common-user-data':
                   {
@@ -63,8 +67,23 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
                   break;
                 case 'user':
                   {
-                    iamEntry.subParameters.forEach((member) => {
-                      result.members.push({ id: member.name, name: member.displayName[0].text });
+                    await asyncForEach(iamEntry.subParameters, async (member) => {
+                      const user = await getUserById(member.name);
+
+                      if (user.isGuest) return;
+
+                      result.members.push({
+                        id: member.name,
+                        name: member.displayName[0].text,
+                        meta: {
+                          firstName: user.firstName,
+                          lastName: user.lastName,
+                          username: user.username,
+                          email: user.email || undefined,
+                          phoneNumber: user.phoneNumber || undefined,
+                        },
+                        roles: [],
+                      });
                     });
                   }
                   break;
@@ -73,6 +92,24 @@ export default async function getOrganizatoinData({ token }: InferSchema<typeof 
           }
           break;
       }
+    });
+
+    const roles = await getRolesWithMembers(environmentId);
+
+    roles.forEach((role) => {
+      if (role.name.startsWith('@')) return;
+
+      const r = { name: role.name, members: [] };
+      result.roles.push(r);
+
+      role.members.forEach((member) => {
+        const m = result.members.find((mem) => mem.id === member.id);
+
+        if (!m) return;
+
+        m.roles.push(role.name);
+        r.members.push(m.meta);
+      });
     });
 
     return {

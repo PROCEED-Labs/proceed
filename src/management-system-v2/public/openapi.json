@@ -1,5 +1,5 @@
 {
-  "openapi": "3.1.0",
+  "openapi": "3.1.1",
   "info": {
     "title": "PROCEED Management System API",
     "description": "This is the API of the  PROCEED Management System. (Visible on [Swagger Editor](https://editor-next.swagger.io/) or [https://criteria.sh/play](https://criteria.sh/play).)",
@@ -101,6 +101,53 @@
         }
       }
     },
+    "/spaces/{space-id}/status": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Spaces"],
+        "summary": "Show status of the space. Optionally, a user ID can be specified.",
+        "parameters": [
+          {
+            "name": "user-id",
+            "in": "query",
+            "description": "Checks if this user-id is assigned to the given space",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "69911c71-9899-4924-849f-86f7f922b35f"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation with some meta data about the space",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "enum": ["Space is okay.", "User exists in Space"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space_ (ID) or _User_ inside Space does not exist"
+          }
+        }
+      }
+    },
+
     "/spaces/{space-id}/configurations": {
       "parameters": [
         {
@@ -433,7 +480,7 @@
         }
       }
     },
-    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter/{parameter-id}": {
+    "/spaces/{space-id}/configurations/{config-container-id-or-shortName}/latest-parameter/{parameter-id-or-parameter-name}": {
       "parameters": [
         {
           "name": "space-id",
@@ -454,12 +501,12 @@
           }
         },
         {
-          "name": "parameter-id",
+          "name": "parameter-id-or-parameter-name",
           "in": "path",
-          "description": "`id` of Parameter",
+          "description": "`id` or `name` of Parameter. If the `name` is used, the whole hierachical path must be given in dot-notation, e.g. 'Data.Vacation.RemainingDays'",
           "required": true,
           "schema": {
-            "$ref": "#/components/schemas/ParameterId"
+            "$ref": "#/components/schemas/ParameterIdOrName"
           }
         },
         {
@@ -478,7 +525,7 @@
         "description": "Read the latest version of a specific Parameter of a _Configuration Container_ by its `id` or `name`",
         "responses": {
           "200": {
-            "description": "one parameter of a configuration container",
+            "description": "One parameter of a configuration container",
             "content": {
               "application/json": {
                 "schema": {
@@ -497,7 +544,7 @@
         "summary": "Modify/Override the latest version of an existing Parameter",
         "description": "Modify/Override the latest version of an existing Parameter",
         "requestBody": {
-          "description": "- It is okay, if some properties of the Parameter structure are missing. The given properties update the existing ones and do not delete the others (exception: `displayName` and `description`: this does not add an entry, but it overrides the complete array)\n- The Parameter can only be changed with PUT, if `changeableByUser` attribute is `true` or non-existent (default=true).\n- `id` inside body can be missing. if `id` is included in body, it must be the same as in the REST path and already existing in the Configuration as a Parameter\n- The following properties of are possible to set in the parameter structure: `name*, parameterType, structureVisible, displayName*, description*, value*, valueTemplateSource*, transformation*`\n  - `name`: if set, then it must be unique in the whole Configuration\n  - `displayName` and `description`: this does not add an entry, but it overrides the complete array\n  - `value`: can only be set if `transformation` is not existing OR `transformationType` is `none` or `manual`\n  - `valueTemplateSource`: references one of the four meta attributes from the Configuration - `shortName, name, description, categories`\n  - `transformation`: can be given if the following conditions are satisfied:\n    - type `none`: `linkedInputParameters` and `action` must be empty\n    - type `manual`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, and `action` must be empty\n    - type `linked`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, `value` must be empty, and `action` must be empty\n    - type `algorithm`: `linkedInputParameters` could have entries or none, `value` must be empty, and `action` must be set\n    - type `external`: `linkedInputParameters` must be empty, `value` must be empty, and `action` must be set\n- `changeableByUser`, `usedAsInputParameterIn`, `valueType`, `subParameters` can not be changed",
+          "description": "- It is okay, if some properties of the Parameter structure are missing. The given properties update the existing ones and do not delete the others (exception: `displayName` and `description`: this does not add an entry, but it overrides the complete array)\n- The Parameter can only be changed with PUT, if `changeableByUser` attribute is `true` or non-existent (default=true).\n- `id` inside body can be missing. if `id` is included in body, it must be the same as in the REST path and already existing in the Configuration as a Parameter\n- The following properties are possible to set in the parameter structure: `name*, parameterType, structureVisible, displayName*, description*, value*, valueTemplateSource*, transformation*`\n  - `name`: if set, then it must be unique in the whole Configuration\n  - `displayName` and `description`: this does not add an entry, but it overrides the complete array\n  - `value`: can only be set if `transformation` is not existing OR `transformationType` is `none` or `manual`\n  - `valueTemplateSource`: references one of the four meta attributes from the Configuration - `shortName, name, description, categories`\n  - `transformation`: can be given if the following conditions are satisfied:\n    - type `none`: `linkedInputParameters` and `action` must be empty\n    - type `manual`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, and `action` must be empty\n    - type `linked`: `linkedInputParameters` must have exactly one entry which exists as parameter in the same TDS set, `value` must be empty, and `action` must be empty\n    - type `algorithm`: `linkedInputParameters` could have entries or none, `value` must be empty, and `action` must be set\n    - type `external`: `linkedInputParameters` must be empty, `value` must be empty, and `action` must be set\n- `changeableByUser`, `usedAsInputParameterIn`, `valueType`, `subParameters` can not be changed",
           "required": true,
           "content": {
             "application/json": {
@@ -894,6 +941,158 @@
           }
         }
       }
+    },
+
+    "/spaces/{space-id}/data/organization/{data-object-id-or-name}": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "data-object-id-or-name",
+          "in": "path",
+          "description": "`id` or `name` of the Data Object. If the `name` is used, the whole hierachical path must be given in dot-notation, e.g. 'Data.Vacation.RemainingDays'",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ParameterIdOrName"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations - Space Data Objects"],
+        "summary": "Retrieve the full Data Object from the Organization section of the Space's Data Store",
+        "description": "Read the latest version of a specific Data Object within Organizational Space Data by its `id` or `name`",
+        "responses": {
+          "200": {
+            "description": "Returns the full, requested Data Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameter"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space or Data Object_ not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Configurations - Space Data Objects"],
+        "summary": "Update the 'value' of the specified Data Object within the Organization section of the Space's Data Store",
+        "description": "This endpoint updates the `value` property (not the full object) of the specified Data Object if the Data Object exists within the Organization section of the Space's Data Store.",
+        "requestBody": {
+          "description": "Change the `value` property of the Data Object. It only requires one string and not object structure. `value` can only be set if `transformation` is not existing OR `transformationType` is _none_ or _manual_.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": "number: 3.12, or string: test value"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data Object updated"
+          },
+          "404": {
+            "description": "Specified _Space or Data Object_ not found"
+          },
+          "409": {
+            "description": "Invalid input. Body contains the reason. For example, syntax invalid, etc."
+          }
+        }
+      }
+    },
+    "/spaces/{space-id}/data/user/{user-id}/{data-object-id-or-name}": {
+      "parameters": [
+        {
+          "name": "space-id",
+          "in": "path",
+          "description": "`id` of _Space_",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/SpaceId"
+          }
+        },
+        {
+          "name": "user-id",
+          "in": "path",
+          "description": "`id` of the _User_ inside a Space",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid",
+            "example": "eae9a3b1-59ed-4141-9053-be758d028e8b"
+          }
+        },
+        {
+          "name": "data-object-id-or-name",
+          "in": "path",
+          "description": "`id` or `name` of the Data Object. If the `name` is used, the whole hierachical path must be given in dot-notation, e.g. 'Data.Vacation.RemainingDays'",
+          "required": true,
+          "schema": {
+            "$ref": "#/components/schemas/ParameterIdOrName"
+          }
+        }
+      ],
+      "get": {
+        "tags": ["Configurations - Space Data Objects"],
+        "summary": "Retrieve the full Data Object from the User section of the Space's Data Store",
+        "description": "Read the latest version of a specific Data Object within Organizational Space Data by its `id` or `name`",
+        "responses": {
+          "200": {
+            "description": "Returns the full, requested Data Object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Parameter"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Specified _Space or Data Object_ not found"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Configurations - Space Data Objects"],
+        "summary": "Update the 'value' of the specified Data Object within the User's section of the Space's Data Store",
+        "description": "This endpoint updates the `value` property (not the full object) of the specified Data Object if the Data Object exists within the User's section of the Space's Data Store.",
+        "requestBody": {
+          "description": "Change the `value` property of the Data Object. It only requires one string and not object structure. `value` can only be set if `transformation` is not existing OR `transformationType` is _none_ or _manual_.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": "number: 3.12, or string: test value"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Data Object updated"
+          },
+          "404": {
+            "description": "Specified _Space or Data Object_ not found"
+          },
+          "409": {
+            "description": "Invalid input. Body contains the reason. For example, syntax invalid, etc."
+          }
+        }
+      }
     }
   },
   "components": {
@@ -917,7 +1116,7 @@
           },
           "name": {
             "type": "string",
-            "example": "Mercedes Benz"
+            "example": "My ACME Organization space"
           }
         }
       },
@@ -1138,6 +1337,17 @@
         "type": "string",
         "format": "uuid",
         "example": "8cfaa2ba-119b-498f-98af-1404d709f786"
+      },
+      "ParameterIdOrName": {
+        "oneOf": [
+          {
+            "type": "string",
+            "example": "IAM.User.id.Data.Vacation.RemainingDays"
+          },
+          {
+            "$ref": "#/components/schemas/ParameterId"
+          }
+        ]
       },
       "ParameterWithoutId": {
         "type": "object",

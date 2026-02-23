@@ -47,6 +47,7 @@ const EnvironmentsPage: FC<{
     }
 
     navigator.clipboard.writeText(code);
+    app.message.success('Copied the code to your clipboard');
   };
 
   return (

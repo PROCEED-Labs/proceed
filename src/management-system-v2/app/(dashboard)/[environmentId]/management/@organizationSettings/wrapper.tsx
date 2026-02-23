@@ -86,9 +86,9 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
 
         if (setting.key === 'deleteOrganization') {
           inputElement = (
-            <Space direction="vertical" id={id}>
+            <Space orientation="vertical" id={id}>
               <Alert
-                message="All processes inside this organization will be lost. This action cannot be undone."
+                title="All processes inside this organization will be lost. This action cannot be undone."
                 type="error"
                 showIcon
               />

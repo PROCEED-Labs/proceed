@@ -1,6 +1,6 @@
 import { useEditor, useNode, UserComponent } from '@craftjs/core';
 
-import { Button, Input, InputNumber, Select, Space, Upload } from 'antd';
+import { Button, Input, InputNumber, Select, Space, Typography, Upload } from 'antd';
 
 import { useEffect, useRef, useState } from 'react';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -339,24 +339,31 @@ export const ImageSettings = () => {
     ),
   };
 
+  const widthEditingDisabled = !src || !editingEnabled;
+
   return (
     <>
       <Setting
         label="Width"
         control={
-          <InputNumber
-            disabled={!src}
-            value={currentWidth}
-            min={1}
-            max={100}
-            addonAfter="%"
-            onChange={(newWidth) => {
-              if (newWidth) {
-                setProp((props: ImageProps) => (props.width = newWidth));
-              }
-              setCurrentWidth(newWidth);
-            }}
-          />
+          <Space.Compact style={{ display: 'flex' }}>
+            <InputNumber
+              disabled={widthEditingDisabled}
+              value={currentWidth}
+              style={{ flex: 1 }}
+              min={1}
+              max={100}
+              onChange={(newWidth) => {
+                if (newWidth) {
+                  setProp((props: ImageProps) => (props.width = newWidth));
+                }
+                setCurrentWidth(newWidth);
+              }}
+            />
+            <Space.Addon>
+              <Typography.Text disabled={widthEditingDisabled}>%</Typography.Text>
+            </Space.Addon>
+          </Space.Compact>
         }
       />
       <Setting

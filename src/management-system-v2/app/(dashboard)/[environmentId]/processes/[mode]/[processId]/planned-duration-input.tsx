@@ -3,15 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import styles from './planned-duration-input.module.scss';
 
-import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Tooltip } from 'antd';
+import { Button, Col, Form, Grid, Input, InputNumber, Modal, Row, Space, Tooltip } from 'antd';
 
-import { ClockCircleOutlined, EditOutlined } from '@ant-design/icons';
+import { ClockCircleOutlined } from '@ant-design/icons';
 import FormSubmitButton from '@/components/form-submit-button';
 import { parseISODuration } from '@proceed/bpmn-helper/src/getters';
 import { calculateTimeFormalExpression } from '@/lib/helpers/timeHelper';
 import { Element } from 'bpmn-js/lib/model/Types';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { hasEventDefinition } from 'bpmn-js/lib/util/DiUtil';
 import useModelerStateStore from './use-modeler-state-store';
 import { updateMetaData } from './properties-panel';
 
@@ -82,12 +81,7 @@ export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
         >
           Cancel
         </Button>,
-        <FormSubmitButton
-          key="submit"
-          form={form}
-          onSubmit={close}
-          submitText="Save"
-        ></FormSubmitButton>,
+        <FormSubmitButton key="submit" form={form} onSubmit={close} submitText="Save" />,
       ]}
     >
       <Form form={form} initialValues={durationValues} style={{ marginBlock: '1.5rem' }}>
@@ -95,14 +89,14 @@ export const PlannedDurationModal: React.FC<PlannedDurationModalProperties> = ({
           {Object.keys(durationValues).map((key) => {
             return (
               <Col span={24} key={key}>
-                <Form.Item name={key} style={{ marginBottom: '0.2rem' }}>
-                  <InputNumber
-                    name={key}
-                    defaultValue={0}
-                    addonBefore={key.charAt(0).toUpperCase() + key.slice(1)}
-                    min={0}
-                  ></InputNumber>
-                </Form.Item>
+                <Space.Compact style={{ width: '100%', marginBottom: '0.2rem' }}>
+                  <Space.Addon style={{ width: '6rem', display: 'flex', justifyContent: 'center' }}>
+                    {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </Space.Addon>
+                  <Form.Item name={key} noStyle>
+                    <InputNumber name={key} defaultValue={0} style={{ flex: 1 }} min={0} />
+                  </Form.Item>
+                </Space.Compact>
               </Col>
             );
           })}
@@ -160,14 +154,25 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
 
   return (
     <>
-      <Input
-        addonBefore={<ClockCircleOutlined className="clock-icon" />}
-        readOnly
-        value={durationString}
-        placeholder="Planned Duration"
-        onClick={() => setIsPlannedDurationModalOpen(true)}
-        disabled={readOnly}
-      />
+      <Space.Compact style={{ width: '100%' }}>
+        <Space.Addon
+          style={{
+            flex: '0 0 65px',
+            display: 'flex',
+            justifyContent: 'center',
+            fontSize: '0.75rem',
+          }}
+        >
+          <ClockCircleOutlined className="clock-icon" />
+        </Space.Addon>
+        <Input
+          readOnly
+          value={durationString}
+          placeholder="Planned Duration"
+          onClick={() => setIsPlannedDurationModalOpen(true)}
+          disabled={readOnly}
+        />
+      </Space.Compact>
       <PlannedDurationModal
         durationValues={durationValues}
         show={isPlannedDurationModalOpen}
@@ -179,7 +184,7 @@ const PlannedDurationInput: React.FC<PlannedDurationInputProperties> = ({
           }
           setIsPlannedDurationModalOpen(false);
         }}
-      ></PlannedDurationModal>
+      />
     </>
   );
 };

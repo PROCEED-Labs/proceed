@@ -72,7 +72,7 @@ const CreateOrganizationPage = ({
         const response = await addOrganizationEnvironment(data);
         if ('error' in response) throw new Error();
 
-        router.push(`/${response.id}/processes`);
+        router.push(`/${response.id}/start`);
       } else {
         // NOTE: the only way to get here is if the data is valid
         const response = await createInactiveEnvironment(data);

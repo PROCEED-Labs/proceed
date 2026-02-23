@@ -19,7 +19,6 @@ import { getDefinitionsId, getDefinitionsName, moddle } from '@proceed/bpmn-help
 
 import { debounce } from '@/lib/utils';
 import { MdOutlineEditOff, MdOutlineModeEdit, MdRedo, MdUndo } from 'react-icons/md';
-import { hashString } from '@/lib/helpers/javascriptHelpers';
 
 type XmlEditorProps = {
   bpmn?: string;
@@ -507,7 +506,7 @@ const XmlEditor: FC<XmlEditorProps> = ({ bpmn, canSave, onClose, onSaveXml, proc
         ]}
       >
         {saveState.state !== 'none' && (
-          <Alert message={getAlertMessage()} type={saveState.state} banner showIcon />
+          <Alert title={getAlertMessage()} type={saveState.state} banner showIcon />
         )}{' '}
         <Editor
           defaultLanguage="xml"

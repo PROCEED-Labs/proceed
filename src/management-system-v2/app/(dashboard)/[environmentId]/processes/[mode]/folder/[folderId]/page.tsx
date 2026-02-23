@@ -87,7 +87,7 @@ const ProcessesPage = async (props: {
           </Space>
         }
       >
-        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+        <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <Processes
             {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
             rootFolder={rootFolder}

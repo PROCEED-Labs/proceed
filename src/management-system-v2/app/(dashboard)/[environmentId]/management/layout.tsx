@@ -3,15 +3,16 @@ import SettingsPage from '../settings/settings-page';
 
 export default function Layout({
   params,
-  ...children
+  organizationSettings,
 }: {
   params: Promise<{ environmentId: string }>;
+  organizationSettings: React.ReactNode;
 }) {
   // TODO: check if the user has the rights to change the settings
 
   return (
     <Content title="Management">
-      <SettingsPage {...children} />
+      <SettingsPage organizationSettings={organizationSettings} />
     </Content>
   );
 }

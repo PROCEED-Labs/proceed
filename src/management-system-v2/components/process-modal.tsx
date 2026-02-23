@@ -310,7 +310,7 @@ const ProcessModal = <
         <div style={{ overflowY: 'auto', flex: 1 }} className="Hide-Scroll-Bar">
           {nameCollisions.length > 0 && showCollisions && (
             <Alert
-              message={
+              title={
                 <>
                   <Collapse
                     size="small"
@@ -335,9 +335,11 @@ const ProcessModal = <
               }
               type="warning"
               showIcon
-              closable
+              closable={{
+                closeIcon: true,
+                onClose: () => setShowCollisions(false),
+              }}
               style={{ marginBottom: 16 }}
-              onClose={() => setShowCollisions(false)}
             />
           )}
           <Form

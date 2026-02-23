@@ -120,7 +120,7 @@ const SignIn: FC<{
               onFinish={(values) =>
                 signIn(guestProvider.id, {
                   ...values,
-                  callbackUrl: callbackUrl || '/processes?createprocess',
+                  callbackUrl: callbackUrl || '/start',
                 })
               }
               key={guestProvider.id}
@@ -142,12 +142,12 @@ const SignIn: FC<{
         {userType === 'guest' && guestProvider && (
           <>
             {divider}
-            <Button href="/processes" style={{ marginBottom: verticalGap }}>
+            <Button href="/start" style={{ marginBottom: verticalGap }}>
               Continue as Guest
             </Button>
 
             <Alert
-              message='Note: if you select "Continue as Guest", the this Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
+              title='Note: if you select "Continue as Guest", the this Platform is functionally restricted and your created processes will not be accessible on other devices. All your data will be deleted automatically after a few days."'
               type="info"
             />
           </>

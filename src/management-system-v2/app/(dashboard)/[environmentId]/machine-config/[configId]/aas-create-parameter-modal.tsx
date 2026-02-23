@@ -556,14 +556,14 @@ const ParameterInputs = ({
           >
             <Select
               size="small"
-              showSearch
+              showSearch={{
+                filterSort: (optionA, optionB) =>
+                  (optionA?.label ?? '')
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? '').toLowerCase()),
+                optionFilterProp: 'label',
+              }}
               placeholder="Search to Select"
-              optionFilterProp="label"
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? '')
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? '').toLowerCase())
-              }
               options={languageItemsSelect}
               value={currentDisplayLanguage}
               onChange={handleDisplayLanguageChange}
@@ -613,14 +613,14 @@ const ParameterInputs = ({
           >
             <Select
               size="small"
-              showSearch
               placeholder="Search to Select"
-              optionFilterProp="label"
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? '')
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? '').toLowerCase())
-              }
+              showSearch={{
+                filterSort: (optionA, optionB) =>
+                  (optionA?.label ?? '')
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? '').toLowerCase()),
+                optionFilterProp: 'label',
+              }}
               options={languageItemsSelect}
               value={currentDescriptionLanguage}
               onChange={handleDescriptionLanguageChange}
@@ -771,14 +771,11 @@ const ParameterInputs = ({
                   }
                   treeDefaultExpandAll={true}
                   treeExpandAction="click"
-                  showSearch={true}
-                  treeNodeFilterProp="title"
-                  dropdownStyle={{ maxHeight: 600, overflow: 'auto' }}
+                  showSearch={{ treeNodeFilterProp: 'title' }}
+                  styles={{ popup: { root: { maxHeight: 600, overflow: 'auto' } } }}
                   virtual={false}
                   onChange={handleLinkedParametersChange}
-                  onDropdownVisibleChange={(open) => {
-                    setIsTreeSelectOpen(open);
-                  }}
+                  onOpenChange={(open) => setIsTreeSelectOpen(open)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape' && isTreeSelectOpen) {
                       e.stopPropagation();

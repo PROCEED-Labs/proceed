@@ -17,28 +17,21 @@ import { Folder } from '@/lib/data/folder-schema';
 
 function getScriptTaskLabel(
   element?: Element | ElementLike,
-  knownTaskName?: string,
   context: 'sidebar' | 'header' = 'header',
 ): string | ReactNode {
-  let taskName: string | undefined;
-
-  if (knownTaskName) {
-    taskName = knownTaskName;
-  } else if (element?.businessObject.name) {
-    taskName = element.businessObject.name;
-  }
+  const taskName = element?.businessObject.name;
 
   // If task has a name, return it
   if (taskName && taskName.trim().length > 0) {
     return taskName;
   }
 
-  // If no name, return appropriate unnamed label
-  if (context === 'sidebar') {
-    return <span style={{ fontStyle: 'italic' }}>Unnamed Script Task</span>;
-  } else {
-    return <span style={{ fontStyle: 'italic' }}>{'< Unnamed >'}</span>;
-  }
+  // If no name, return appropriate unnamed label in italics
+  return (
+    <span style={{ fontStyle: 'italic' }}>
+      {context === 'sidebar' ? 'Unnamed Script Task' : '< Unnamed >'}
+    </span>
+  );
 }
 
 function folderPathContentsToTreeStructure({
@@ -72,16 +65,11 @@ function folderPathContentsToTreeStructure({
 
       if (child.type === 'process') {
         node.children = child.scriptTasks.map((scriptTask) => {
-          const hasTaskName = scriptTask.taskName && scriptTask.taskName.trim().length > 0;
-          const displayName = hasTaskName ? (
-            scriptTask.taskName
-          ) : (
-            <span style={{ fontStyle: 'italic' }}>Unnamed Script Task</span>
-          );
+          const taskNameElement = { businessObject: { name: scriptTask.taskName } } as Element;
 
           return generateTreeNode({
-            name: displayName,
-            label: scriptTask.taskName || '< Unnamed >', // String for internal use
+            name: getScriptTaskLabel(taskNameElement, 'sidebar'),
+            label: scriptTask.taskName || '< Unnamed >',
             id: `${child.id} ${scriptTask.fileName}`,
             type: 'scriptTask',
           });
@@ -258,8 +246,8 @@ export function ScriptTaskEditorEnvironment({
 
     for (const bpmnElement of Object.values(scriptTasksInProcess)) {
       const id = `${process.id} ${bpmnElement.id}`;
-      const sidebarLabel = getScriptTaskLabel(bpmnElement, undefined, 'sidebar');
-      const headerLabel = getScriptTaskLabel(bpmnElement, undefined, 'header');
+      const sidebarLabel = getScriptTaskLabel(bpmnElement, 'sidebar');
+      const stringLabel = bpmnElement.businessObject.name || '< Unnamed >';
 
       let name = sidebarLabel;
       if (scriptTasksWithChanges[id]) {
@@ -272,7 +260,7 @@ export function ScriptTaskEditorEnvironment({
 
       const node = generateTreeNode({
         name,
-        label: typeof headerLabel === 'string' ? headerLabel : 'Unnamed Script Task',
+        label: stringLabel,
         id,
         type: 'scriptTask' as const,
         isInThisProcess: true,
@@ -367,8 +355,8 @@ export function ScriptTaskEditorEnvironment({
       }
 
       if (hasChanges) {
-        const label = getScriptTaskLabel(bpmnElement, undefined, 'sidebar');
-        withUnsavedChanges.push({ label, key: bpmnElement.id }); // Store both label and unique key
+        const label = getScriptTaskLabel(bpmnElement, 'sidebar');
+        withUnsavedChanges.push({ label, key: bpmnElement.id });
         const editorRef = editorRefs.current.get(key);
         if (!editorRef) throw new Error('Editor without a ref');
         withUnsavedChangesRefs.push(editorRef);
@@ -454,14 +442,10 @@ export function ScriptTaskEditorEnvironment({
   let title: ReactNode = 'Script Task';
 
   if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
-    // Use label for header (which is either taskName or "< Unnamed >")
+    // The label field contains the string version of the task name
     const headerLabel = currentTreeNode.element.label;
-    // Check if it is unnamed, label will be "< Unnamed >" or "Unnamed Script Task"
-    const isUnnamed =
-      !headerLabel ||
-      headerLabel.trim() === '' ||
-      headerLabel === '< Unnamed >' ||
-      headerLabel === 'Unnamed Script Task';
+    // Check if it is unnamed; if so then the label will be "< Unnamed >"
+    const isUnnamed = !headerLabel || headerLabel.trim() === '' || headerLabel === '< Unnamed >';
 
     const taskLabel = isUnnamed ? (
       <span style={{ fontStyle: 'italic' }}>{'< Unnamed >'}</span>
@@ -548,16 +532,13 @@ export function ScriptTaskEditorEnvironment({
 
                 node.isLeaf = false;
                 node.children = node.element.scriptTasks.map((scriptTask) => {
-                  const hasTaskName = scriptTask.taskName && scriptTask.taskName.trim().length > 0;
-                  const displayName = hasTaskName ? (
-                    scriptTask.taskName
-                  ) : (
-                    <span style={{ fontStyle: 'italic' }}>Unnamed Script Task</span>
-                  );
+                  const taskNameElement = {
+                    businessObject: { name: scriptTask.taskName },
+                  } as Element;
 
                   return generateTreeNode({
-                    name: displayName,
-                    label: scriptTask.taskName || '< Unnamed >', // String for internal use
+                    name: getScriptTaskLabel(taskNameElement, 'sidebar'),
+                    label: scriptTask.taskName || '< Unnamed >',
                     id: `${node.element.id} ${scriptTask.fileName}`,
                     type: 'scriptTask',
                     isInThisProcess: false,

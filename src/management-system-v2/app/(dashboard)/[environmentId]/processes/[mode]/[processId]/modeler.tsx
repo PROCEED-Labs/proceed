@@ -307,8 +307,39 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
     }
   }, []);
 
+  // Helper function to detect the event
+  const isPasteOperation = useCallback((element: BpmnElement): boolean => {
+    const fileName = element.businessObject?.fileName;
+
+    // No fileName means it's a new element
+    if (!fileName) return false;
+
+    // Only check ScriptTask and UserTask
+    if (!bpmnIsAny(element, ['bpmn:ScriptTask', 'bpmn:UserTask'])) {
+      return false;
+    }
+
+    const allElements = modeler.current?.getAllElements();
+    if (!allElements) return false;
+
+    // Check if another element has the same fileName
+    return allElements.some(
+      (el: any) =>
+        el.businessObject?.fileName === fileName &&
+        el.id !== element.id &&
+        bpmnIsAny(el, ['bpmn:ScriptTask', 'bpmn:UserTask']),
+    );
+  }, []);
+
   const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
     (element) => {
+      // Check if this is a paste operation; if so, skip restoration
+      // We need to reconstruct the element to check
+      const fullElement = modeler.current?.getElement(element.id);
+      if (fullElement && isPasteOperation(fullElement as BpmnElement)) {
+        return;
+      }
+
       if (element.$type === 'bpmn:UserTask' && element.fileName) {
         revertSoftDeleteProcessUserTask(process.id, element.fileName);
       }
@@ -321,32 +352,8 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
         return;
       } else updateFileDeletableStatus(metaData.overviewImage, false, process.id);
     },
-    [],
+    [isPasteOperation],
   );
-
-  // Helper fucntion to detect the event
-  const isPasteOperation = useCallback((element: BpmnElement): boolean => {
-    const fileName = element.businessObject?.fileName;
-
-    // No fileName means it's a new element
-    if (!fileName) return false;
-
-    // Only check ScriptTask and UserTask
-    if (element.type !== 'bpmn:ScriptTask' && element.type !== 'bpmn:UserTask') {
-      return false;
-    }
-
-    const allElements = modeler.current?.getAllElements();
-    if (!allElements) return false;
-
-    // Check if another element has the same fileName
-    return allElements.some(
-      (el: any) =>
-        el.businessObject?.fileName === fileName &&
-        el.id !== element.id &&
-        (el.type === 'bpmn:ScriptTask' || el.type === 'bpmn:UserTask'),
-    );
-  }, []);
 
   // For Paste event
   const onShapeAdded = useCallback<Required<BPMNCanvasProps>['onShapeAdded']>(
@@ -355,17 +362,16 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
 
       // Check if this is a paste operation
       if (!isPasteOperation(element)) {
-        return; // Not a paste, it is may be a new task or undo event
+        return; // Not a paste event rather, it may be a new task or undo event
       }
 
       // This is a Paste event so copy the files
       const fileName = element.businessObject.fileName!;
 
       try {
-        const newFileName =
-          element.type === 'bpmn:ScriptTask'
-            ? await handleScriptTaskCopy(process.id, fileName)
-            : await handleUserTaskCopy(process.id, fileName);
+        const newFileName = bpmnIs(element, 'bpmn:ScriptTask')
+          ? await handleScriptTaskCopy(process.id, fileName)
+          : await handleUserTaskCopy(process.id, fileName);
 
         // Update the element's fileName
         element.businessObject.fileName = newFileName;

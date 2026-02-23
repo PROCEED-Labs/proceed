@@ -7,7 +7,7 @@ export const authorizationInfoSchema = {
   token: z
     .string()
     .describe(
-      'Json Web Token that grants access to the mcp api. Can be requested through the get-access tool.',
+      'Token that grants access to the mcp api. Can be requested through the get-access tool.',
     ),
 };
 

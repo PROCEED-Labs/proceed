@@ -60,3 +60,80 @@ gha-creds-*.json
 
 # Ignore custom claude project files
 CLAUDE.md
+
+# Matching models & DB
+src/competence-matcher/dist
+src/competence-matcher/src/db/dbs
+src/competence-matcher/src/models
+src/competence-matcher/.env
+src/competence-matcher/logs
+node_modules/
+.yarn-cache/
+/*.zip
+coverage/
+
+# PROCEED files
+src/engine/native/node/**/data_files
+src/engine/native/node/native-config/src/config.json
+
+src/engine/native/web/server/public/*
+src/engine/native/web/server/node_modules
+
+src/engine/e2e_tests/testEngine/config.json
+
+# OS files
+.DS_Store
+.directory
+
+# Build dirs
+jsdoc/output_html/
+!build/index.html
+build/*
+
+# local env files
+.env.local
+.env.*.local
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# yarn is used as package manager, so npm files
+package-lock.json 
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# git modules
+.gitmodules
+
+# env configs
+./src/management-system/src/backend/server/environment-configurations/
+./src/backend/server/environment-configurations/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+dataEval.json
+/blob-report/
+
+# Ignore generated credentials from google-github-actions/auth
+gha-creds-*.json
+
+# Ignore custom claude project files
+CLAUDE.md
+
+# Matching models & DB
+src/competence-matcher/dist
+src/competence-matcher/src/db/dbs
+src/competence-matcher/src/models
+src/competence-matcher/.env
+src/competence-matcher/logs
+src/competence-matcher/server.pid

@@ -1,0 +1,44 @@
+{
+  "name": "competence-matcher",
+  "version": "0.1.0",
+  "description": "Matching microservice that allows to allows to define and match on data criteria",
+  "main": "dist/server.js",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only --watch .env src/server.ts",
+    "build": "tsc",
+    "production": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1 && ps -p $PID -o args= | grep -q node; then echo \"Server already running (pid $PID)\"; exit 1; fi; fi; node dist/server.js",
+    "production:detached": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1 && ps -p $PID -o args= | grep -q node; then echo \"Server already running (pid $PID)\"; exit 1; fi; fi; nohup node dist/server.js >/dev/null 2>&1 & echo $! > ./server.pid",
+    "production:stop": "if [ -f ./server.pid ]; then PID=$(cat ./server.pid); if ps -p $PID > /dev/null 2>&1; then kill $PID >/dev/null 2>&1 || true; sleep 1; fi; rm -f ./server.pid; else echo \"No server.pid file found\"; fi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PROCEED-Labs/proceed.git"
+  },
+  "keywords": [
+    "embedding",
+    "matching"
+  ],
+  "author": "PROCEED Project",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PROCEED-Labs/proceed/issues"
+  },
+  "homepage": "https://github.com/PROCEED-Labs/proceed#readme",
+  "dependencies": {
+    "@huggingface/transformers": "^3.7.6",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "ollama": "^0.5.16",
+    "sqlite-vec": "^0.1.7-alpha.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.30",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=23.5.0"
+  }
+}

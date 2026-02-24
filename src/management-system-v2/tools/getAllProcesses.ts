@@ -4,7 +4,8 @@ import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
-export const schema = toAuthorizationSchema({});
+// export const schema = toAuthorizationSchema({});
+export const schema = {};
 
 // Define tool metadata
 export const metadata = {
@@ -20,7 +21,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcesses({ accessCode }: InferSchema<typeof schema>) {
+export default async function getProcesses({}: InferSchema<typeof schema>) {
   try {
     // const verification = await verifyCode(accessCode);
     //

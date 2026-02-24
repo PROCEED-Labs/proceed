@@ -135,7 +135,6 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       const [process] = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
       const segments = bpmnFilePath.split('/');
-      console.log(bpmnFilePath, segments.length > 2);
 
       const processData: ProcessData = {
         id: id || '',

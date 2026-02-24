@@ -39,14 +39,9 @@ const { Text } = Typography;
 type VariablesEditorProps = {
   parentConfig: Config;
   editingAllowed: boolean;
-  source?: string;
 };
 
-const AasConfigContent: React.FC<VariablesEditorProps> = ({
-  parentConfig,
-  editingAllowed,
-  source,
-}) => {
+const AasConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editingAllowed }) => {
   const [selectionId, setSelectionId] = useState('');
   const [selectedParameterId, setSelectedParameterId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -601,7 +596,6 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({
               expandedKeys={expandedKeys}
               currentLanguage={currentDisplayLanguage}
               onLanguageChange={handleLanguageChange}
-              source={source}
             />
           </Col>
         </Row>

@@ -18,12 +18,12 @@ export default function MachineConfigViewClient({ config, source }: Props) {
     <Content
       title={
         <>
-          Tech Data Set: {`${config.shortName.value} - ${config.name.value}`}
+          Configuration: {`${config.shortName.value} - ${config.name.value}`}
           <EditOutlined style={{ margin: '0 10px', cursor: 'pointer' }} onClick={openEditModal} />
         </>
       }
     >
-      <AasConfigContent parentConfig={config} editingAllowed={true} source={source} />
+      <AasConfigContent parentConfig={config} editingAllowed={source !== 'personal'} />
     </Content>
   );
 }

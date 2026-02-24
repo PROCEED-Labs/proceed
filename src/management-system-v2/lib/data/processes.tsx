@@ -17,7 +17,7 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -64,6 +64,7 @@ import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
 import { getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
+import { createFolder, getFolder, getFolderContents } from './folders';
 
 // Import necessary functions from processModule
 
@@ -177,6 +178,7 @@ export const addProcesses = async (
     description: string;
     bpmn?: string;
     folderId?: string;
+    folderPath?: string;
     userDefinedId?: string;
     id?: string;
     executable?: boolean;
@@ -223,6 +225,45 @@ export const addProcesses = async (
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
+    }
+
+    // recreate the expected folder path (needed for zip file imports to recreate exported directory
+    // structures
+    if (value.folderPath) {
+      let folder = value.folderId
+        ? await getFolder(activeEnvironment.spaceId, value.folderId)
+        : await getRootFolder(activeEnvironment.spaceId, ability);
+
+      if (isUserErrorResponse(folder)) return folder;
+
+      const segments = value.folderPath.split('/');
+      for (const segment of segments) {
+        const contents = await getFolderContents(activeEnvironment.spaceId, folder.id);
+        if (isUserErrorResponse(contents)) return contents;
+        const existingFolder = contents.find(
+          (entry) => entry.type === 'folder' && entry.name === segment,
+        ) as Extract<(typeof contents)[number], { type: 'folder' }>;
+        if (existingFolder) {
+          // a folder with the wanted name already exists => just use that folder
+          folder = await getFolder(activeEnvironment.spaceId, existingFolder.id);
+          if (isUserErrorResponse(folder)) return folder;
+        } else {
+          // there is no folder with the wanted name => create it
+          const res = await createFolder({
+            name: segment,
+            parentId: folder.id,
+            environmentId: activeEnvironment.spaceId,
+          });
+          if (isUserErrorResponse(res)) return res;
+
+          folder = await getFolder(activeEnvironment.spaceId, res.id);
+          if (isUserErrorResponse(folder)) return folder;
+        }
+      }
+
+      if (isUserErrorResponse(folder)) return folder;
+
+      value.folderId = folder.id;
     }
 
     // bpmn prop gets deleted in addProcess()

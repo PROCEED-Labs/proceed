@@ -1,7 +1,7 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, DatePicker, Form, Input, Modal, Space } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Space } from 'antd';
 import { FC, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -47,7 +47,7 @@ const FolderInput = ({
         onCancel={() => setModalOpen(false)}
         closeIcon={null}
       >
-        <Space direction="vertical" style={{ maxWidth: '100%' }}>
+        <Space orientation="vertical" style={{ maxWidth: '100%' }}>
           <Button
             onClick={() => {
               onChange?.(undefined);
@@ -131,7 +131,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
     <Form form={form} layout="vertical" onFinish={submitChanges} initialValues={role}>
       {note && (
         <>
-          <Alert type="info" message={note} />
+          <Alert type="info" title={note} />
           <br />
         </>
       )}

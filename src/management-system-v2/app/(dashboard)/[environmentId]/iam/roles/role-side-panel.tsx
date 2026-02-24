@@ -1,7 +1,7 @@
 'use client';
 
 import { Dispatch, FC, PropsWithChildren, SetStateAction, useRef } from 'react';
-import { Alert, Drawer, Grid, Space, Typography } from 'antd';
+import { Alert, Drawer, Grid, Typography } from 'antd';
 import CollapsibleCard from '@/components/collapsible-card';
 import { useUserPreferences } from '@/lib/user-preferences';
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';

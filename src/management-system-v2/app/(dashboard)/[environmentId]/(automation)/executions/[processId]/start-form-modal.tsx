@@ -68,7 +68,7 @@ const StartFormModal: React.FC<StartFormModalProps> = ({
       height={'80vh'}
       style={{ padding: '1px' }}
       styles={{
-        content: {
+        container: {
           height: '80vh',
           display: 'flex',
           flexDirection: 'column',

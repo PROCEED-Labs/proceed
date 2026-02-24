@@ -1,6 +1,7 @@
 const path = require('path');
 
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   output: 'standalone',
   outputFileTracingRoot: path.join(__dirname, '../../'),
@@ -11,13 +12,12 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '2mb',
     },
-    nodeMiddleware: true,
   },
   redirects: async () => {
     return [
       {
         source: '/',
-        destination: '/processes',
+        destination: '/start',
         // Permanent redirects get cached by browsers for a lifetime, so they
         // are effectively a de-commision of the old URL.
         // https://lists.w3.org/Archives/Public/ietf-http-wg/2017OctDec/0363.html
@@ -27,6 +27,10 @@ const nextConfig = {
   },
   rewrites: async () => {
     return [
+      {
+        source: '/start',
+        destination: '/my/start',
+      },
       {
         source: '/processes',
         destination: '/my/processes/editor',
@@ -51,7 +55,9 @@ const nextConfig = {
         'iam',
         'profile',
         'projects',
+        'machine-config',
         'settings',
+        'start',
       ].map((folder) => ({
         // TODO: when building techserver separately, this can be set to rewrite
         // all unused paths to /404.

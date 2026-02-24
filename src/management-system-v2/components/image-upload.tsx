@@ -1,15 +1,5 @@
 import React, { ReactNode, useEffect, useState } from 'react';
-import {
-  Button,
-  Image,
-  ImageProps,
-  Progress,
-  Space,
-  Spin,
-  Upload,
-  UploadProps,
-  message,
-} from 'antd';
+import { Button, Image, ImageProps, Progress, Spin, Upload, UploadProps, message } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 
 import { MAX_CONTENT_LENGTH, useFileManager } from '@/lib/useFileManager';

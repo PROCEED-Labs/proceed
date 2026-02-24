@@ -1,17 +1,21 @@
 services:
   proceed_standalone_management_system:
     image: proceed/ms-server:standalone
-    container_name: proceed_standalone_management_system
+    # hostname is set so the MS can read the container os.hostname() (needed to start a new process instance)
+    hostname: proceed_standalone_management_system
     restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
       - NEXTAUTH_URL=http://localhost:3002
       - NEXTAUTH_SECRET=gVRJMFKtjZmfNuLt3ZoxWTMujSwkig
+      - IAM_GUEST_CONVERSION_REFERENCE_SECRET=odZhhAyEfv9iVi7IHKh4XsEo
+      - IAM_MCP_ACCESS_ENCRYPTION_SECRET=oruOYeLk8Ykqbjrf3J1qvVgD
+      - SHARING_ENCRYPTION_SECRET=m2o0JBqYcDZxk7FUDrg0NBeq
       - PROCEED_PUBLIC_IAM_ACTIVE=true
       - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
       - PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true
       - PROCEED_PUBLIC_GANTT_ACTIVE=true
-      - PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE=false
+      - PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE=true
       - PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE=true
       - PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE=true
       - PROCEED_PUBLIC_COMPETENCE_MATCHING_ACTIVE=true
@@ -26,7 +30,8 @@ services:
 
   proceed_standalone_postgres_database:
     image: postgres:17.7
-    container_name: proceed_standalone_postgres_database
+    # hostname is set so the DB string is correct
+    hostname: proceed_standalone_postgres_database
     restart: unless-stopped
     environment:
       POSTGRES_DB: proceed_db
@@ -39,7 +44,6 @@ services:
 
   proceed_standalone_engine:
     image: proceed/engine:edge
-    container_name: proceed_standalone_engine
     restart: unless-stopped
     ports:
       - '33029:33029'

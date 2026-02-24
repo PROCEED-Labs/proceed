@@ -16,6 +16,8 @@ import {
 import { env } from '../ms-config/env-vars';
 import { isMember, removeMember } from './db/iam/memberships';
 import { UserHasToDeleteOrganizationsError } from './db/iam/users';
+import { addParentConfig } from './db/machine-config';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,
@@ -31,12 +33,21 @@ export async function addOrganizationEnvironment(
   try {
     const environmentData = UserOrganizationEnvironmentInputSchema.parse(environmentInput);
 
-    return await addEnvironment({
+    const newEnvironment = await addEnvironment({
       ownerId: userId,
       isActive: true,
       isOrganization: true,
       ...environmentData,
     });
+
+    // adding a organizational config
+    // TODO maybe tie to some env variable?
+    const config = await addParentConfig(
+      defaultOrganizationConfigurationTemplate(newEnvironment.id, environmentData.name),
+      newEnvironment.id,
+    );
+
+    return newEnvironment;
   } catch (e) {
     console.error(e);
     return userError('Error adding environment');

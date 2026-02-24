@@ -20,6 +20,10 @@ import {
   SolutionOutlined,
   HomeOutlined,
   AppstoreOutlined,
+  ProductOutlined,
+  FormOutlined,
+  ToolOutlined,
+  DatabaseOutlined,
 } from '@ant-design/icons';
 import { TbUser, TbUserEdit } from 'react-icons/tb';
 
@@ -43,6 +47,7 @@ import { CustomNavigationLink } from '@/lib/custom-links/custom-link';
 import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 import ActiveTasksBadge from '@/components/active-tasks-badge';
+import { syncOrganizationUsers } from '@/lib/data/db/machine-config';
 
 const DashboardLayout = async (
   props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
@@ -51,10 +56,15 @@ const DashboardLayout = async (
 
   const { children } = props;
 
-  const { userId, systemAdmin, user } = await getCurrentUser();
+  const { session, userId, systemAdmin, user } = await getCurrentUser();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);
+
+  // Trigger syncOrganizationUsers if user just signed in and this is an organizational space
+  if ((session as any)?.justSignedIn && activeEnvironment.isOrganization) {
+    await syncOrganizationUsers(activeEnvironment.spaceId);
+  }
 
   const userEnvironments: Environment[] = [];
   if (env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE)
@@ -135,47 +145,23 @@ const DashboardLayout = async (
     });
   }
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
-    const documentationSettings = await getSpaceSettingsValues(
-      activeEnvironment.spaceId,
-      'process-documentation',
-    );
-
-    if (documentationSettings.active !== false) {
-      const processRegex = '/processes($|/)';
-      let children: ExtendedMenuItems = [
-        documentationSettings.list?.active !== false && {
-          key: 'processes-list',
-          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>List</Link>,
-          icon: <CopyOutlined />,
-          selectedRegex: '/processes/list($|/)',
-        },
-        documentationSettings.editor?.active !== false && {
-          key: 'processes-editor',
-          label: <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Editor</Link>,
-          icon: <EditOutlined />,
-          selectedRegex: '/processes/editor($|/)',
-        },
-      ].filter(truthyFilter);
-
-      if (children.length)
-        layoutMenuItems.push({
-          key: 'processes-group',
-          label: 'Processes',
-          icon: <PartitionOutlined />,
-          selectedRegex: processRegex,
-          openRegex: processRegex,
-          children,
-        });
-    }
-  }
+  layoutMenuItems.push({
+    key: 'start',
+    label: <Link href={spaceURL(activeEnvironment, `/start`)}>Start</Link>,
+    icon: <ProductOutlined />,
+    selectedRegex: '/start($|/)',
+  });
 
   const automationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
     'process-automation',
   );
 
-  if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings.active !== false) {
+  if (
+    msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    automationSettings.active !== false &&
+    automationSettings.tasklist?.active !== false
+  ) {
     let childRegex = '';
     let children: ExtendedMenuItems = [];
 
@@ -186,8 +172,8 @@ const DashboardLayout = async (
       childRegex = '/tasks($|/)';
       children.push({
         key: 'task-editor',
-        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Editor</Link>,
-        icon: <EditOutlined />,
+        label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Task Editor</Link>,
+        icon: <FormOutlined />,
         selectedRegex: childRegex,
       });
     }
@@ -220,6 +206,43 @@ const DashboardLayout = async (
       openRegex: childRegex,
       children: children.length ? children : undefined,
     });
+  }
+
+  if (msConfig.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && can('view', 'Process')) {
+    const documentationSettings = await getSpaceSettingsValues(
+      activeEnvironment.spaceId,
+      'process-documentation',
+    );
+
+    if (documentationSettings.active !== false) {
+      const processRegex = '/processes($|/)';
+      let children: ExtendedMenuItems = [
+        documentationSettings.list?.active !== false && {
+          key: 'processes-list',
+          label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>Process List</Link>,
+          icon: <CopyOutlined />,
+          selectedRegex: '/processes/list($|/)',
+        },
+        documentationSettings.editor?.active !== false && {
+          key: 'processes-editor',
+          label: (
+            <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Process Editor</Link>
+          ),
+          icon: <EditOutlined />,
+          selectedRegex: '/processes/editor($|/)',
+        },
+      ].filter(truthyFilter);
+
+      if (children.length)
+        layoutMenuItems.push({
+          key: 'processes-group',
+          label: 'My Processes',
+          icon: <PartitionOutlined />,
+          selectedRegex: processRegex,
+          openRegex: processRegex,
+          children,
+        });
+    }
   }
 
   if (msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
@@ -271,6 +294,23 @@ const DashboardLayout = async (
     }
   }
 
+  if (msConfig.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE && can('view', 'MachineConfig')) {
+    layoutMenuItems.push({
+      key: 'machine-config',
+      label: (
+        <Link style={{ color: 'inherit' }} href={spaceURL(activeEnvironment, `/machine-config`)}>
+          Configurations
+        </Link>
+      ),
+      icon: (
+        <Link href={spaceURL(activeEnvironment, `/machine-config`)}>
+          <ToolOutlined />
+        </Link>
+      ),
+      selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/)`,
+    });
+  }
+
   if (
     activeEnvironment.isOrganization &&
     (can('manage', 'User') ||
@@ -307,6 +347,20 @@ const DashboardLayout = async (
       });
     }
 
+    // Data view under Organization
+    const dataRegex = `/machine-config/${activeEnvironment.spaceId}($|/)`;
+    childRegex = !childRegex ? dataRegex : `(${childRegex})|(${dataRegex})`;
+    children.push({
+      key: 'organization-data',
+      label: (
+        <Link href={spaceURL(activeEnvironment, `/machine-config/${activeEnvironment.spaceId}`)}>
+          Data
+        </Link>
+      ),
+      icon: <DatabaseOutlined />,
+      selectedRegex: dataRegex,
+    });
+
     if (can('manage', 'User')) {
       const userRegex = '/iam/users($|/)';
       childRegex = !childRegex ? userRegex : `(${childRegex})|(${userRegex})`;
@@ -342,7 +396,9 @@ const DashboardLayout = async (
   if (msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
     const profileRegex = '/profile($|/)';
     const spacesRegex = '/spaces($|/)';
-    const regex = `(${profileRegex})|(${spacesRegex})`;
+    // Only match if the url contains the source=personal query parameter
+    const personalDataRegex = `/machine-config/${userId}\\?source=personal($|&)`;
+    const regex = `(${profileRegex})|(${spacesRegex})|(${personalDataRegex})`;
     layoutMenuItems.push({
       key: 'iam-personal',
       label: 'Personal',
@@ -370,12 +426,27 @@ const DashboardLayout = async (
           icon: <AppstoreOutlined />,
           selectedRegex: spacesRegex,
         },
+        {
+          key: 'personal-data',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Data</GuestWarningButton>
+          ) : (
+            <Link href={spaceURL(activeEnvironment, `/machine-config/${userId}?source=personal`)}>
+              Data
+            </Link>
+          ),
+          icon: <DatabaseOutlined />,
+          selectedRegex: personalDataRegex,
+        },
       ],
     });
   }
 
   if (!activeEnvironment.isOrganization) {
-    const regex = '/settings($|/)';
+    const settingsRegex = '/settings($|/)';
+    // Match only the base path without query parameters, or with query params that don't include source=personal
+    const personalHomeDataRegex = `/machine-config/${activeEnvironment.spaceId}(?!\\?source=personal)($|\\?)`;
+    const regex = `(${settingsRegex})|(${personalHomeDataRegex})`;
     layoutMenuItems.push({
       key: 'personal-space-home',
       label: 'Home',
@@ -391,7 +462,21 @@ const DashboardLayout = async (
             <SpaceLink href="/settings">Settings</SpaceLink>
           ),
           icon: <SettingOutlined />,
-          selectedRegex: regex,
+          selectedRegex: settingsRegex,
+        },
+        {
+          key: 'personal-home-space-data',
+          label: user?.isGuest ? (
+            <GuestWarningButton>Data</GuestWarningButton>
+          ) : (
+            <Link
+              href={spaceURL(activeEnvironment, `/machine-config/${activeEnvironment.spaceId}`)}
+            >
+              Data
+            </Link>
+          ),
+          icon: <DatabaseOutlined />,
+          selectedRegex: personalHomeDataRegex,
         },
       ],
     });

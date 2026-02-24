@@ -1,6 +1,6 @@
 import { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Tooltip, Button, Space, Divider } from 'antd';
+import { Tooltip, Button, Space, Divider, Select } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -331,7 +331,7 @@ const ModelerToolbar = ({
                   ></Button>
                 </Tooltip>
               )}
-              <Divider type="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
+              <Divider orientation="vertical" style={{ alignSelf: 'stretch', height: 'auto' }} />
               <Tooltip title="View Process Documentation">
                 <Button
                   aria-label="view-documentation"

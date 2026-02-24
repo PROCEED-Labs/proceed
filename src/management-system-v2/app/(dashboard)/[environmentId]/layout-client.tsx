@@ -28,7 +28,7 @@ import SpaceLink from '@/components/space-link';
 import { useSession } from '@/components/auth-can';
 import ChangeUserPasswordModal from './profile/change-password-modal';
 import useMSLogo from '@/lib/use-ms-logo';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { MenuItemType } from 'antd/es/menu/interface';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
@@ -106,8 +106,10 @@ const Layout: FC<
   // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
   const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });
 
-  const pathname = usePathname();
-
+  const pathnameBase = usePathname();
+  // Also check the query paramters
+  const searchParams = useSearchParams();
+  const pathname = pathnameBase + (searchParams?.toString() ? `?${searchParams}` : '');
   const [selected, setSelected] = useState<string[]>([]);
   const [open, setOpen] = useState<string[]>([]);
 
@@ -216,7 +218,7 @@ const Layout: FC<
             }}
             title="You need to set your password"
             hint={
-              <Alert message="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
+              <Alert title="Your account still has a temporary password, in order to use PROCEED you need to set a new password" />
             }
             modalProps={{ closable: false }}
           />
@@ -258,10 +260,7 @@ const Layout: FC<
                         height: '64px',
                       }}
                     >
-                      <Link
-                        className={styles.LogoContainer}
-                        href={spaceURL(activeSpace, `/processes`)}
-                      >
+                      <Link className={styles.LogoContainer} href={spaceURL(activeSpace, `/start`)}>
                         <Image
                           src={imageSource}
                           alt="PROCEED Logo"
@@ -345,12 +344,12 @@ const Layout: FC<
           closable={false}
           open={showLoginRequest}
           onCancel={() => setShowLoginRequest(false)}
-          styles={{ mask: { backdropFilter: 'blur(10px)' }, content: { padding: 0 } }}
+          styles={{ mask: { backdropFilter: 'blur(10px)' }, container: { padding: 0 } }}
         >
           <Alert
             type="warning"
             style={{ zIndex: '1000' }}
-            message={
+            title={
               <>
                 To store and change settings,{' '}
                 <SpaceLink href={'/signin'}>please log in as user.</SpaceLink>

@@ -5,7 +5,6 @@ import React, {
   useEffect,
   useId,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import { createPortal } from 'react-dom';
@@ -311,7 +310,7 @@ export const VariableSelection: React.FC<
     <>
       <Select
         value={variable}
-        style={{ display: 'block', ...style }}
+        style={{ display: 'flex', ...style }}
         title={getVariableTooltip(variables, variable)}
         options={validVariables.map((v) => ({
           label: v.name,
@@ -323,7 +322,7 @@ export const VariableSelection: React.FC<
           const variable = variables.find((v) => v.name === val);
           onChange(val, variable?.dataType, variable?.textFormat);
         }}
-        dropdownRender={(menu) => (
+        popupRender={(menu) => (
           <>
             {menu}
             <Space style={{ display: 'block', padding: '0 8px 4px' }}>

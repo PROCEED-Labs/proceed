@@ -17,6 +17,8 @@ import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { env } from '@/lib/ms-config/env-vars';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { removeParentConfiguration } from '../machine-config';
 
 export async function getEnvironments() {
   //TODO : Ability check
@@ -176,6 +178,11 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
   }
 
   if (ability && !ability.can('delete', 'Environment')) throw new UnauthorizedError();
+
+  // we currently cannot just use "onDelete: cascade", so we have to call our remove-methods manually
+  const spaceConfigs = await db.config.findMany({ where: { environmentId }, select: { id: true } });
+  await asyncForEach(spaceConfigs, async (config) => removeParentConfiguration(config.id));
+
   await db.space.delete({
     where: { id: environmentId },
   });

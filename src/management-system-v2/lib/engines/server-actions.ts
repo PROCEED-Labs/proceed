@@ -355,7 +355,7 @@ export async function getTasklistEntryHTML(
 
     // maps relative urls used to get resources on the engine to the MS api to allow them to work here as well
     function mapResourceUrls(variables: Record<string, any>) {
-      if (!variables) return variables;
+      if (!variables || !engine) return variables;
 
       return Object.fromEntries(
         Object.entries(variables).map(([key, value]) => {

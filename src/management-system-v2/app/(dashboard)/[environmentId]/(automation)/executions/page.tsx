@@ -6,8 +6,6 @@ import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { Skeleton } from 'antd';
-import { Suspense } from 'react';
 import { getDbEngines } from '@/lib/data/db/engines';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(

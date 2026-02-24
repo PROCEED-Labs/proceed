@@ -22,10 +22,9 @@ import {
   Card,
   Badge,
   Divider,
-  MenuProps,
   Typography,
 } from 'antd';
-import { InfoCircleOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, PlayCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 
 import { ComponentProps, use, useMemo, useRef, useState, useTransition } from 'react';
 import {
@@ -34,7 +33,6 @@ import {
   AppstoreOutlined,
   FolderOutlined,
   FileOutlined,
-  FolderFilled,
   ShareAltOutlined,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
@@ -46,7 +44,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import { useAbilityStore } from '@/lib/abilityStore';
 
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import {
   checkIfProcessExistsByName,
   copyProcesses,
@@ -154,7 +152,6 @@ const Processes = ({
   useInitialiseFavourites(favs);
   const { removeIfPresent: removeFromFavouriteProcesses } = useFavouritesStore();
 
-  const path = usePathname();
   const { isListView } = useProcessView();
 
   const [selectedRowElements, setSelectedRowElements] = useState<ProcessListProcess[]>([]);
@@ -208,8 +205,6 @@ const Processes = ({
     highlightedKeys: ['name', 'description'],
     transformData: (matches) => matches.map((match) => match.item),
   });
-
-  const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
   // Folders on top
   filteredData.sort((a, b) => {
@@ -549,19 +544,22 @@ const Processes = ({
                   <span style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     {!breakpoint.xs && !isListView && (
                       <Space>
-                        <Dropdown.Button
-                          menu={{
-                            items: defaultDropdownItems.filter(
-                              (item) => item.key !== 'create-process',
-                            ),
-                            mode: 'inline',
-                          }}
-                          type="primary"
-                          onClick={() => setOpenCreateProcessModal(true)}
-                          trigger={['click']}
-                        >
-                          <AiOutlinePartition /> Create Process
-                        </Dropdown.Button>
+                        <Space.Compact>
+                          <Button type="primary" onClick={() => setOpenCreateProcessModal(true)}>
+                            <AiOutlinePartition /> Create Process
+                          </Button>
+                          <Dropdown
+                            menu={{
+                              items: defaultDropdownItems.filter(
+                                (item) => item.key !== 'create-process',
+                              ),
+                              mode: 'inline',
+                            }}
+                            trigger={['click']}
+                          >
+                            <Button type="primary" icon={<EllipsisOutlined />} />
+                          </Dropdown>
+                        </Space.Compact>
                         <ProcessImportButton
                           type="default"
                           icon={<PiFolderOpen />}
@@ -574,7 +572,7 @@ const Processes = ({
 
                     {/* DIVIDER BLOCK */}
                     <SelectionActions count={selectedRowKeys.length} readOnly={isListView}>
-                      <Space split={<Divider type="vertical" />}>
+                      <Space separator={<Divider orientation="vertical" />}>
                         {selectedRowKeys.length === 1 &&
                           selectedRowElements[0].type == 'process' && (
                             <div>

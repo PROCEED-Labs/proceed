@@ -6,9 +6,7 @@ import { Button, Modal, Upload } from 'antd';
 import type { ButtonProps } from 'antd';
 
 import {
-  getDefinitionsId,
   getDefinitionsInfos,
-  getDefinitionsName,
   getElementsByTagName,
   getProcessDocumentation,
   toBpmnObject,

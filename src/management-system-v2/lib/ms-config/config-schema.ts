@@ -39,6 +39,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV',
   'STORAGE_CLOUD_BUCKET_NAME',
 
+  'PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE',
   // Variables that aren't implemented yet
   // 'PRISMA_???',
 ] satisfies (keyof MergedSchemas)[];

@@ -213,6 +213,56 @@ const basePermissionOptions: PermissionCategory[] = [
     ],
   },
   {
+    key: 'machine_config',
+    title: 'Machine Config',
+    resource: 'MachineConfig',
+    permissions: [
+      {
+        key: 'machine_config_view',
+        title: 'View Machine Configurations',
+        description: 'Allows a user to view machine configurations',
+        permission: 'view',
+      },
+      {
+        key: 'machine_config_manage',
+        title: 'Manage Machine Configurations',
+        description: 'Allows a user to create, modify and delete machine configurations',
+        permission: 'manage',
+      },
+      {
+        key: 'machine_config_admin',
+        title: 'Administrate Machine Configurations',
+        description: 'Allows a user perform any action on Machine Configurations.',
+        permission: 'admin',
+      },
+    ],
+  },
+  {
+    key: 'machine_config_release',
+    title: 'Machine Config Relases',
+    resource: 'MachineConfigRelease',
+    permissions: [
+      {
+        key: 'machine_config_release_view',
+        title: 'View Machine Configuration Releases',
+        description: 'Allows a user to view machine configuration releases.',
+        permission: 'view',
+      },
+      {
+        key: 'machine_config_release_manage',
+        title: 'Manage Machine Configuration Releases',
+        description: 'Allows a user to create, modify and delete machine configuration releases.',
+        permission: 'manage',
+      },
+      {
+        key: 'machine_config_release_admin',
+        title: 'Administrate Machine Configuration Releases',
+        description: 'Allows a user to perform any action on Machine Configuration Releases.',
+        permission: 'admin',
+      },
+    ],
+  },
+  {
     key: 'settings',
     title: 'SETTINGS',
     resource: 'Setting',
@@ -285,7 +335,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
           {permissionCategory.permissions.map((permission, idx) => (
             <Fragment key={permission.key}>
               <Row align="top" justify="space-between" wrap={false}>
-                <Space direction="vertical" size={0}>
+                <Space orientation="vertical" size={0}>
                   <Typography.Text strong>{permission.title}</Typography.Text>
                   <Typography.Text type="secondary">{permission.description}</Typography.Text>
                 </Space>

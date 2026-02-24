@@ -369,7 +369,6 @@ const Processes = ({
 
   function editItem(item: ProcessListProcess) {
     if (item.type === 'folder') {
-      if (isListView) return;
       const folder = processes.find((process) => process.id === item.id) as Folder;
       setUpdateFolderModal(folder);
     } else {
@@ -544,72 +543,90 @@ const Processes = ({
                     {/* DIVIDER BLOCK */}
                     <SelectionActions count={selectedRowKeys.length} readOnly={isListView}>
                       <Space separator={<Divider orientation="vertical" />}>
-                        {selectedRowKeys.length === 1 &&
-                          selectedRowElements[0].type == 'process' && (
-                            <div>
-                              <Tooltip placement="top" title={'View Process Documentation'}>
-                                <Button
-                                  aria-label="view-documentation"
-                                  type="text"
-                                  icon={<GrDocumentUser className={styles.Icon} />}
-                                  onClick={() => {
-                                    handleOpenDocumentation(selectedRowKeys[0]);
-                                  }}
-                                />
-                              </Tooltip>
-                              <Tooltip
-                                placement="top"
-                                title={isListView ? 'Open Viewer' : 'Open Editor'}
-                              >
-                                <Button
-                                  type="text"
-                                  icon={<PiNotePencil className={styles.Icon} />}
-                                  onClick={() => {
-                                    openEditor(selectedRowElements[0]);
-                                  }}
-                                />
-                              </Tooltip>
-                              <Tooltip
-                                placement="top"
-                                title={
-                                  isListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'
-                                }
-                              >
-                                <Button
-                                  type="text"
-                                  icon={<IoOpenOutline className={styles.Icon} />}
-                                  onClick={() => {
-                                    const urlPath = isListView
-                                      ? `/processes/list/${selectedRowKeys[0]}`
-                                      : `/processes/editor/${selectedRowKeys[0]}`;
-                                    const url = spaceURL(space, urlPath);
-                                    window.open(url, '_blank');
-                                  }}
-                                />
-                              </Tooltip>
-                              <Tooltip
-                                placement="top"
-                                title={isListView ? 'Show Meta Data' : 'Change Meta Data'}
-                              >
-                                <Button
-                                  type="text"
-                                  icon={<LuNotebookPen className={styles.Icon} />}
-                                  onClick={() => {
-                                    editItem(selectedRowElements[0]);
-                                  }}
-                                />
-                              </Tooltip>
-                              {!isListView && canCreateProcess && (
-                                <Tooltip placement="top" title={'Release Process'}>
-                                  <VersionCreationButton
+                        {selectedRowKeys.length === 1 && (
+                          <>
+                            {selectedRowElements[0].type == 'process' ? (
+                              <div>
+                                <Tooltip placement="top" title={'View Process Documentation'}>
+                                  <Button
+                                    aria-label="view-documentation"
                                     type="text"
-                                    icon={<BsFileEarmarkCheck />}
-                                    createVersion={createVersionFromList}
-                                  ></VersionCreationButton>
+                                    icon={<GrDocumentUser className={styles.Icon} />}
+                                    onClick={() => {
+                                      handleOpenDocumentation(selectedRowKeys[0]);
+                                    }}
+                                  />
                                 </Tooltip>
-                              )}
-                            </div>
-                          )}
+                                <Tooltip
+                                  placement="top"
+                                  title={isListView ? 'Open Viewer' : 'Open Editor'}
+                                >
+                                  <Button
+                                    type="text"
+                                    icon={<PiNotePencil className={styles.Icon} />}
+                                    onClick={() => {
+                                      openEditor(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                                <Tooltip
+                                  placement="top"
+                                  title={
+                                    isListView ? 'Open Viewer in new Tab' : 'Open Editor in new Tab'
+                                  }
+                                >
+                                  <Button
+                                    type="text"
+                                    icon={<IoOpenOutline className={styles.Icon} />}
+                                    onClick={() => {
+                                      const urlPath = isListView
+                                        ? `/processes/list/${selectedRowKeys[0]}`
+                                        : `/processes/editor/${selectedRowKeys[0]}`;
+                                      const url = spaceURL(space, urlPath);
+                                      window.open(url, '_blank');
+                                    }}
+                                  />
+                                </Tooltip>
+                                <Tooltip
+                                  placement="top"
+                                  title={isListView ? 'Show Meta Data' : 'Change Meta Data'}
+                                >
+                                  <Button
+                                    type="text"
+                                    icon={<LuNotebookPen className={styles.Icon} />}
+                                    onClick={() => {
+                                      editItem(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                                {!isListView && canCreateProcess && (
+                                  <Tooltip placement="top" title={'Release Process'}>
+                                    <VersionCreationButton
+                                      type="text"
+                                      icon={<BsFileEarmarkCheck />}
+                                      createVersion={createVersionFromList}
+                                    ></VersionCreationButton>
+                                  </Tooltip>
+                                )}
+                              </div>
+                            ) : (
+                              <div>
+                                <Tooltip
+                                  placement="top"
+                                  title={isListView ? 'Show Meta Data' : 'Change Meta Data'}
+                                >
+                                  <Button
+                                    type="text"
+                                    icon={<LuNotebookPen className={styles.Icon} />}
+                                    onClick={() => {
+                                      editItem(selectedRowElements[0]);
+                                    }}
+                                  />
+                                </Tooltip>
+                              </div>
+                            )}
+                          </>
+                        )}
 
                         {!isListView && (
                           <div>
@@ -933,6 +950,7 @@ const Processes = ({
         onSubmit={updateFolder}
         modalProps={{ title: 'Edit folder', okButtonProps: { loading: updatingFolder } }}
         initialValues={updateFolderModal}
+        readOnly={isListView}
       />
       <ProcessCreationModal
         open={openCreateProcessModal}

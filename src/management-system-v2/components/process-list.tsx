@@ -200,7 +200,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
 
       return (
         <>
-          {record.type !== 'folder' && (
+          {record.type !== 'folder' ? (
             <>
               <ActionButton
                 title={'View Documentation'}
@@ -235,13 +235,20 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
                 permission="view"
               />
             </>
+          ) : (
+            <>
+              <ActionButton
+                title={isReadOnly ? 'Show Meta Data' : 'Change Meta Data'}
+                action={changeMetaData}
+                icon={<LuNotebookPen />}
+                permission={isReadOnly ? 'view' : 'update'}
+              />
+            </>
           )}
         </>
       );
     },
-    [
-      /* copyItem, deleteItems, editItem, onExportProcess */
-    ],
+    [changeMetaData],
   );
 
   let columns: TableColumnsType<ProcessListProcess> = useMemo(() => {

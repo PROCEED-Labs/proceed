@@ -22,26 +22,37 @@ export const metadata = {
 // Tool implementation
 export default async function getProcesses({ accessCode }: InferSchema<typeof schema>) {
   try {
-    const verification = await verifyCode(accessCode);
+    // const verification = await verifyCode(accessCode);
+    //
+    // if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+    //
+    // const { environmentId, ability } = verification;
+    //
+    // let result = await prisma.process.findMany({
+    //   where: {
+    //     environmentId,
+    //   },
+    //   select: { id: true, name: true, description: true, lastEditedOn: true },
+    //   take: 100,
+    // });
+    //
+    // result = ability ? ability.filter('view', 'Process', result) : result;
+    //
+    // if (!result) return `Error: No processes found.`;
+    //
+    // return {
+    //   content: [{ type: 'text', text: JSON.stringify(result) }],
+    // };
 
-    if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
-
-    const { environmentId, ability } = verification;
-
-    let result = await prisma.process.findMany({
-      where: {
-        environmentId,
-      },
+    const processes = prisma.process.findMany({
       select: { id: true, name: true, description: true, lastEditedOn: true },
       take: 100,
     });
 
-    result = ability ? ability.filter('view', 'Process', result) : result;
-
-    if (!result) return `Error: No processes found.`;
+    if (!processes) return 'Error: No processes found.';
 
     return {
-      content: [{ type: 'text', text: JSON.stringify(result) }],
+      content: [{ type: 'text', text: JSON.stringify(processes) }],
     };
   } catch (err) {
     if (err instanceof Error) return err.message;

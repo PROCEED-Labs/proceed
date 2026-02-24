@@ -96,7 +96,7 @@ export type ProcessActions = {
   moveItems: (...args: Parameters<typeof moveIntoFolder>) => void;
 };
 
-type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
+export type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
 
 const Processes = ({
@@ -839,15 +839,13 @@ const Processes = ({
       <ShareModal
         open={openExportModal}
         setOpen={setOpenExportModal}
-        processes={(
-          selectedRowElements.filter((e) => e.type !== 'folder') as Exclude<
-            ProcessListProcess,
-            { type: 'folder' }
-          >[]
-        ).map((e) => ({
-          ...e,
-          name: e.name.value,
-        }))}
+        toShare={selectedRowElements.map((e) => {
+          return {
+            ...e,
+            name: e.name.value,
+            description: e.description.value,
+          };
+        })}
         defaultOpenTab={exportModalTab}
       />
       <ProcessModal

@@ -37,7 +37,7 @@ export const getPairingCode = async (environmentId: string) => {
     const gen = crypto.getRandomValues(new Uint8Array(32));
     // @ts-expect-error
     const code = Buffer.from(gen, 'base64').toString('base64');
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     const codeHash = await getTokenHash(code);
 

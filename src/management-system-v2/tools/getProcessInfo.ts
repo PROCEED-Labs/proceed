@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { getProcessBpmn } from '@/lib/data/db/process';
-import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
+import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -21,14 +22,13 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcessInfo({ processId, token }: InferSchema<typeof schema>) {
-  try {
-    await verifyToken(token);
-  } catch (err) {
-    if (err instanceof Error) return err.message;
-    else return 'Error: Something went wrong';
-  }
-  // TODO: maybe check if the user can access the specific process
+export default async function getProcessInfo({
+  processId,
+  accessCode,
+}: InferSchema<typeof schema>) {
+  const verification = await verifyCode(accessCode);
+
+  if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
   try {
     const bpmn = await getProcessBpmn(processId);

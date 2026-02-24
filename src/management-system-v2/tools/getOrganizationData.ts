@@ -1,10 +1,11 @@
 import { type InferSchema } from 'xmcp';
-import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
+import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
 import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 import { getUserById } from '@/lib/data/db/iam/users';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -13,7 +14,7 @@ export const schema = toAuthorizationSchema({});
 export const metadata = {
   name: 'get-organization-data',
   description:
-    'Gets data relevant to the organization referenced in the access token. This includes organization name, members and general organization and member data.',
+    'Gets data relevant to the organization referenced in the access code. This includes organization name, members and general organization and member data.',
   annotations: {
     title: 'Get Organization Data',
     readOnlyHint: true,
@@ -23,9 +24,13 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getOrganizatoinData({ token }: InferSchema<typeof schema>) {
+export default async function getOrganizatoinData({ accessCode }: InferSchema<typeof schema>) {
   try {
-    const { environmentId, ability } = await verifyToken(token);
+    const verification = await verifyCode(accessCode);
+
+    if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+
+    const { environmentId, ability } = verification;
 
     const conf = await getDeepConfigurationById(environmentId, ability);
 

@@ -1,5 +1,5 @@
 import { type InferSchema } from 'xmcp';
-import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
+import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 
 import { getUserParameter } from '@/lib/data/db/machine-config';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -21,9 +21,13 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getUserData({ token }: InferSchema<typeof schema>) {
+export default async function getUserData({ accessCode }: InferSchema<typeof schema>) {
   try {
-    const { userId, environmentId } = await verifyToken(token);
+    const verification = await verifyCode(accessCode);
+
+    if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+
+    const { userId, environmentId } = verification;
 
     const userData = await getUserParameter(userId, environmentId);
     if (isUserErrorResponse(userData)) return userData.error.message;

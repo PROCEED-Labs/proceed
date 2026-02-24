@@ -1,6 +1,7 @@
 import { type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
-import { toAuthorizationSchema, verifyToken } from '@/lib/mcp-utils';
+import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -18,9 +19,13 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcesses({ token }: InferSchema<typeof schema>) {
+export default async function getProcesses({ accessCode }: InferSchema<typeof schema>) {
   try {
-    const { environmentId, ability } = await verifyToken(token);
+    const verification = await verifyCode(accessCode);
+
+    if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+
+    const { environmentId, ability } = verification;
 
     let result = await prisma.process.findMany({
       where: {

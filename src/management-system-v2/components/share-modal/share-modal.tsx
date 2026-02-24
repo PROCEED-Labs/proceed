@@ -44,6 +44,10 @@ type ShareModalProps = {
 };
 type SharedAsType = 'public' | 'protected';
 
+function isProcess(item: InputItem): item is Exclude<InputItem, { type: 'folder' }> {
+  return item.type !== 'folder';
+}
+
 export const ShareModal: FC<ShareModalProps> = ({ toShare, open, setOpen, defaultOpenTab }) => {
   const environment = useEnvironment();
   const app = App.useApp();
@@ -60,11 +64,7 @@ export const ShareModal: FC<ShareModalProps> = ({ toShare, open, setOpen, defaul
   // The easiest way to have the submit button of the export options in the modal footer, is to keep
   // the state here and pass it down to the components
   const [exportState, selectedVersionIdsState] = useExportOptionsState(
-    (
-      toShare?.find((i) => i.type !== 'folder') as
-        | Exclude<InputItem, { type: 'folder' }>
-        | undefined
-    )?.versions,
+    toShare?.find(isProcess)?.versions,
   );
   const [isExporting, exportProcesses] = useExportProcess(
     toShare.map((p) => (p.type !== 'folder' ? { definitionId: p.id } : { folderId: p.id })),

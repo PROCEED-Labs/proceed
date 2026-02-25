@@ -5,9 +5,12 @@ import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
-export const schema = toAuthorizationSchema({
+// export const schema = toAuthorizationSchema({
+//   processId: z.string().describe('The ID of the process'),
+// });
+export const schema = {
   processId: z.string().describe('The ID of the process'),
-});
+};
 
 // Define tool metadata
 export const metadata = {
@@ -25,11 +28,11 @@ export const metadata = {
 // Tool implementation
 export default async function getProcessInfo({
   processId,
-  accessCode,
+  // accessCode,
 }: InferSchema<typeof schema>) {
-  const verification = await verifyCode(accessCode);
+  // const verification = await verifyCode(accessCode);
 
-  if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+  // if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
   try {
     const bpmn = await getProcessBpmn(processId);

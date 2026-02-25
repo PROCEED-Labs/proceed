@@ -459,7 +459,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
           onShapeRemove={onShapeRemove}
           onShapeRemoveUndo={onShapeRemoveUndo}
           onShapeAdded={canEdit ? onShapeAdded : undefined}
-          shouldSkipReferenceRestore={canEdit ? isPasteOperation : undefined}
         />
       </div>
     </CanEditContext.Provider>

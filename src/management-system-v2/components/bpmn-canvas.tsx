@@ -83,8 +83,6 @@ export type BPMNCanvasProps = {
   className?: string;
   /** Called when a shape is added to the modeler */
   onShapeAdded?: (element: Element) => void;
-  /** Function to determine if reference restoration should be skipped (e.g., for paste event) */
-  shouldSkipReferenceRestore?: (element: BpmnElement) => boolean;
 };
 
 const fitViewport = (modeler: ModelerType | NavigatedViewerType) => {
@@ -128,7 +126,6 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onShapeRemove,
       onShapeRemoveUndo,
       onShapeAdded,
-      shouldSkipReferenceRestore,
       resizeWithContainer,
       className,
     },

@@ -139,7 +139,7 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
       const processData: ProcessData = {
         id: id || '',
         name: name || '',
-        folderPath: segments.length > 2 ? segments.slice(0, -2).join('/') : undefined,
+        folderPath: segments.length > 2 ? '/' + segments.slice(0, -2).join('/') : '/',
         description: await getProcessDocumentation(bpmn),
         userDefinedId: userDefinedId,
         creator: creatorName,

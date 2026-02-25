@@ -62,7 +62,7 @@ import {
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
-import { getRootFolder } from './db/folders';
+import { getFolderById, getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
 
@@ -238,6 +238,7 @@ export const addProcesses = async (
 
       const segments = value.folderPath.split('/');
       for (const segment of segments) {
+        if (!segment) continue;
         const contents = await getFolderContents(activeEnvironment.spaceId, folder.id);
         if (isUserErrorResponse(contents)) return contents;
         const existingFolder = contents.find(
@@ -799,11 +800,12 @@ interface SingleProcessCheckData extends BaseProcessCheckData {
   batch?: false;
   processName: string;
   folderId?: string;
+  folderPath?: string;
 }
 
 interface BatchProcessCheckData extends BaseProcessCheckData {
   batch: true;
-  processes: { name: string; folderId?: string }[];
+  processes: { name: string; folderId?: string; folderPath?: string }[];
 }
 
 type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
@@ -816,13 +818,42 @@ export async function checkIfProcessExistsByName(
   try {
     const { ability } = await getCurrentEnvironment(data.spaceId);
 
+    async function getNestedFolder(folderId?: string, folderPath?: string) {
+      let folder = folderId
+        ? await getFolderById(folderId)
+        : await getRootFolder(data.spaceId, ability);
+
+      if (folderPath) {
+        const segments = folderPath.split('/');
+        for (const segment of segments) {
+          if (!segment) continue;
+          const content = await getFolderContents(data.spaceId, folder.id);
+          if (isUserErrorResponse(content)) throw content.error.message;
+          const subFolder = content.find((c) => c.name === segment);
+          if (!subFolder) return;
+          if (subFolder.type !== 'folder') throw 'Not a folder';
+          folder = await getFolderById(subFolder.id);
+        }
+      }
+
+      return folder;
+    }
+
     if (data.batch === true) {
-      const processesWithFolderIds = await Promise.all(
-        data.processes.map(async (process) => ({
-          name: process.name,
-          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
-        })),
-      );
+      const processesWithFolderIds = (
+        await Promise.all(
+          data.processes.map(async (process) => {
+            const folder = await getNestedFolder(process.folderId, process.folderPath);
+
+            if (!folder) return;
+
+            return {
+              name: process.name,
+              folderId: folder.id,
+            };
+          }),
+        )
+      ).filter(truthyFilter);
 
       return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
         processesWithFolderIds,
@@ -830,12 +861,15 @@ export async function checkIfProcessExistsByName(
         data.userId,
       );
     } else {
-      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
+      const folder = await getNestedFolder(data.folderId, data.folderPath);
+
+      if (!folder) return false;
+
       return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
         data.processName,
         data.spaceId,
         data.userId,
-        folderId,
+        folder.id,
       );
     }
   } catch (error) {

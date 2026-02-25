@@ -58,6 +58,7 @@ const ProcessModal = <
     creatorUsername?: string;
     createdOn?: string;
     bpmn?: string;
+    folderPath?: string;
   },
 >({
   open,
@@ -102,6 +103,7 @@ const ProcessModal = <
         const processesToCheck = initialData.map((process) => ({
           name: process.name,
           folderId: currentFolderId,
+          folderPath: process.folderPath,
         }));
 
         const existsResults = await checkIfProcessExistsByName({
@@ -400,6 +402,8 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
   const path = usePathname();
   const currentFolderId = path.includes('/folder/') ? path.split('/folder/').pop() : undefined;
 
+  const instance = Form.useFormInstance();
+
   const validateProcessName = async (name: string, callback: Function, initialName?: string) => {
     if (!name) {
       callback(new Error('Please fill out the Process name'));
@@ -412,11 +416,14 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
       return;
     }
 
+    const data = instance.getFieldsValue()[index];
+
     const exists = await checkIfProcessExistsByName({
       processName: name,
       spaceId: environment.spaceId,
       userId: session.data?.user.id!,
       folderId: currentFolderId,
+      folderPath: data.folderPath,
     });
 
     if (!exists) {
@@ -481,6 +488,9 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
 const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) => {
   return (
     <>
+      <Form.Item name={[index, 'folderPath']} label="Import Path">
+        <Input disabled />
+      </Form.Item>
       <ProcessInputs index={index} readonly={readonly} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />

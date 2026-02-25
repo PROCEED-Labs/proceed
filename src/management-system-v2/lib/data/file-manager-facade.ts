@@ -720,40 +720,80 @@ export async function handleUserTaskCopy(
       ),
     ]);
 
-    // Add references to existing image artifacts (refCounting instead of copying)
+    // Copy referenced images and build mapping for json updates
+    const imageMapping: Record<string, string> = {};
+
+    // Convert Set to array
     const imagePathsArray = [...referencedImages];
 
     await Promise.all(
       imagePathsArray.map(async (imagePath) => {
         try {
-          // Get the existing image artifact
-          const imageArtifact = await getArtifactMetaData(imagePath, true);
-          if (!imageArtifact) {
-            console.warn(`Image artifact not found: ${imagePath}`);
-            return;
-          }
+          const originalImageName = imagePath.split('/').pop() || '';
+          const imageExt = originalImageName.split('.').pop()?.toLowerCase() || 'png';
+          const imageBaseName = originalImageName.split('.')[0];
+          const newImageName = `${imageBaseName}_copy_${timestamp}`;
 
-          // Create a new reference to the existing artifact
-          try {
-            await db.artifactProcessReference.create({
-              data: {
-                artifactId: imageArtifact.id,
-                processId,
-              },
-            });
-          } catch (error: any) {
-            if (error.code === 'P2002') {
-              // Reference already exists, skip
-              console.warn('ArtifactProcessReference already exists for image, skipping.');
-            } else {
-              throw error;
-            }
-          }
+          // Determine mime type
+          const mimeType =
+            imageExt === 'png'
+              ? 'image/png'
+              : imageExt === 'jpg' || imageExt === 'jpeg'
+                ? 'image/jpeg'
+                : imageExt === 'svg'
+                  ? 'image/svg+xml'
+                  : imageExt === 'webp'
+                    ? 'image/webp'
+                    : 'image/png';
+
+          // Check if image artifact exists
+          const imageArtifact = await getArtifactMetaData(imagePath, true);
+          if (!imageArtifact) return;
+
+          const newImageNameWithExt = `${newImageName}.${imageExt}`;
+          const destinationFilePath = generateProcessFilePath(
+            newImageNameWithExt,
+            processId,
+            mimeType,
+          );
+
+          // Copy the image file
+          await copyFile(imageArtifact.filePath, destinationFilePath);
+
+          // Create database entry
+          await saveArtifactToDB(newImageNameWithExt, destinationFilePath, 'images', {
+            processId,
+            saveWithoutSavingReference: false,
+          });
+
+          imageMapping[imagePath] = destinationFilePath;
         } catch (error) {
-          console.warn(`Could not add reference for image ${imagePath}:`, error);
+          console.warn(`Could not copy image ${imagePath}:`, error);
         }
       }),
     );
+
+    // Update image paths in json
+    let updatedJson = originalJson;
+    for (const [oldPath, newPath] of Object.entries(imageMapping)) {
+      updatedJson = updatedJson.replace(
+        new RegExp(oldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+        newPath,
+      );
+    }
+
+    // Save updated json (replace the file content)
+    const jsonFilePath = generateProcessFilePath(
+      `${newFileName}.json`,
+      processId,
+      'application/json',
+    );
+
+    // Retrieve the artifact to get proper file path
+    const jsonArtifact = await getArtifactMetaData(`${newFileName}.json`, false);
+    if (jsonArtifact) {
+      await saveFile(jsonArtifact.filePath, 'application/json', Buffer.from(updatedJson), false);
+    }
 
     return newFileName;
   } catch (error) {

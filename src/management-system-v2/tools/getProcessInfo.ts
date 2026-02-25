@@ -5,12 +5,9 @@ import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 
 // Define the schema for tool parameters
-// export const schema = toAuthorizationSchema({
-//   processId: z.string().describe('The ID of the process'),
-// });
-export const schema = {
+export const schema = toAuthorizationSchema({
   processId: z.string().describe('The ID of the process'),
-};
+});
 
 // Define tool metadata
 export const metadata = {
@@ -21,18 +18,14 @@ export const metadata = {
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
-    openWorldHint: false,
   },
 };
 
 // Tool implementation
-export default async function getProcessInfo({
-  processId,
-  // accessCode,
-}: InferSchema<typeof schema>) {
-  // const verification = await verifyCode(accessCode);
+export default async function getProcessInfo({ processId, userCode }: InferSchema<typeof schema>) {
+  const verification = await verifyCode(userCode);
 
-  // if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+  if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
   try {
     const bpmn = await getProcessBpmn(processId);

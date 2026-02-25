@@ -55,7 +55,7 @@ export const getPairingInfo = async (code: string) => {
 
     const pairingInfo = await _getPairingCodeInfo(codeHash);
 
-    const error = userError('Invalid code.');
+    const error = userError('Invalid user code.');
     if (!pairingInfo) return error;
     if (pairingInfo.expires.getTime() < Date.now()) {
       await _revokePairingCodes(pairingInfo.userId, pairingInfo.environmentId);

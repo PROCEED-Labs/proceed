@@ -5,10 +5,10 @@ import { getPairingInfo } from './data/mcp-authorization';
 import { isUserErrorResponse } from './user-error';
 
 export const authorizationInfoSchema = {
-  accessCode: z
+  userCode: z
     .string()
     .describe(
-      'Code that grants access to the MCP tools. Also used to identify which user from which space is trying to access the specific tool.',
+      'Code that identifies the respective user for the MCP tools to fetch the correct data.',
     ),
 };
 
@@ -19,7 +19,7 @@ export function toAuthorizationSchema<T extends Record<string, any>>(
 }
 
 export async function verifyCode(code: string) {
-  if (!code) throw new Error('Invalid access code.');
+  if (!code) throw new Error('Invalid user code.');
 
   const info = await getPairingInfo(code);
 

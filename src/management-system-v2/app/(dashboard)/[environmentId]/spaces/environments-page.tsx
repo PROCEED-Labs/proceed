@@ -76,11 +76,9 @@ const EnvironmentsPage: FC<{
                 <Link href={`/${id}/start`}>
                   <Button>Enter</Button>
                 </Link>
-                {
-                  <Button onClick={() => handleCreateAccessCode(environment.id)}>
-                    Connect Chatbot
-                  </Button>
-                }
+                <Button onClick={() => handleCreateAccessCode(environment.id)}>
+                  Connect Chatbot
+                </Button>
                 {environment.isOrganization && (
                   <ConfirmationButton
                     title={`Leave ${environment.name.value}`}

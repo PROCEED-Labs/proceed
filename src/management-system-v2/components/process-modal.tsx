@@ -486,9 +486,12 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
 };
 
 const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) => {
+  const instance = Form.useFormInstance();
+  const data = instance.getFieldsValue()[index];
+
   return (
     <>
-      <Form.Item name={[index, 'folderPath']} label="Import Path">
+      <Form.Item hidden={!data?.folderPath} name={[index, 'folderPath']} label="Import Path">
         <Input disabled />
       </Form.Item>
       <ProcessInputs index={index} readonly={readonly} />

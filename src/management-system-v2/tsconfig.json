@@ -22,7 +22,8 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "FeatureFlags": ["../../FeatureFlags.js"]
+      "FeatureFlags": ["../../FeatureFlags.js"],
+      "@xmcp/*": ["./.xmcp/*"]
     }
   },
   "include": [

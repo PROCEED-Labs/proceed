@@ -45,24 +45,55 @@ type EditorProps = {
 
 interface EditorContentRef {
   getJson: () => string;
+  canUndo: () => boolean;
 }
 
 export interface HtmlFormEditorRef extends EditorContentRef {
   getHtml: () => string;
+  canUndo: () => boolean;
 }
 
 // Store the default state structure
-let defaultStateStructure: any = null;
-
-export const setDefaultStateSnapshot = (serializedState: string) => {
-  const state = JSON.parse(serializedState);
-  // Extract only the structure and props, ignoring node IDs because they are generated randomly
-  defaultStateStructure = extractStructure(state);
+const HARDCODED_DEFAULT_STRUCTURE = {
+  rows: [
+    {
+      columnCount: 1,
+      elements: [
+        {
+          type: 'Text',
+          props: {
+            text: '<h1 class="text-style-heading" dir="ltr"><b><strong class="text-style-bold" style="white-space: pre-wrap;">New Title Element</strong></b></h1>',
+          },
+        },
+      ],
+    },
+    {
+      columnCount: 1,
+      elements: [{ type: 'Text', props: { text: 'New Text Element' } }],
+    },
+    {
+      columnCount: 1,
+      elements: [
+        {
+          type: 'Input',
+          props: { type: 'text', label: 'New Input', defaultValue: '', labelPosition: 'top' },
+        },
+      ],
+    },
+    {
+      columnCount: 1,
+      elements: [
+        {
+          type: 'SubmitButton',
+          props: { title: 'Submit', type: 'primary', block: false },
+        },
+      ],
+    },
+  ],
+  totalElements: 4,
 };
 
-export const getDefaultStateSnapshot = () => {
-  return defaultStateStructure;
-};
+export const getDefaultStateSnapshot = () => HARDCODED_DEFAULT_STRUCTURE;
 
 // Helper to extract structure without node IDs
 export const extractStructure = (state: any) => {
@@ -115,28 +146,12 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
       actions.deserialize(json);
 
       // Check if ROOT is empty, add default elements
-      const rootNode = query.node('ROOT').get();
-      if (rootNode.data.nodes.length === 0) {
-        addDefaultElements(actions, query);
+      const isEmpty = query.node('ROOT').get().data.nodes.length === 0;
+      if (isEmpty) addDefaultElements(actions, query);
 
-        // Capture the default state snapshot after adding elements
-        // Use requestAnimationFrame to make sure that DOM is updated
-        requestAnimationFrame(() => {
-          const snapshot = query.serialize();
-          setDefaultStateSnapshot(snapshot);
-        });
-      } else {
-        // If there are already elements, capture snapshot anyway (for page reload)
-        const currentState = query.serialize();
-        const existingSnapshot = getDefaultStateSnapshot();
-        if (!existingSnapshot) {
-          // Count elements to see if it matches default structure
-          const nodeCount = Object.keys(JSON.parse(currentState)).length;
-          if (nodeCount >= 12 && nodeCount <= 14) {
-            setDefaultStateSnapshot(currentState);
-          }
-        }
-      }
+      // Use requestAnimationFrame to make sure that DOM is updated
+      // Clear history after loading existing content so undo is inactive on open
+      requestAnimationFrame(() => actions.history.clear());
 
       onInit();
     }, [json]);
@@ -145,6 +160,8 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
       getJson: () => {
         return query.serialize();
       },
+      // Expose canUndo so parent modal can check for unsaved changes
+      canUndo: () => query.history.canUndo(),
     }));
 
     return <Frame />;
@@ -153,14 +170,16 @@ const EditorContent = forwardRef<EditorContentRef, { json: string; onInit: () =>
 
 EditorContent.displayName = 'EditorContent';
 
-const addDefaultElements = (actions: any, query: any) => {
+const addDefaultElements = (actions: any, query: any, groupHistory = false) => {
   const rootNodeId = 'ROOT';
+  // When true, throttle groups all actions into one undo entry (for reset event)
+  const act = groupHistory ? actions.history.throttle(1000) : actions;
 
   // Helper function to add element wrapped in Row and Column
   const addElementToRoot = (element: React.ReactElement) => {
     // Create Row
     const rowTree = query.parseReactElement(<Element is={Row} canvas />).toNodeTree();
-    actions.addNodeTree(rowTree, rootNodeId);
+    act.addNodeTree(rowTree, rootNodeId);
 
     // Get the newly created row ID
     const rootNode = query.node(rootNodeId).get();
@@ -168,7 +187,7 @@ const addDefaultElements = (actions: any, query: any) => {
 
     // Create Column inside Row
     const columnTree = query.parseReactElement(<Element is={Column} canvas />).toNodeTree();
-    actions.addNodeTree(columnTree, rowId);
+    act.addNodeTree(columnTree, rowId);
 
     // Get the newly created column ID
     const rowNode = query.node(rowId).get();
@@ -176,7 +195,7 @@ const addDefaultElements = (actions: any, query: any) => {
 
     // Add the actual element inside Column
     const elementTree = query.parseReactElement(element).toNodeTree();
-    actions.addNodeTree(elementTree, columnId);
+    act.addNodeTree(elementTree, columnId);
   };
 
   // Add all needed elements now
@@ -213,6 +232,8 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
       getJson: () => {
         return content.current?.getJson() || '';
       },
+      // Derived from undo stack. it will be true only when actual changes exist. it avoids false unsaved warnings
+      canUndo: () => content.current?.canUndo() ?? false,
       getHtml: () => {
         const json = content.current?.getJson();
 

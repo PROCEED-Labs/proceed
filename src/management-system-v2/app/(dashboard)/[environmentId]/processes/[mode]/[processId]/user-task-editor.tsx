@@ -46,88 +46,84 @@ export function canHaveForm(element?: Element) {
 
 type UserTaskEditorProps = {
   json?: string | null;
-  onChange: () => void;
 };
 
-const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(
-  ({ json, onChange }, ref) => {
-    const modeler = useModelerStateStore((state) => state.modeler);
-    const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
+const UserTaskEditor = forwardRef<HtmlFormEditorRef, UserTaskEditorProps>(({ json }, ref) => {
+  const modeler = useModelerStateStore((state) => state.modeler);
+  const selectedElementId = useModelerStateStore((state) => state.selectedElementId);
 
-    const {
-      variables: processVariables,
-      addVariable: addProcessVariable,
-      updateVariable: updateProcessVariable,
-    } = useProcessVariables();
+  const {
+    variables: processVariables,
+    addVariable: addProcessVariable,
+    updateVariable: updateProcessVariable,
+  } = useProcessVariables();
 
-    const editingEnabled = useCanEdit();
-    const isExecutable = useModelerStateStore((state) => state.isExecutable);
+  const editingEnabled = useCanEdit();
+  const isExecutable = useModelerStateStore((state) => state.isExecutable);
 
-    const { variables, updateVariables, updateMilestones, setEditingEnabled } = useEditorStateStore(
-      (state) => state,
-    );
+  const { variables, updateVariables, updateMilestones, setEditingEnabled } = useEditorStateStore(
+    (state) => state,
+  );
 
-    useEffect(() => {
-      setEditingEnabled(editingEnabled && isExecutable);
-    }, [editingEnabled, isExecutable]);
+  useEffect(() => {
+    setEditingEnabled(editingEnabled && isExecutable);
+  }, [editingEnabled, isExecutable]);
 
-    useEffect(() => {
-      // initialize the variables known to the editor when it is opened
-      if (json) updateVariables([...processVariables]);
-    }, [json, processVariables]);
+  useEffect(() => {
+    // initialize the variables known to the editor when it is opened
+    if (json) updateVariables([...processVariables]);
+  }, [json, processVariables]);
 
-    useEffect(() => {
-      if (variables) {
-        // apply variables changes made in the editor to the process
-        variables.forEach((variable) => {
-          const oldVariable = processVariables.find((pV) => pV.name === variable.name);
+  useEffect(() => {
+    if (variables) {
+      // apply variables changes made in the editor to the process
+      variables.forEach((variable) => {
+        const oldVariable = processVariables.find((pV) => pV.name === variable.name);
 
-          if (!oldVariable) {
-            addProcessVariable(variable);
-          } else if (!deepEquals(variable, oldVariable)) {
-            updateProcessVariable(variable, oldVariable);
-          }
-        });
-      }
-    }, [variables]);
+        if (!oldVariable) {
+          addProcessVariable(variable);
+        } else if (!deepEquals(variable, oldVariable)) {
+          updateProcessVariable(variable, oldVariable);
+        }
+      });
+    }
+  }, [variables]);
 
-    useEffect(() => {
-      if (selectedElementId && modeler) {
-        // (re-) initialize the milestones known to the editor when it is opened
-        const selectedElement = modeler.getElement(selectedElementId);
+  useEffect(() => {
+    if (selectedElementId && modeler) {
+      // (re-) initialize the milestones known to the editor when it is opened
+      const selectedElement = modeler.getElement(selectedElementId);
 
-        if (selectedElement)
-          updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
-      }
-    }, [selectedElementId]);
+      if (selectedElement)
+        updateMilestones(getMilestonesFromElement(selectedElement.businessObject));
+    }
+  }, [selectedElementId]);
 
-    return (
-      <>
-        {json && (
-          <HtmlFormEditor
-            ref={ref}
-            json={json}
-            additionalElements={{ Milestones, Image: EditImage }}
-            additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
-            toolboxExtension={[
-              {
-                title: 'Milestones',
-                icon: <LuMilestone />,
-                element: <Milestones />,
-              },
-              {
-                title: 'Image',
-                icon: <LuImage />,
-                element: <EditImage />,
-              },
-            ]}
-            onChange={onChange}
-          />
-        )}
-      </>
-    );
-  },
-);
+  return (
+    <>
+      {json && (
+        <HtmlFormEditor
+          ref={ref}
+          json={json}
+          additionalElements={{ Milestones, Image: EditImage }}
+          additionalExportElements={{ Milestones: ExportMilestones, Image: ExportImage }}
+          toolboxExtension={[
+            {
+              title: 'Milestones',
+              icon: <LuMilestone />,
+              element: <Milestones />,
+            },
+            {
+              title: 'Image',
+              icon: <LuImage />,
+              element: <EditImage />,
+            },
+          ]}
+        />
+      )}
+    </>
+  );
+});
 
 type UserTaskEditorModalProps = {
   processId: string;
@@ -141,7 +137,6 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   const environment = useEnvironment();
   const editingEnabled = useCanEdit();
 
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [modalKey, setModalKey] = useState(0);
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -184,8 +179,16 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   }, [affectedElement]);
 
   const queryClient = useQueryClient();
+  // The warning model will only show on canel when there are actual undoable changes.
+  const hasUnsavedChanges = builder.current?.canUndo() ?? false;
 
   const handleSave = async () => {
+    // Click inside iframe to trigger blur on any active element
+    const iframe = document.getElementById('html-form-editor-iframe') as HTMLIFrameElement;
+    iframe?.contentDocument?.body?.click();
+    // Small delay to let the click propagate
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
     const json = builder.current?.getJson();
     const html = builder.current?.getHtml();
 
@@ -225,7 +228,6 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
               });
             }
 
-            setHasUnsavedChanges(false);
             onClose();
           },
           app,
@@ -247,7 +249,6 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
         okType: 'default',
         cancelText: 'Cancel',
         onOk: () => {
-          setHasUnsavedChanges(false);
           // Increment key to force editor remount and discard changes
           setModalKey((prev) => prev + 1);
           onClose();
@@ -335,7 +336,7 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
       destroyOnHidden
     >
       <EditorStoreProvider key={modalKey}>
-        <UserTaskEditor json={json} onChange={() => setHasUnsavedChanges(true)} ref={builder} />
+        <UserTaskEditor json={json} ref={builder} />
       </EditorStoreProvider>
       {modalElement}
     </Modal>

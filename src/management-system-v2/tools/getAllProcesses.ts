@@ -31,7 +31,7 @@ export default async function getProcesses({ userCode }: InferSchema<typeof sche
       where: {
         environmentId,
       },
-      select: { id: true, name: true, description: true, lastEditedOn: true },
+      select: { id: true, name: true, description: true, lastEditedOn: true, executable: true },
       take: 100,
     });
 

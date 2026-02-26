@@ -23,7 +23,8 @@ export const schema = toAuthorizationSchema({
 // Define tool metadata
 export const metadata = {
   name: 'start-process',
-  description: 'Starts executing a process.',
+  description:
+    "Starts executing a process if that process is executable. Might require specific start variables to work which can be found in the process' bpmn.",
   annotations: {
     title: 'Start a process',
     readOnlyHint: true,

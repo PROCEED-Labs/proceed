@@ -12,6 +12,8 @@ import { leaveOrganization } from '@/lib/data/environments';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
 import { SettingOutlined } from '@ant-design/icons';
+import { getPairingCode } from '@/lib/data/mcp-authorization';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -20,7 +22,12 @@ export type FilteredEnvironment = ReplaceKeysWithHighlighted<
 >;
 
 const EnvironmentsPage: FC<{
-  spaces: { id: string; name: string; description: string; isOrganization: boolean }[];
+  spaces: {
+    id: string;
+    name: string;
+    description: string;
+    isOrganization: boolean;
+  }[];
 }> = ({ spaces: organizationEnvironments }) => {
   const app = App.useApp();
   const router = useRouter();
@@ -30,6 +37,18 @@ const EnvironmentsPage: FC<{
     highlightedKeys,
     transformData: (results) => results.map((result) => result.item),
   });
+
+  const handleCreateAccessCode = async (environmentId: string) => {
+    const code = await getPairingCode(environmentId);
+
+    if (isUserErrorResponse(code)) {
+      app.message.error(code.error.message);
+      return;
+    }
+
+    navigator.clipboard.writeText(code);
+    app.message.success('Copied the code to your clipboard');
+  };
 
   return (
     <>
@@ -57,6 +76,9 @@ const EnvironmentsPage: FC<{
                 <Link href={`/${id}/start`}>
                   <Button>Enter</Button>
                 </Link>
+                <Button onClick={() => handleCreateAccessCode(environment.id)}>
+                  Connect Chatbot
+                </Button>
                 {environment.isOrganization && (
                   <ConfirmationButton
                     title={`Leave ${environment.name.value}`}

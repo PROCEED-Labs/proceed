@@ -16,6 +16,9 @@ import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotat
 
 import schema from '@/lib/schema';
 
+import jsZip from 'jszip';
+import { truthyFilter } from '../typescript-utils';
+
 /**
  * Transforms a definitionName of a process into a valid file path by replacing spaces
  *
@@ -24,6 +27,18 @@ import schema from '@/lib/schema';
  */
 export function getProcessFilePathName(definitionName: string) {
   return definitionName.split(' ').join('_');
+}
+
+export function ensureFolderPath(zip?: jsZip, path?: string) {
+  if (!zip || !path) return zip;
+
+  const segments = path.split('/').filter(truthyFilter);
+
+  let folder: jsZip | null | undefined = zip;
+
+  segments.forEach((segment) => (folder = folder?.folder(segment)));
+
+  return folder as jsZip | null | undefined;
 }
 
 /**

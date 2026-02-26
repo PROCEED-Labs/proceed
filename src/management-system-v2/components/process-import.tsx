@@ -22,6 +22,7 @@ import { checkIfAllReferencedArtefactsAreProvided } from '@/lib/helpers/import-h
 export type ProcessData = {
   id: string;
   name: string;
+  folderPath?: string;
   description: string;
   creator?: string;
   creatorUsername?: string;
@@ -133,9 +134,12 @@ const ProcessImportButton: React.FC<ButtonProps> = ({ ...props }) => {
 
       const [process] = getElementsByTagName(bpmnObj, 'bpmn:Process');
 
+      const segments = bpmnFilePath.split('/');
+
       const processData: ProcessData = {
         id: id || '',
         name: name || '',
+        folderPath: segments.length > 2 ? segments.slice(0, -2).join('/') : undefined,
         description: await getProcessDocumentation(bpmn),
         userDefinedId: userDefinedId,
         creator: creatorName,

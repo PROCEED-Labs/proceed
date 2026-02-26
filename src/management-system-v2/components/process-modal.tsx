@@ -16,6 +16,7 @@ import {
   Divider,
   CollapseProps,
   Skeleton,
+  Breadcrumb,
 } from 'antd';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
@@ -489,11 +490,25 @@ const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) =>
   const instance = Form.useFormInstance();
   const data = instance.getFieldsValue()[index];
 
+  const name = Form.useWatch([index, 'name']);
+
   return (
     <>
-      <Form.Item hidden={!data?.folderPath} name={[index, 'folderPath']} label="Import Path">
+      <Form.Item hidden name={[index, 'folderPath']}>
         <Input disabled />
       </Form.Item>
+      {!!data?.folderPath && (
+        <Form.Item label="Import Path">
+          <Card size="small">
+            <Breadcrumb
+              items={(data?.folderPath as string)
+                .split('/')
+                .concat(name)
+                .map((segment) => ({ title: segment }))}
+            />
+          </Card>
+        </Form.Item>
+      )}
       <ProcessInputs index={index} readonly={readonly} />
       <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
         <Input disabled />

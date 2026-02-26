@@ -15,18 +15,23 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import type { FolderContentWithScriptTasks } from '@/lib/data/db/process';
 import { Folder } from '@/lib/data/folder-schema';
 
-function getScriptTaskLabel(element?: Element | ElementLike, knownFileName?: string) {
-  if (knownFileName) {
-    return knownFileName;
-  } else if (
-    element &&
-    typeof element.businessObject.fileName === 'string' &&
-    element.businessObject.fileName.length > 0
-  ) {
-    return element.businessObject.fileName;
-  } else {
-    return '< Unnamed >';
+function getScriptTaskLabel(
+  element?: Element | ElementLike,
+  context: 'sidebar' | 'header' = 'header',
+): string | ReactNode {
+  const taskName = element?.businessObject.name;
+
+  // If task has a name, return it
+  if (taskName && taskName.trim().length > 0) {
+    return taskName;
   }
+
+  // If no name, return appropriate unnamed label in italics
+  return (
+    <span style={{ fontStyle: 'italic' }}>
+      {context === 'sidebar' ? 'Unnamed Script Task' : '< Unnamed >'}
+    </span>
+  );
 }
 
 function folderPathContentsToTreeStructure({
@@ -59,13 +64,16 @@ function folderPathContentsToTreeStructure({
       }
 
       if (child.type === 'process') {
-        node.children = child.scriptTasks.map((fileName) =>
-          generateTreeNode({
-            name: getScriptTaskLabel(undefined, fileName),
-            id: `${child.id} ${fileName}`,
+        node.children = child.scriptTasks.map((scriptTask) => {
+          const taskNameElement = { businessObject: { name: scriptTask.taskName } } as Element;
+
+          return generateTreeNode({
+            name: getScriptTaskLabel(taskNameElement, 'sidebar'),
+            label: scriptTask.taskName || '< Unnamed >',
+            id: `${child.id} ${scriptTask.fileName}`,
             type: 'scriptTask',
-          }),
-        );
+          });
+        });
         node.isLeaf = false;
       }
 
@@ -84,7 +92,7 @@ type FolderTreeDataType =
       type: 'process';
       id: string;
       name: string;
-      scriptTasks: string[];
+      scriptTasks: Array<{ fileName: string; taskName: string }>;
     }
   | {
       type: 'folder';
@@ -238,20 +246,21 @@ export function ScriptTaskEditorEnvironment({
 
     for (const bpmnElement of Object.values(scriptTasksInProcess)) {
       const id = `${process.id} ${bpmnElement.id}`;
-      const label = getScriptTaskLabel(bpmnElement);
+      const sidebarLabel = getScriptTaskLabel(bpmnElement, 'sidebar');
+      const stringLabel = bpmnElement.businessObject.name || '< Unnamed >';
 
-      let name = label;
+      let name = sidebarLabel;
       if (scriptTasksWithChanges[id]) {
         name = (
           <span>
-            <Badge style={{ marginLeft: 4 }} status="warning" /> {name}
+            <Badge style={{ marginLeft: 4 }} status="warning" /> {sidebarLabel}
           </span>
         );
       }
 
       const node = generateTreeNode({
         name,
-        label,
+        label: stringLabel,
         id,
         type: 'scriptTask' as const,
         isInThisProcess: true,
@@ -334,7 +343,7 @@ export function ScriptTaskEditorEnvironment({
       return close();
     }
 
-    const withUnsavedChanges = [];
+    const withUnsavedChanges: Array<{ label: ReactNode; key: string }> = [];
     const withUnsavedChangesRefs: ScriptEditorRef[] = [];
     for (const [key, hasChanges] of Object.entries(scriptTasksWithChanges)) {
       const bpmnElementId = key.split(' ')[1];
@@ -346,7 +355,8 @@ export function ScriptTaskEditorEnvironment({
       }
 
       if (hasChanges) {
-        withUnsavedChanges.push(getScriptTaskLabel(bpmnElement));
+        const label = getScriptTaskLabel(bpmnElement, 'sidebar');
+        withUnsavedChanges.push({ label, key: bpmnElement.id });
         const editorRef = editorRefs.current.get(key);
         if (!editorRef) throw new Error('Editor without a ref');
         withUnsavedChangesRefs.push(editorRef);
@@ -363,8 +373,8 @@ export function ScriptTaskEditorEnvironment({
             Are you sure you want to close without saving? <br />
             The following script tasks have unsaved changes:
             <ul>
-              {withUnsavedChanges.map((label) => (
-                <li key={label}>{label}</li>
+              {withUnsavedChanges.map((item) => (
+                <li key={item.key}>{item.label}</li>
               ))}
             </ul>
           </div>
@@ -432,11 +442,22 @@ export function ScriptTaskEditorEnvironment({
   let title: ReactNode = 'Script Task';
 
   if (currentTreeNode && currentTreeNode.element.type === 'scriptTask') {
+    // The label field contains the string version of the task name
+    const headerLabel = currentTreeNode.element.label;
+    // Check if it is unnamed; if so then the label will be "< Unnamed >"
+    const isUnnamed = !headerLabel || headerLabel.trim() === '' || headerLabel === '< Unnamed >';
+
+    const taskLabel = isUnnamed ? (
+      <span style={{ fontStyle: 'italic' }}>{'< Unnamed >'}</span>
+    ) : (
+      headerLabel
+    );
+
     // Non-editable case
-    title = `Script Task: ${currentTreeNode.element.label}`;
+    title = <span>Script Task: {taskLabel}</span>;
 
     if (currentTreeNode.element.isInThisProcess && canEdit) {
-      title = `Edit Script Task: ${currentTreeNode.element.label}`;
+      title = <span>Edit Script Task: {taskLabel}</span>;
 
       if (!isExecutable) {
         title = (
@@ -510,15 +531,19 @@ export function ScriptTaskEditorEnvironment({
                 if (node.element.type !== 'process' || node.element.id === process.id) continue;
 
                 node.isLeaf = false;
-                node.children = node.element.scriptTasks.map((scriptTaskFileName) =>
-                  generateTreeNode({
-                    name: scriptTaskFileName,
-                    label: scriptTaskFileName,
-                    id: `${node.element.id} ${scriptTaskFileName}`,
+                node.children = node.element.scriptTasks.map((scriptTask) => {
+                  const taskNameElement = {
+                    businessObject: { name: scriptTask.taskName },
+                  } as Element;
+
+                  return generateTreeNode({
+                    name: getScriptTaskLabel(taskNameElement, 'sidebar'),
+                    label: scriptTask.taskName || '< Unnamed >',
+                    id: `${node.element.id} ${scriptTask.fileName}`,
                     type: 'scriptTask',
                     isInThisProcess: false,
-                  }),
-                );
+                  });
+                });
               }
 
               return nodes;

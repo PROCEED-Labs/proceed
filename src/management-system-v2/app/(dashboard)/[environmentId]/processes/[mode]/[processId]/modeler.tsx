@@ -22,11 +22,14 @@ import {
   revertSoftDeleteProcessScriptTask,
   softDeleteProcessScriptTask,
   updateFileDeletableStatus,
+  handleScriptTaskCopy,
+  handleUserTaskCopy,
 } from '@/lib/data/file-manager-facade';
 import { Process } from '@/lib/data/process-schema';
 import { useProcessView } from './process-view-context';
 import { CanEditContext } from '@/lib/can-edit-context';
 import { Folder } from '@/lib/data/folder-schema';
+import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
 
 type ModelerProps = React.HTMLAttributes<HTMLDivElement> & {
   versionName?: string;
@@ -304,8 +307,39 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
     }
   }, []);
 
+  // Helper function to detect the event
+  const isPasteOperation = useCallback((element: BpmnElement): boolean => {
+    const fileName = element.businessObject?.fileName;
+
+    // No fileName means it's a new element
+    if (!fileName) return false;
+
+    // Only check ScriptTask and UserTask
+    if (!bpmnIsAny(element, ['bpmn:ScriptTask', 'bpmn:UserTask'])) {
+      return false;
+    }
+
+    const allElements = modeler.current?.getAllElements();
+    if (!allElements) return false;
+
+    // Check if another element has the same fileName
+    return allElements.some(
+      (el: any) =>
+        el.businessObject?.fileName === fileName &&
+        el.id !== element.id &&
+        bpmnIsAny(el, ['bpmn:ScriptTask', 'bpmn:UserTask']),
+    );
+  }, []);
+
   const onShapeRemoveUndo = useCallback<Required<BPMNCanvasProps>['onShapeRemoveUndo']>(
     (element) => {
+      // Check if this is a paste operation; if so, skip restoration
+      // We need to reconstruct the element to check
+      const fullElement = modeler.current?.getElement(element.id);
+      if (fullElement && isPasteOperation(fullElement as BpmnElement)) {
+        return;
+      }
+
       if (element.$type === 'bpmn:UserTask' && element.fileName) {
         revertSoftDeleteProcessUserTask(process.id, element.fileName);
       }
@@ -318,7 +352,39 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
         return;
       } else updateFileDeletableStatus(metaData.overviewImage, false, process.id);
     },
-    [],
+    [isPasteOperation],
+  );
+
+  // For Paste event
+  const onShapeAdded = useCallback<Required<BPMNCanvasProps>['onShapeAdded']>(
+    async (element) => {
+      if (!element.businessObject) return;
+
+      // Check if this is a paste operation
+      if (!isPasteOperation(element)) {
+        return; // Not a paste event rather, it may be a new task or undo event
+      }
+
+      // This is a Paste event so copy the files
+      const fileName = element.businessObject.fileName!;
+
+      try {
+        const newFileName = bpmnIs(element, 'bpmn:ScriptTask')
+          ? await handleScriptTaskCopy(process.id, fileName)
+          : await handleUserTaskCopy(process.id, fileName);
+
+        // Update the element's fileName
+        element.businessObject.fileName = newFileName;
+
+        // Trigger save
+        const xml = await modeler.current!.getXML();
+        saveDebounced(xml);
+      } catch (error) {
+        console.error('Error handling copied task:', error);
+        messageApi.error('Failed to copy task files');
+      }
+    },
+    [isPasteOperation, process.id, saveDebounced, messageApi],
   );
 
   useEffect(() => {
@@ -392,6 +458,7 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
           onZoom={onZoom}
           onShapeRemove={onShapeRemove}
           onShapeRemoveUndo={onShapeRemoveUndo}
+          onShapeAdded={canEdit ? onShapeAdded : undefined}
         />
       </div>
     </CanEditContext.Provider>

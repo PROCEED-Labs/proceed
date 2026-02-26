@@ -20,7 +20,7 @@ import { copyProcessImage } from '@/lib/process-export/copy-process-image';
 import Modeling, { CommandStack, Shape } from 'bpmn-js/lib/features/modeling/Modeling';
 import type Overlays from 'diagram-js/lib/features/overlays/Overlays';
 import { Root, Element } from 'bpmn-js/lib/model/Types';
-
+import { Element as BpmnElement } from 'bpmn-js/lib/model/Types';
 import {
   ResourceViewModule,
   ResourceModelingModule,
@@ -81,6 +81,8 @@ export type BPMNCanvasProps = {
   /** Wether the modeler should fit the viewport if it resizes.  */
   resizeWithContainer?: boolean;
   className?: string;
+  /** Called when a shape is added to the modeler */
+  onShapeAdded?: (element: Element) => void;
 };
 
 const fitViewport = (modeler: ModelerType | NavigatedViewerType) => {
@@ -123,6 +125,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       onZoom,
       onShapeRemove,
       onShapeRemoveUndo,
+      onShapeAdded,
       resizeWithContainer,
       className,
     },
@@ -301,12 +304,17 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.on(
           'commandStack.shape.create.executed',
           (event: { context: { shape: Shape } }) => {
-            if (event.context.shape.businessObject)
+            if (event.context.shape.businessObject) {
               onShapeRemoveUndo?.(event.context.shape.businessObject);
+            }
           },
         );
       }
 
+      // Handle shape added (for paste event)
+      modeler.current!.on('shape.added', (event: { element: Element }) => {
+        if (!loadingXML.current) onShapeAdded?.(event.element);
+      });
       modeler.current!.on('import.done', _onLoaded);
       modeler.current!.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
         'selection.changed',
@@ -322,8 +330,11 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
         modeler.current!.off('import.done', _onLoaded);
         modeler.current!.off('commandStack.changed', commandStackChanged);
         modeler.current!.off('selection.changed', selectionChanged);
+        if (type === 'modeler') {
+          modeler.current!.off('shape.added');
+        }
       };
-    }, [type, onLoaded, onChange, onSelectionChange, onZoom]);
+    }, [type, onLoaded, onChange, onSelectionChange, onZoom, onShapeAdded]);
 
     useEffect(() => {
       const m = modeler.current!;

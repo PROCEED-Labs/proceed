@@ -681,7 +681,7 @@ export type FolderContentWithScriptTasks = {
         type: 'process';
         id: string;
         name: string;
-        scriptTasks: string[];
+        scriptTasks: Array<{ fileName: string; taskName: string }>;
       }
     | {
         type: 'folder';
@@ -764,15 +764,17 @@ export async function getFolderScriptTasks(
     }
 
     const scriptTasksFileNameMapping = await getScriptTaskFileNameMapping(process.bpmn);
-    const scriptTaskFileNames = Object.values(scriptTasksFileNameMapping)
-      .map((mapping) => mapping.fileName)
-      .filter((v) => !!v) as string[];
+    // Map to objects with both fileName and taskName
+    const scriptTasksWithNames = Object.values(scriptTasksFileNameMapping).map((mapping) => ({
+      fileName: mapping.fileName || '',
+      taskName: mapping.taskName || '',
+    }));
 
-    if (scriptTaskFileNames.length > 0) {
+    if (scriptTasksWithNames.length > 0) {
       processesWithScriptTaskFileNames.push({
         id: process.id,
         name: process.name,
-        scriptTasks: scriptTaskFileNames,
+        scriptTasks: scriptTasksWithNames,
         type: 'process',
       });
     }

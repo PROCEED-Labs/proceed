@@ -7,7 +7,8 @@ import {
   MobileOutlined,
   UndoOutlined,
   RedoOutlined,
-  ReloadOutlined,
+  DeleteOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
 
 import styles from './index.module.scss';
@@ -112,7 +113,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <Button
                 danger
                 type="text"
-                icon={<ReloadOutlined />}
+                icon={<RollbackOutlined />}
                 disabled={isDefault}
                 onClick={() => {
                   Modal.confirm({

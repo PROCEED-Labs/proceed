@@ -1,11 +1,11 @@
 import {
   prepareExport,
   ProcessExportOptions,
-  ExportProcessInfo,
   ProcessExportData,
+  ExportInfos,
 } from './export-preparation';
 
-import { getProcessFilePathName, handleExportMethod } from './util';
+import { ensureFolderPath, getProcessFilePathName, handleExportMethod } from './util';
 
 import jsZip from 'jszip';
 
@@ -81,10 +81,10 @@ async function bpmnExport(processData: ProcessExportData, zipFolder?: jsZip | nu
 }
 export async function getExportblob(
   options: ProcessExportOptions,
-  processes: ExportProcessInfo,
+  toExport: ExportInfos,
   spaceId: string,
 ) {
-  const exportData = await prepareExport(options, processes, spaceId);
+  const exportData = await prepareExport(options, toExport, spaceId);
   // for other export types we need one file for every kind of additional data (artefacts, collapsed subprocesses, imports)
   const numProcesses = exportData.length;
   // the following cases are only relevant if there is only one process to export (in any other case needsZip becomes true anyway)
@@ -96,25 +96,30 @@ export async function getExportblob(
     !!exportData[0].images.length;
   // this becomes relevant if there is only one version (otherwise hasMultipleVersions will lead to needsZip being true anyway)
   const withSubprocesses = Object.values(exportData[0].versions)[0].layers.length > 1;
+  const withParentFolder = !!exportData[0].folderPath;
 
   // determine if a zip export is required
-  const needsZip = numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses;
+  const needsZip =
+    numProcesses > 1 || hasMulitpleVersions || hasArtefacts || withSubprocesses || withParentFolder;
 
   const zip = needsZip ? new jsZip() : undefined;
   let blob: { filename: string; blob: Blob } | undefined = undefined;
 
   for (const processData of exportData) {
     if (options.type === 'bpmn') {
-      const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
+      let folder = ensureFolderPath(zip, processData.folderPath);
+      folder = folder?.folder(getProcessFilePathName(processData.definitionName));
       blob = await bpmnExport(processData, folder);
     }
     // handle imports inside the svgExport function
     if (options.type === 'svg' && !processData.isImport) {
-      const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
+      let folder = ensureFolderPath(zip, processData.folderPath);
+      folder = folder?.folder(getProcessFilePathName(processData.definitionName));
       blob = await svgExport(exportData, processData, options, folder);
     }
     if (options.type === 'png' && !processData.isImport) {
-      const folder = zip?.folder(getProcessFilePathName(processData.definitionName));
+      let folder = ensureFolderPath(zip, processData.folderPath);
+      folder = folder?.folder(getProcessFilePathName(processData.definitionName));
       blob = await pngExport(exportData, processData, options, folder);
     }
   }
@@ -141,9 +146,9 @@ export async function getExportblob(
  */
 export async function exportProcesses(
   options: ProcessExportOptions,
-  processes: ExportProcessInfo,
+  toExport: ExportInfos,
   spaceId: string,
 ) {
-  const blob = getExportblob(options, processes, spaceId);
+  const blob = getExportblob(options, toExport, spaceId);
   return { fallback: await handleExportMethod(blob, options), blob };
 }

@@ -19,25 +19,25 @@ import {
 import { useEnvironment } from '@/components/auth-can';
 import { IoOpenOutline } from 'react-icons/io5';
 
-import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVersion from './use-process-version';
 import { updateShare } from './share-helpers';
+import { InputItem } from '../processes';
 
 type ModelerShareModalOptionPublicLinkProps = {
   sharedAs: 'public' | 'protected';
   shareTimestamp: number;
   refresh: () => void;
-  processes: { id: string; versions: Process['versions'] }[];
+  toShare: InputItem[];
 };
 
 const ModelerShareModalOptionPublicLink = ({
   sharedAs,
   shareTimestamp,
   refresh,
-  processes,
+  toShare,
 }: ModelerShareModalOptionPublicLinkProps) => {
-  const process = processes[0];
+  const process = toShare.length === 1 && toShare[0].type !== 'folder' ? toShare[0] : undefined;
 
   const environment = useEnvironment();
 
@@ -164,7 +164,7 @@ const ModelerShareModalOptionPublicLink = ({
     }
   };
 
-  if (processes.length > 1) {
+  if (toShare.length > 1 || toShare[0]?.type === 'folder') {
     return (
       <Alert
         type="info"

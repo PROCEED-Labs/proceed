@@ -109,6 +109,7 @@ type MachineDataViewProps = {
   expandedKeys: string[];
   currentLanguage: Localization;
   onLanguageChange: (language: Localization) => void;
+  onBreadcrumbSelect: (id: string | null) => void;
 };
 
 const LATEST_VERSION = {
@@ -134,6 +135,7 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
   expandedKeys,
   currentLanguage,
   onLanguageChange,
+  onBreadcrumbSelect,
 }) => {
   const app = App.useApp();
   const router = useRouter();
@@ -567,10 +569,18 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
     const items: any[] = [
       {
         title: (
-          <span>
-            <HomeOutlined style={{ marginRight: 4 }} />
+          <a
+            onClick={() => {
+              setInternalSelectedParamId(null);
+              setSearchSelectedParamId(null);
+              setPreviousBreadcrumbPath(null);
+              // clears selectedParameterId in treeview and resets treeview
+              onBreadcrumbSelect(null);
+            }}
+          >
+            <HomeOutlined style={{ marginRight: 5 }} />
             {parentConfig.shortName.value || parentConfig.name.value}
-          </span>
+          </a>
         ),
       },
     ];
@@ -612,11 +622,26 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
           }
         }
 
-        path.forEach((param) => {
+        path.forEach((param, index) => {
+          const isLast = index === path.length - 1;
+          const displayText =
+            param.displayName.find((item) => item.language === currentLanguage)?.text || param.name;
+
           items.push({
-            title:
-              param.displayName.find((item) => item.language === currentLanguage)?.text ||
-              param.name,
+            title: isLast ? (
+              <span>{displayText}</span>
+            ) : (
+              <a
+                onClick={() => {
+                  setInternalSelectedParamId(param.id);
+                  setSearchSelectedParamId(null);
+                  // updates tree highlight in treeview
+                  onBreadcrumbSelect(param.id);
+                }}
+              >
+                {displayText}
+              </a>
+            ),
           });
         });
       }

@@ -126,10 +126,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                       // Reset to default form
                       const rootNode = query.node('ROOT').get();
                       rootNode.data.nodes.forEach((nodeId: string) => {
-                        actions.delete(nodeId);
+                        // for each delete use throttle to group them in one action in history
+                        actions.history.throttle(1000).delete(nodeId);
                       });
-                      // Add default elements back
-                      addDefaultElements(actions, query);
+                      // Add default elements back and pass the flag to use throttle
+                      addDefaultElements(actions, query, true);
                     },
                   });
                 }}

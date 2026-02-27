@@ -9,6 +9,7 @@ export async function startInstanceOnMachine(
   versionId: string,
   machine: Engine,
   variables: { [key: string]: any } = {},
+  extras?: Record<string, any>,
 ) {
   try {
     const response = await engineRequest({
@@ -16,7 +17,7 @@ export async function startInstanceOnMachine(
       endpoint: '/process/:definitionId/versions/:version/instance',
       engine: machine,
       pathParams: { definitionId, version: versionId },
-      body: { variables },
+      body: { variables, extras },
     });
 
     return response.instanceId as string;

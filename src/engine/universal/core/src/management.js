@@ -555,6 +555,14 @@ const Management = {
     engine.deleteInstance(instanceId);
   },
 
+  setInstanceInformationExtensions(instanceID, extensions) {
+    const engine = this.getEngineWithID(instanceID);
+
+    if (!engine) throw new Error(`Instance is not being executed (id: ${instanceID}).`);
+
+    engine.setInstanceInformationExtensions(instanceID, extensions);
+  },
+
   getAllEngines() {
     return this._engines;
   },

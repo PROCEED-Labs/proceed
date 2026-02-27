@@ -19,7 +19,7 @@ module.exports = (path, management) => {
    */
   network.post(`${path}/:definitionId/versions/:version/instance`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
-    const { variables, activityID } = req.body;
+    const { variables, activityID, extras } = req.body;
 
     const instanceId = await management.createInstance(
       definitionId,
@@ -27,6 +27,10 @@ module.exports = (path, management) => {
       variables,
       activityID,
     );
+
+    if (extras) {
+      management.setInstanceInformationExtensions(instanceId, extras);
+    }
 
     if (!instanceId) {
       throw new APIError(
@@ -97,7 +101,11 @@ module.exports = (path, management) => {
 
       instanceInfo = { ...engineInstanceInfo, isCurrentlyExecutedInBpmnEngine };
     } else {
-      const archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      let archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      if (archivedInstanceInfo.extras) {
+        archivedInstanceInfo = { ...archivedInstanceInfo, ...(archivedInstanceInfo.extras || {}) };
+        delete archivedInstanceInfo.extras;
+      }
       instanceInfo = { ...archivedInstanceInfo, isCurrentlyExecutedInBpmnEngine: false };
     }
 

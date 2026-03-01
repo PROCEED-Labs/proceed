@@ -301,6 +301,7 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
                     'valueTemplateSource' in currentParameter
                       ? currentParameter.valueTemplateSource
                       : 'none',
+                  origin: currentParameter.origin || '',
                 },
               ]
             : []

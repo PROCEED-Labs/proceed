@@ -54,6 +54,7 @@ export function defaultParameter(
     subParameters: [],
     usedAsInputParameterIn: [],
     changeableByUser: true,
+    origin: 'system',
     // unit: newUnit as AasUnit,
     hasChanges: false,
   };
@@ -91,6 +92,7 @@ export function defaultVirtualParameter(
     subParameters: [],
     usedAsInputParameterIn: [],
     changeableByUser: true,
+    origin: 'system',
     hasChanges: false,
   };
 }

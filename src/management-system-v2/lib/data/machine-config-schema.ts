@@ -197,10 +197,6 @@ const MetaAttributeZod = z.object({
   linkValueToParameterValue: LinkedParameterZod,
 });
 
-const ParameterArrayZod: z.ZodType = z.lazy(() =>
-  z.array(z.union([ParameterZod, VirtualParameterZod])),
-);
-
 export const ConfigMetadataZod = z.object({
   shortName: z.string(),
   name: z.string().optional(),
@@ -221,6 +217,7 @@ export const BaseParameterZod = z.object({
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   transformation: TranformationZod.optional(),
   changeableByUser: z.boolean(),
+  origin: z.enum(['system', 'admin', 'user']),
   hasChanges: z.boolean(),
 });
 
@@ -236,6 +233,7 @@ const BaseVirtualParameterZod = z.object({
   unitRef: z.string().optional(),
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   changeableByUser: z.boolean(),
+  origin: z.enum(['system', 'admin', 'user']),
   hasChanges: z.boolean(),
 });
 

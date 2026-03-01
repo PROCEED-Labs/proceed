@@ -138,6 +138,73 @@ export async function copyParameter(
   return newId;
 }
 
+export async function linkedCopyParameter(
+  parameterId: string,
+  parentId: string,
+  parameterPath: string[],
+  parentPath: string[],
+  parentType: 'parameter' | 'config',
+) {
+  const storedParameterResult = await db.configParameter.findUnique({ where: { id: parameterId } });
+  const storedParameter = storedParameterResult?.data as StoredParameter;
+
+  if (!storedParameter) throw new Error(`Parameter with id ${parameterId} does not exist!`);
+
+  // this creates a deep clone of the element to prevent changes in the content of one to affect the other
+  const copy = StoredParameterZod.parse(storedParameter);
+
+  const newId = v4();
+  copy.id = newId;
+  copy.parentId = parentId;
+  copy.parentType = parentType;
+  copy.transformation = {
+    transformationType: 'linked',
+    linkedInputParameters: {
+      $IN1: {
+        id: parameterId,
+        path: [...parameterPath, storedParameter.name],
+      },
+    },
+    action: '',
+  };
+  copy.usedAsInputParameterIn = [];
+
+  // TODO update parent with
+
+  // recursively copy all referenced parameters
+  copy.subParameters = await asyncMap(copy.subParameters, (id) =>
+    linkedCopyParameter(
+      id,
+      newId,
+      [...parameterPath, storedParameter.name],
+      [...parentPath, storedParameter.name],
+      'parameter',
+    ),
+  );
+
+  // Adding the linked parameter
+  await db.configParameter.create({ data: { id: copy.id, data: copy } });
+  // Adding the reference to the link in the parent
+  await db.configParameter.update({
+    where: { id: parameterId },
+    data: {
+      data: {
+        ...storedParameter,
+        usedAsInputParameterIn: [
+          // TODO remove filter later, currently removeParameter does not remove references in
+          // parameters where the linked values are retrieved from
+          ...storedParameter.usedAsInputParameterIn.filter(
+            (input) => input.path.toString() != [...parentPath, storedParameter.name].toString(),
+          ),
+          { id: copy.id, path: [...parentPath, storedParameter.name] },
+        ],
+      },
+    },
+  });
+
+  return newId;
+}
+
 /**
  * Creates a copy of a machine- or target-config and all its nested parameters to be pasted as child of a given parent. Stores the copied config.
  * @param configId ID of the config which is to be copied.
@@ -686,7 +753,21 @@ export async function addParameter(
       ['identity-and-access-management', 'common-user-data'].toString()
     ) {
       // a new IAM common-user-data parameter is added
-      await addCommonUserDataPropagation(parameter, parameterPath.slice(2, -1), fullConfig);
+      const linkedParams = await addCommonUserDataPropagation(
+        { ...parameter, origin: 'admin' },
+        parameterPath.slice(2, -1),
+        fullConfig,
+      );
+      // adding the linked parameter IDs to the original
+      // TODO maybe do this some what differently
+      const storedParameterResult = await db.configParameter.findUnique({
+        where: { id: parameter.id },
+      });
+      const storedParameter = storedParameterResult?.data as StoredParameter;
+      await db.configParameter.update({
+        where: { id: parameter.id },
+        data: { data: { ...storedParameter, usedAsInputParameterIn: linkedParams } },
+      });
     } else if (
       parameterPath.slice(0, -1).toString() == ['identity-and-access-management', 'user'].toString()
     ) {
@@ -701,20 +782,48 @@ async function addCommonUserDataPropagation(
   internalPath: string[],
   orgConfig: Config,
 ) {
+  const parameterCopyIds: LinkedParameter[] = [];
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
-    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+    await asyncForEach(users.subParameters, async (userParameter: Parameter) => {
       const parentParameter =
         internalPath.length === 0
           ? extractParameterFromParameter(userParameter, ['data'])
           : extractParameterFromParameter(userParameter, ['data', ...internalPath]);
       if (parentParameter) {
         // copy parameter
-        const parameterCopy = JSON.parse(JSON.stringify(parameter));
+        const parameterCopy: Parameter = JSON.parse(JSON.stringify(parameter));
         // create new ID for copied parameter
         parameterCopy.id = v4();
-        parameterCopy.changeableByUser = false;
+        // parameterCopy.changeableByUser = false;
+        // create linked transformation from the original parameter
+        parameterCopy.transformation = {
+          transformationType: 'linked',
+          linkedInputParameters: {
+            $IN1: {
+              id: parameter.id,
+              path: [
+                'identity-and-access-management',
+                'common-user-data',
+                ...internalPath,
+                parameter.name,
+              ],
+            },
+          },
+          action: '',
+        };
         await addParameter(parentParameter.id, 'parameter', parameterCopy, orgConfig.id);
+        parameterCopyIds.push({
+          id: parameterCopy.id,
+          path: [
+            'identity-and-access-management',
+            'user',
+            userParameter.name,
+            'data',
+            ...internalPath,
+            parameter.name,
+          ],
+        });
       } else {
         // TODO error: internal parent could not be determined
       }
@@ -722,8 +831,10 @@ async function addCommonUserDataPropagation(
   } else {
     // TODO error for missing users parameter
   }
+  return parameterCopyIds;
 }
 
+// TODO add transformation
 async function addUserParameterDataImport(parameter: Parameter, orgConfig: Config) {
   const dataParent = extractParameterFromParameter(parameter, ['data']);
   const commonUserData = extractParameter(orgConfig, [
@@ -734,13 +845,22 @@ async function addUserParameterDataImport(parameter: Parameter, orgConfig: Confi
     const subparameterKeys = await asyncMap(
       commonUserData.subParameters,
       async (commonUserParameter: Parameter) => {
-        return await copyParameter(commonUserParameter.id, dataParent.id, 'parameter');
+        // TODO handle IDs?
+        return await linkedCopyParameter(
+          commonUserParameter.id,
+          dataParent.id,
+          ['identity-and-access-management', 'common-user-data'],
+          ['identity-and-access-management', 'user', parameter.name, 'data'],
+          'parameter',
+        );
       },
     );
     await updateParameter(dataParent.id, { subParameters: subparameterKeys }, orgConfig.id);
-    asyncForEach(subparameterKeys, async (paramId) => {
-      await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
-    });
+    // TODO not necessary anymore, I think
+    // marking copied values as unchangeable
+    // asyncForEach(subparameterKeys, async (paramId) => {
+    //   await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
+    // });
   } else {
     // TODO error for missing users parameter
   }
@@ -1893,6 +2013,7 @@ export async function updateParameter(
     }
   }
 
+  const fullParentConfig = await getDeepConfigurationById(parentConfigId);
   // make sure to set backlinks
   if (changed.transformation) {
     await updateBacklinks(
@@ -1915,11 +2036,9 @@ export async function updateParameter(
           .includes(id),
     );
 
-    const parentConfig = await getDeepConfigurationById(parentConfigId);
-
     let removedLinkedInputParametersArray: LinkedParameter[] = buildLinkedInputParametersFromIds(
       removedIds,
-      parentConfig,
+      fullParentConfig,
     );
 
     await updateBacklinks(removedLinkedInputParametersArray, parameter, 'remove', parentConfigId);
@@ -1941,6 +2060,30 @@ export async function updateParameter(
   }
 
   return { changedParameters };
+}
+
+async function updateCommonUserDataPropagation(
+  changes: Partial<StoredParameter>,
+  internalPath: string[],
+  orgConfig: Config,
+) {
+  const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
+  if (users) {
+    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+      const previousParameter = extractParameterFromParameter(userParameter, [
+        'data',
+        ...internalPath,
+      ]);
+      if (previousParameter) {
+        await updateParameter(previousParameter.id, changes, orgConfig.id);
+      } else {
+        // TODO error: user parameter could not be found. Error or create param?
+        // await addParameter(previousParameter.id, 'parameter', parameterCopy, orgConfig.id);
+      }
+    });
+  } else {
+    // TODO error for missing users parameter
+  }
 }
 
 /**
@@ -3006,6 +3149,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: 'system',
         hasChanges: false,
       };
       const childParameters: Parameter[] = [];
@@ -3034,6 +3178,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: 'system',
         hasChanges: false,
       };
       return newParameter;
@@ -3069,6 +3214,7 @@ export async function submodelElementToParameter(
           structureVisible,
           subParameters: [],
           changeableByUser,
+          origin: 'system',
           hasChanges: false,
         };
         return newParameter;
@@ -3088,6 +3234,7 @@ export async function submodelElementToParameter(
           usedAsInputParameterIn: [],
           subParameters: [],
           changeableByUser,
+          origin: 'system',
           hasChanges: false,
         };
         return newParameter;
@@ -3761,6 +3908,7 @@ export async function versioningCreateNewVersionForTargetOrReferenceSet(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: 'system',
       hasChanges: false,
     };
 
@@ -3883,6 +4031,7 @@ export async function versioningCreateNewVersion(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: 'system',
       hasChanges: false,
     } as Parameter;
 
@@ -4540,7 +4689,7 @@ export async function getUserConfig(
     const userParam = await getUserParameter(userId, spaceId);
     if ('error' in userParam) throw userParam.error;
     const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
-    userParam.changeableByUser = false;
+    userParam.changeableByUser = true;
     dummyConfig.configType = 'dummy';
     dummyConfig.content = [userParam];
     dummyConfig.id = userId;
@@ -4550,6 +4699,37 @@ export async function getUserConfig(
       error instanceof Error
         ? error.message
         : `user config cannot be loaded. \nUserID: ${userId}\nSpaceID: ${spaceId}`,
+    );
+  }
+}
+
+/**
+ * Retrieves the user-specific data for a given personal space. The returned userdata is
+ * wrapped in a dummy config to allow convenient display in the config editor.
+ * @param userId ID of the user whose data should be displayed.
+ * @returns A dummy config containing the userParameter as the sole element of its content field.
+ */
+export async function getUserPersonalConfig(
+  userId: string,
+): Promise<Config | { error: UserError }> {
+  try {
+    const userParam = (await nestedParametersFromStorage([userId]))[0];
+    const userData = extractParameterFromParameter(userParam, ['data']);
+    if (userData) {
+      userData.changeableByUser = true;
+      const dummyConfig = defaultConfiguration(userId, 'dummy userConfig');
+      // userParam.changeableByUser = false;
+      dummyConfig.configType = 'dummy';
+      // dummyConfig.content = userData?.subParameters;
+      dummyConfig.content = [userData];
+      dummyConfig.id = userId;
+      return dummyConfig;
+    } else {
+      throw userError(`Userdata element 'data' for UserId ${userId} not found.`);
+    }
+  } catch (error) {
+    return userError(
+      error instanceof Error ? error.message : `user config cannot be loaded. \nUserID: ${userId}`,
     );
   }
 }
@@ -4601,43 +4781,91 @@ export async function syncOrganizationUsers(spaceId: string) {
 }
 
 /**
- * Synchronizes the database state of organizations with their corresponding organizational configs.
- * Creates a new config for any organization that does not yet have one. Removes outdated configs
- * that belong to organizations which no longer exist.
+ * Synchronizes the userParameter stored in the organizational config for the given personal space.
+ * Creates a new userParameter for the corresponding user if it doesn't exist.
+ * Removes userParameters belonging to users who do not belong to the personal space.
+ * @param spaceId ID of the personal space (userId).
+ * @returns UserError if the orgConfig has an invalid internal structure, or if the provided config
+ *          has the wrong configType (expected: 'organization').
+ */
+export async function syncPersonalSpaceUser(spaceId: string) {
+  console.info(`SYNCING: User for space-config ${spaceId}`);
+  const orgConfig = await getDeepConfigurationById(spaceId);
+  const parametersToRemove = [];
+  let userMissing = true;
+  if (orgConfig.configType === 'organization') {
+    const userListParameter = extractParameter(orgConfig, [
+      'identity-and-access-management',
+      'user',
+    ]);
+    if (userListParameter) {
+      for (const userParameter of userListParameter.subParameters) {
+        const matchFound = spaceId === userParameter.id;
+        if (!matchFound) {
+          parametersToRemove.push(userParameter.id);
+        } else {
+          userMissing = false;
+        }
+      }
+      if (userMissing) {
+        await addMemberParameter({
+          id: spaceId,
+          environmentId: spaceId,
+          createdOn: new Date(),
+          userId: spaceId,
+        });
+      }
+      for (const parameterId of parametersToRemove) {
+        await removeParameter(parameterId);
+      }
+    } else {
+      return userError(
+        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for organizational config ${spaceId}.`,
+      );
+    }
+  } else {
+    return userError(`Config ${spaceId} is not of type 'organization'.`);
+  }
+}
+
+/**
+ * Synchronizes the database state of spaces (formerly only organizations) with their corresponding
+ * organizational configs. Creates a new config for any space that does not yet have one.
+ * Removes outdated configs that belong to spaces which no longer exist.
  * @returns UserError if a configuration cannot be created.
  */
-export async function syncOrganizationConfigs() {
+export async function syncSpaceConfigs() {
   console.info(`SYNCING: Organization Configs`);
-  const organizations = await db.space.findMany({
-    where: {
-      isOrganization: true,
-    },
+  const spaces = await db.space.findMany({
+    // where: {
+    //   isOrganization: true,
+    // },
   });
   const configs = await db.config.findMany();
-  const organizationConfigs = await asyncFilter(
+  const spaceConfigs = await asyncFilter(
     configs,
     async (config) => (config.data as unknown as Config).configType === 'organization',
   );
-  const matchedOrganizations = new Set<string>();
-  const organizationsToAdd = [];
+  const matchedSpaces = new Set<string>();
+  const spacesToAdd = [];
 
   // matching all configs of configType:'organization' to the organizations
-  for (const org of organizations) {
+  for (const org of spaces) {
     const existingConfig = await db.config.findUnique({ where: { id: org.id } });
-    if (existingConfig) matchedOrganizations.add(existingConfig.id);
-    else organizationsToAdd.push(org);
+    if (existingConfig) matchedSpaces.add(existingConfig.id);
+    else spacesToAdd.push(org);
   }
 
-  // adding missing configs for the organizations that do not have a config yet
-  for (const newOrg of organizationsToAdd) {
+  // adding missing configs for the spaces that do not have a config yet
+  for (const newSpace of spacesToAdd) {
     const ret = await addParentConfig(
       {
         ...defaultOrganizationConfigurationTemplate(
-          newOrg.id,
-          newOrg.name || 'Organizational Config',
+          newSpace.id,
+          newSpace.name || 'Organizational Config',
         ),
       },
-      newOrg.id,
+      newSpace.id,
     );
     if (ret && 'error' in ret) {
       return ret;
@@ -4645,9 +4873,7 @@ export async function syncOrganizationConfigs() {
   }
 
   // removing organizational configs for which no organization exists anymore
-  const configsToRemove = organizationConfigs.filter(
-    (config) => !matchedOrganizations.has(config.id),
-  );
+  const configsToRemove = spaceConfigs.filter((config) => !matchedSpaces.has(config.id));
   for (const oldConfig of configsToRemove) {
     await removeParentConfiguration(oldConfig.id);
   }

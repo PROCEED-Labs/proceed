@@ -16,6 +16,7 @@ type FolderModalProps = {
   open: boolean;
   close: () => void;
   initialValues?: Partial<Folder>;
+  readOnly?: boolean;
 };
 
 const FolderModal = ({
@@ -26,6 +27,7 @@ const FolderModal = ({
   open,
   close,
   initialValues,
+  readOnly = false,
 }: FolderModalProps) => {
   const [form] = Form.useForm();
   const [errors, parseInput] = useParseZodErrors(FolderUserInputSchema);
@@ -81,7 +83,13 @@ const FolderModal = ({
       onCancel={() => close()}
       onOk={form.submit}
     >
-      <Form onFinish={checkInput} form={form} layout="vertical" initialValues={initialValues}>
+      <Form
+        disabled={readOnly}
+        onFinish={checkInput}
+        form={form}
+        layout="vertical"
+        initialValues={initialValues}
+      >
         <Form.Item
           name="name"
           label="Folder name"

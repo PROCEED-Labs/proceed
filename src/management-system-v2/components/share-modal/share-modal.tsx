@@ -21,7 +21,6 @@ import { SvgXML } from '@/components/svg';
 import { TbFileTypePng, TbFileTypeSvg } from 'react-icons/tb';
 import { ImEmbed } from 'react-icons/im';
 import { getProcess } from '@/lib/data/processes';
-import { ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { updateShare } from './share-helpers';
@@ -35,22 +34,21 @@ import {
   useExportProcess,
 } from './export';
 import styles from './share-modal.module.scss';
+import { InputItem } from '../processes';
 
 type ShareModalProps = {
-  processes: {
-    id: string;
-    name: string;
-    environmentId: string;
-    bpmn?: string;
-    versions: ProcessMetadata['versions'];
-  }[];
+  toShare: InputItem[];
   open: boolean;
   setOpen: (state: boolean) => void;
   defaultOpenTab?: 'bpmn' | 'share-public-link';
 };
 type SharedAsType = 'public' | 'protected';
 
-export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defaultOpenTab }) => {
+function isProcess(item: InputItem): item is Exclude<InputItem, { type: 'folder' }> {
+  return item.type !== 'folder';
+}
+
+export const ShareModal: FC<ShareModalProps> = ({ toShare, open, setOpen, defaultOpenTab }) => {
   const environment = useEnvironment();
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -65,19 +63,21 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
 
   // The easiest way to have the submit button of the export options in the modal footer, is to keep
   // the state here and pass it down to the components
-  const [exportState, selectedVersionIdsState] = useExportOptionsState(processes[0]?.versions);
+  const [exportState, selectedVersionIdsState] = useExportOptionsState(
+    toShare?.find(isProcess)?.versions,
+  );
   const [isExporting, exportProcesses] = useExportProcess(
-    processes.map((p) => ({ definitionId: p.id })),
+    toShare.map((p) => (p.type !== 'folder' ? { definitionId: p.id } : { folderId: p.id })),
     exportState[0],
     selectedVersionIdsState,
   );
 
   const [checkingIfProcessShared, setCheckingIfProcessShared] = useState(false);
   const checkIfProcessShared = async () => {
-    if (processes.length !== 1) return;
+    if (toShare.length !== 1) return;
     try {
       setCheckingIfProcessShared(true);
-      const res = await getProcess(processes[0].id, processes[0].environmentId);
+      const res = await getProcess(toShare[0].id, toShare[0].environmentId);
       if (!('error' in res)) {
         const { sharedAs, allowIframeTimestamp, shareTimestamp } = res;
         setSharedAs(sharedAs as SharedAsType);
@@ -101,11 +101,11 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
   };
 
   const shareProcess = async (sharedAs: 'public' | 'protected') => {
-    if (processes.length !== 1) return;
+    if (toShare.length !== 1) return;
     let url: string | null = null;
     await updateShare(
       {
-        processId: processes[0].id,
+        processId: toShare[0].id,
         spaceId: environment.spaceId,
         sharedAs,
       },
@@ -120,7 +120,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${processes[0].name} | PROCEED`,
+          title: `${toShare[0].name} | PROCEED`,
           text: 'Here is a shared process for you',
           url,
         });
@@ -169,13 +169,13 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       icon: <LinkOutlined className={styles.ModalIcon} />,
       label: 'Share Public Link',
       key: 'share-public-link',
-      disabled: processes.length !== 1,
+      disabled: toShare.length !== 1,
       children: (
         <ModelerShareModalOptionPublicLink
           sharedAs={sharedAs as SharedAsType}
           shareTimestamp={shareTimestamp}
           refresh={checkIfProcessShared}
-          processes={processes}
+          toShare={toShare}
         />
       ),
     },
@@ -183,13 +183,13 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       icon: <ImEmbed className={styles.ModalIcon} />,
       label: 'Embed in Website',
       key: 'embed-in-website',
-      disabled: processes.length !== 1,
+      disabled: toShare.length !== 1,
       children: (
         <ModelerShareModalOptionEmdedInWeb
           sharedAs={sharedAs as SharedAsType}
           allowIframeTimestamp={allowIframeTimestamp}
           refresh={checkIfProcessShared}
-          processes={processes}
+          toShare={toShare}
         />
       ),
     },
@@ -197,14 +197,14 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
       icon: <FilePdfOutlined className={styles.ModalIcon} />,
       label: 'Download Diagram as PDF',
       key: 'pdf',
-      disabled: processes.length !== 1,
+      disabled: toShare.length !== 1,
       children: (
         <ProcessExportOption
           type="pdf"
           active
           exportOptionsState={exportState}
           versionIdState={selectedVersionIdsState}
-          processes={processes}
+          toExport={toShare}
         />
       ),
     },
@@ -218,7 +218,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
           active
           exportOptionsState={exportState}
           versionIdState={selectedVersionIdsState}
-          processes={processes}
+          toExport={toShare}
         />
       ),
     },
@@ -232,7 +232,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
           active
           exportOptionsState={exportState}
           versionIdState={selectedVersionIdsState}
-          processes={processes}
+          toExport={toShare}
         />
       ),
     },
@@ -246,7 +246,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
           active
           exportOptionsState={exportState}
           versionIdState={selectedVersionIdsState}
-          processes={processes}
+          toExport={toShare}
         />
       ),
     },
@@ -331,7 +331,7 @@ export const ShareModal: FC<ShareModalProps> = ({ processes, open, setOpen, defa
               type={tabs[activeIndex]?.key as any}
               exportProcesses={exportProcesses}
               isExporting={isExporting}
-              moreThanOneProcess={processes.length > 1}
+              moreThanOneProcess={toShare.length > 1}
               state={exportState[0]}
               closeModal={() => setOpen(false)}
             />

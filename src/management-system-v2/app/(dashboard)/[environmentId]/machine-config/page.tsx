@@ -51,8 +51,8 @@ const MachineConfigPage = async ({
 
   return (
     <>
-      <Content title={<Space>Tech Data Sets</Space>}>
-        <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+      <Content title={<Space>Configurations</Space>}>
+        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <ParentConfigList data={folderContents} />
         </Space>
       </Content>

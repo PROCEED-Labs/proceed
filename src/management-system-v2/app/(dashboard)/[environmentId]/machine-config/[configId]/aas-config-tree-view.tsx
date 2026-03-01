@@ -468,6 +468,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
                     'valueTemplateSource' in rightClickedNode
                       ? (rightClickedNode as any).valueTemplateSource
                       : 'none',
+                  origin: (rightClickedNode as Parameter).origin || '',
                 },
               ]
             : []

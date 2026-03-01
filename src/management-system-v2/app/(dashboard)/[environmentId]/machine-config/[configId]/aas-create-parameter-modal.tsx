@@ -45,6 +45,7 @@ export type CreateParameterModalReturnType = {
   parameterType?: string;
   structureVisible?: string;
   valueTemplateSource?: string;
+  origin?: string;
 };
 
 type TagRender = SelectProps['tagRender'];
@@ -526,6 +527,7 @@ const ParameterInputs = ({
   };
   // determine if transformation type should be disabled
   const isTransformationDisabled = formValueTemplateSource !== 'none';
+  const isAdminLocked = initialData?.[index]?.origin === 'admin';
   return (
     <Row gutter={16}>
       <Col span={12}>
@@ -547,6 +549,7 @@ const ParameterInputs = ({
               size="small"
               value={currentDisplayText}
               onChange={(e) => handleDisplayNameChange(e.target.value)}
+              disabled={isAdminLocked}
             />
           </Form.Item>
 
@@ -567,6 +570,7 @@ const ParameterInputs = ({
               options={languageItemsSelect}
               value={currentDisplayLanguage}
               onChange={handleDisplayLanguageChange}
+              disabled={isAdminLocked}
             />
           </Form.Item>
         </Card>
@@ -580,7 +584,7 @@ const ParameterInputs = ({
             ]}
             style={{ marginTop: '12px' }}
           >
-            <Input onChange={() => setUserEditedKey(true)} />
+            <Input onChange={() => setUserEditedKey(true)} disabled={isAdminLocked} />
           </Form.Item>
         )}
       </Col>
@@ -605,6 +609,7 @@ const ParameterInputs = ({
               size="small"
               value={currentDescriptionText}
               onChange={(e) => handleDescriptionChange(e.target.value)}
+              disabled={isAdminLocked}
             />
           </Form.Item>
           <Form.Item
@@ -624,6 +629,7 @@ const ParameterInputs = ({
               options={languageItemsSelect}
               value={currentDescriptionLanguage}
               onChange={handleDescriptionLanguageChange}
+              disabled={isAdminLocked}
             />
           </Form.Item>
         </Card>
@@ -659,9 +665,10 @@ const ParameterInputs = ({
               ) : (
                 <Input
                   disabled={
-                    transformationType === 'linked' ||
-                    transformationType === 'algorithm' ||
-                    (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession)
+                    !isAdminLocked &&
+                    (transformationType === 'linked' ||
+                      transformationType === 'algorithm' ||
+                      (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession))
                   }
                 />
               )}
@@ -674,7 +681,7 @@ const ParameterInputs = ({
                 label="Unit"
                 rules={[{ required: false, message: 'Please fill out the Unit' }]}
               >
-                <Input />
+                <Input disabled={isAdminLocked} />
               </Form.Item>
             </Col>
           )}
@@ -725,7 +732,7 @@ const ParameterInputs = ({
                   { label: 'Formula', value: 'algorithm' },
                 ]}
                 onChange={() => form.setFieldValue([index, 'linkedParameters'], [])}
-                disabled={isTransformationDisabled}
+                disabled={isTransformationDisabled || isAdminLocked}
               />
             </Form.Item>
           </Col>
@@ -775,6 +782,7 @@ const ParameterInputs = ({
                   styles={{ popup: { root: { maxHeight: 600, overflow: 'auto' } } }}
                   virtual={false}
                   onChange={handleLinkedParametersChange}
+                  disabled={isAdminLocked}
                   onOpenChange={(open) => setIsTreeSelectOpen(open)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape' && isTreeSelectOpen) {
@@ -844,6 +852,7 @@ const ParameterInputs = ({
                 <TextArea
                   rows={2}
                   placeholder="Enter formula using variable names (e.g., $IN1 + $IN2 * 0.5)"
+                  disabled={isAdminLocked}
                 />
               </Form.Item>
             )}
@@ -873,6 +882,7 @@ const ParameterInputs = ({
                           { label: 'Meta', value: 'meta' },
                           { label: 'Content', value: 'content' },
                         ]}
+                        disabled={isAdminLocked}
                       />
                     </Form.Item>
                   </Col>
@@ -887,6 +897,7 @@ const ParameterInputs = ({
                           { label: 'Yes', value: 'yes' },
                           { label: 'No', value: 'no' },
                         ]}
+                        disabled={isAdminLocked}
                       />
                     </Form.Item>
                   </Col>
@@ -904,6 +915,7 @@ const ParameterInputs = ({
                           { label: 'Category', value: 'category' },
                           { label: 'Description', value: 'description' },
                         ]}
+                        disabled={isAdminLocked}
                         onChange={handleValueTemplateSourceChange}
                       />
                     </Form.Item>

@@ -1964,6 +1964,7 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
                     'valueTemplateSource' in currentParameter
                       ? (currentParameter as any).valueTemplateSource
                       : 'none',
+                  origin: currentParameter.origin || '',
                 },
               ]
             : []

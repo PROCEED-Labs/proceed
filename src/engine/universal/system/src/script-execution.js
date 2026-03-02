@@ -24,6 +24,7 @@ class ScriptExecutor extends System {
   /**
    * @param {{
    *  network: import('./network'),
+   *  getInstanceInformation: () => any
    * }} [options]
    * */
   constructor(options) {
@@ -127,6 +128,10 @@ class ScriptExecutor extends System {
           'variable.getAllProcess': 'variable.getAllGlobal',
           'variable.getWithLogsProcess': 'variable.getWithLogsGlobal',
           'variable.setProcess': 'variable.setGlobal',
+          'variable.getGlobal': 'variable.getMS',
+          'variable.getGlobalFull': 'variable.getMSFull',
+          'variable.getGlobalOrg': 'variable.getMSOrg',
+          'variable.getGlobalOrgFull': 'variable.getMSOrgFull',
         };
 
         for (const mapping in mappings) {
@@ -137,6 +142,18 @@ class ScriptExecutor extends System {
         }
 
         try {
+          if (functionName.startsWith('variable.getMS')) {
+            console.log(functionName);
+            const instanceInformation = this.options.getInstanceInformation(
+              req.params.processInstanceId,
+            );
+            console.log(instanceInformation);
+            const result = 'test123';
+            return {
+              response: { result: result || undefined },
+            };
+          }
+
           let target = req.process.dependencies;
           const segments = functionName.split('.');
           for (let i = 0; i < segments.length; i++) {

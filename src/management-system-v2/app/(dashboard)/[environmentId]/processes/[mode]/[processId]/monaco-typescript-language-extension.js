@@ -25,6 +25,14 @@ class Variable {
   getWithLogsProcess(): any;
 
   setProcess(name: string, value: any);
+
+  getGlobal(varPath: string);
+
+  getGlobalFull(varPath: string);
+
+  getGlobalOrg(varPath: string);
+
+  getGlobalOrgFull(varPath: string);
 }
 declare var variable: Variable;
 

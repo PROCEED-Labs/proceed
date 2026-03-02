@@ -6,7 +6,7 @@ import {
   ArtifactType,
   generateProcessFilePath,
 } from '../helpers/fileManagerHelpers';
-import { deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
+import { copyFile, deleteFile, retrieveFile, saveFile } from './file-manager/file-manager';
 import db from '@/lib/data/db';
 import { getProcessHtmlFormJSON } from './db/process';
 import { asyncMap } from '../helpers/javascriptHelpers';
@@ -563,12 +563,21 @@ export async function revertSoftDeleteProcessUserTask(processId: string, userTas
       await db.$transaction(async (tx) => {
         for (const artifact of artifacts) {
           if (artifact) {
-            await tx.artifactProcessReference.create({
-              data: {
-                artifactId: artifact.id,
-                processId,
-              },
-            });
+            try {
+              await tx.artifactProcessReference.create({
+                data: {
+                  artifactId: artifact.id,
+                  processId,
+                },
+              });
+            } catch (error: any) {
+              if (error.code === 'P2002') {
+                // Reference already exists, so skip it
+                console.debug('ArtifactProcessReference already exists, skipping.');
+              } else {
+                throw error;
+              }
+            }
           }
         }
       });
@@ -596,13 +605,200 @@ export async function revertSoftDeleteProcessScriptTask(
 
   for (const artifact of artifacts) {
     if (artifact) {
-      await db.artifactProcessReference.create({
-        data: {
-          artifactId: artifact.id,
-          processId,
-        },
-      });
+      try {
+        await db.artifactProcessReference.create({
+          data: {
+            artifactId: artifact.id,
+            processId,
+          },
+        });
+      } catch (error: any) {
+        if (error.code === 'P2002') {
+          // Reference already exists, so skip it
+          console.debug('ArtifactProcessReference already exists, skipping.');
+        } else {
+          throw error;
+        }
+      }
     }
+  }
+}
+
+// Helper function to copy an artifact file and create new database entry
+async function copyArtifactFile(
+  processId: string,
+  originalFileName: string,
+  newFileName: string,
+  fileExtension: string,
+  mimeType: string,
+): Promise<boolean> {
+  try {
+    // Check if artifact exists
+    const artifact = await getArtifactMetaData(originalFileName, false);
+    if (!artifact) {
+      return false; // File doesn't exist, so skip
+    }
+
+    const sourceFilePath = artifact.filePath;
+    const newFileNameWithExt = `${newFileName}${fileExtension}`;
+    const destinationFilePath = generateProcessFilePath(newFileNameWithExt, processId, mimeType);
+
+    await copyFile(sourceFilePath, destinationFilePath);
+
+    // Create database entry for the new artifact
+    const artifactType = getFileCategory(newFileNameWithExt, mimeType);
+    await saveArtifactToDB(newFileNameWithExt, destinationFilePath, artifactType, {
+      processId,
+      saveWithoutSavingReference: false,
+    });
+
+    return true;
+  } catch (error) {
+    console.warn(`Could not copy file ${originalFileName}${fileExtension}:`, error);
+    return false;
+  }
+}
+
+// Copy script task files and return the new fileName
+export async function handleScriptTaskCopy(
+  processId: string,
+  originalFileName: string,
+): Promise<string> {
+  try {
+    const timestamp = Date.now();
+    const newFileName = `${originalFileName}_copy_${timestamp}`;
+
+    // files to copy with their extensions and mime types
+    const filesToCopy = [
+      { ext: '.js', type: 'application/javascript' },
+      { ext: '.ts', type: 'application/javascript' },
+      { ext: '.xml', type: 'application/xml' },
+    ];
+
+    // Copy all files in parallel
+    await Promise.all(
+      filesToCopy.map(({ ext, type }) =>
+        copyArtifactFile(processId, `${originalFileName}${ext}`, newFileName, ext, type),
+      ),
+    );
+
+    return newFileName;
+  } catch (error) {
+    console.error('Error copying script task files:', error);
+    throw error;
+  }
+}
+
+// Copy user task files and return the new fileName
+export async function handleUserTaskCopy(
+  processId: string,
+  originalFileName: string,
+): Promise<string> {
+  try {
+    const timestamp = Date.now();
+    const newFileName = `${originalFileName}_copy_${timestamp}`;
+
+    // Get the original json to find referenced images
+    const originalJson = await getProcessHtmlFormJSON(processId, originalFileName);
+    if (!originalJson) {
+      console.warn('Original user task JSON not found');
+      return newFileName;
+    }
+
+    const parsedJson = JSON.parse(originalJson);
+    const referencedImages = getUsedImagesFromJson(parsedJson);
+
+    // Copy html and json files
+    await Promise.all([
+      copyArtifactFile(processId, `${originalFileName}.html`, newFileName, '.html', 'text/html'),
+      copyArtifactFile(
+        processId,
+        `${originalFileName}.json`,
+        newFileName,
+        '.json',
+        'application/json',
+      ),
+    ]);
+
+    // Copy referenced images and build mapping for json updates
+    const imageMapping: Record<string, string> = {};
+
+    // Convert Set to array
+    const imagePathsArray = [...referencedImages];
+
+    await Promise.all(
+      imagePathsArray.map(async (imagePath) => {
+        try {
+          const originalImageName = imagePath.split('/').pop() || '';
+          const imageExt = originalImageName.split('.').pop()?.toLowerCase() || 'png';
+          const imageBaseName = originalImageName.split('.')[0];
+          const newImageName = `${imageBaseName}_copy_${timestamp}`;
+
+          // Determine mime type
+          const mimeType =
+            imageExt === 'png'
+              ? 'image/png'
+              : imageExt === 'jpg' || imageExt === 'jpeg'
+                ? 'image/jpeg'
+                : imageExt === 'svg'
+                  ? 'image/svg+xml'
+                  : imageExt === 'webp'
+                    ? 'image/webp'
+                    : 'image/png';
+
+          // Check if image artifact exists
+          const imageArtifact = await getArtifactMetaData(imagePath, true);
+          if (!imageArtifact) return;
+
+          const newImageNameWithExt = `${newImageName}.${imageExt}`;
+          const destinationFilePath = generateProcessFilePath(
+            newImageNameWithExt,
+            processId,
+            mimeType,
+          );
+
+          // Copy the image file
+          await copyFile(imageArtifact.filePath, destinationFilePath);
+
+          // Create database entry
+          await saveArtifactToDB(newImageNameWithExt, destinationFilePath, 'images', {
+            processId,
+            saveWithoutSavingReference: false,
+          });
+
+          imageMapping[imagePath] = destinationFilePath;
+        } catch (error) {
+          console.warn(`Could not copy image ${imagePath}:`, error);
+        }
+      }),
+    );
+
+    // Update image paths in json
+    let updatedJson = originalJson;
+    for (const [oldPath, newPath] of Object.entries(imageMapping)) {
+      updatedJson = updatedJson.replace(
+        new RegExp(oldPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+        newPath,
+      );
+    }
+
+    // Save updated json (replace the file content)
+    const jsonFilePath = generateProcessFilePath(
+      `${newFileName}.json`,
+      processId,
+      'application/json',
+    );
+
+    // Retrieve the artifact to get proper file path
+    const jsonArtifact = await getArtifactMetaData(`${newFileName}.json`, false);
+    if (jsonArtifact) {
+      await saveFile(jsonArtifact.filePath, 'application/json', Buffer.from(updatedJson), false);
+    }
+
+    return newFileName;
+  } catch (error) {
+    console.error('Error copying user task files:', error);
+    throw error;
   }
 }
 

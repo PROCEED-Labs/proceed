@@ -123,10 +123,17 @@ const Management = {
   importInstance(instance) {
     const { processVersion } = instance;
 
-    const importedInstance = { ...instance, processId: `${instance.processId}#${processVersion}` };
-    delete importedInstance.processVersion;
+    const extras = instance.extras || {};
 
-    return { processVersion, importedInstance };
+    const importedInstance = {
+      ...instance,
+      processId: `${instance.processId}#${processVersion}`,
+    };
+
+    delete importedInstance.processVersion;
+    delete importedInstance.extras;
+
+    return { processVersion, importedInstance, extras };
   },
 
   /**
@@ -151,7 +158,7 @@ const Management = {
         );
       }
 
-      const { processVersion, importedInstance } = this.importInstance(archivedInstance);
+      const { processVersion, importedInstance, extras } = this.importInstance(archivedInstance);
 
       engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
 
@@ -166,6 +173,8 @@ const Management = {
           });
         },
       );
+
+      engine.setInstanceInformationExtensions(instanceId, extras);
     }
     return engine;
   },
@@ -277,7 +286,7 @@ const Management = {
    * Resuming an instance of a process on this engine that was paused
    *
    * @param {string} definitionId The name of the file the process to continue is stored in
-   * @param {string} instanceId The id the process instance to resume
+   * @param {string} instanceId The id of the process instance to resume
    */
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
@@ -326,7 +335,7 @@ const Management = {
       bpmnProcessInstance = undefined;
     }
 
-    // If a token was paused on a scriptTask and the instance doesn't exist anymore, than the
+    // If a token was paused on a scriptTask and the instance doesn't exist anymore, then the
     // script probably also doesn't exist on the script executor, thus we can't resume process.
     if (scriptTaskTokens.length > 0 && !bpmnProcessInstance) {
       // TODO: maybe handle this case better

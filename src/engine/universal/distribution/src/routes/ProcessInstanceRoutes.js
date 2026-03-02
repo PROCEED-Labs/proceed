@@ -29,6 +29,24 @@ module.exports = (path, management) => {
     );
 
     if (extras) {
+      if ('managementSystemLocation' in extras) {
+        const initiatorInfo = ['processInitiator', 'spaceIdOfProcessInitiator'];
+        if (initiatorInfo.every((info) => info in extras)) {
+          for (const address of extras.managementSystemLocation) {
+            try {
+              const res = await network.sendRequest(
+                address,
+                undefined,
+                `/api/spaces/${extras.spaceIdOfProcessInitiator}/status?user-id=${extras.processInitiator}`,
+              );
+              if (res.response.statusCode === 200) {
+                extras.managementSystemLocation = address;
+              }
+            } catch (err) {}
+          }
+        }
+      }
+
       management.setInstanceInformationExtensions(instanceId, extras);
     }
 

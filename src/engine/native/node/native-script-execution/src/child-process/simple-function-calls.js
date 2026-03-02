@@ -12,10 +12,10 @@ module.exports = function setupSimpleFunctionCalls({ context, callToExecutor, wa
       'set',
       'getAll',
       'getWithLogs',
-      'setGlobal',
-      'getGlobal',
-      'getAllGlobal',
-      'getWithLogsGlobal',
+      'setProcess',
+      'getProcess',
+      'getAllProcess',
+      'getWithLogsProcess',
     ],
   };
 

@@ -120,7 +120,21 @@ class ScriptExecutor extends System {
         const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
-        const { functionName, args } = req.body;
+        let { functionName, args } = req.body;
+
+        const mappings = {
+          'variable.getProcess': 'variable.getGlobal',
+          'variable.getAllProcess': 'variable.getAllGlobal',
+          'variable.getWithLogsProcess': 'variable.getWithLogsGlobal',
+          'variable.setProcess': 'variable.setGlobal',
+        };
+
+        for (const mapping in mappings) {
+          if (functionName.startsWith(mapping)) {
+            functionName = functionName.replace(mapping, mappings[mapping]);
+            break;
+          }
+        }
 
         try {
           let target = req.process.dependencies;

@@ -90,6 +90,14 @@ class Engine {
     this.instanceEventHandlers = {};
 
     /**
+     * A mapping from an instance to additional information that is not coming from the execution
+     * engine
+     * @type {Record<string, Record<string, any>>}
+     * @private
+     */
+    this._instanceIdExtraInfoMapping = {};
+
+    /**
      * Contains information about the initial instance state for instances that were imported into the engine
      */
     this.originalInstanceState = undefined;
@@ -388,9 +396,13 @@ class Engine {
       return;
     }
 
-    const instanceInformation = { ...this.getInstanceInformation(instanceID) };
+    const instanceInformation = { ...this.getInstanceInformation(instanceID, true) };
+
+    const extras = this._instanceIdExtraInfoMapping[instanceID];
+
     const archiveInformation = {
       ...instanceInformation,
+      extras,
       userTasks: this.userTasks
         .filter((userTask) => userTask.processInstance.id === instanceID)
         .map((userTask) => ({
@@ -505,7 +517,7 @@ class Engine {
    * @param {string} instanceID
    * @returns {{ processId: string; processVersion: string; adaptationLog: any } & ReturnType<NeoEngine.BpmnProcessInstance['getState']> }
    */
-  getInstanceInformation(instanceID) {
+  getInstanceInformation(instanceID, withoutExtras = false) {
     const instance = this.getInstance(instanceID);
 
     const state = instance.getState();
@@ -526,13 +538,31 @@ class Engine {
       }
     });
 
-    const instanceInfo = { ...state, processId: this.definitionId, processVersion, adaptationLog };
+    const extraInfo = withoutExtras
+      ? undefined
+      : this._instanceIdExtraInfoMapping[instanceID] || {};
+
+    const instanceInfo = {
+      ...state,
+      processId: this.definitionId,
+      processVersion,
+      adaptationLog,
+      ...extraInfo,
+    };
 
     if (instance.callingInstance) {
       instanceInfo.callingInstance = instance.callingInstance;
     }
 
     return instanceInfo;
+  }
+
+  setInstanceInformationExtensions(instanceID, extensions) {
+    const instance = this.getInstance(instanceID);
+
+    if (!instance) throw new Error(`Instance does not exist (id: ${instanceID}).`);
+
+    this._instanceIdExtraInfoMapping[instanceID] = extensions;
   }
 
   getAllInstanceTokens(instanceID) {
@@ -866,7 +896,7 @@ class Engine {
             this.deleteInstance(instance.id);
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }
 

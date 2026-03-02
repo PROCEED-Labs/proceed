@@ -19,7 +19,7 @@ module.exports = (path, management) => {
    */
   network.post(`${path}/:definitionId/versions/:version/instance`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
-    const { variables, activityID } = req.body;
+    const { variables, activityID, extras } = req.body;
 
     const instanceId = await management.createInstance(
       definitionId,
@@ -27,6 +27,28 @@ module.exports = (path, management) => {
       variables,
       activityID,
     );
+
+    if (extras) {
+      if ('managementSystemLocation' in extras) {
+        const initiatorInfo = ['processInitiator', 'spaceIdOfProcessInitiator'];
+        if (initiatorInfo.every((info) => info in extras)) {
+          for (const address of extras.managementSystemLocation) {
+            try {
+              const res = await network.sendRequest(
+                address,
+                undefined,
+                `/api/spaces/${extras.spaceIdOfProcessInitiator}/status?user-id=${extras.processInitiator}`,
+              );
+              if (res.response.statusCode === 200) {
+                extras.managementSystemLocation = address;
+              }
+            } catch (err) {}
+          }
+        }
+      }
+
+      management.setInstanceInformationExtensions(instanceId, extras);
+    }
 
     if (!instanceId) {
       throw new APIError(
@@ -97,7 +119,11 @@ module.exports = (path, management) => {
 
       instanceInfo = { ...engineInstanceInfo, isCurrentlyExecutedInBpmnEngine };
     } else {
-      const archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      let archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      if (archivedInstanceInfo.extras) {
+        archivedInstanceInfo = { ...archivedInstanceInfo, ...(archivedInstanceInfo.extras || {}) };
+        delete archivedInstanceInfo.extras;
+      }
       instanceInfo = { ...archivedInstanceInfo, isCurrentlyExecutedInBpmnEngine: false };
     }
 

@@ -1,7 +1,6 @@
-import { getUserConfig } from '@/lib/data/db/machine-config';
+import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
 import { Parameter } from '@/lib/data/machine-config-schema';
 import { NextRequest, NextResponse } from 'next/server';
-import { isUserErrorResponse } from '@/lib/user-error';
 
 type FilteredParameter = Pick<Parameter, 'name' | 'value' | 'id'> & {
   description?: string;
@@ -23,19 +22,20 @@ function filterParameter(parameter: Parameter): NestedFilteredParameter {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ spaceId: string; userId: string; dataPath: string }> },
+  { params }: { params: Promise<{ spaceId: string; dataPath: string }> },
 ) {
   const searchParams = request.nextUrl.searchParams;
 
   try {
-    const { spaceId, userId, dataPath } = await params;
-    const userData = await getUserConfig(userId, spaceId);
+    const { spaceId, dataPath } = await params;
 
-    if (isUserErrorResponse(userData)) {
-      return new NextResponse('Cannot get user data', { status: 400 });
-    }
+    const conf = await getDeepConfigurationById(spaceId);
 
-    let data = userData.content[0].subParameters[0].subParameters;
+    let org = conf.content.find((entry) => entry.name === 'organization');
+
+    if (!org) return new NextResponse(null, { status: 404 });
+
+    let data = org.subParameters[0].subParameters;
 
     const segments = dataPath.split('.');
 
@@ -53,6 +53,6 @@ export async function GET(
       status: 200,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 404 });
+    return NextResponse.json({ error: 'Not implemented' }, { status: 404 });
   }
 }

@@ -143,15 +143,70 @@ class ScriptExecutor extends System {
 
         try {
           if (functionName.startsWith('variable.getMS')) {
-            console.log(functionName);
             const instanceInformation = this.options.getInstanceInformation(
               req.params.processInstanceId,
             );
-            console.log(instanceInformation);
-            const result = 'test123';
-            return {
-              response: { result: result || undefined },
-            };
+
+            const initiatorInfo = [
+              'processInitiator',
+              'spaceIdOfProcessInitiator',
+              'managementSystemLocation',
+            ];
+
+            if (!initiatorInfo.every((info) => info in instanceInformation)) {
+              return {
+                response: { error: 'Unable to access global data' },
+                statusCode: 404,
+              };
+            }
+
+            try {
+              function createRequest(accessFn, dataPath) {
+                let path = `/api/spaces/${instanceInformation.spaceIdOfProcessInitiator}/data`;
+
+                if (accessFn.includes('MSOrg')) {
+                  if (dataPath.includes('@')) {
+                    throw new Error(`Invalid meta parameter (@...) in call to ${accessFn}.`);
+                  }
+
+                  path += '/organization';
+                } else if (dataPath.startsWith('@organization')) {
+                  path += '/organization';
+                  dataPath = dataPath.split('.').slice(1).join('.');
+                } else {
+                  if (dataPath.startsWith('@user')) {
+                    dataPath = dataPath.split('.').slice(1).join('.');
+                  }
+                  path += `/user/${instanceInformation.processInitiator}`;
+                }
+
+                return path + `/${dataPath}${accessFn.includes('Full') ? '?full=true' : ''}`;
+              }
+
+              try {
+                const requestPath = createRequest(functionName, args[0]);
+
+                const result = await this.options.network.sendRequest(
+                  instanceInformation.managementSystemLocation,
+                  undefined,
+                  requestPath,
+                );
+
+                return {
+                  response: { result: JSON.parse(result.body) || undefined },
+                };
+              } catch (err) {
+                return {
+                  response: { error: err.message },
+                  statusCode: 400,
+                };
+              }
+            } catch (err) {
+              return {
+                response: { error: `Accessing data with ${functionName} failed.` },
+                statusCode: 404,
+              };
+            }
           }
 
           let target = req.process.dependencies;

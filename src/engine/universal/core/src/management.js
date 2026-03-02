@@ -247,6 +247,10 @@ const Management = {
         };
       });
       const continueInstanceInfo = { ...instance, tokens: placingTokens };
+
+      // instance is running locally => we expect the extra infos to exist locally as well
+      delete continueInstanceInfo.extras;
+
       continueInstanceInfo.processId = `${continueInstanceInfo.processId}#${continueInstanceInfo.processVersion}`;
       engine.insertIncomingInstanceData(continueInstanceInfo);
     } catch (err) {
@@ -262,11 +266,12 @@ const Management = {
       });
       const startingInstanceInfo = { ...instance, tokens: startingTokens };
 
-      const { processVersion, importedInstance } = this.importInstance(startingInstanceInfo);
+      const { processVersion, importedInstance, extras } =
+        this.importInstance(startingInstanceInfo);
 
       engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
 
-      engine.startProcessVersion(
+      await engine.startProcessVersion(
         processVersion,
         importedInstance.variables,
         importedInstance,
@@ -277,6 +282,8 @@ const Management = {
           });
         },
       );
+
+      engine.setInstanceInformationExtensions(startingInstanceInfo.processInstanceId, extras);
     }
 
     return engine;

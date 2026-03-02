@@ -451,7 +451,7 @@ const Management = {
     /** @type {Engine} */
     const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
     // transform instance information into the form used by the neo-engine
-    const { processVersion, importedInstance } = this.importInstance(instance);
+    const { processVersion, importedInstance, extras } = this.importInstance(instance);
 
     const bpmn = await distribution.db.getProcessVersion(definitionId, processVersion);
 
@@ -513,6 +513,8 @@ const Management = {
         });
       },
     );
+
+    this.setInstanceInformationExtensions(instance.processIntanceId, extras);
 
     // if the instance was in the process of being paused => make sure that it is paused again
     // (will lead to it being paused directly since no tasks have started yet)

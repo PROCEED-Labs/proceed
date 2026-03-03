@@ -171,10 +171,9 @@ const Management = {
             msg: `Loaded an archived process instance back into the engine. Id = ${instanceId}.}`,
             instanceId: instanceId,
           });
+          engine.setInstanceInformationExtensions(instanceId, extras);
         },
       );
-
-      engine.setInstanceInformationExtensions(instanceId, extras);
     }
     return engine;
   },
@@ -280,10 +279,9 @@ const Management = {
             msg: `Continuing process instance. Id = ${startingInstanceInfo.processInstanceId}. TokenId = ${startingInstanceInfo.tokens[0].tokenId}`,
             instanceId: startingInstanceInfo.processInstanceId,
           });
+          engine.setInstanceInformationExtensions(startingInstanceInfo.processInstanceId, extras);
         },
       );
-
-      engine.setInstanceInformationExtensions(startingInstanceInfo.processInstanceId, extras);
     }
 
     return engine;
@@ -518,10 +516,9 @@ const Management = {
           msg: `Continuing execution of an interrupted instance (id: ${instance.processInstanceId})`,
           instanceId: instance.processInstanceId,
         });
+        engine.setInstanceInformationExtensions(instance.processIntanceId, extras);
       },
     );
-
-    this.setInstanceInformationExtensions(instance.processIntanceId, extras);
 
     // if the instance was in the process of being paused => make sure that it is paused again
     // (will lead to it being paused directly since no tasks have started yet)

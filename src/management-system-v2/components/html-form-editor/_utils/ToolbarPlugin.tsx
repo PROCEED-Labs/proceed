@@ -43,7 +43,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { VariableSetting } from '../elements/utils';
 
 import { tokenize } from '@proceed/user-task-helper/src/tokenize';
-import GlobalVariablePicker from '../elements/GlobalVariablePicker';
+import DataObjectSelectionModal from './DataObjectSelectionModal';
 
 const LowPriority = 1;
 
@@ -60,6 +60,7 @@ export default function ToolbarPlugin() {
   const [linkType, setLinkType] = useState<'url' | 'variable'>('url');
   const [isOrderedList, setIsOrderedList] = useState(false);
   const [isUnorderedList, setIsUnorderedList] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const insertGlobalVariable = (path: string) => {
     editor.update(() => {
@@ -314,10 +315,27 @@ export default function ToolbarPlugin() {
         />
       </div>
       <Divider orientation="vertical" />
-      <GlobalVariablePicker
-        style={{ minWidth: '180px' }}
-        onChange={(path) => {
-          if (path) insertGlobalVariable(path);
+      <Button
+        className="toolbar-item spaced"
+        type="text"
+        style={{ fontSize: '11px', fontWeight: 600 }}
+        onClick={() => setModalOpen(true)}
+      >
+        Add Variable
+      </Button>
+
+      <DataObjectSelectionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSelect={(variable, isGlobal) => {
+          editor.update(() => {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+              const token = isGlobal ? `{%${variable}%}` : `{%${variable}%}`;
+              const textNode = $createTextNode(token);
+              selection.insertNodes([textNode]);
+            }
+          });
         }}
       />
       {isLink && (

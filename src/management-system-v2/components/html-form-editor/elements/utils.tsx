@@ -18,7 +18,6 @@ import useEditorStateStore from '../use-editor-state-store';
 import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 import useEditorControls from '../use-editor-controls';
 import { useNode } from '@craftjs/core';
-import GlobalVariablePicker from './GlobalVariablePicker';
 
 // Default delete function which can be called from component of any element
 export const useDeleteControl = () => {
@@ -349,24 +348,6 @@ export const VariableSelection: React.FC<
   );
 };
 
-type GlobalVariableSettingProps = {
-  value?: string; // stores the full path e.g. "@global.@organization.data.ad"
-  onChange: (path: string) => void;
-  compact?: boolean;
-};
-
-export const GlobalVariableSetting: React.FC<GlobalVariableSettingProps> = ({
-  onChange,
-  compact = false,
-}) => {
-  return (
-    <Setting
-      label={compact ? undefined : 'Global Variable'}
-      compact={compact}
-      control={<GlobalVariablePicker onChange={onChange} />}
-    />
-  );
-};
 
 export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolean }> = ({
   variable,

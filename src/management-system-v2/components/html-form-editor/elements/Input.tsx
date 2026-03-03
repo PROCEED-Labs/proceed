@@ -1,8 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select } from 'antd';
+import { Button, Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
-import { GlobalVariableSetting } from './utils';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
@@ -10,6 +9,7 @@ import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteButton } from '../DeleteButton';
+import DataObjectSelectionModal from '../_utils/DataObjectSelectionModal';
 
 type InputProps = {
   label?: string;
@@ -221,9 +221,13 @@ export const InputSettings = () => {
     globalVariable: node.data.props.globalVariable,
   }));
 
-  const [variableSource, setVariableSource] = useState<'process' | 'global'>(
-    globalVariable ? 'global' : 'process',
-  );
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const currentValue = globalVariable
+    ? `{%${globalVariable}%}`
+    : variable
+      ? `{%${variable}%}`
+      : 'None';
 
   return (
     <>
@@ -248,38 +252,36 @@ export const InputSettings = () => {
       />
 
       <Setting
-        label="Variable Source"
+        label="Add Variable"
         control={
-          <Select
-            style={{ display: 'flex' }}
-            options={[
-              { value: 'process', label: 'Process Variable' },
-              { value: 'global', label: 'Global Data Object' },
-            ]}
-            value={variableSource}
-            onChange={(val) => {
-              setVariableSource(val);
-              // clear the other one
-              setProp((props: InputProps) => {
-                if (val === 'global') props.variable = undefined;
-                else props.globalVariable = undefined;
-              });
-            }}
-          />
+          <Button style={{ display: 'flex', width: '100%' }} onClick={() => setModalOpen(true)}>
+            {currentValue}
+          </Button>
         }
       />
 
-      {variableSource === 'process' ? (
-        <VariableSetting
-          variable={variable}
-          allowedTypes={['string', 'number', 'file']}
-          onChange={(newVariable, newVariableType, newVariableTextFormat) =>
-            setProp((props: InputProps) => {
-              props.variable = newVariable;
+      <DataObjectSelectionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSelect={(selected, isGlobal, variableType, variableTextFormat) => {
+          setProp((props: InputProps) => {
+            if (isGlobal) {
+              props.globalVariable = selected;
+              props.variable = undefined;
+              props.type = 'text'; // global variables are always text for now
+            } else {
+              props.variable = selected;
               props.globalVariable = undefined;
-              if (newVariableTextFormat) props.type = newVariableTextFormat;
-              else {
-                switch (newVariableType) {
+              if (variableTextFormat) {
+                props.type = variableTextFormat as
+                  | 'text'
+                  | 'number'
+                  | 'email'
+                  | 'url'
+                  | 'file'
+                  | undefined;
+              } else {
+                switch (variableType) {
                   case 'string':
                     props.type = 'text';
                     break;
@@ -293,20 +295,10 @@ export const InputSettings = () => {
                     props.type = 'text';
                 }
               }
-            })
-          }
-        />
-      ) : (
-        <GlobalVariableSetting
-          value={globalVariable}
-          onChange={(path) =>
-            setProp((props: InputProps) => {
-              props.globalVariable = path;
-              props.variable = undefined;
-            })
-          }
-        />
-      )}
+            }
+          });
+        }}
+      />
     </>
   );
 };

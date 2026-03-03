@@ -122,3 +122,5 @@ export function buildValueMap(config: any): Record<string, string> {
 
   return result;
 }
+
+export let cachedValueMap: Record<string, string> = {};

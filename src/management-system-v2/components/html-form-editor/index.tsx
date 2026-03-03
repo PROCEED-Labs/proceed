@@ -51,6 +51,7 @@ interface EditorContentRef {
 export interface HtmlFormEditorRef extends EditorContentRef {
   getHtml: () => string;
   canUndo: () => boolean;
+  commitActiveEdits: () => Promise<void>;
 }
 
 // Store the default state structure
@@ -234,6 +235,10 @@ const HtmlFormEditor = forwardRef<HtmlFormEditorRef, EditorProps>(
       },
       // Derived from undo stack. it will be true only when actual changes exist. it avoids false unsaved warnings
       canUndo: () => content.current?.canUndo() ?? false,
+      commitActiveEdits: () => {
+        iframeRef.current?.contentDocument?.body?.click();
+        return new Promise((resolve) => setTimeout(resolve, 50));
+      },
       getHtml: () => {
         const json = content.current?.getJson();
 

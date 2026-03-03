@@ -179,15 +179,11 @@ const UserTaskEditorModal: React.FC<UserTaskEditorModalProps> = ({ processId, op
   }, [affectedElement]);
 
   const queryClient = useQueryClient();
-  // The warning model will only show on canel when there are actual undoable changes.
+  // The warning model will only show on cancel when there are actual undoable changes.
   const hasUnsavedChanges = builder.current?.canUndo() ?? false;
 
   const handleSave = async () => {
-    // Click inside iframe to trigger blur on any active element
-    const iframe = document.getElementById('html-form-editor-iframe') as HTMLIFrameElement;
-    iframe?.contentDocument?.body?.click();
-    // Small delay to let the click propagate
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await builder.current?.commitActiveEdits();
 
     const json = builder.current?.getJson();
     const html = builder.current?.getHtml();

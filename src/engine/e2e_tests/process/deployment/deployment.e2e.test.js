@@ -59,11 +59,13 @@ async function deleteProcess(definitionId, engines) {
   return await Promise.all(requests);
 }
 
-async function startInstance(definitionId, version, engineName) {
+async function startInstance(definitionId, version, engineName, variables = {}, extras = {}) {
   const [engine] = getEngines(engineName);
 
   return (
-    await request.post(`:${engine.port}/process/${definitionId}/versions/${version}/instance`)
+    await request
+      .post(`:${engine.port}/process/${definitionId}/versions/${version}/instance`)
+      .send({ variables, extras })
   ).body.instanceId;
 }
 
@@ -3225,7 +3227,13 @@ describe('Test deploying a process', () => {
 
           await deployProcess('twoEngineVariablesStatic', engineNames);
 
-          let instanceId = await startInstance(definitionId, 123, engineNames[0]);
+          let instanceId = await startInstance(
+            definitionId,
+            123,
+            engineNames[0],
+            {},
+            { extra: 'This is an  extension to the instance information' },
+          );
 
           // after starting the process, wait 3 seconds before requesting the state of the instance
           await new Promise((resolve) => setTimeout(() => resolve(), 3000));
@@ -3408,6 +3416,10 @@ describe('Test deploying a process', () => {
               ]);
 
               expect(instanceInfo.adaptationLog).toEqual([]);
+
+              expect(instanceInfo.extra).toEqual(
+                'This is an  extension to the instance information',
+              );
             }
 
             if (engine.name === 'machine2') {
@@ -3535,6 +3547,9 @@ describe('Test deploying a process', () => {
               ]);
 
               expect(instanceInfo.adaptationLog).toEqual([]);
+              expect(instanceInfo.extra).toEqual(
+                'This is an  extension to the instance information',
+              );
             }
 
             if (engine.name === 'machine3') {

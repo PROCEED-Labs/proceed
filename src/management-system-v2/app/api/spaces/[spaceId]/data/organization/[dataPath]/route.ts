@@ -35,7 +35,7 @@ export async function GET(
 
     if (!org) return new NextResponse(null, { status: 404 });
 
-    let data = org.subParameters[0].subParameters;
+    let data = org.subParameters;
 
     const segments = dataPath.split('.');
 

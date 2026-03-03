@@ -35,7 +35,7 @@ export async function GET(
       return new NextResponse('Cannot get user data', { status: 400 });
     }
 
-    let data = userData.content[0].subParameters[0].subParameters;
+    let data = userData.content[0].subParameters;
 
     const segments = dataPath.split('.');
 

@@ -896,7 +896,7 @@ class Engine {
             this.deleteInstance(instance.id);
           }
         })
-        .catch(() => { });
+        .catch(() => {});
     }
   }
 

@@ -1,37 +1,6 @@
 import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
-import { Parameter, VirtualParameter } from '@/lib/data/machine-config-schema';
 import { NextRequest, NextResponse } from 'next/server';
-
-type FilteredParameter = Pick<Parameter, 'name' | 'value' | 'id'> & {
-  description?: string;
-  displayName?: string;
-};
-
-type NestedFilteredParameter = FilteredParameter & { subParameters: NestedFilteredParameter[] };
-
-function filterParameter(parameter: Parameter): NestedFilteredParameter {
-  return {
-    name: parameter.name,
-    value: parameter.value,
-    id: parameter.id,
-    description: parameter.description?.[0].text,
-    displayName: parameter.displayName[0].text,
-    subParameters: parameter.subParameters.map(filterParameter),
-  };
-}
-
-function getParameterFromPath(data: (Parameter | VirtualParameter)[], dataPath: string) {
-  const segments = dataPath.split('.');
-
-  let parameter: Parameter | undefined = undefined;
-  for (const segment of segments) {
-    parameter = data.find((entry) => entry.name === segment);
-    if (!parameter) return;
-    data = parameter.subParameters;
-  }
-
-  return parameter;
-}
+import { filterParameter, getParameterFromPath } from '../../util';
 
 export async function GET(
   request: NextRequest,

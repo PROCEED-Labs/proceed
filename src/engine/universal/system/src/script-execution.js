@@ -132,6 +132,8 @@ class ScriptExecutor extends System {
           'variable.getGlobalFull': 'variable.getMSFull',
           'variable.getGlobalOrg': 'variable.getMSOrg',
           'variable.getGlobalOrgFull': 'variable.getMSOrgFull',
+          'variable.setGlobal': 'variable.setMS',
+          'variable.setGlobalOrg': 'variable.setMSOrg',
         };
 
         for (const mapping in mappings) {
@@ -142,7 +144,10 @@ class ScriptExecutor extends System {
         }
 
         try {
-          if (functionName.startsWith('variable.getMS')) {
+          if (
+            functionName.startsWith('variable.getMS') ||
+            functionName.startsWith('variable.setMS')
+          ) {
             const instanceInformation = this.options.getInstanceInformation(
               req.params.processInstanceId,
             );
@@ -186,14 +191,28 @@ class ScriptExecutor extends System {
               try {
                 const requestPath = createRequest(functionName, args[0]);
 
-                const result = await this.options.network.sendRequest(
-                  instanceInformation.managementSystemLocation,
-                  undefined,
-                  requestPath,
-                );
+                let result;
+
+                if (functionName.startsWith('variable.setMS')) {
+                  await this.options.network.sendData(
+                    instanceInformation.managementSystemLocation,
+                    undefined,
+                    requestPath,
+                    'PUT',
+                    'application/json',
+                    { value: args[1] },
+                  );
+                } else {
+                  const response = await this.options.network.sendRequest(
+                    instanceInformation.managementSystemLocation,
+                    undefined,
+                    requestPath,
+                  );
+                  result = JSON.parse(response.body);
+                }
 
                 return {
-                  response: { result: JSON.parse(result.body) || undefined },
+                  response: { result: result || undefined },
                 };
               } catch (err) {
                 return {

@@ -1,5 +1,5 @@
-import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
-import { Parameter } from '@/lib/data/machine-config-schema';
+import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
+import { Parameter, VirtualParameter } from '@/lib/data/machine-config-schema';
 import { NextRequest, NextResponse } from 'next/server';
 
 type FilteredParameter = Pick<Parameter, 'name' | 'value' | 'id'> & {
@@ -20,6 +20,19 @@ function filterParameter(parameter: Parameter): NestedFilteredParameter {
   };
 }
 
+function getParameterFromPath(data: (Parameter | VirtualParameter)[], dataPath: string) {
+  const segments = dataPath.split('.');
+
+  let parameter: Parameter | undefined = undefined;
+  for (const segment of segments) {
+    parameter = data.find((entry) => entry.name === segment);
+    if (!parameter) return;
+    data = parameter.subParameters;
+  }
+
+  return parameter;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ spaceId: string; dataPath: string }> },
@@ -35,16 +48,8 @@ export async function GET(
 
     if (!org) return new NextResponse(null, { status: 404 });
 
-    let data = org.subParameters;
+    const parameter = getParameterFromPath(org.subParameters, dataPath);
 
-    const segments = dataPath.split('.');
-
-    let parameter: Parameter | undefined = undefined;
-    for (const segment of segments) {
-      parameter = data.find((entry) => entry.name === segment);
-      if (!parameter) return new NextResponse(null, { status: 404 });
-      data = parameter.subParameters;
-    }
     if (!parameter) return new NextResponse(null, { status: 404 });
 
     let value = searchParams.has('full', 'true') ? filterParameter(parameter) : parameter.value;
@@ -54,5 +59,34 @@ export async function GET(
     });
   } catch (error: any) {
     return NextResponse.json({ error: 'Not implemented' }, { status: 404 });
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ spaceId: string; userId: string; dataPath: string }> },
+) {
+  const { spaceId, dataPath } = await params;
+  const body = await request.json();
+
+  if (!('value' in body)) {
+    return new NextResponse('Expected an object with a value ({ value: ... })', { status: 400 });
+  }
+
+  const conf = await getDeepConfigurationById(spaceId);
+
+  let org = conf.content.find((entry) => entry.name === 'organization');
+
+  if (!org) return new NextResponse(null, { status: 404 });
+
+  const parameter = getParameterFromPath(org.subParameters, dataPath);
+  if (!parameter) return new NextResponse(null, { status: 404 });
+
+  try {
+    await updateParameter(parameter.id, { value: `${body.value}` }, spaceId);
+    return new NextResponse(null, { status: 200 });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: error.message }, { status: 400 });
   }
 }

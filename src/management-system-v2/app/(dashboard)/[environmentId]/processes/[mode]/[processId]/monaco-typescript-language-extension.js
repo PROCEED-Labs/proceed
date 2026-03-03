@@ -26,9 +26,13 @@ class Variable {
 
   setProcess(name: string, value: any);
 
+  setGlobal(varPath: string, value: any): void;
+
   getGlobal(varPath: string);
 
   getGlobalFull(varPath: string);
+
+  setGlobalOrg(varPath: string, value: any): void;
 
   getGlobalOrg(varPath: string);
 

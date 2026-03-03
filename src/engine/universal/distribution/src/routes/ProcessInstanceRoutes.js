@@ -21,13 +21,6 @@ module.exports = (path, management) => {
     const { definitionId, version } = req.params;
     const { variables, activityID, extras } = req.body;
 
-    const instanceId = await management.createInstance(
-      definitionId,
-      version,
-      variables,
-      activityID,
-    );
-
     if (extras) {
       if ('managementSystemLocation' in extras) {
         const initiatorInfo = ['processInitiator', 'spaceIdOfProcessInitiator'];
@@ -50,9 +43,19 @@ module.exports = (path, management) => {
           }
         }
       }
-
-      management.setInstanceInformationExtensions(instanceId, extras);
     }
+
+    const instanceId = await management.createInstance(
+      definitionId,
+      version,
+      variables,
+      activityID,
+      async (instance) => {
+        if (extras) {
+          management.setInstanceInformationExtensions(instance.id, extras);
+        }
+      },
+    );
 
     if (!instanceId) {
       throw new APIError(

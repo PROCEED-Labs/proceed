@@ -175,7 +175,7 @@ class TaskListTab extends DisplayItem {
           path += '/organization';
           varPath = varPath.split('.').slice(1).join('.');
         } else {
-          throw new Error(`Unable to get data for global variable (@global.${varPath}).`);
+          return;
         }
         path += `/${varPath}`;
 

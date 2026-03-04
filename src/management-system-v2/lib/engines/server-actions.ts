@@ -50,7 +50,7 @@ import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
-import { getNestedUserParameter } from '../data/db/machine-config';
+import { getNestedOrgParameter, getNestedUserParameter } from '../data/db/machine-config';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -312,19 +312,29 @@ export async function getTasklistEntryHTML(
           );
           return;
         }
-        if (segments[0] === '@process-initiator') {
-          if (segments[1] === 'user-info') {
-            const info = await getUserById(instance.processInitiator);
+        if (segments[0] === '@organization') {
+          const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
+          return parameter?.value;
+        } else {
+          let { userId } = await getCurrentUser();
+          if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
+            if (segments[0] === '@process-initiator') {
+              userId = instance.processInitiator;
+            }
+            segments = segments.slice(1);
+          }
+          if (segments[0] === 'user-info') {
+            const info = await getUserById(userId);
             if (!info || info.isGuest) return;
 
             const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
 
-            return userInfo[segments[2] as keyof typeof userInfo];
+            return userInfo[segments[1] as keyof typeof userInfo];
           } else {
             const parameter = await getNestedUserParameter(
-              instance.processInitiator,
+              userId,
               instance.spaceIdOfProcessInitiator,
-              segments.slice(1).join('.'),
+              segments.join('.'),
             );
 
             if (isUserErrorResponse(parameter)) {

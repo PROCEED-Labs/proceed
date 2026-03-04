@@ -2,7 +2,6 @@
 
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import {
-  DeployedProcessInfo,
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
   getDeployment as fetchDeployment,
@@ -51,6 +50,7 @@ import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 import { getNestedOrgParameter, getNestedUserParameter } from '../data/db/machine-config';
+import { deleteInstances, getInstanceById } from '../data/instances';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -126,6 +126,8 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     });
 
     await removeDeploymentFromMachines(engines, definitionId);
+
+    await deleteInstances(definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -229,9 +231,11 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
           username?: string | null;
           firstName?: string | null;
           lastName?: string | null;
-        }[] = await asyncMap(task.actualOwner, async (owner) => {
-          return getUserById(owner, undefined, tx) || owner;
-        });
+        }[] = (
+          await asyncMap(task.actualOwner, async (owner) => {
+            return getUserById(owner, undefined, tx) || owner;
+          })
+        ).filter(truthyFilter);
 
         return users.map((user) =>
           typeof user === 'string'
@@ -278,6 +282,7 @@ export async function getTasklistEntryHTML(
 
     if (engine && (!html || !milestones || !initialVariables)) {
       const [taskId, instanceId, startTimeString] = userTaskId.split('|');
+
       const [definitionId] = instanceId.split('-_');
 
       const startTime = parseInt(startTimeString);
@@ -303,55 +308,6 @@ export async function getTasklistEntryHTML(
       milestones = await getCorrectMilestoneState(version.bpmn, userTask, instance);
 
       html = await getUserTaskFileFromMachine(engine, definitionId, filename);
-
-      const globalVars = await getGlobalVariables(html, async (varPath) => {
-        let segments = varPath.split('.');
-        if (!instance.processInitiator || !instance.spaceIdOfProcessInitiator) {
-          console.error(
-            'Trying to get global data for a user task but the instance is missing initiator information.',
-          );
-          return;
-        }
-        if (segments[0] === '@organization') {
-          const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
-          return parameter?.value;
-        } else {
-          let { userId } = await getCurrentUser();
-          if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
-            if (segments[0] === '@process-initiator') {
-              userId = instance.processInitiator;
-            }
-            segments = segments.slice(1);
-          }
-          if (segments[0] === 'user-info') {
-            const info = await getUserById(userId);
-            if (!info || info.isGuest) return;
-
-            const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
-
-            return userInfo[segments[1] as keyof typeof userInfo];
-          } else {
-            const parameter = await getNestedUserParameter(
-              userId,
-              instance.spaceIdOfProcessInitiator,
-              segments.join('.'),
-            );
-
-            if (isUserErrorResponse(parameter)) {
-              console.error(parameter.error.message);
-              return;
-            }
-            if (!parameter) {
-              console.error('Could not get user data for a user task');
-              return;
-            }
-
-            return parameter.value;
-          }
-        }
-      });
-
-      initialVariables = { ...initialVariables, ...globalVars };
 
       variableChanges = initialVariables;
 
@@ -409,6 +365,53 @@ export async function getTasklistEntryHTML(
 
     if (!html) throw new Error('Failed to get the html for the user task');
     if (!milestones) throw new Error('Failed to get the milestones for the user task');
+
+    const globalVars = await getGlobalVariables(html, async (varPath) => {
+      let segments = varPath.split('.');
+
+      if (segments[0] === '@organization') {
+        const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
+        return parameter?.value;
+      } else {
+        let { userId } = await getCurrentUser();
+        if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
+          if (segments[0] === '@process-initiator') {
+            if (!storedUserTask.instanceID) {
+              throw new Error('Trying to get the instance initiator but not in an instance');
+            }
+            const instance = await getInstanceById(storedUserTask.instanceID);
+            if (!instance) throw new Error('Unknown instance');
+            if (isUserErrorResponse(instance)) throw instance;
+
+            userId = instance.initiatorId;
+          }
+          segments = segments.slice(1);
+        }
+        if (segments[0] === 'user-info') {
+          const info = await getUserById(userId);
+          if (!info || info.isGuest) return;
+
+          const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
+
+          return userInfo[segments[1] as keyof typeof userInfo];
+        } else {
+          const parameter = await getNestedUserParameter(userId, spaceId, segments.join('.'));
+
+          if (isUserErrorResponse(parameter)) {
+            console.error(parameter.error.message);
+            return;
+          }
+          if (!parameter) {
+            console.error('Could not get user data for a user task');
+            return;
+          }
+
+          return parameter.value;
+        }
+      }
+    });
+
+    variableChanges = { ...variableChanges, ...globalVars };
 
     return inlineUserTaskData(html, mapResourceUrls(variableChanges), milestones);
   } catch (e) {

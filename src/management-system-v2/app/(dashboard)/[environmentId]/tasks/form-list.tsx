@@ -195,7 +195,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           id: v4(),
           name: task.name,
           taskId: '',
-          instanceID: '',
+          instanceID: undefined,
           fileName: '',
           state: 'READY',
           machineId: 'ms-local',

@@ -1,4 +1,5 @@
 import { useEnvironment, useSession } from '@/components/auth-can';
+import { addInstance } from '@/lib/data/instances';
 import {
   DeployedProcessInfo,
   InstanceInfo,
@@ -15,7 +16,7 @@ import { Engine } from '@/lib/engines/machines';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
 import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -100,13 +101,31 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   });
 
   const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (engines?.length)
+    if (engines?.length) {
       // TODO: in case of static deployment or different versions on different engines we will have
       // to check if the engine can actually be used to start an instance
-      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-        processInitiator: session?.user.id,
-        spaceIdOfProcessInitiator: space.spaceId,
+      const instanceId = await startInstanceOnMachine(
+        definitionId,
+        versionId,
+        engines[0],
+        variables,
+        {
+          processInitiator: session?.user.id,
+          spaceIdOfProcessInitiator: space.spaceId,
+        },
+      );
+
+      if (isUserErrorResponse(instanceId)) return instanceId;
+
+      await addInstance({
+        id: instanceId,
+        definitionId,
+        initiatorId: session?.user.id || '',
+        initiatorSpaceId: space.spaceId,
       });
+
+      return instanceId;
+    }
   };
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];

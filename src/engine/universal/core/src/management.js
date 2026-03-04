@@ -516,7 +516,7 @@ const Management = {
           msg: `Continuing execution of an interrupted instance (id: ${instance.processInstanceId})`,
           instanceId: instance.processInstanceId,
         });
-        engine.setInstanceInformationExtensions(instance.processIntanceId, extras);
+        engine.setInstanceInformationExtensions(instance.processInstanceId, extras);
       },
     );
 

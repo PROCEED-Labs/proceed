@@ -1,6 +1,6 @@
-import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
+import { getNestedOrgParameter, updateParameter } from '@/lib/data/db/machine-config';
 import { NextRequest, NextResponse } from 'next/server';
-import { filterParameter, getParameterFromPath } from '../../util';
+import { filterParameter } from '../../util';
 
 export async function GET(
   request: NextRequest,
@@ -11,14 +11,7 @@ export async function GET(
   try {
     const { spaceId, dataPath } = await params;
 
-    const conf = await getDeepConfigurationById(spaceId);
-
-    let org = conf.content.find((entry) => entry.name === 'organization');
-
-    if (!org) return new NextResponse(null, { status: 404 });
-
-    const parameter = getParameterFromPath(org.subParameters, dataPath);
-
+    const parameter = await getNestedOrgParameter(spaceId, dataPath);
     if (!parameter) return new NextResponse(null, { status: 404 });
 
     let value = searchParams.has('full', 'true') ? filterParameter(parameter) : parameter.value;
@@ -42,13 +35,7 @@ export async function PUT(
     return new NextResponse('Expected an object with a value ({ value: ... })', { status: 400 });
   }
 
-  const conf = await getDeepConfigurationById(spaceId);
-
-  let org = conf.content.find((entry) => entry.name === 'organization');
-
-  if (!org) return new NextResponse(null, { status: 404 });
-
-  const parameter = getParameterFromPath(org.subParameters, dataPath);
+  const parameter = await getNestedOrgParameter(spaceId, dataPath);
   if (!parameter) return new NextResponse(null, { status: 404 });
 
   try {

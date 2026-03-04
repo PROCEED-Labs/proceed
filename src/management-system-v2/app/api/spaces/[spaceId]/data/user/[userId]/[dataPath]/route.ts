@@ -1,34 +1,8 @@
-import { getUserConfig, updateParameter } from '@/lib/data/db/machine-config';
+import { getNestedUserParameter, updateParameter } from '@/lib/data/db/machine-config';
 import { NextRequest, NextResponse } from 'next/server';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { filterParameter, getParameterFromPath } from '../../../util';
+import { filterParameter } from '../../../util';
 import { getUserById } from '@/lib/data/db/iam/users';
-import { Parameter } from '@/lib/data/machine-config-schema';
-import { truthyFilter } from '@/lib/typescript-utils';
-
-function toDummyParameter(
-  key: string,
-  value: any,
-  children: { key: string; value: any }[] = [],
-): Parameter {
-  return {
-    id: key,
-    name: key,
-    displayName: [
-      {
-        language: 'en',
-        text: key,
-      },
-    ],
-    value,
-    parameterType: 'none',
-    hasChanges: false,
-    structureVisible: true,
-    usedAsInputParameterIn: [],
-    changeableByUser: false,
-    subParameters: children.map(({ key, value }) => toDummyParameter(key, value)),
-  };
-}
 
 export async function GET(
   request: NextRequest,
@@ -36,42 +10,33 @@ export async function GET(
 ) {
   const searchParams = request.nextUrl.searchParams;
 
+  let value: any;
+
   try {
-    const { spaceId, userId, dataPath } = await params;
-    const userData = await getUserConfig(userId, spaceId);
+    let { spaceId, userId, dataPath } = await params;
 
-    if (isUserErrorResponse(userData)) {
-      return new NextResponse('Cannot get user data', { status: 400 });
+    if (dataPath.startsWith('user-info')) {
+      const info = await getUserById(userId);
+      if (info.isGuest) return new NextResponse(null, { status: 404 });
+
+      const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
+
+      const [varName] = dataPath.split('.').slice(1);
+
+      if (!(varName in userInfo)) return new NextResponse(null, { status: 404 });
+
+      value = userInfo[varName as keyof typeof userInfo];
+    } else {
+      const parameter = await getNestedUserParameter(userId, spaceId, dataPath);
+
+      if (isUserErrorResponse(parameter)) {
+        return new NextResponse('Cannot get user data', { status: 400 });
+      }
+
+      if (!parameter) return new NextResponse(null, { status: 404 });
+
+      value = searchParams.has('full', 'true') ? filterParameter(parameter) : parameter.value;
     }
-
-    const meta = await getUserById(userId);
-    if (meta.isGuest) return new NextResponse(null, { status: 404 });
-
-    const userInfo = toDummyParameter(
-      'user-info',
-      'empty',
-      Object.entries({
-        ...meta,
-        id: undefined,
-        isGuest: undefined,
-        favourites: undefined,
-        name: `${meta.firstName} ${meta.lastName}`,
-      })
-        .filter(([_, value]) => !!value)
-        .map(([key, value]) => ({
-          key,
-          value,
-        })),
-    );
-
-    const parameter = getParameterFromPath(
-      [...userData.content[0].subParameters, userInfo],
-      dataPath,
-    );
-
-    if (!parameter) return new NextResponse(null, { status: 404 });
-
-    let value = searchParams.has('full', 'true') ? filterParameter(parameter) : parameter.value;
 
     return NextResponse.json(value, {
       status: 200,
@@ -92,13 +57,12 @@ export async function PUT(
     return new NextResponse('Expected an object with a value ({ value: ... })', { status: 400 });
   }
 
-  const userData = await getUserConfig(userId, spaceId);
+  const parameter = await getNestedUserParameter(userId, spaceId, dataPath);
 
-  if (isUserErrorResponse(userData)) {
+  if (isUserErrorResponse(parameter)) {
     return new NextResponse('Cannot get user data', { status: 400 });
   }
 
-  const parameter = getParameterFromPath(userData.content[0].subParameters, dataPath);
   if (!parameter) return new NextResponse(null, { status: 404 });
 
   try {

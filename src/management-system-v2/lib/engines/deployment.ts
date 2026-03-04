@@ -295,6 +295,9 @@ export type InstanceInfo = {
   adaptationLog: any[];
   processVersion: string;
   userTasks: any[];
+  managementSystemLocation?: string;
+  processInitiator?: string;
+  spaceIdOfProcessInitiator?: string;
 };
 export type DeployedProcessInfo = {
   definitionId: string;

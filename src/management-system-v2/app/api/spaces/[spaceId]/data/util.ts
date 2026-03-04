@@ -17,16 +17,3 @@ export function filterParameter(parameter: Parameter): NestedFilteredParameter {
     subParameters: parameter.subParameters.map(filterParameter),
   };
 }
-
-export function getParameterFromPath(data: (Parameter | VirtualParameter)[], dataPath: string) {
-  const segments = dataPath.split('.');
-
-  let parameter: Parameter | undefined = undefined;
-  for (const segment of segments) {
-    parameter = data.find((entry) => entry.name === segment);
-    if (!parameter) return;
-    data = parameter.subParameters;
-  }
-
-  return parameter;
-}

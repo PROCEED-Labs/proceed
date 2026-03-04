@@ -1,6 +1,6 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, userError } from '../user-error';
+import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import {
   DeployedProcessInfo,
   deployProcess as _deployProcess,
@@ -33,6 +33,7 @@ import {
   getCorrectVariableState,
   getCorrectMilestoneState,
   inlineScript,
+  getGlobalVariables,
 } from '@proceed/user-task-helper';
 import { ExtendedTaskListEntry, UserTask } from '../user-task-schema';
 
@@ -49,6 +50,7 @@ import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
+import { getNestedUserParameter } from '../data/db/machine-config';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -299,9 +301,49 @@ export async function getTasklistEntryHTML(
 
       initialVariables = getCorrectVariableState(userTask, instance);
       milestones = await getCorrectMilestoneState(version.bpmn, userTask, instance);
-      variableChanges = initialVariables;
 
       html = await getUserTaskFileFromMachine(engine, definitionId, filename);
+
+      const globalVars = await getGlobalVariables(html, async (varPath) => {
+        let segments = varPath.split('.');
+        if (!instance.processInitiator || !instance.spaceIdOfProcessInitiator) {
+          console.error(
+            'Trying to get global data for a user task but the instance is missing initiator information.',
+          );
+          return;
+        }
+        if (segments[0] === '@process-initiator') {
+          if (segments[1] === 'user-info') {
+            const info = await getUserById(instance.processInitiator);
+            if (!info || info.isGuest) return;
+
+            const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
+
+            return userInfo[segments[2] as keyof typeof userInfo];
+          } else {
+            const parameter = await getNestedUserParameter(
+              instance.processInitiator,
+              instance.spaceIdOfProcessInitiator,
+              segments.slice(1).join('.'),
+            );
+
+            if (isUserErrorResponse(parameter)) {
+              console.error(parameter.error.message);
+              return;
+            }
+            if (!parameter) {
+              console.error('Could not get user data for a user task');
+              return;
+            }
+
+            return parameter.value;
+          }
+        }
+      });
+
+      initialVariables = { ...initialVariables, ...globalVars };
+
+      variableChanges = initialVariables;
 
       html = html.replace(/\/resources\/process[^"]*/g, (match) => {
         const path = match.split('/');

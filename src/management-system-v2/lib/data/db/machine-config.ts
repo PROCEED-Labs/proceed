@@ -22,7 +22,7 @@ import {
 } from '../machine-config-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
-import { UserError, userError } from '@/lib/user-error';
+import { UserError, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
@@ -4552,6 +4552,40 @@ export async function getUserConfig(
         : `user config cannot be loaded. \nUserID: ${userId}\nSpaceID: ${spaceId}`,
     );
   }
+}
+
+function getParameterFromPath(data: (Parameter | VirtualParameter)[], dataPath: string) {
+  const segments = dataPath.split('.');
+
+  let parameter: Parameter | undefined = undefined;
+  for (const segment of segments) {
+    parameter = data.find((entry) => entry.name === segment);
+    if (!parameter) return;
+    data = parameter.subParameters;
+  }
+
+  return parameter;
+}
+
+export async function getNestedUserParameter(
+  userId: string,
+  spaceId: string,
+  parameterPath: string,
+) {
+  const config = await getUserConfig(userId, spaceId);
+
+  if (isUserErrorResponse(config)) return config;
+
+  return getParameterFromPath(config.content[0].subParameters, parameterPath);
+}
+
+export async function getNestedOrgParameter(spaceId: string, parameterPath: string) {
+  const conf = await getDeepConfigurationById(spaceId);
+
+  let org = conf.content.find((entry) => entry.name === 'organization');
+  if (!org) return;
+
+  return getParameterFromPath(org.subParameters, parameterPath);
 }
 
 /**

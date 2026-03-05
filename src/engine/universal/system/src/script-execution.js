@@ -66,7 +66,7 @@ class ScriptExecutor extends System {
     this.options.network.post(
       '/scriptexecution/:processId/:processInstanceId/:scriptIdentifier/result',
       {},
-      async function(req) {
+      async function (req) {
         const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
@@ -117,7 +117,7 @@ class ScriptExecutor extends System {
     this.options.network.post(
       '/scriptexecution/:processId/:processInstanceId/:scriptIdentifier/call',
       {},
-      async function(req) {
+      async function (req) {
         const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
@@ -235,7 +235,7 @@ class ScriptExecutor extends System {
               // If error is serializable we can send it back
               JSON.stringify(error);
               errorResponse = error;
-            } catch (_) { }
+            } catch (_) {}
           }
 
           this._getLogger().error(
@@ -271,7 +271,7 @@ class ScriptExecutor extends System {
       this.options.network[method](
         '/running-processes/:processId/latest/:pathForScriptTask(*)',
         {},
-        async function(req) {
+        async function (req) {
           const processes = this.getProcess(req.params.processId, undefined, undefined);
           if (processes.length === 0) {
             return {
@@ -287,7 +287,7 @@ class ScriptExecutor extends System {
       this.options.network[method](
         '/running-processes/:instanceId/:pathForScriptTask(*)',
         {},
-        async function(req) {
+        async function (req) {
           const processes = this.getProcess(undefined, req.params.instanceId, undefined);
           if (processes.length === 0) {
             return {

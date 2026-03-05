@@ -1,9 +1,9 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import languageExtension from '../monaco-typescript-language-extension.js';
+import { getProceedLanguageExtension } from '../monaco-typescript-language-extension';
 import cn from 'classnames';
 import styles from './monaco-editor.module.scss';
 
@@ -11,6 +11,7 @@ type MonacoEditorProps = {
   initialScript: string;
   onChange: () => void;
   disabled?: boolean;
+  variables?: { name: string; type: string }[];
 };
 
 export type MonacoEditorRef = {
@@ -21,9 +22,11 @@ export type MonacoEditorRef = {
 };
 
 const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
-  ({ initialScript, onChange, disabled = false }, ref) => {
+  ({ initialScript, onChange, disabled = false, variables = [] }, ref) => {
     const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
     const monacoRef = useRef<null | Monaco>(null);
+
+    const [initialized, setInitialized] = useState(false);
 
     const handleEditorMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
       monacoEditorRef.current = editor;
@@ -33,6 +36,7 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
         target: monacoRef.current.languages.typescript.ScriptTarget.ES2020,
         // Only include ES library, exclude DOM and browser APIs
         lib: ['es2020'],
+        strictNullChecks: true,
         allowNonTsExtensions: true,
         moduleResolution: monacoRef.current.languages.typescript.ModuleResolutionKind.NodeJs,
       });
@@ -47,9 +51,19 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
         ],
       });
 
-      monacoRef.current.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
-      monacoRef.current.editor.createModel(languageExtension, 'typescript');
+      setInitialized(true);
     };
+
+    useEffect(() => {
+      if (initialized) {
+        const languageExtension = getProceedLanguageExtension(variables);
+
+        const lib =
+          monacoRef.current!.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
+
+        return () => lib.dispose();
+      }
+    }, [initialized, variables]);
 
     useImperativeHandle(
       ref,
@@ -125,7 +139,7 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
           readOnly: disabled,
         }}
         onMount={handleEditorMount}
-        onChange={onChange}
+        onChange={() => onChange()}
         className={cn('Hide-Scroll-Bar', styles.MonacoEditor)}
       />
     );

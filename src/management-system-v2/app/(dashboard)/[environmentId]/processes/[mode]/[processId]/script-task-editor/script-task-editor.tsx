@@ -46,6 +46,7 @@ import ProcessVariableForm from '../variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 import MonacoEditor, { MonacoEditorRef } from './monaco-editor';
+import { typeTypescriptMap } from '@/lib/process-variable-schema';
 
 export type ScriptEditorRef = {
   save: () => Promise<string | undefined>;
@@ -420,6 +421,10 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                     initialScript={initialScript}
                     onChange={() => onChangeRef.current?.(true)}
                     disabled={!canEdit}
+                    variables={variables.map((variable) => ({
+                      name: variable.name,
+                      type: typeTypescriptMap[variable.dataType],
+                    }))}
                   />
                 ) : (
                   <BlocklyEditor

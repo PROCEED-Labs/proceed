@@ -123,31 +123,10 @@ class ScriptExecutor extends System {
 
         let { functionName, args } = req.body;
 
-        const mappings = {
-          'variable.getProcess': 'variable.getGlobal',
-          'variable.getAllProcess': 'variable.getAllGlobal',
-          'variable.getWithLogsProcess': 'variable.getWithLogsGlobal',
-          'variable.setProcess': 'variable.setGlobal',
-          'variable.getGlobal': 'variable.getMS',
-          'variable.getGlobalFull': 'variable.getMSFull',
-          'variable.getGlobalOrg': 'variable.getMSOrg',
-          'variable.getGlobalOrgFull': 'variable.getMSOrgFull',
-          'variable.setGlobal': 'variable.setMS',
-          'variable.setGlobalOrg': 'variable.setMSOrg',
-        };
-
-        for (const mapping in mappings) {
-          if (functionName.startsWith(mapping)) {
-            functionName = functionName.replace(mapping, mappings[mapping]);
-            break;
-          }
-        }
-
         try {
-          if (
-            functionName.startsWith('variable.getMS') ||
-            functionName.startsWith('variable.setMS')
-          ) {
+          if (/^variable\.(get|set)Global/.test(functionName)) {
+            // the script tries to access information from the management system
+            // check that it has the necessary information to access the management system
             const instanceInformation = this.options.getInstanceInformation(
               req.params.processInstanceId,
             );
@@ -166,10 +145,19 @@ class ScriptExecutor extends System {
             }
 
             try {
+              /**
+               * Creates a request path for the information that was requested by the given data
+               * access function
+               *
+               * @param {string} accessFn the function that was called in the script
+               * @param {string} dataPath the path to the nested data entry
+               */
               function createRequest(accessFn, dataPath) {
                 let path = `/api/spaces/${instanceInformation.spaceIdOfProcessInitiator}/data`;
 
-                if (accessFn.includes('MSOrg')) {
+                if (accessFn.includes('GlobalOrg')) {
+                  // setGlobalOrg and getGlobalOrg already define what data to access so any other
+                  // type of meta path is not allowed
                   if (dataPath.includes('@')) {
                     throw new Error(`Invalid meta parameter (@...) in call to ${accessFn}.`);
                   }
@@ -188,38 +176,31 @@ class ScriptExecutor extends System {
                 return path + `/${dataPath}${accessFn.includes('Full') ? '?full=true' : ''}`;
               }
 
-              try {
-                const requestPath = createRequest(functionName, args[0]);
+              const requestPath = createRequest(functionName, args[0]);
 
-                let result;
+              let result;
 
-                if (functionName.startsWith('variable.setMS')) {
-                  await this.options.network.sendData(
-                    instanceInformation.managementSystemLocation,
-                    undefined,
-                    requestPath,
-                    'PUT',
-                    'application/json',
-                    { value: args[1] },
-                  );
-                } else {
-                  const response = await this.options.network.sendRequest(
-                    instanceInformation.managementSystemLocation,
-                    undefined,
-                    requestPath,
-                  );
-                  result = JSON.parse(response.body);
-                }
-
-                return {
-                  response: { result: result || undefined },
-                };
-              } catch (err) {
-                return {
-                  response: { error: err.message },
-                  statusCode: 400,
-                };
+              if (functionName.includes('setGlobal')) {
+                await this.options.network.sendData(
+                  instanceInformation.managementSystemLocation,
+                  undefined,
+                  requestPath,
+                  'PUT',
+                  'application/json',
+                  { value: args[1] },
+                );
+              } else {
+                const response = await this.options.network.sendRequest(
+                  instanceInformation.managementSystemLocation,
+                  undefined,
+                  requestPath,
+                );
+                result = JSON.parse(response.body);
               }
+
+              return {
+                response: { result: result || undefined },
+              };
             } catch (err) {
               return {
                 response: { error: `Accessing data with ${functionName} failed.` },

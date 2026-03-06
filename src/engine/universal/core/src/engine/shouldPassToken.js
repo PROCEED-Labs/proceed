@@ -97,7 +97,8 @@ async function forwardDynamicInstance(engine, processInstanceId, tokenId, from, 
   }
   const { ip, port, name } = machine;
   // send process bpmn to next machine
-  const instanceInfo = engine.getInstanceInformation(processInstanceId);
+  const instanceInfo = engine.getInstanceInformation(processInstanceId, true);
+  const instanceExtraInfo = engine._instanceIdExtraInfoMapping[processInstanceId];
   const currentFlowNodeToken = { ...engine.getToken(processInstanceId, tokenId), from, to };
   instanceInfo.tokens = [currentFlowNodeToken];
 
@@ -113,7 +114,10 @@ async function forwardDynamicInstance(engine, processInstanceId, tokenId, from, 
   }
 
   try {
-    await forwardInstance(ip, port, engine.definitionId, processInstanceId, instanceInfo);
+    await forwardInstance(ip, port, engine.definitionId, processInstanceId, {
+      ...instanceInfo,
+      extras: instanceExtraInfo || {},
+    });
 
     engine._log.info({
       msg: `Forwarding token execution to another machine ${name}. TokenId = ${instanceInfo.tokens[0].tokenId}. InstanceId = ${processInstanceId}`,
@@ -358,12 +362,16 @@ module.exports = {
           const { ip, port, name } = nextMachine;
 
           // forwarding the instance
-          const instanceInfo = engine.getInstanceInformation(processInstanceId);
+          const instanceInfo = engine.getInstanceInformation(processInstanceId, true);
+          const instanceExtraInfo = engine._instanceIdExtraInfoMapping[processInstanceId];
           currentFlowNodeToken.from = from;
           currentFlowNodeToken.to = to;
           instanceInfo.tokens = [currentFlowNodeToken];
           try {
-            await forwardInstance(ip, port, engine.definitionId, processInstanceId, instanceInfo);
+            await forwardInstance(ip, port, engine.definitionId, processInstanceId, {
+              ...instanceInfo,
+              extras: instanceExtraInfo,
+            });
 
             engine._log.info({
               msg: `Forwarding token execution to another machine ${name}. TokenId = ${tokenId}. InstanceId = ${processInstanceId}`,

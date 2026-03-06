@@ -300,7 +300,7 @@ export function defaultUserParameterTemplate(
   );
   const dataParameter: Parameter = {
     ...defaultParameter('data', [{ text: `Data`, language: 'en' }], []),
-    changeableByUser: false,
+    changeableByUser: true,
   };
 
   userParameter.id = membershipId;

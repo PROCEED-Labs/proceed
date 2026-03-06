@@ -1,13 +1,11 @@
 import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
-import prisma from '@/lib/data/db';
 import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { createVersion } from '@/lib/data/processes';
-import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getCorrectTargetEngines } from '@/lib/engines/server-actions';
 import { deployProcess } from '@/lib/engines/deployment';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
+import { getProcessLatestVersion } from '@/lib/data/db/process';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -16,7 +14,7 @@ export const schema = toAuthorizationSchema({
     .record(z.string(), z.any())
     .optional()
     .describe(
-      'The start parameters expected from the user at startup. The parameters can be found in the bpmn of the process.',
+      'The start parameters required from the user at startup. The parameters can be found in the bpmn of the process.',
     ),
 });
 
@@ -40,45 +38,17 @@ export default async function startProcess({
   startParameters,
 }: InferSchema<typeof schema>) {
   try {
-    console.log(startParameters);
     const verification = await verifyCode(userCode);
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
     const { environmentId, ability } = verification;
 
-    const info = await prisma.process.findUnique({
-      where: {
-        id: processId,
-        environmentId,
-      },
-      include: {
-        versions: true,
-      },
-    });
+    const process = await getProcessLatestVersion(processId, false);
 
-    if (!info) return 'Error: Not found';
+    if (!process.executable) return 'Error: This process is not executable';
 
-    if (!ability.can('view', 'Process', toCaslResource('Process', info)))
-      return 'Error: Not allowed';
-
-    if (!info?.executable) return 'Error: This process is not executable';
-
-    // const { versions } = info;
-    // if (!versions.length) return 'Error: There is no version to deploy!';
-    //
-    // versions.sort((a, b) => a.createdOn.getTime() - b.createdOn.getTime());
-
-    const version = await createVersion(
-      'Automatic MCP deployment version',
-      'This version was automatically created to allow a MCP server to start an instance of the latest version.',
-      processId,
-      environmentId,
-      true,
-    );
-
-    if (isUserErrorResponse(version)) return `Error: ${version.error.message}`;
-
-    if (!version) return 'Error: Failed to create a version of the process';
+    // we don't need to check if the variables that are required at startup are set since the engine
+    // will do that for us and return an error if they aren't
 
     const engines = await getCorrectTargetEngines(environmentId, false, undefined, ability);
 
@@ -88,7 +58,7 @@ export default async function startProcess({
 
     const deployment = await deployProcess(
       processId,
-      version,
+      process.version.id,
       environmentId,
       'dynamic',
       [engine],
@@ -99,14 +69,13 @@ export default async function startProcess({
 
     const instanceId = await startInstanceOnMachine(
       processId,
-      version,
+      process.version.id,
       engine,
       startParameters &&
         Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
     );
 
     if (isUserErrorResponse(instanceId)) {
-      console.log(instanceId);
       return instanceId.error.message;
     }
 

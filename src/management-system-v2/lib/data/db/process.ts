@@ -13,6 +13,9 @@ import {
   generateBpmnId,
   toBpmnObject,
   getScriptTaskFileNameMapping,
+  getDefinitionsInfos,
+  getProcessDocumentation,
+  getElementsByTagName,
 } from '@proceed/bpmn-helper';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
@@ -131,6 +134,52 @@ export async function getProcess(processDefinitionsId: string, includeBPMN = fal
   return convertedProcess as typeof convertedProcess & {
     inEditingBy?: { userId: string; timestamp?: number }[];
   };
+}
+
+export async function getProcessLatestVersion(processDefinitionsId: string, includeBPMN = false) {
+  const process = await getProcess(processDefinitionsId, false);
+
+  const latestVersion = process.versions.reduce(
+    (prev, curr) => {
+      if (!prev || prev.createdOn.getTime() < curr.createdOn.getTime()) {
+        return curr;
+      }
+
+      return prev;
+    },
+    undefined as undefined | (typeof process.versions)[number],
+  );
+
+  if (!latestVersion) {
+    throw new Error(`No version found for process (id: ${processDefinitionsId}).`);
+  }
+
+  const bpmn = await getProcessVersionBpmn(processDefinitionsId, latestVersion.id);
+  const bpmnObject = await toBpmnObject(bpmn);
+
+  const description = await getProcessDocumentation(bpmnObject);
+  const definitionInfo = await getDefinitionsInfos(bpmnObject);
+  const bpmnProcesses = getElementsByTagName(bpmnObject, 'bpmn:Process');
+
+  const processWithLatestVersion = {
+    ...process,
+    name: definitionInfo.name,
+    userDefinedId: definitionInfo.userDefinedId,
+    description,
+    version: {
+      ...latestVersion,
+    },
+    versions: undefined,
+    bpmn: includeBPMN ? bpmn : undefined,
+    inEditingBy: undefined,
+    executable: (bpmnProcesses[0]?.isExecutable as boolean | undefined) || false,
+    processIds: bpmnProcesses.map((bpmnProcess) => bpmnProcess.id as string),
+    shareTimestamp: undefined,
+    allowIframeTimestamp: undefined,
+    sharedAs: undefined,
+  };
+
+  return processWithLatestVersion;
 }
 
 /**

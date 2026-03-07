@@ -217,6 +217,7 @@ model Role {
   environmentId String
   name          String
   description   String?
+  type          String   @default("default")
   note          String?
   permissions   Json
   expiration    DateTime?

@@ -1,7 +1,7 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, Form, Input, Modal, Space } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Select, Space } from 'antd';
 import { FC, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -148,6 +148,16 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
         <Input.TextArea disabled={!ability.can('update', role, { field: 'description' })} />
       </Form.Item>
 
+      <Form.Item label="Type" name="type">
+        <Select
+          disabled={!ability.can('update', role, { field: 'type' })}
+          options={[
+            { label: 'Default', value: 'default' },
+            { label: 'Team', value: 'team' },
+            { label: 'Back Office', value: 'back-office' },
+          ]}
+        />
+      </Form.Item>
       {/** <Form.Item label="Expiration" name="expirationDayJs">
         <DatePicker
           // Note german locale hard coded

@@ -186,7 +186,8 @@ export async function addRole(
     throw new UnauthorizedError();
   }
 
-  const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
+  const { name, description, type, note, permissions, expiration, environmentId } =
+    roleRepresentation;
 
   // Check if role already exists in the database
   const existingRole = await db.role.findFirst({
@@ -209,6 +210,7 @@ export async function addRole(
       name,
       environmentId,
       description: description || null,
+      type: type || 'default',
       note: note || null,
       permissions: permissions || {},
       expiration: expiration || null,

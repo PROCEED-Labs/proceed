@@ -1,7 +1,7 @@
 'use client';
 
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, App } from 'antd';
+import { Button, Form, Input, Modal, App, Select } from 'antd';
 import { FC, useEffect, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -11,7 +11,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { RoleInputSchema } from '@/lib/data/role-schema';
 
-const schema = RoleInputSchema.pick({ name: true, description: true });
+const schema = RoleInputSchema.pick({ name: true, description: true, type: true });
 
 const CreateRoleModal: FC<{
   modalOpen: boolean;
@@ -65,6 +65,15 @@ const CreateRoleModal: FC<{
           <Input.TextArea />
         </Form.Item>
 
+        <Form.Item label="Type" name="type" initialValue="default">
+          <Select
+            options={[
+              { label: 'Default', value: 'default' },
+              { label: 'Team', value: 'team' },
+              { label: 'Back Office', value: 'back-office' },
+            ]}
+          />
+        </Form.Item>
         {/**<Form.Item
           label="Expiration"
           name="expirationDayJs"

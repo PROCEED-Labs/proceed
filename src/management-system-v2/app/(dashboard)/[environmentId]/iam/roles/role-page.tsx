@@ -92,6 +92,20 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
       sorter: (a, b) => a.name.value.localeCompare(b.name.value),
     },
     {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      render: (type: string) => {
+        const labels: Record<string, string> = {
+          default: 'Default',
+          team: 'Team',
+          'back-office': 'Back Office',
+        };
+        return labels[type] ?? type;
+      },
+      sorter: (a, b) => (a.type ?? '').localeCompare(b.type ?? ''),
+    },
+    {
       title: 'Members',
       dataIndex: 'members',
       render: (members: FilteredRole['members']) => (

@@ -227,7 +227,6 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
             ) && (
               <AddButton
                 label={'Add Parameter'}
-                disabled={!parameter.changeableByUser}
                 onClick={() => {
                   setCurrentParameter(parameter);
                   setCreateFieldOpen(true);

@@ -766,7 +766,7 @@ const ParameterInputs = ({
                   { label: 'Formula', value: 'algorithm' },
                 ]}
                 onChange={() => form.setFieldValue([index, 'linkedParameters'], [])}
-                disabled={isTransformationDisabled || isAdminLocked}
+                disabled={isTransformationDisabled}
               />
             </Form.Item>
           </Col>

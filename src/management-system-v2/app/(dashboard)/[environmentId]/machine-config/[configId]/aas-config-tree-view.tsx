@@ -370,7 +370,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
             setCurrentParameter(currentParameter as Parameter);
             setOpenModal('parameter');
           },
-          disabled: !editMode || !isChangeable,
+          disabled: !editMode,
         },
         {
           label: 'Delete',

@@ -370,6 +370,7 @@ const AasContent: React.FC<MachineDataViewProps> = ({
                     'valueTemplateSource' in currentParameter
                       ? currentParameter.valueTemplateSource
                       : 'none',
+                  origin: currentParameter.origin || '',
                 },
               ]
             : []

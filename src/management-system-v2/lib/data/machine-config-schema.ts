@@ -217,7 +217,7 @@ export const BaseParameterZod = z.object({
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   transformation: TranformationZod.optional(),
   changeableByUser: z.boolean(),
-  origin: z.enum(['system', 'admin', 'user', 'data']),
+  origin: z.enum(['system', 'admin', 'user']),
   hasChanges: z.boolean(),
 });
 
@@ -233,7 +233,7 @@ const BaseVirtualParameterZod = z.object({
   unitRef: z.string().optional(),
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   changeableByUser: z.boolean(),
-  origin: z.enum(['system', 'admin', 'user', 'data']),
+  origin: z.enum(['system', 'admin', 'user']),
   hasChanges: z.boolean(),
 });
 

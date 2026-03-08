@@ -230,8 +230,6 @@ model Role {
   parentId      String?
   parentFolder  Folder?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
-  organigramTeam        UserOrganigram[] @relation("teamRole")
-  organigramBackOffice  UserOrganigram[] @relation("backOfficeRole")
   members RoleMember[]
 
   @@map("role")
@@ -419,15 +417,11 @@ model UserOrganigram {
   id               String  @id @default(uuid())
   userId           String
   environmentId    String
-  teamRoleId       String?
   directManagerId  String?
-  backOfficeRoleId String?
 
   user          User   @relation("organigramUser", fields: [userId], references: [id], onDelete: Cascade)
   space         Space  @relation(fields: [environmentId], references: [id], onDelete: Cascade)
-  teamRole      Role?  @relation("teamRole", fields: [teamRoleId], references: [id], onDelete: SetNull)
   directManager User?  @relation("organigramManager", fields: [directManagerId], references: [id], onDelete: SetNull)
-  backOfficeRole Role? @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
 
   @@unique([userId, environmentId])
   @@map("user_organigram")

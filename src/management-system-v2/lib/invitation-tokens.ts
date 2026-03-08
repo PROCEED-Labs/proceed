@@ -88,14 +88,12 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
       ]);
     }
 
-    // Save organigram info
-    if (invite.teamRoleId || invite.backOfficeRoleId || invite.directManagerId) {
+    // Only save directManagerId in organigram
+    if (invite.directManagerId) {
       await upsertUserOrganigram({
         userId,
         environmentId: invite.spaceId,
-        teamRoleId: invite.teamRoleId ?? null,
-        backOfficeRoleId: invite.backOfficeRoleId ?? null,
-        directManagerId: invite.directManagerId ?? null,
+        directManagerId: invite.directManagerId,
       });
     }
   }

@@ -50,9 +50,9 @@ export function EditUserModal({
         lastName: user.lastName?.value ?? '',
         username: user.username?.value ?? '',
         roles: currentDefaultRoleIds,
-        teamRoleId: organigram?.teamRoleId ?? currentTeamRoleId ?? undefined,
+        teamRoleId: currentTeamRoleId ?? undefined,
         directManagerId: organigram?.directManagerId ?? undefined,
-        backOfficeRoleId: organigram?.backOfficeRoleId ?? currentBackOfficeRoleId ?? undefined,
+        backOfficeRoleId: currentBackOfficeRoleId ?? undefined,
       });
     }
   }, [open, user, organigram, form]);

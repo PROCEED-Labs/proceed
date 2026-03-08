@@ -202,44 +202,32 @@ export async function createUserAndAddToOrganization(
       await setUserPassword(user.id, passwordHash, tx, true);
 
       await addMember(organizationId, user.id, ability, tx);
-      // Add default roles as role mappings
-      await addRoleMappings(
-        roles.map((roleId) => ({
-          roleId,
-          environmentId: organizationId,
-          userId: user.id,
-        })),
-        ability,
-        tx,
-      );
+      // Add all role mappings (default + team + back-office)
+      const allRoleIds = [
+        ...roles,
+        ...(teamRoleId ? [teamRoleId] : []),
+        ...(backOfficeRoleId ? [backOfficeRoleId] : []),
+      ];
 
-      // Add team role as role mapping
-      if (teamRoleId) {
+      if (allRoleIds.length > 0) {
         await addRoleMappings(
-          [{ roleId: teamRoleId, environmentId: organizationId, userId: user.id }],
+          allRoleIds.map((roleId) => ({
+            roleId,
+            environmentId: organizationId,
+            userId: user.id,
+          })),
           ability,
           tx,
         );
       }
 
-      // Add back-office role as role mapping
-      if (backOfficeRoleId) {
-        await addRoleMappings(
-          [{ roleId: backOfficeRoleId, environmentId: organizationId, userId: user.id }],
-          ability,
-          tx,
-        );
-      }
-
-      // Store organigram info (for direct manager + references to team/back-office)
-      if (teamRoleId || backOfficeRoleId || directManagerId) {
+      // Store directManagerId in organigram
+      if (directManagerId) {
         await tx.userOrganigram.create({
           data: {
             id: v4(),
             userId: user.id,
             environmentId: organizationId,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
             directManagerId: directManagerId ?? null,
           },
         });
@@ -288,18 +276,19 @@ export async function updateUserByAdmin(
       // Update basic user info
       await updateUser(userId, { firstName, lastName, username }, tx);
 
-      // 2. Get current role mappings for this user in this environment
+      // Get current role mappings for this user in this environment
       const currentMappings = await getRoleMappingByUserId(userId, organizationId);
       const currentRoleIds = currentMappings.map((m) => m.roleId);
 
       // Figure out which roles to add and which to remove
-      // Combine all new roles (default + team + back-office) into one list
+      // Combine all new roles (default + team + back-office)
       const newRoleIds = [
         ...roles,
         ...(teamRoleId ? [teamRoleId] : []),
         ...(backOfficeRoleId ? [backOfficeRoleId] : []),
       ];
 
+      // Diff and update role mappings
       const roleIdsToAdd = newRoleIds.filter((id) => !currentRoleIds.includes(id));
       const roleIdsToRemove = currentRoleIds.filter((id) => !newRoleIds.includes(id));
 
@@ -323,7 +312,7 @@ export async function updateUserByAdmin(
         );
       }
 
-      // Upsert organigram info
+      // Upsert directManagerId in organigram
       const existing = await tx.userOrganigram.findUnique({
         where: { userId_environmentId: { userId, environmentId: organizationId } },
       });
@@ -332,19 +321,15 @@ export async function updateUserByAdmin(
         await tx.userOrganigram.update({
           where: { userId_environmentId: { userId, environmentId: organizationId } },
           data: {
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
             directManagerId: directManagerId ?? null,
           },
         });
-      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
+      } else if (directManagerId) {
         await tx.userOrganigram.create({
           data: {
             id: v4(),
             userId,
             environmentId: organizationId,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
             directManagerId: directManagerId ?? null,
           },
         });

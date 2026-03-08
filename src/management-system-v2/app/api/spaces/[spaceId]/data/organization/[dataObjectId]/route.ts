@@ -2,15 +2,8 @@ import {
   extractParameter,
   findParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
-import db from '@/lib/data/db';
-import {
-  nestedParametersFromStorage,
-  getParameterParent,
-  getDeepConfigurationById,
-  updateParameter,
-} from '@/lib/data/db/machine-config';
+import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
 import { Parameter } from '@/lib/data/machine-config-schema';
-import { env } from '@/lib/ms-config/env-vars';
 import { NextRequest, NextResponse } from 'next/server';
 import { validate as uuidValidate } from 'uuid';
 import { z } from 'zod';

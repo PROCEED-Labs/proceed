@@ -24,6 +24,9 @@ import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { removeParameter, syncOrganizationUsers } from './db/machine-config';
+import { v4 } from 'uuid';
+import { updateUser } from '@/lib/data/db/iam/users';
+import { getRoleMappingByUserId } from '@/lib/data/db/iam/role-mappings';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -36,6 +39,9 @@ export async function inviteUsersToEnvironment(
   environmentId: string,
   invitedUsersIdentifiers: ({ email: string } | { username: string })[],
   roleIds?: string[],
+  teamRoleId?: string,
+  backOfficeRoleId?: string,
+  directManagerId?: string,
 ) {
   try {
     const invitedEmails = EmailListSchema.parse(invitedUsersIdentifiers);
@@ -90,6 +96,9 @@ export async function inviteUsersToEnvironment(
       const invite: Invitation = {
         spaceId: environmentId,
         roleIds: filteredRoles,
+        teamRoleId,
+        backOfficeRoleId,
+        directManagerId,
         ...(invitedUser ? { userId: invitedUser.id } : { email: invitedUserEmail! }),
       };
 
@@ -156,8 +165,17 @@ export async function createUserAndAddToOrganization(
   {
     password,
     roles,
+    teamRoleId,
+    backOfficeRoleId,
+    directManagerId,
     ...userDataInput
-  }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
+  }: z.infer<typeof createUserDataSchema> & {
+    password: string;
+    roles: string[];
+    teamRoleId?: string;
+    backOfficeRoleId?: string;
+    directManagerId?: string;
+  },
 ) {
   try {
     const { ability } = await getCurrentEnvironment(organizationId);
@@ -184,6 +202,7 @@ export async function createUserAndAddToOrganization(
       await setUserPassword(user.id, passwordHash, tx, true);
 
       await addMember(organizationId, user.id, ability, tx);
+      // Add default roles as role mappings
       await addRoleMappings(
         roles.map((roleId) => ({
           roleId,
@@ -193,9 +212,144 @@ export async function createUserAndAddToOrganization(
         ability,
         tx,
       );
+
+      // Add team role as role mapping
+      if (teamRoleId) {
+        await addRoleMappings(
+          [{ roleId: teamRoleId, environmentId: organizationId, userId: user.id }],
+          ability,
+          tx,
+        );
+      }
+
+      // Add back-office role as role mapping
+      if (backOfficeRoleId) {
+        await addRoleMappings(
+          [{ roleId: backOfficeRoleId, environmentId: organizationId, userId: user.id }],
+          ability,
+          tx,
+        );
+      }
+
+      // Store organigram info (for direct manager + references to team/back-office)
+      if (teamRoleId || backOfficeRoleId || directManagerId) {
+        await tx.userOrganigram.create({
+          data: {
+            id: v4(),
+            userId: user.id,
+            environmentId: organizationId,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+            directManagerId: directManagerId ?? null,
+          },
+        });
+      }
     });
 
     return user!;
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return userError(message);
+  }
+}
+
+export async function updateUserByAdmin(
+  organizationId: string,
+  userId: string,
+  {
+    firstName,
+    lastName,
+    username,
+    roles,
+    teamRoleId,
+    backOfficeRoleId,
+    directManagerId,
+  }: {
+    firstName?: string;
+    lastName?: string;
+    username?: string;
+    roles: string[];
+    teamRoleId?: string | null;
+    backOfficeRoleId?: string | null;
+    directManagerId?: string | null;
+  },
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(organizationId);
+
+    if (!ability.can('admin', 'All')) {
+      return userError(
+        'You do not have permission to update users in this organization',
+        UserErrorType.PermissionError,
+      );
+    }
+
+    await db.$transaction(async (tx) => {
+      // Update basic user info
+      await updateUser(userId, { firstName, lastName, username }, tx);
+
+      // 2. Get current role mappings for this user in this environment
+      const currentMappings = await getRoleMappingByUserId(userId, organizationId);
+      const currentRoleIds = currentMappings.map((m) => m.roleId);
+
+      // Figure out which roles to add and which to remove
+      // Combine all new roles (default + team + back-office) into one list
+      const newRoleIds = [
+        ...roles,
+        ...(teamRoleId ? [teamRoleId] : []),
+        ...(backOfficeRoleId ? [backOfficeRoleId] : []),
+      ];
+
+      const roleIdsToAdd = newRoleIds.filter((id) => !currentRoleIds.includes(id));
+      const roleIdsToRemove = currentRoleIds.filter((id) => !newRoleIds.includes(id));
+
+      // Remove roles that are no longer assigned
+      for (const roleId of roleIdsToRemove) {
+        await tx.roleMember.deleteMany({
+          where: { userId, roleId },
+        });
+      }
+
+      // Add new role mappings
+      if (roleIdsToAdd.length > 0) {
+        await addRoleMappings(
+          roleIdsToAdd.map((roleId) => ({
+            roleId,
+            environmentId: organizationId,
+            userId,
+          })),
+          ability,
+          tx,
+        );
+      }
+
+      // Upsert organigram info
+      const existing = await tx.userOrganigram.findUnique({
+        where: { userId_environmentId: { userId, environmentId: organizationId } },
+      });
+
+      if (existing) {
+        await tx.userOrganigram.update({
+          where: { userId_environmentId: { userId, environmentId: organizationId } },
+          data: {
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+            directManagerId: directManagerId ?? null,
+          },
+        });
+      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
+        await tx.userOrganigram.create({
+          data: {
+            id: v4(),
+            userId,
+            environmentId: organizationId,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+            directManagerId: directManagerId ?? null,
+          },
+        });
+      }
+    });
   } catch (error) {
     const message = getErrorMessage(error);
     return userError(message);

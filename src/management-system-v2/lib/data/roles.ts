@@ -84,3 +84,13 @@ export async function getUserRoles(environmentId: string, userId: string) {
     else return userError('Error getting user roles');
   }
 }
+
+export async function getRolesByType(environmentId: string, type: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    const roles = await _getRoles(environmentId, ability);
+    return roles.filter((r) => r.type === type);
+  } catch (_) {
+    return userError('Something went wrong');
+  }
+}

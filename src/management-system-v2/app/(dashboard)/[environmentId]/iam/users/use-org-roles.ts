@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
-import { getRoles } from '@/lib/data/roles';
+import { getRoles, getRolesByType } from '@/lib/data/roles';
 
-export default function useOrganizationRoles(spaceId: string) {
+export default function useOrganizationRoles(spaceId: string, type?: string) {
   const { data, ...query } = useQuery({
     queryFn: async () => {
-      const roles = await getRoles(spaceId);
+      const roles = await getRolesByType(spaceId, type || 'default');
       if ('error' in roles) throw new Error();
       return roles;
     },
-    queryKey: ['roles', spaceId],
+    queryKey: ['roles', spaceId, type],
   });
   const roles = data?.filter((role) => !['@guest', '@everyone'].includes(role.name));
 

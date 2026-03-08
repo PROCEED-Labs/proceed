@@ -31,6 +31,7 @@ import useDebounce from '@/lib/useDebounce';
 import { queryUsers } from '@/lib/data/users';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserAvatar from '@/components/user-avatar';
+import { getSpaceUsers } from '@/lib/data/organigram';
 import { z } from 'zod';
 
 const emailSchema = z.string().email();
@@ -63,6 +64,28 @@ const AddUsersModal: FC<{
   const { spaceId } = useEnvironment();
   const envVars = use(EnvVarsContext);
   const proceedMailServerActive = !!envVars.PROCEED_PUBLIC_MAILSERVER_ACTIVE;
+
+  /* -------------------------------------------------------------------------------------------------
+   * Organigram State
+   * -----------------------------------------------------------------------------------------------*/
+  const [teamRoleId, setTeamRoleId] = useState<string | undefined>();
+  const [backOfficeRoleId, setBackOfficeRoleId] = useState<string | undefined>();
+  const [directManagerId, setDirectManagerId] = useState<string | undefined>();
+
+  /* -------------------------------------------------------------------------------------------------
+   * Organigram Data (roles + users)
+   * -----------------------------------------------------------------------------------------------*/
+  const { roles: teamRoles } = useOrganizationRoles(spaceId, 'team');
+  const { roles: backOfficeRoles } = useOrganizationRoles(spaceId, 'back-office');
+
+  const { data: spaceUsers } = useQuery({
+    queryKey: ['space-users', spaceId],
+    queryFn: async () => {
+      const result = await getSpaceUsers(spaceId);
+      if (isUserErrorResponse(result)) throw new Error();
+      return result;
+    },
+  });
 
   /* -------------------------------------------------------------------------------------------------
    * Invited Users Management
@@ -182,6 +205,9 @@ const AddUsersModal: FC<{
     setIsMailInvalid(false);
     setSearch('');
     setUsers([]);
+    setTeamRoleId(undefined);
+    setBackOfficeRoleId(undefined);
+    setDirectManagerId(undefined);
   }
 
   const [submittingUsers, startTransition] = useTransition();
@@ -191,7 +217,15 @@ const AddUsersModal: FC<{
         const roleIds = selectedRoles.map((role) => role.value as string);
 
         await wrapServerCall({
-          fn: () => inviteUsersToEnvironment(environment.spaceId, users, roleIds),
+          fn: () =>
+            inviteUsersToEnvironment(
+              environment.spaceId,
+              users,
+              roleIds,
+              teamRoleId,
+              backOfficeRoleId,
+              directManagerId,
+            ),
           onSuccess: () => {
             app.message.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
             router.refresh();
@@ -279,6 +313,51 @@ const AddUsersModal: FC<{
             placeholder="Select roles"
             onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
             options={roles.map((role) => ({ label: role.name, value: role.id }))}
+          />
+        </>
+      )}
+
+      {users.length > 0 && (
+        <>
+          <Divider />
+          <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>
+            Organisation Info
+          </Typography.Title>
+
+          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+            Team
+          </Typography.Text>
+          <Select
+            allowClear
+            style={{ width: '100%', marginBottom: '1rem' }}
+            placeholder="Select team"
+            onChange={(value) => setTeamRoleId(value)}
+            options={(teamRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
+          />
+
+          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+            Direct Manager
+          </Typography.Text>
+          <Select
+            allowClear
+            style={{ width: '100%', marginBottom: '1rem' }}
+            placeholder="Select direct manager"
+            onChange={(value) => setDirectManagerId(value)}
+            options={(spaceUsers ?? []).map((u) => ({
+              label: u.username ?? u.email ?? u.id,
+              value: u.id,
+            }))}
+          />
+
+          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+            Back Office
+          </Typography.Text>
+          <Select
+            allowClear
+            style={{ width: '100%', marginBottom: '1rem' }}
+            placeholder="Select back office"
+            onChange={(value) => setBackOfficeRoleId(value)}
+            options={(backOfficeRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
           />
         </>
       )}

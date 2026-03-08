@@ -1,14 +1,18 @@
+'use client';
+
 import { useEnvironment } from '@/components/auth-can';
 import { createUserAndAddToOrganization } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import {
   App,
   Button,
+  Col,
   Divider,
   Form,
   Input,
   Modal,
   ModalProps,
+  Row,
   Select,
   Space,
   Typography,
@@ -16,6 +20,7 @@ import {
 import { useRouter } from 'next/navigation';
 import useOrganizationRoles from './use-org-roles';
 
+import { OrganigramFields } from './organigram-fields';
 // TODO: check permissions
 
 export function CreateUsersModal({
@@ -48,6 +53,9 @@ export function CreateUsersModal({
 
           password: values.password,
           roles: values.roles || [],
+          teamRoleId: values.teamRoleId,
+          backOfficeRoleId: values.backOfficeRoleId,
+          directManagerId: values.directManagerId,
         }),
       onSuccess: () => {
         router.refresh();
@@ -59,33 +67,53 @@ export function CreateUsersModal({
   }
 
   return (
-    <Modal open={open} onCancel={close} title="Create User" footer={null} {...modalProps}>
+    <Modal
+      open={open}
+      onCancel={close}
+      title="Create User"
+      footer={null}
+      width={500}
+      {...modalProps}
+    >
       <Form form={form} onFinish={submitUser} layout="vertical">
-        <Form.Item name="firstName" label="First Name" rules={[{ required: true }]} required>
-          <Input />
-        </Form.Item>
-
-        <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]} required>
-          <Input />
-        </Form.Item>
-
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item name="firstName" label="First Name" rules={[{ required: true }]} required>
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]} required>
+              <Input />
+            </Form.Item>
+          </Col>
+        </Row>
         <Form.Item name="username" label="Username" rules={[{ required: true }]} required>
           <Input />
         </Form.Item>
 
-        <Form.Item name="password" label="Initial Password" rules={[{ required: true }]} required>
-          <Input.Password />
-        </Form.Item>
-
-        <Form.Item
-          name="Confirm Initial Password"
-          label="confirm-password"
-          rules={[{ required: true }]}
-          required
-        >
-          <Input.Password />
-        </Form.Item>
-
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item
+              name="password"
+              label="Initial Password"
+              rules={[{ required: true }]}
+              required
+            >
+              <Input.Password />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="Confirm Initial Password"
+              label="confirm-password"
+              rules={[{ required: true }]}
+              required
+            >
+              <Input.Password />
+            </Form.Item>
+          </Col>
+        </Row>
         {roles && roles.length > 0 && (
           <>
             <Divider />
@@ -107,6 +135,7 @@ export function CreateUsersModal({
           </>
         )}
 
+        <OrganigramFields spaceId={spaceId} />
         <Space style={{ justifyContent: 'end', width: '100%' }}>
           <Button onClick={close}>Cancel</Button>
           <Button type="primary" htmlType="submit">

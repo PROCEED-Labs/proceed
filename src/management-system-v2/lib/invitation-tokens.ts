@@ -9,10 +9,14 @@ import { getUserByEmail } from './data/db/iam/users';
 import { getRoleById } from './data/db/iam/roles';
 import { addRoleMappings } from './data/db/iam/role-mappings';
 import { syncOrganizationUsers } from './data/db/machine-config';
+import { upsertUserOrganigram } from './data/db/iam/organigram';
 
 const baseInvitationSchema = {
   spaceId: z.string(),
   roleIds: z.array(z.string()).optional(),
+  teamRoleId: z.string().optional(),
+  backOfficeRoleId: z.string().optional(),
+  directManagerId: z.string().optional(),
 };
 const invitationSchema = z.union([
   z.object({ userId: z.string() }).extend(baseInvitationSchema),
@@ -55,6 +59,7 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
   if (!(await isMember(invite.spaceId, userId))) {
     addMember(invite.spaceId, userId);
 
+    // Add default role mappings
     if (invite.roleIds) {
       const validRoles = [];
       for (const roleId of invite.roleIds) {
@@ -69,6 +74,29 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
           userId,
         })),
       );
+    }
+
+    // Add team role mapping
+    if (invite.teamRoleId && (await getRoleById(invite.teamRoleId))) {
+      await addRoleMappings([{ environmentId: invite.spaceId, roleId: invite.teamRoleId, userId }]);
+    }
+
+    // Add back-office role mapping
+    if (invite.backOfficeRoleId && (await getRoleById(invite.backOfficeRoleId))) {
+      await addRoleMappings([
+        { environmentId: invite.spaceId, roleId: invite.backOfficeRoleId, userId },
+      ]);
+    }
+
+    // Save organigram info
+    if (invite.teamRoleId || invite.backOfficeRoleId || invite.directManagerId) {
+      await upsertUserOrganigram({
+        userId,
+        environmentId: invite.spaceId,
+        teamRoleId: invite.teamRoleId ?? null,
+        backOfficeRoleId: invite.backOfficeRoleId ?? null,
+        directManagerId: invite.directManagerId ?? null,
+      });
     }
   }
 

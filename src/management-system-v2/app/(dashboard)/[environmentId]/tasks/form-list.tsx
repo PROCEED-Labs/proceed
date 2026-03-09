@@ -66,7 +66,7 @@ const FormListEntryLink: React.FC<
   }>
 > = ({ children, data, style, className }) => {
   return (
-    <ListEntryLink path={'tasks'} data={data} style={style} className={className}>
+    <ListEntryLink path={'/tasks'} data={data} style={style} className={className}>
       {children}
     </ListEntryLink>
   );
@@ -254,7 +254,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
 
         router.refresh();
         if (newId) {
-          router.push(spaceURL(space, `/tasks/${newId}`));
+          router.push();
         }
       },
     });

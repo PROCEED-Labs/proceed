@@ -377,7 +377,7 @@ const ModelerToolbar = ({
         </Space>
       </Toolbar>
       <ShareModal
-        processes={[process]}
+        toShare={[process]}
         open={shareModalOpen}
         setOpen={setShareModalOpen}
         defaultOpenTab={shareModalDefaultOpenTab}

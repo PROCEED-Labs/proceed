@@ -10,6 +10,7 @@ import { addRole as serverAddRoles } from '@/lib/data/roles';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { RoleInputSchema } from '@/lib/data/role-schema';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 const schema = RoleInputSchema.pick({ name: true, description: true });
 
@@ -45,6 +46,12 @@ const CreateRoleModal: FC<{
           permissions: {},
           environmentId: environment.spaceId,
         }),
+      onError: (error) => {
+        // if adding the role succeeds we redirect but redirect throws an error internally so we
+        // have to differentiate between actual errors and the redirect error
+        if (isRedirectError(error)) return;
+        app.message.error(error.message);
+      },
       onSuccess: false,
       app,
     });

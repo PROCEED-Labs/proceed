@@ -41,7 +41,7 @@ function collectLeaves(
         result,
       );
     }
-    // if subParameters.length === 0 AND no valueType — skip entirely (empty container)
+    // if subParameters.length === 0 and no valueType then skip entirely (empty container)
   }
 }
 
@@ -50,7 +50,6 @@ export type GlobalVariableGroup = {
   variables: GlobalVariable[];
 };
 
-// REPLACE fetchGlobalVariables with:
 export function parseGlobalVariables(config: any): GlobalVariableGroup[] {
   const content: Parameter[] = config.content ?? [];
   const groups: GlobalVariableGroup[] = [];
@@ -85,7 +84,6 @@ export function parseGlobalVariables(config: any): GlobalVariableGroup[] {
 
   return groups;
 }
-// ADD this new export function at the bottom of global-data-objects.ts
 
 export function buildValueMap(config: any): Record<string, string> {
   const result: Record<string, string> = {};
@@ -123,4 +121,3 @@ export function buildValueMap(config: any): Record<string, string> {
   return result;
 }
 
-export let cachedValueMap: Record<string, string> = {};

@@ -1,4 +1,4 @@
-import { useEnvironment } from '@/components/auth-can';
+import { useEnvironment, useSession } from '@/components/auth-can';
 import {
   DeployedProcessInfo,
   InstanceInfo,
@@ -89,6 +89,7 @@ const mergeDeployment = (
 
 function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
+  const { data: session } = useSession();
 
   const { data: engines } = useEngines(space, {
     key: [definitionId],
@@ -102,7 +103,10 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     if (engines?.length)
       // TODO: in case of static deployment or different versions on different engines we will have
       // to check if the engine can actually be used to start an instance
-      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables);
+      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
+        processInitiator: session?.user.id,
+        spaceIdOfProcessInitiator: space.spaceId,
+      });
   };
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];

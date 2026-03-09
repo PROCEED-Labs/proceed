@@ -9,6 +9,7 @@ export const mSConfigEnvironmentOnlyKeys = [
   'NEXTAUTH_SECRET',
   'IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET',
   'IAM_GUEST_CONVERSION_REFERENCE_SECRET',
+  'IAM_MCP_ACCESS_ENCRYPTION_SECRET',
   'SHARING_ENCRYPTION_SECRET',
 
   'DATABASE_URL',
@@ -90,6 +91,7 @@ export const msConfigSchema = {
     IAM_ORG_USER_INVITATION_ENCRYPTION_SECRET: z.string().default(''),
     SHARING_ENCRYPTION_SECRET: z.string().default(''),
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z.string().default(''),
+    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z.string().optional().default(''),
 
     PROCEED_PUBLIC_STORAGE_DEPLOYMENT_ENV: z
       .enum(['cloud', 'local'])
@@ -191,6 +193,9 @@ export const msConfigSchema = {
     IAM_GUEST_CONVERSION_REFERENCE_SECRET: z
       .string()
       .default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
+    IAM_MCP_ACCESS_ENCRYPTION_SECRET: z
+      .string()
+      .default('d0nb2+Jm1Ur1TQCAFrcH9M1FfRu6bJmL6LkuLslQUBE='),
     SCHEDULER_TOKEN: z.string().default('T8VB/r1dw0kJAXjanUvGXpDb+VRr4dV5y59BT9TBqiQ='),
     DATABASE_URL: z.string({
       required_error: 'DATABASE_URL not in environment variables, try running `yarn dev-ms-db`',

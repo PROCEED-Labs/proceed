@@ -8,6 +8,9 @@ services:
       - DATABASE_URL=postgresql://proceed:proceed@proceed_standalone_postgres_database:5432/proceed_db?schema=public
       - NEXTAUTH_URL=http://localhost:3002
       - NEXTAUTH_SECRET=gVRJMFKtjZmfNuLt3ZoxWTMujSwkig
+      - IAM_GUEST_CONVERSION_REFERENCE_SECRET=odZhhAyEfv9iVi7IHKh4XsEo
+      - IAM_MCP_ACCESS_ENCRYPTION_SECRET=oruOYeLk8Ykqbjrf3J1qvVgD
+      - SHARING_ENCRYPTION_SECRET=m2o0JBqYcDZxk7FUDrg0NBeq
       - PROCEED_PUBLIC_IAM_ACTIVE=true
       - PROCEED_PUBLIC_IAM_LOGIN_USER_PASSWORD_ACTIVE=true
       - PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE=true

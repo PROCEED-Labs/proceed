@@ -39,16 +39,12 @@ const { Text } = Typography;
 type VariablesEditorProps = {
   parentConfig: Config;
   editingAllowed: boolean;
-  source?: string;
 };
 
-const AasConfigContent: React.FC<VariablesEditorProps> = ({
-  parentConfig,
-  editingAllowed,
-  source,
-}) => {
+const AasConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editingAllowed }) => {
   const [selectionId, setSelectionId] = useState('');
   const [selectedParameterId, setSelectedParameterId] = useState<string | null>(null);
+  const [externalTreeSelection, setExternalTreeSelection] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -558,6 +554,7 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({
                   setSelectedParameterId(selectionId ?? null);
                 }}
                 currentLanguage={currentDisplayLanguage}
+                externalSelectedKey={externalTreeSelection}
               />
             </div>
           )}
@@ -584,6 +581,7 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({
                   setSelectedParameterId(selectionId ?? null);
                 }}
                 currentLanguage={currentDisplayLanguage}
+                externalSelectedKey={externalTreeSelection}
               />
             </div>
           )}
@@ -601,7 +599,11 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({
               expandedKeys={expandedKeys}
               currentLanguage={currentDisplayLanguage}
               onLanguageChange={handleLanguageChange}
-              source={source}
+              onBreadcrumbSelect={(id: string | null) => {
+                setSelectedParameterId(id);
+                setSelectionId(id ?? '');
+                setExternalTreeSelection(id); // syncs tree highlight
+              }}
             />
           </Col>
         </Row>

@@ -47,6 +47,7 @@ model User {
   systemAdmin             SystemAdmin?             @relation("systemAdmin")
   guestSignin             GuestSignin?
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
+  mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
 
   @@map("user")
@@ -161,6 +162,7 @@ model Space {
   engines            Engine[]
   settings           SpaceSettings? @relation("spaceSettings")
   Config             Config[]
+  mcpPairingCodes    McpPairingCode[]
 
   @@map("space")
 }
@@ -275,6 +277,17 @@ model EmailVerificationToken {
   firstName    String?
   lastName     String?
   passwordHash String?
+}
+
+// Short lived codes used to connect an MCP session of a specific user with proceed to generate a JWT that can then be used for
+// authentication on further MCP requests
+model McpPairingCode {
+  codeHash      String   @id
+  expires       DateTime
+  user          User     @relation(name: "pairingCode", fields: [userId], references: [id])
+  userId        String
+  space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
 }
 
 model SpaceSettings {

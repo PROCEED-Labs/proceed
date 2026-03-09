@@ -46,22 +46,22 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
           <h5>
             <b>Last Edited</b>
           </h5>
-          <p>{generateDateString(selectedElement.lastEditedOn!, true)}</p>
+          <p></p>
 
           <h5>
             <b>Created On</b>
           </h5>
-          <p>{generateDateString(selectedElement.createdOn!, true)}</p>
+          <p></p>
 
           <h5>
-            <b>File Size</b>
+            <b>Created By</b>
           </h5>
-          <p>X KB</p>
+          <p></p>
 
           <h5>
-            <b>Owner</b>
+            <b>Responsible Person (Process Owner)</b>
           </h5>
-          <p>Obi Wan Kenobi</p>
+          <p></p>
 
           <h5>
             <b>Description</b>
@@ -76,10 +76,6 @@ const MetaDataContent: FC<MetaDataContentType> = ({ selectedElement }) => {
               <p>{selectedElement.userDefinedId ?? 'undefined'}</p>
             </>
           )}
-
-          <Divider style={{ width: '100%', marginLeft: '-20%' }} />
-          <h3>Access Rights</h3>
-          <p>Test</p>
         </>
       ) : (
         <div>Please select a process.</div>

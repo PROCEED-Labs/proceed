@@ -88,7 +88,6 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Add nested metadata/parameter',
-              disabled: !isChangeable,
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onAddNested);

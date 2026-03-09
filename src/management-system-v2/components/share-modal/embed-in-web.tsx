@@ -15,10 +15,10 @@ import {
 } from 'antd';
 import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { useEnvironment } from '@/components/auth-can';
-import { Process } from '@/lib/data/process-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useProcessVersion from './use-process-version';
 import { updateShare } from './share-helpers';
+import { InputItem } from '../processes';
 
 const { TextArea } = Input;
 
@@ -26,16 +26,16 @@ type ModelerShareModalOptionEmdedInWebProps = {
   sharedAs: 'public' | 'protected';
   allowIframeTimestamp: number;
   refresh: () => void;
-  processes: { id: string; versions: Process['versions'] }[];
+  toShare: InputItem[];
 };
 
 const ModelerShareModalOptionEmdedInWeb = ({
   sharedAs,
   allowIframeTimestamp,
   refresh,
-  processes,
+  toShare,
 }: ModelerShareModalOptionEmdedInWebProps) => {
-  const process = processes[0];
+  const process = toShare.length === 1 && toShare[0].type !== 'folder' ? toShare[0] : undefined;
 
   const app = App.useApp();
   const environment = useEnvironment();
@@ -92,7 +92,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
     message.success('Code copied to you clipboard');
   };
 
-  if (processes.length > 1) {
+  if (toShare.length > 1 || toShare[0].type === 'folder') {
     return (
       <Alert type="info" title="Embedding is only available when a single process is selected" />
     );

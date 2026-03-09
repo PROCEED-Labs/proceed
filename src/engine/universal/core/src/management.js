@@ -123,10 +123,17 @@ const Management = {
   importInstance(instance) {
     const { processVersion } = instance;
 
-    const importedInstance = { ...instance, processId: `${instance.processId}#${processVersion}` };
-    delete importedInstance.processVersion;
+    const extras = instance.extras || {};
 
-    return { processVersion, importedInstance };
+    const importedInstance = {
+      ...instance,
+      processId: `${instance.processId}#${processVersion}`,
+    };
+
+    delete importedInstance.processVersion;
+    delete importedInstance.extras;
+
+    return { processVersion, importedInstance, extras };
   },
 
   /**
@@ -151,7 +158,7 @@ const Management = {
         );
       }
 
-      const { processVersion, importedInstance } = this.importInstance(archivedInstance);
+      const { processVersion, importedInstance, extras } = this.importInstance(archivedInstance);
 
       engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
 
@@ -164,6 +171,7 @@ const Management = {
             msg: `Loaded an archived process instance back into the engine. Id = ${instanceId}.}`,
             instanceId: instanceId,
           });
+          engine.setInstanceInformationExtensions(instanceId, extras);
         },
       );
     }
@@ -238,6 +246,10 @@ const Management = {
         };
       });
       const continueInstanceInfo = { ...instance, tokens: placingTokens };
+
+      // instance is running locally => we expect the extra infos to exist locally as well
+      delete continueInstanceInfo.extras;
+
       continueInstanceInfo.processId = `${continueInstanceInfo.processId}#${continueInstanceInfo.processVersion}`;
       engine.insertIncomingInstanceData(continueInstanceInfo);
     } catch (err) {
@@ -253,11 +265,12 @@ const Management = {
       });
       const startingInstanceInfo = { ...instance, tokens: startingTokens };
 
-      const { processVersion, importedInstance } = this.importInstance(startingInstanceInfo);
+      const { processVersion, importedInstance, extras } =
+        this.importInstance(startingInstanceInfo);
 
       engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
 
-      engine.startProcessVersion(
+      await engine.startProcessVersion(
         processVersion,
         importedInstance.variables,
         importedInstance,
@@ -266,6 +279,7 @@ const Management = {
             msg: `Continuing process instance. Id = ${startingInstanceInfo.processInstanceId}. TokenId = ${startingInstanceInfo.tokens[0].tokenId}`,
             instanceId: startingInstanceInfo.processInstanceId,
           });
+          engine.setInstanceInformationExtensions(startingInstanceInfo.processInstanceId, extras);
         },
       );
     }
@@ -277,7 +291,7 @@ const Management = {
    * Resuming an instance of a process on this engine that was paused
    *
    * @param {string} definitionId The name of the file the process to continue is stored in
-   * @param {string} instanceId The id the process instance to resume
+   * @param {string} instanceId The id of the process instance to resume
    */
   async resumeInstance(definitionId, instanceId) {
     let instanceInformation;
@@ -326,7 +340,7 @@ const Management = {
       bpmnProcessInstance = undefined;
     }
 
-    // If a token was paused on a scriptTask and the instance doesn't exist anymore, than the
+    // If a token was paused on a scriptTask and the instance doesn't exist anymore, then the
     // script probably also doesn't exist on the script executor, thus we can't resume process.
     if (scriptTaskTokens.length > 0 && !bpmnProcessInstance) {
       // TODO: maybe handle this case better
@@ -442,7 +456,7 @@ const Management = {
     /** @type {Engine} */
     const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
     // transform instance information into the form used by the neo-engine
-    const { processVersion, importedInstance } = this.importInstance(instance);
+    const { processVersion, importedInstance, extras } = this.importInstance(instance);
 
     const bpmn = await distribution.db.getProcessVersion(definitionId, processVersion);
 
@@ -502,6 +516,7 @@ const Management = {
           msg: `Continuing execution of an interrupted instance (id: ${instance.processInstanceId})`,
           instanceId: instance.processInstanceId,
         });
+        engine.setInstanceInformationExtensions(instance.processInstanceId, extras);
       },
     );
 
@@ -553,6 +568,14 @@ const Management = {
   removeInstance(instanceId) {
     const engine = this.getEngineWithID(instanceId);
     engine.deleteInstance(instanceId);
+  },
+
+  setInstanceInformationExtensions(instanceID, extensions) {
+    const engine = this.getEngineWithID(instanceID);
+
+    if (!engine) throw new Error(`Instance is not being executed (id: ${instanceID}).`);
+
+    engine.setInstanceInformationExtensions(instanceID, extensions);
   },
 
   getAllEngines() {

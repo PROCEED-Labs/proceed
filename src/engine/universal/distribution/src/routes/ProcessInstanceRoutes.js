@@ -19,13 +19,42 @@ module.exports = (path, management) => {
    */
   network.post(`${path}/:definitionId/versions/:version/instance`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
-    const { variables, activityID } = req.body;
+    const { variables, activityID, extras } = req.body;
+
+    if (extras) {
+      if ('managementSystemLocation' in extras) {
+        const initiatorInfo = ['processInitiator', 'spaceIdOfProcessInitiator'];
+        // the ms provided information about where and by whom the instance is being created
+        if (initiatorInfo.every((info) => info in extras)) {
+          for (const address of extras.managementSystemLocation) {
+            // the ms provides an array with multiple possible ways it could be reachable => test
+            // which one works and save it for requests that might be necessary during instance
+            // execution
+            try {
+              const res = await network.sendRequest(
+                address,
+                undefined,
+                `/api/spaces/${extras.spaceIdOfProcessInitiator}/status?user-id=${extras.processInitiator}`,
+              );
+              if (res.response.statusCode === 200) {
+                extras.managementSystemLocation = address;
+              }
+            } catch (err) {}
+          }
+        }
+      }
+    }
 
     const instanceId = await management.createInstance(
       definitionId,
       version,
       variables,
       activityID,
+      async (instance) => {
+        if (extras) {
+          management.setInstanceInformationExtensions(instance.id, extras);
+        }
+      },
     );
 
     if (!instanceId) {
@@ -97,7 +126,11 @@ module.exports = (path, management) => {
 
       instanceInfo = { ...engineInstanceInfo, isCurrentlyExecutedInBpmnEngine };
     } else {
-      const archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      let archivedInstanceInfo = (await db.getArchivedInstances(definitionId))[instanceID];
+      if (archivedInstanceInfo.extras) {
+        archivedInstanceInfo = { ...archivedInstanceInfo, ...(archivedInstanceInfo.extras || {}) };
+        delete archivedInstanceInfo.extras;
+      }
       instanceInfo = { ...archivedInstanceInfo, isCurrentlyExecutedInBpmnEngine: false };
     }
 

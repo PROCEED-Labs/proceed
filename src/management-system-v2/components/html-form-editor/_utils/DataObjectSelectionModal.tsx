@@ -128,7 +128,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
 
 useEffect(() => {
   if (!open) return;
-  getDeepConfigurationById('97b9c04b-2b62-4a70-91da-3eb934509dd4').then((cfg) => {
+  getDeepConfigurationById('13958a5d-acee-4e40-aebf-3bfaa509ee1f').then((cfg) => {
     setConfig(cfg);
     setTreeData(buildScopedTree(cfg, 'all'));
     Object.assign(cachedValueMap, buildValueMap(cfg));

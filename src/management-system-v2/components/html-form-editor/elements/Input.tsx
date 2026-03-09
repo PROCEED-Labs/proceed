@@ -13,7 +13,7 @@ import DataObjectSelectionModal from '../_utils/DataObjectSelectionModal';
 
 type InputProps = {
   label?: string;
-  type?: 'text' | 'number' | 'email' | 'url' | 'file';
+  type?: 'text' | 'number' | 'email' | 'url' | 'file' | 'date';
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
@@ -279,6 +279,7 @@ export const InputSettings = () => {
                   | 'email'
                   | 'url'
                   | 'file'
+                  | 'date'
                   | undefined;
               } else {
                 switch (variableType) {
@@ -291,7 +292,10 @@ export const InputSettings = () => {
                   case 'file':
                     props.type = 'file';
                     break;
-                  default:
+                  case 'date':
+                  props.type = 'date';
+                  break;
+                default:
                     props.type = 'text';
                 }
               }

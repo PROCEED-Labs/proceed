@@ -76,7 +76,11 @@ module.exports = {
 
   async setupSubProcessScriptExecution() {
     const machinePort = await config.readConfig('machine.port');
-    const scriptExecutor = system.setupScriptExecutor(machinePort);
+    const scriptExecutor = system.setupScriptExecutor(machinePort, (instanceId) => {
+      const engine = management.getEngineWithID(instanceId);
+      if (!engine) return;
+      return engine.getInstanceInformation(instanceId);
+    });
     management.provideScriptExecutor(scriptExecutor);
   },
 

@@ -2,9 +2,17 @@ const db = require('../database/db');
 
 async function getAllInstances(management, definitionId) {
   const engine = management.getEngineWithDefinitionId(definitionId);
-  const archivedInstances = await db.getArchivedInstances(definitionId);
+  let archivedInstances = await db.getArchivedInstances(definitionId);
 
   const archivedInstanceIds = Object.keys(archivedInstances);
+
+  archivedInstanceIds.forEach((id) => {
+    const archivedInstanceInfo = archivedInstances[id];
+    if (archivedInstanceInfo.extras) {
+      archivedInstances[id] = { ...archivedInstanceInfo, ...archivedInstanceInfo.extras };
+      delete archivedInstances[id].extras;
+    }
+  });
 
   let instances = [];
 

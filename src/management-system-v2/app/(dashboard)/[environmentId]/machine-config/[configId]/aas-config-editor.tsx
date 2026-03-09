@@ -109,7 +109,6 @@ type MachineDataViewProps = {
   expandedKeys: string[];
   currentLanguage: Localization;
   onLanguageChange: (language: Localization) => void;
-  source?: string;
 };
 
 const LATEST_VERSION = {
@@ -135,7 +134,6 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
   expandedKeys,
   currentLanguage,
   onLanguageChange,
-  source,
 }) => {
   const app = App.useApp();
   const router = useRouter();
@@ -786,26 +784,17 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
   const dataDropdownItems = useMemo(() => {
     const menu = [];
 
-    if (source === 'personal') {
-      // Only show one button when accessed from Personal
-      menu.push({
-        key: 'user-data',
-        label: 'Add User Data',
-      });
-    } else if (!source) {
-      // Show both when no source
-      menu.push({
-        key: 'org-data',
-        label: 'Add Organization Data',
-      });
-      menu.push({
-        key: 'user-data',
-        label: 'Add User Data',
-      });
-    }
+    menu.push({
+      key: 'org-data',
+      label: 'Add Organization Data',
+    });
+    menu.push({
+      key: 'user-data',
+      label: 'Add User Data',
+    });
 
     return menu;
-  }, [source]);
+  }, [parentConfig]);
 
   const onClickAddConfigButton = (e: any) => {
     if (!e.key) return;

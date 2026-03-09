@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Checkbox, Radio, Space, Tooltip, Button, Select, Alert, App } from 'antd';
 import { useEnvironment } from '@/components/auth-can';
 import { exportProcesses as exportProcessesAsFile } from '@/lib/process-export';
-import { ProcessExportOptions, ExportProcessInfo } from '@/lib/process-export/export-preparation';
+import {
+  ProcessExportOptions,
+  ExportInfos,
+  isProcessExportInfo,
+} from '@/lib/process-export/export-preparation';
 import { useAddControlCallback } from '@/lib/controls-store';
 import {
   settings as pdfSettings,
@@ -16,6 +20,7 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import useProcessVersion from './use-process-version';
 import { UserError, UserErrorType, isUserErrorResponse } from '@/lib/user-error';
 import { FaRegQuestionCircle } from 'react-icons/fa';
+import { InputItem } from '../processes';
 
 export type ProcessExportTypes = ProcessExportOptions['type'] | 'pdf';
 
@@ -114,7 +119,7 @@ type ExportProcessesFunction = (
   method: ProcessExportOptions['exportMethod'],
 ) => Promise<void>;
 export function useExportProcess(
-  processes: ExportProcessInfo,
+  toExport: ExportInfos,
   optionsState: ExportOptionState,
   selectedVersions: ExportVersionSelectionState,
 ) {
@@ -133,13 +138,13 @@ export function useExportProcess(
 
     await wrapServerCall({
       fn: async () => {
-        if (processes.length === 0)
+        if (toExport.length === 0)
           throw { message: 'No processes selected', type: UserErrorType.UnknownError } as UserError;
 
         const selectedOptions = optionsState[type].selectedOptions;
 
-        if (processes.length === 1) {
-          const process = processes[0];
+        if (toExport.length === 1 && isProcessExportInfo(toExport[0])) {
+          const [process] = toExport;
 
           //handle selected elements
           if (modeler) {
@@ -161,7 +166,9 @@ export function useExportProcess(
         }
 
         if (type === 'pdf') {
-          const { definitionId, processVersion } = processes[0];
+          const process = toExport.find(isProcessExportInfo);
+          if (!process) return;
+          const { definitionId, processVersion } = process;
 
           // the timestamp does not matter here since it is overridden by the user being an owner of the process
           const url = await generateSharedViewerUrl(
@@ -184,7 +191,7 @@ export function useExportProcess(
               exportSelectionOnly: selectedOptions.includes('onlySelection'),
               exportMethod: method,
             },
-            processes,
+            toExport,
             spaceId,
           );
 
@@ -198,10 +205,12 @@ export function useExportProcess(
           if (!urlOrBlob || typeof urlOrBlob !== 'string')
             throw new Error('No URL returned for PDF export');
 
-          const { definitionId, processVersion } = processes[0];
+          const process = toExport.find(isProcessExportInfo);
+          if (!process) return;
+          const { definitionId, processVersion } = process;
           window.open(urlOrBlob, `${definitionId}-${processVersion}-tab`);
         } else if (method === 'clipboard') {
-          if (typeof urlOrBlob !== 'string' && urlOrBlob.blob.type === 'image/png') {
+          if (urlOrBlob && typeof urlOrBlob !== 'string' && urlOrBlob.blob.type === 'image/png') {
             const dataUrl = URL.createObjectURL(urlOrBlob.blob);
 
             app.message.success(
@@ -283,11 +292,7 @@ export function ProcessExportSubmitButton({
  * ProcessExportOption
  * -----------------------------------------------------------------------------------------------*/
 type ProcessExportModalProps = {
-  processes: {
-    id: string;
-    environmentId: string;
-    versions: ProcessMetadata['versions'];
-  }[]; // the processes to export
+  toExport: InputItem[]; // the data to export
   type: ProcessExportTypes;
   active: boolean;
   exportOptionsState: [ExportOptionState, React.Dispatch<React.SetStateAction<ExportOptionState>>];
@@ -295,7 +300,7 @@ type ProcessExportModalProps = {
 };
 
 export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
-  processes,
+  toExport,
   type,
   active,
   exportOptionsState: [state, setState],
@@ -306,7 +311,7 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
   const modeler = useModelerStateStore((state) => state.modeler);
   const hasSelection = modeler ? modeler.getSelection().get().length > 0 : false;
 
-  const onlyOneProcess = processes.length === 1;
+  const onlyOneProcess = toExport.length === 1;
 
   // level = 2, to skip the block imposed in the share modal
   useAddControlCallback(
@@ -318,7 +323,7 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
     { level: 2, blocking: active, dependencies: [type] },
   );
 
-  if (type === 'pdf' && processes.length > 1) {
+  if (type === 'pdf' && (toExport.length > 1 || toExport[0]?.type === 'folder')) {
     return (
       <Alert type="info" title="PDF export is only available when a single process is selected" />
     );
@@ -326,12 +331,12 @@ export const ProcessExportOption: React.FC<ProcessExportModalProps> = ({
 
   return (
     <Space orientation="vertical" style={{ gap: '1rem', width: '100%' }}>
-      {onlyOneProcess && (
+      {onlyOneProcess && toExport[0].type !== 'folder' && (
         <Select
           value={selectedVersionId || '-1'}
           options={[
             { value: '-1', label: 'Latest Version' },
-            ...(processes[0]?.versions || []).map((version) => ({
+            ...(toExport[0]?.versions || []).map((version) => ({
               value: version.id,
               label: version.name,
             })),

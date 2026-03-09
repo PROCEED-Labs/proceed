@@ -89,8 +89,8 @@ const system = {
     setIPC(ipc, environment);
   },
 
-  setupScriptExecutor(port) {
-    const scriptExecutor = new ScriptExecutor({ network });
+  setupScriptExecutor(port, getInstanceInformation) {
+    const scriptExecutor = new ScriptExecutor({ network, getInstanceInformation });
     scriptExecutor.setupRouter(port);
     return scriptExecutor;
   },

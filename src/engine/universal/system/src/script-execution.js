@@ -24,6 +24,7 @@ class ScriptExecutor extends System {
   /**
    * @param {{
    *  network: import('./network'),
+   *  getInstanceInformation: () => any
    * }} [options]
    * */
   constructor(options) {
@@ -120,9 +121,94 @@ class ScriptExecutor extends System {
         const middlewareError = this.routerMiddleware.bind(this)(req);
         if (middlewareError) return middlewareError;
 
-        const { functionName, args } = req.body;
+        let { functionName, args } = req.body;
 
         try {
+          if (/^variable\.(get|set)Global/.test(functionName)) {
+            // the script tries to access information from the management system
+            // check that it has the necessary information to access the management system
+            const instanceInformation = this.options.getInstanceInformation(
+              req.params.processInstanceId,
+            );
+
+            const initiatorInfo = [
+              'processInitiator',
+              'spaceIdOfProcessInitiator',
+              'managementSystemLocation',
+            ];
+
+            if (!initiatorInfo.every((info) => info in instanceInformation)) {
+              return {
+                response: { error: 'Unable to access global data' },
+                statusCode: 404,
+              };
+            }
+
+            try {
+              /**
+               * Creates a request path for the information that was requested by the given data
+               * access function
+               *
+               * @param {string} accessFn the function that was called in the script
+               * @param {string} dataPath the path to the nested data entry
+               */
+              function createRequest(accessFn, dataPath) {
+                let path = `/api/spaces/${instanceInformation.spaceIdOfProcessInitiator}/data`;
+
+                if (accessFn.includes('GlobalOrg')) {
+                  // setGlobalOrg and getGlobalOrg already define what data to access so any other
+                  // type of meta path is not allowed
+                  if (dataPath.includes('@')) {
+                    throw new Error(`Invalid meta parameter (@...) in call to ${accessFn}.`);
+                  }
+
+                  path += '/organization';
+                } else if (dataPath.startsWith('@organization')) {
+                  path += '/organization';
+                  dataPath = dataPath.split('.').slice(1).join('.');
+                } else {
+                  if (dataPath.startsWith('@user') || dataPath.startsWith('@process-initiator')) {
+                    dataPath = dataPath.split('.').slice(1).join('.');
+                  }
+                  path += `/user/${instanceInformation.processInitiator}`;
+                }
+
+                return path + `/${dataPath}${accessFn.includes('Full') ? '?full=true' : ''}`;
+              }
+
+              const requestPath = createRequest(functionName, args[0]);
+
+              let result;
+
+              if (functionName.includes('setGlobal')) {
+                await this.options.network.sendData(
+                  instanceInformation.managementSystemLocation,
+                  undefined,
+                  requestPath,
+                  'PUT',
+                  'application/json',
+                  { value: args[1] },
+                );
+              } else {
+                const response = await this.options.network.sendRequest(
+                  instanceInformation.managementSystemLocation,
+                  undefined,
+                  requestPath,
+                );
+                result = JSON.parse(response.body);
+              }
+
+              return {
+                response: { result: result || undefined },
+              };
+            } catch (err) {
+              return {
+                response: { error: `Accessing data with ${functionName} failed.` },
+                statusCode: 404,
+              };
+            }
+          }
+
           let target = req.process.dependencies;
           const segments = functionName.split('.');
           for (let i = 0; i < segments.length; i++) {

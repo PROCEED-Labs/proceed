@@ -163,7 +163,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   }, [process.id]);
 
   useEffect(() => {
-    console.log('modeler changed');
     setModeler(modeler.current);
 
     setCanUndo(false);
@@ -206,7 +205,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
 
   const onRootChange = useCallback<Required<BPMNCanvasProps>['onRootChange']>(
     async (root) => {
-      console.log('root changed');
       setRootElement(root);
       // When the current root (the visible layer [the main
       // process/collaboration or some collapsed subprocess]) is changed to a
@@ -271,7 +269,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
     // (unless the subprocess does not exist anymore because the process
     // changed)
     setLoaded(true);
-    console.log('onLoaded');
     if (subprocessId && modeler.current) {
       const canvas = modeler.current.getCanvas();
       const subprocessPlane = canvas
@@ -290,7 +287,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
     const root = modeler.current?.getCurrentRoot();
     if (root && bpmnIs(root, 'bpmn:Process')) {
       const executable = root.businessObject.isExecutable;
-      console.log(executable);
       setIsExecutable(executable || false);
     }
   }, [messageApi, subprocessId]);

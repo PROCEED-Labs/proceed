@@ -370,7 +370,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
             setCurrentParameter(currentParameter as Parameter);
             setOpenModal('parameter');
           },
-          disabled: !editMode || !isChangeable,
+          disabled: !editMode,
         },
         {
           label: 'Delete',
@@ -485,6 +485,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
                     'valueTemplateSource' in rightClickedNode
                       ? (rightClickedNode as any).valueTemplateSource
                       : 'none',
+                  origin: (rightClickedNode as Parameter).origin || '',
                 },
               ]
             : []

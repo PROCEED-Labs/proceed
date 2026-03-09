@@ -1,5 +1,6 @@
 import {
   extractParameter,
+  extractParameterFromParameter,
   findParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
@@ -16,7 +17,7 @@ export async function GET(
   // Answer - Error: 404 Not found - Specified Space or Data Object not found
 
   const { spaceId, dataObjectId } = await props.params;
-  const fetchedData = await getData(spaceId, dataObjectId);
+  const fetchedData = await getDataObject(spaceId, dataObjectId);
   if (fetchedData.isResponse) return fetchedData.data;
   else if (fetchedData.data) return NextResponse.json(fetchedData.data);
   else return NextResponse.json(`Parameter ${dataObjectId} not found.`, { status: 404 });
@@ -37,13 +38,14 @@ export async function PUT(
       .string()
       .refine((s) => !/[^\x20-\x7E\t\n\r]/.test(s), { message: 'Binary data detected' });
     const body = schema.parse(rawBody);
-    const fetchedData = await getData(spaceId, dataObjectId);
+    const fetchedData = await getDataObject(spaceId, dataObjectId);
     if (fetchedData.isResponse) return fetchedData.data;
     else if (fetchedData.data) {
       const parameter = fetchedData.data as Parameter;
       const parameterChanges = {
         value: body,
-        ...(parameter.transformation?.transformationType === 'linked' && {
+        ...((parameter.transformation?.transformationType === 'linked' ||
+          parameter.transformation?.transformationType === 'algorithm') && {
           transformation: { ...parameter.transformation, transformationType: 'manual' as const },
         }),
       };
@@ -57,22 +59,33 @@ export async function PUT(
   }
 }
 
-async function getData(spaceId: string, dataObjectId: string) {
+async function getDataObject(spaceId: string, dataObjectId: string) {
   try {
     const parentConfig = await getDeepConfigurationById(spaceId);
-    let parameter;
-    if (parentConfig.configType !== 'organization')
+    const parentParameter = extractParameter(parentConfig, ['organization']);
+    if (!parentParameter) {
+      return {
+        isResponse: true,
+        data: NextResponse.json(`Organization parameter not found in config of space ${spaceId}.`, {
+          status: 404,
+        }),
+      };
+    }
+    let parameter: Parameter | undefined;
+    if (parentConfig.configType !== 'organization') {
       return {
         isResponse: true,
         data: NextResponse.json('This ID does not correspond to a space.', { status: 404 }),
       };
-    if (uuidValidate(dataObjectId)) {
-      parameter = findParameter(dataObjectId, parentConfig, 'config')?.selection;
     } else {
-      const path = dataObjectId.toLocaleLowerCase().split('.');
-      parameter = extractParameter(parentConfig, path);
+      if (uuidValidate(dataObjectId)) {
+        parameter = findParameter(dataObjectId, parentParameter, 'parameter')?.selection;
+      } else {
+        const path = dataObjectId.toLocaleLowerCase().split('.');
+        parameter = extractParameterFromParameter(parentParameter, path);
+      }
+      return { isResponse: false, data: parameter };
     }
-    return { isResponse: false, data: parameter };
   } catch {
     return {
       isResponse: true,

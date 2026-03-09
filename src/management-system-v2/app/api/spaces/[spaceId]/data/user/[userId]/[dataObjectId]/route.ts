@@ -1,13 +1,9 @@
 import {
-  extractParameter,
   extractParameterFromParameter,
   findParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { getMembers } from '@/lib/data/db/iam/memberships';
-import {
-  getDeepConfigurationById,
-  nestedParametersFromStorage,
-} from '@/lib/data/db/machine-config';
+import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
 import { Parameter } from '@/lib/data/machine-config-schema';
 import { NextRequest, NextResponse } from 'next/server';
 import { validate as uuidValidate } from 'uuid';
@@ -18,10 +14,14 @@ export async function GET(
   props: { params: Promise<{ spaceId: string; userId: string; dataObjectId: string }> },
 ) {
   const { spaceId, userId, dataObjectId } = await props.params;
-  const fetchedData = await getData(spaceId, userId, dataObjectId);
+  const fetchedData = await getDataObject(spaceId, userId, dataObjectId);
   if (fetchedData.isResponse) return fetchedData.data;
   else if (fetchedData.data) return NextResponse.json(fetchedData.data);
-  else return NextResponse.json(`Parameter ${dataObjectId} not found.`, { status: 404 });
+  else
+    return NextResponse.json(
+      `Parameter ${dataObjectId} not found in user parameter for user ${userId} in space config for space ${spaceId}.`,
+      { status: 404 },
+    );
 }
 
 export async function PUT(
@@ -35,13 +35,31 @@ export async function PUT(
       .string()
       .refine((s) => !/[^\x20-\x7E\t\n\r]/.test(s), { message: 'Binary data detected' });
     const body = schema.parse(rawBody);
-    return NextResponse.json('Success.');
+    const fetchedData = await getDataObject(spaceId, userId, dataObjectId);
+    if (fetchedData.isResponse) return fetchedData.data;
+    else if (fetchedData.data) {
+      const parameter = fetchedData.data as Parameter;
+      const parameterChanges = {
+        value: body,
+        ...((parameter.transformation?.transformationType === 'linked' ||
+          parameter.transformation?.transformationType === 'algorithm') && {
+          transformation: { ...parameter.transformation, transformationType: 'manual' as const },
+        }),
+      };
+      await updateParameter(parameter.id, parameterChanges, spaceId);
+      return NextResponse.json('Success.');
+    } else {
+      return NextResponse.json(
+        `Parameter ${dataObjectId} not found in user parameter for user ${userId} in space config for space ${spaceId}.`,
+        { status: 404 },
+      );
+    }
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 409 });
   }
 }
 
-async function getData(spaceId: string, userId: string, dataObjectId: string) {
+async function getDataObject(spaceId: string, userId: string, dataObjectId: string) {
   try {
     const parentConfig = await getDeepConfigurationById(spaceId);
     const memberId = (await getMembers(spaceId)).find((member) => member.userId == userId)?.id;

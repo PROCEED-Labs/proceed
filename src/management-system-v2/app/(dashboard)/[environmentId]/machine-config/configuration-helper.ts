@@ -1994,3 +1994,23 @@ export function extractParameter(config: Config, path: string[]): Parameter | un
 
   return current;
 }
+
+// TODO redundant from machine-config.ts: move methods here and import
+export function extractParameterFromParameter(
+  parameter: Parameter,
+  path: string[],
+): Parameter | undefined {
+  if (path.length === 0) return undefined;
+
+  let current: Parameter | undefined = parameter.subParameters.find(
+    (p: Parameter | VirtualParameter) => p.name === path[0],
+  ) as Parameter | undefined;
+
+  for (let i = 1; i < path.length && current; i++) {
+    current = current.subParameters?.find(
+      (p: Parameter | VirtualParameter) => p.name === path[i],
+    ) as Parameter | undefined;
+  }
+
+  return current;
+}

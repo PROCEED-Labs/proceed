@@ -1,6 +1,12 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
+import {
+  UserErrorType,
+  UserFacingError,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
@@ -255,6 +261,48 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
   }
 }
 
+export async function getGlobalVariablesForHTML(
+  spaceId: string,
+  initiatorId: string,
+  html: string,
+) {
+  return await getGlobalVariables(html, async (varPath) => {
+    let segments = varPath.split('.');
+
+    if (segments[0] === '@organization') {
+      const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
+      return parameter?.value;
+    } else {
+      let { userId } = await getCurrentUser();
+      if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
+        if (segments[0] === '@process-initiator') userId = initiatorId;
+        segments = segments.slice(1);
+      }
+      if (segments[0] === 'user-info') {
+        const info = await getUserById(userId);
+        if (!info || info.isGuest) return;
+
+        const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
+
+        return userInfo[segments[1] as keyof typeof userInfo];
+      } else {
+        const parameter = await getNestedUserParameter(userId, spaceId, segments.join('.'));
+
+        if (isUserErrorResponse(parameter)) {
+          console.error(parameter.error.message);
+          return;
+        }
+        if (!parameter) {
+          console.error('Could not get user data for a user task');
+          return;
+        }
+
+        return parameter.value;
+      }
+    }
+  });
+}
+
 export async function getTasklistEntryHTML(
   spaceId: string,
   userTaskId: string,
@@ -366,50 +414,15 @@ export async function getTasklistEntryHTML(
     if (!html) throw new Error('Failed to get the html for the user task');
     if (!milestones) throw new Error('Failed to get the milestones for the user task');
 
-    const globalVars = await getGlobalVariables(html, async (varPath) => {
-      let segments = varPath.split('.');
+    let globalVars: Record<string, any> = {};
 
-      if (segments[0] === '@organization') {
-        const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
-        return parameter?.value;
-      } else {
-        let { userId } = await getCurrentUser();
-        if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
-          if (segments[0] === '@process-initiator') {
-            if (!storedUserTask.instanceID) {
-              throw new Error('Trying to get the instance initiator but not in an instance');
-            }
-            const instance = await getInstanceById(storedUserTask.instanceID);
-            if (!instance) throw new Error('Unknown instance');
-            if (isUserErrorResponse(instance)) throw instance;
+    if (storedUserTask.instanceID) {
+      const instance = await getInstanceById(storedUserTask.instanceID);
+      if (!instance) throw new Error('Unknown instance');
+      if (isUserErrorResponse(instance)) throw instance;
 
-            userId = instance.initiatorId;
-          }
-          segments = segments.slice(1);
-        }
-        if (segments[0] === 'user-info') {
-          const info = await getUserById(userId);
-          if (!info || info.isGuest) return;
-
-          const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
-
-          return userInfo[segments[1] as keyof typeof userInfo];
-        } else {
-          const parameter = await getNestedUserParameter(userId, spaceId, segments.join('.'));
-
-          if (isUserErrorResponse(parameter)) {
-            console.error(parameter.error.message);
-            return;
-          }
-          if (!parameter) {
-            console.error('Could not get user data for a user task');
-            return;
-          }
-
-          return parameter.value;
-        }
-      }
-    });
+      globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
+    }
 
     variableChanges = { ...variableChanges, ...globalVars };
 

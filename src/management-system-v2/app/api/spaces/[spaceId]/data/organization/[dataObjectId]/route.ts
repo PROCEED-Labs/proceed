@@ -46,7 +46,11 @@ export async function PUT(
         value: body,
         ...((parameter.transformation?.transformationType === 'linked' ||
           parameter.transformation?.transformationType === 'algorithm') && {
-          transformation: { ...parameter.transformation, transformationType: 'manual' as const },
+          transformation: {
+            ...parameter.transformation,
+            transformationType: 'manual' as const,
+            action: '',
+          },
         }),
       };
       await updateParameter(parameter.id, parameterChanges, spaceId);

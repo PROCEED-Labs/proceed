@@ -35,6 +35,7 @@ import {
   defaultParameter,
   defaultParentConfiguration,
   defaultUserParameterTemplate,
+  extractParameter,
   findParameter,
   findPathToParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
@@ -788,8 +789,8 @@ async function addCommonUserDataPropagation(
     await asyncForEach(users.subParameters, async (userParameter: Parameter) => {
       const parentParameter =
         internalPath.length === 0
-          ? extractParameterFromParameter(userParameter, ['data'])
-          : extractParameterFromParameter(userParameter, ['data', ...internalPath]);
+          ? extractParameter(userParameter, ['data'])
+          : extractParameter(userParameter, ['data', ...internalPath]);
       if (parentParameter) {
         // copy parameter
         const parameterCopy: Parameter = JSON.parse(JSON.stringify(parameter));
@@ -836,7 +837,7 @@ async function addCommonUserDataPropagation(
 
 // TODO add transformation
 async function addUserParameterDataImport(parameter: Parameter, orgConfig: Config) {
-  const dataParent = extractParameterFromParameter(parameter, ['data']);
+  const dataParent = extractParameter(parameter, ['data']);
   const commonUserData = extractParameter(orgConfig, [
     'identity-and-access-management',
     'common-user-data',
@@ -880,26 +881,17 @@ export async function addMachineDataSet(parentConfig: Config, name: string, disp
     'AcknowledgeModeDefault',
   ]);
 
-  const machineIdentifier = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'TDSIdentifier',
-  ]);
-  const machineStructureVersionNumber = extractParameterFromParameter(newMachineDataSet, [
+  const machineIdentifier = extractParameter(newMachineDataSet, ['Header', 'TDSIdentifier']);
+  const machineStructureVersionNumber = extractParameter(newMachineDataSet, [
     'Header',
     'StructureVersionNumber',
   ]);
-  const machineVersionNumber = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'VersionNumber',
-  ]);
-  const machineFullVersionNumber = extractParameterFromParameter(newMachineDataSet, [
+  const machineVersionNumber = extractParameter(newMachineDataSet, ['Header', 'VersionNumber']);
+  const machineFullVersionNumber = extractParameter(newMachineDataSet, [
     'Header',
     'FullVersionNumber',
   ]);
-  const machineAcknowledgeMode = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'AcknowledgeMode',
-  ]);
+  const machineAcknowledgeMode = extractParameter(newMachineDataSet, ['Header', 'AcknowledgeMode']);
 
   if (
     machineFullVersionNumber?.transformation &&
@@ -1030,13 +1022,10 @@ async function parametersToMachineStorage(
       versionReference.fullVersion[2];
     if (param) {
       // add parameter to the table to be stored as machineConfig with the correct version
-      const header = extractParameterFromParameter(param, ['Header', 'StructureVersionNumber']);
+      const header = extractParameter(param, ['Header', 'StructureVersionNumber']);
 
       if (header) {
-        const structureNo = extractParameterFromParameter(param, [
-          'Header',
-          'StructureVersionNumber',
-        ]);
+        const structureNo = extractParameter(param, ['Header', 'StructureVersionNumber']);
         if (structureNo) {
           // setting structureNo to the given version
           structureNo.value = versionReference.fullVersion[1].toString();
@@ -1078,7 +1067,7 @@ async function parametersToMachineStorage(
           }
         }
 
-        const updateNo = extractParameterFromParameter(param, ['Header', 'VersionNumber']);
+        const updateNo = extractParameter(param, ['Header', 'VersionNumber']);
         if (updateNo) {
           // setting updateNo to the given version
           updateNo.value = versionReference.fullVersion[2].toString();
@@ -1120,7 +1109,7 @@ async function parametersToMachineStorage(
           }
         }
 
-        const fullVersionNo = extractParameterFromParameter(param, ['Header', 'FullVersionNumber']);
+        const fullVersionNo = extractParameter(param, ['Header', 'FullVersionNumber']);
         if (fullVersionNo) {
           // setting fullVersion to the given version
           fullVersionNo.value = versionReference.fullVersion.join('.');
@@ -1163,11 +1152,8 @@ async function parametersToMachineStorage(
         }
       } else {
         param.subParameters.push(createTdsTemplateMachineDatasetHeader(''));
-        const updateNo = extractParameterFromParameter(param, ['Header', 'VersionNumber']);
-        const structureNo = extractParameterFromParameter(param, [
-          'Header',
-          'StructureVersionNumber',
-        ]);
+        const updateNo = extractParameter(param, ['Header', 'VersionNumber']);
+        const structureNo = extractParameter(param, ['Header', 'StructureVersionNumber']);
         if (structureNo) {
           // setting structureNo to the given version
           structureNo.value = versionReference.fullVersion[1].toString();
@@ -1176,7 +1162,7 @@ async function parametersToMachineStorage(
           // setting updateNo to the given version
           updateNo.value = versionReference.fullVersion[2].toString();
         }
-        const fullVersionNo = extractParameterFromParameter(param, ['Header', 'FullVersionNumber']);
+        const fullVersionNo = extractParameter(param, ['Header', 'FullVersionNumber']);
         if (fullVersionNo) {
           // setting fullVersion to the given version
           fullVersionNo.value = versionReference.fullVersion.join('.');
@@ -2070,10 +2056,7 @@ async function updateCommonUserDataPropagation(
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
     asyncForEach(users.subParameters, async (userParameter: Parameter) => {
-      const previousParameter = extractParameterFromParameter(userParameter, [
-        'data',
-        ...internalPath,
-      ]);
+      const previousParameter = extractParameter(userParameter, ['data', ...internalPath]);
       if (previousParameter) {
         await updateParameter(previousParameter.id, changes, orgConfig.id);
       } else {
@@ -2329,10 +2312,7 @@ async function removeCommonUserDataPropagation(internalPath: string[], orgConfig
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
     asyncForEach(users.subParameters, async (userParameter: Parameter) => {
-      const doubledParameter = extractParameterFromParameter(userParameter, [
-        'data',
-        ...internalPath,
-      ]);
+      const doubledParameter = extractParameter(userParameter, ['data', ...internalPath]);
       if (doubledParameter) {
         const parameterExists = await db.configParameter.findUnique({
           where: { id: doubledParameter.id },
@@ -3557,47 +3537,6 @@ async function getLastNumericVersion(
   return highestVersion;
 }
 
-/**
- * Extracts a parameter at a given path from a config.
- */
-function extractParameter(config: Config, path: string[]): Parameter | undefined {
-  if (path.length === 0) return undefined;
-
-  let current: Parameter | undefined = config.content.find(
-    (p: Parameter | VirtualParameter) => p.name === path[0],
-  ) as Parameter | undefined;
-
-  for (let i = 1; i < path.length && current; i++) {
-    current = current.subParameters?.find(
-      (p: Parameter | VirtualParameter) => p.name === path[i],
-    ) as Parameter | undefined;
-  }
-
-  return current;
-}
-
-/**
- * Extracts a parameter at a given path from a parameter.
- */
-function extractParameterFromParameter(
-  parameter: Parameter,
-  path: string[],
-): Parameter | undefined {
-  if (path.length === 0) return undefined;
-
-  let current: Parameter | undefined = parameter.subParameters.find(
-    (p: Parameter | VirtualParameter) => p.name === path[0],
-  ) as Parameter | undefined;
-
-  for (let i = 1; i < path.length && current; i++) {
-    current = current.subParameters?.find(
-      (p: Parameter | VirtualParameter) => p.name === path[i],
-    ) as Parameter | undefined;
-  }
-
-  return current;
-}
-
 type VersionChangeCheckResult = {
   hasChanged: boolean;
   nextVersionNumber: number | null;
@@ -4714,7 +4653,7 @@ export async function getUserPersonalConfig(
 ): Promise<Config | { error: UserError }> {
   try {
     const userParam = (await nestedParametersFromStorage([userId]))[0];
-    const userData = extractParameterFromParameter(userParam, ['data']);
+    const userData = extractParameter(userParam, ['data']);
     if (userData) {
       userData.changeableByUser = true;
       const dummyConfig = defaultConfiguration(userId, 'dummy userConfig');

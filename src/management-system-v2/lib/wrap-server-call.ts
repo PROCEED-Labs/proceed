@@ -2,6 +2,7 @@ import { notification, message } from 'antd';
 import { ReactNode } from 'react';
 import { userError, UserError, isUserErrorResponse, isUserError } from './user-error';
 import { useAppProps } from 'antd/es/app/context';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 
 /**
  * Wraps a server call function to provide success and error handling with optional display mechanisms.
@@ -69,10 +70,11 @@ export async function wrapServerCall<Return>(args: {
   } catch (error) {
     // Next.js redirect() works by throwing a special error internally so propagate it
     if (
-      error instanceof Error &&
-      (error.message === 'NEXT_REDIRECT' || (error as any)?.digest?.startsWith('NEXT_REDIRECT'))
+      isRedirectError(error) ||
+      (error instanceof Error &&
+        (error.message === 'NEXT_REDIRECT' || (error as any)?.digest?.startsWith('NEXT_REDIRECT')))
     ) {
-      throw error;
+      return;
     }
     if (typeof args.onError === 'function') {
       args.onError(error as UserError | Error);

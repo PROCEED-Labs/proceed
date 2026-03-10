@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { ListUser } from '@/components/user-list';
 import useOrganizationRoles from './use-org-roles';
+
 export function EditUserModal({
   open,
   close,
@@ -24,6 +25,7 @@ export function EditUserModal({
   const app = App.useApp();
   const router = useRouter();
   const { spaceId } = useEnvironment();
+
   // Fetch existing organigram data for this user
   const { data: organigram } = useQuery({
     queryKey: ['organigram', user?.id, spaceId],
@@ -34,14 +36,18 @@ export function EditUserModal({
       return result;
     },
   });
+
   // Fetch current roles for this user
   const userRoles = ((user as any)?.roles as { id: string; name: string; type: string }[]) ?? [];
+
   // Split current roles by type
   const currentDefaultRoleIds = userRoles.filter((r) => r.type === 'default').map((r) => r.id);
   const currentTeamRoleId = userRoles.find((r) => r.type === 'team')?.id;
   const currentBackOfficeRoleId = userRoles.find((r) => r.type === 'back-office')?.id;
+
   // For the default roles dropdown
   const { roles: allDefaultRoles } = useOrganizationRoles(spaceId, 'default');
+
   // Populate form when user or organigram data changes
   useEffect(() => {
     if (open && user) {
@@ -56,10 +62,12 @@ export function EditUserModal({
       });
     }
   }, [open, user, organigram, form]);
+
   function handleClose() {
     form.resetFields();
     close();
   }
+
   async function submitEdit(values: any) {
     if (!user) return;
     await wrapServerCall({
@@ -81,6 +89,7 @@ export function EditUserModal({
       app,
     });
   }
+
   return (
     <Modal open={open} onCancel={handleClose} title="Edit User" footer={null} width={500}>
       <Form form={form} layout="vertical" onFinish={submitEdit}>

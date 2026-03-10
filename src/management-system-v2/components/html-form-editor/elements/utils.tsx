@@ -348,7 +348,6 @@ export const VariableSelection: React.FC<
   );
 };
 
-
 export const VariableSetting: React.FC<VariableSettingProps & { compact?: boolean }> = ({
   variable,
   allowedTypes,

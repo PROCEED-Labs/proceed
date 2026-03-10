@@ -47,11 +47,8 @@ export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
       if (scope !== '@organization') continue;
       const children = buildTreeNodes(topLevel.subParameters, '@global.@organization', 0);
       nodes.push(...children);
-
     } else if (topLevel.name === 'identity-and-access-management') {
-      const commonUserData = topLevel.subParameters.find(
-        (p: any) => p.name === 'common-user-data',
-      );
+      const commonUserData = topLevel.subParameters.find((p: any) => p.name === 'common-user-data');
 
       // Worker scope: show common-user-data with @worker prefix
       if (commonUserData && scope === '@worker') {

@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, List, Tag, Tree, Tabs } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import { buildScopedTree, ScopeFilter }  from '@/lib/helpers/global-data-tree';
+import { buildScopedTree, ScopeFilter } from '@/lib/helpers/global-data-tree';
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
-
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
 import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 import useEditorStateStore from '../use-editor-state-store';
 import { useEnvironment } from '@/components/auth-can';
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -19,7 +19,6 @@ type Props = {
   ) => void;
 };
 
-
 const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) => {
   const environment = useEnvironment();
   const [scope, setScope] = useState<ScopeFilter>('@worker');
@@ -29,7 +28,6 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
   const [showVariableForm, setShowVariableForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'process' | 'global'>('process');
   const [selectedProcessVar, setSelectedProcessVar] = useState<string | undefined>();
-
   const { variables, updateVariables } = useEditorStateStore((state: any) => state);
 
   useEffect(() => {

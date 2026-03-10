@@ -62,7 +62,7 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   await db.$transaction(async (tx) => {
     await tx.space.update({
       where: { id: environmentId },
-      data: { isActive: true },
+      data: { isActive: true, ownerId: userId },
     });
 
     await addMember(environmentId, userId, undefined, tx);

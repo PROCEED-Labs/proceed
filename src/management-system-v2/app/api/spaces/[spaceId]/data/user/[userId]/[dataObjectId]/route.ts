@@ -1,5 +1,5 @@
 import {
-  extractParameterFromParameter,
+  extractParameter,
   findParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { getMembers } from '@/lib/data/db/iam/memberships';
@@ -93,7 +93,7 @@ async function getDataObject(spaceId: string, userId: string, dataObjectId: stri
         parameter = findParameter(dataObjectId, userParameter, 'config')?.selection;
       } else {
         const path = dataObjectId.toLocaleLowerCase().split('.');
-        parameter = extractParameterFromParameter(userParameter, path);
+        parameter = extractParameter(userParameter, path);
       }
       return { isResponse: false, data: parameter };
     }

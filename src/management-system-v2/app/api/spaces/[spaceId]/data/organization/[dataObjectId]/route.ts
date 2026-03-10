@@ -1,6 +1,5 @@
 import {
   extractParameter,
-  extractParameterFromParameter,
   findParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { getDeepConfigurationById, updateParameter } from '@/lib/data/db/machine-config';
@@ -66,27 +65,30 @@ export async function PUT(
 async function getDataObject(spaceId: string, dataObjectId: string) {
   try {
     const parentConfig = await getDeepConfigurationById(spaceId);
-    const parentParameter = extractParameter(parentConfig, ['organization']);
-    if (!parentParameter) {
-      return {
-        isResponse: true,
-        data: NextResponse.json(`Organization parameter not found in config of space ${spaceId}.`, {
-          status: 404,
-        }),
-      };
-    }
-    let parameter: Parameter | undefined;
     if (parentConfig.configType !== 'organization') {
       return {
         isResponse: true,
         data: NextResponse.json('This ID does not correspond to a space.', { status: 404 }),
       };
     } else {
+      const parentParameter = extractParameter(parentConfig, ['organization']);
+      if (!parentParameter) {
+        return {
+          isResponse: true,
+          data: NextResponse.json(
+            `Organization parameter not found in config of space ${spaceId}.`,
+            {
+              status: 404,
+            },
+          ),
+        };
+      }
+      let parameter: Parameter | undefined;
       if (uuidValidate(dataObjectId)) {
         parameter = findParameter(dataObjectId, parentParameter, 'parameter')?.selection;
       } else {
         const path = dataObjectId.toLocaleLowerCase().split('.');
-        parameter = extractParameterFromParameter(parentParameter, path);
+        parameter = extractParameter(parentParameter, path);
       }
       return { isResponse: false, data: parameter };
     }

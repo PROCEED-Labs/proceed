@@ -133,6 +133,20 @@ const ContextMenuArea: FC<
       });
     }
 
+    // Options when right clicking a single folder that can be updated
+    if (
+      selectedContextMenuItems.length === 1 &&
+      selectedContextMenuItems[0].type === 'folder' &&
+      canDoActionOnResource(selectedContextMenuItems, 'update', ability)
+    ) {
+      children.push({
+        key: 'change-meta-data',
+        icon: <LuNotebookPen />,
+        label: isListView ? 'Show Meta Data' : 'Change Meta Data',
+        onClick: () => changeMetaData(selectedContextMenuItems[0]),
+      });
+    }
+
     // Options when the right clicked item(s) can be updated
     if (
       !isListView &&

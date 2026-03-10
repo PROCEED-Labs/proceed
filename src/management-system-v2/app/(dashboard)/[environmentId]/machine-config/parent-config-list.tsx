@@ -136,11 +136,6 @@ const ParentConfigList: React.FC<ConfigListProps> = ({ data }) => {
       label: <ConfigCreationButton wrapperElement="New: Empty" />,
       icon: <FileOutlined />,
     });
-    defaultDropdownItems.push({
-      key: 'create-organization-config',
-      label: <OrganizationConfigCreationButton wrapperElement="New: Organization (test)" />,
-      icon: <FileOutlined />,
-    });
   }
 
   useAddControlCallback(

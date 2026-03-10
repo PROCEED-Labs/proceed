@@ -17,7 +17,7 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -62,8 +62,9 @@ import {
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
-import { getRootFolder } from './db/folders';
+import { getFolderById, getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
+import { createFolder, getFolder, getFolderContents } from './folders';
 
 // Import necessary functions from processModule
 
@@ -177,6 +178,7 @@ export const addProcesses = async (
     description: string;
     bpmn?: string;
     folderId?: string;
+    folderPath?: string;
     userDefinedId?: string;
     id?: string;
     executable?: boolean;
@@ -223,6 +225,46 @@ export const addProcesses = async (
 
     if (!ability.can('create', toCaslResource('Process', newProcess))) {
       return userError('Not allowed to create this process', UserErrorType.PermissionError);
+    }
+
+    // recreate the expected folder path (needed for zip file imports to recreate exported directory
+    // structures
+    if (value.folderPath) {
+      let folder = value.folderId
+        ? await getFolder(activeEnvironment.spaceId, value.folderId)
+        : await getRootFolder(activeEnvironment.spaceId, ability);
+
+      if (isUserErrorResponse(folder)) return folder;
+
+      const segments = value.folderPath.split('/');
+      for (const segment of segments) {
+        if (!segment) continue;
+        const contents = await getFolderContents(activeEnvironment.spaceId, folder.id);
+        if (isUserErrorResponse(contents)) return contents;
+        const existingFolder = contents.find(
+          (entry) => entry.type === 'folder' && entry.name === segment,
+        ) as Extract<(typeof contents)[number], { type: 'folder' }>;
+        if (existingFolder) {
+          // a folder with the wanted name already exists => just use that folder
+          folder = await getFolder(activeEnvironment.spaceId, existingFolder.id);
+          if (isUserErrorResponse(folder)) return folder;
+        } else {
+          // there is no folder with the wanted name => create it
+          const res = await createFolder({
+            name: segment,
+            parentId: folder.id,
+            environmentId: activeEnvironment.spaceId,
+          });
+          if (isUserErrorResponse(res)) return res;
+
+          folder = await getFolder(activeEnvironment.spaceId, res.id);
+          if (isUserErrorResponse(folder)) return folder;
+        }
+      }
+
+      if (isUserErrorResponse(folder)) return folder;
+
+      value.folderId = folder.id;
     }
 
     // bpmn prop gets deleted in addProcess()
@@ -758,11 +800,12 @@ interface SingleProcessCheckData extends BaseProcessCheckData {
   batch?: false;
   processName: string;
   folderId?: string;
+  folderPath?: string;
 }
 
 interface BatchProcessCheckData extends BaseProcessCheckData {
   batch: true;
-  processes: { name: string; folderId?: string }[];
+  processes: { name: string; folderId?: string; folderPath?: string }[];
 }
 
 type ProcessCheckData = SingleProcessCheckData | BatchProcessCheckData;
@@ -775,13 +818,42 @@ export async function checkIfProcessExistsByName(
   try {
     const { ability } = await getCurrentEnvironment(data.spaceId);
 
+    async function getNestedFolder(folderId?: string, folderPath?: string) {
+      let folder = folderId
+        ? await getFolderById(folderId)
+        : await getRootFolder(data.spaceId, ability);
+
+      if (folderPath) {
+        const segments = folderPath.split('/');
+        for (const segment of segments) {
+          if (!segment) continue;
+          const content = await getFolderContents(data.spaceId, folder.id);
+          if (isUserErrorResponse(content)) throw content.error.message;
+          const subFolder = content.find((c) => c.name === segment);
+          if (!subFolder) return;
+          if (subFolder.type !== 'folder') throw 'Not a folder';
+          folder = await getFolderById(subFolder.id);
+        }
+      }
+
+      return folder;
+    }
+
     if (data.batch === true) {
-      const processesWithFolderIds = await Promise.all(
-        data.processes.map(async (process) => ({
-          name: process.name,
-          folderId: process.folderId ?? (await getRootFolder(data.spaceId, ability)).id,
-        })),
-      );
+      const processesWithFolderIds = (
+        await Promise.all(
+          data.processes.map(async (process) => {
+            const folder = await getNestedFolder(process.folderId, process.folderPath);
+
+            if (!folder) return;
+
+            return {
+              name: process.name,
+              folderId: folder.id,
+            };
+          }),
+        )
+      ).filter(truthyFilter);
 
       return await checkIfProcessAlreadyExistsForAUserInASpaceByNameWithBatching(
         processesWithFolderIds,
@@ -789,12 +861,15 @@ export async function checkIfProcessExistsByName(
         data.userId,
       );
     } else {
-      const folderId = data.folderId ?? (await getRootFolder(data.spaceId, ability)).id;
+      const folder = await getNestedFolder(data.folderId, data.folderPath);
+
+      if (!folder) return false;
+
       return await checkIfProcessAlreadyExistsForAUserInASpaceByName(
         data.processName,
         data.spaceId,
         data.userId,
-        folderId,
+        folder.id,
       );
     }
   } catch (error) {

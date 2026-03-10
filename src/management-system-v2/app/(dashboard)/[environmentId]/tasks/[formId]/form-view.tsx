@@ -8,9 +8,17 @@ import { updateHtmlForm } from '@/lib/data/html-forms';
 import useEditorStateStore, {
   EditorStoreProvider,
 } from '@/components/html-form-editor/use-editor-state-store';
-import HtmlFormEditor, { HtmlFormEditorRef } from '@/components/html-form-editor';
+import { HtmlFormEditorRef } from '@/components/html-form-editor';
 import { HtmlForm } from '@/lib/html-form-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+
+import dynamic from 'next/dynamic';
+
+// if the editor is rendered on the server (e.g. when reloading the page) the iframe content is not
+// correctly populated which results in the form not being shown/editable
+const DynamicHtmlFormEditor = dynamic(() => import('@/components/html-form-editor'), {
+  ssr: false,
+});
 
 type FormViewProps = {
   data: HtmlForm;
@@ -49,7 +57,7 @@ const FormEditor: React.FC<FormViewProps> = ({ data }) => {
     }
   }, [variables]);
 
-  return <HtmlFormEditor ref={builder} json={data.json} onChange={handleSave} />;
+  return <DynamicHtmlFormEditor ref={builder} json={data.json} onChange={handleSave} />;
 };
 
 const FormView: React.FC<FormViewProps> = ({ data }) => {

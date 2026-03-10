@@ -28,10 +28,11 @@ import { getImageDimensions, getSVGFromBPMN, isSelectedOrInsideSelected } from '
 
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
 
-import { ArrayEntryType, truthyFilter } from '../typescript-utils';
+import { truthyFilter } from '../typescript-utils';
 
 import { SerializedNode } from '@craftjs/core';
-import { UserError } from '../user-error';
+import { UserError, isUserErrorResponse } from '../user-error';
+import { getFolder, getFolderContents } from '../data/folders';
 
 /**
  * The options that can be used to select what should be exported
@@ -54,7 +55,18 @@ export type ExportProcessInfo = {
   processVersion?: string;
   selectedElements?: string[];
   rootSubprocessLayerId?: string;
-}[];
+  folderPath?: string;
+};
+
+export type ExportFolderInfo = {
+  folderId: string;
+};
+
+export type ExportInfos = (ExportProcessInfo | ExportFolderInfo)[];
+
+export function isProcessExportInfo(info: ExportInfos[number]): info is ExportProcessInfo {
+  return 'definitionId' in info;
+}
 
 /**
  * The data needed for the export of a specific process
@@ -63,6 +75,7 @@ export type ProcessExportData = {
   definitionId: string;
   definitionName: string;
   isImport: boolean;
+  folderPath?: string;
   versions: {
     [version: string]: {
       name?: string;
@@ -161,6 +174,7 @@ async function getCollapsedSubprocessInfos(bpmn: string) {
 type ExportMap = {
   [definitionId: string]: {
     definitionName: string;
+    folderPath?: string;
     isImport: boolean;
     versions: {
       [version: string]: {
@@ -224,7 +238,8 @@ async function ensureProcessInfo(
     processVersion,
     selectedElements,
     rootSubprocessLayerId,
-  }: ArrayEntryType<ExportProcessInfo>,
+    folderPath,
+  }: ExportProcessInfo,
   spaceId: string,
   isImport = false,
 ) {
@@ -237,6 +252,7 @@ async function ensureProcessInfo(
 
     exportData[definitionId] = {
       definitionName: process.name,
+      folderPath,
       isImport,
       versions: {},
       scriptTasks: [],
@@ -281,14 +297,40 @@ async function ensureProcessInfo(
  */
 export async function prepareExport(
   options: ProcessExportOptions,
-  processes: ExportProcessInfo,
+  toExport: ExportInfos,
   spaceId: string,
 ): Promise<ProcessesExportData> {
-  if (!processes.length) {
-    throw new Error('Tried exporting without specifying the processes to export!');
+  if (!toExport.length) {
+    throw new Error('Tried exporting without specifying the data to export!');
   }
 
   const exportData: ExportMap = {};
+
+  async function mapFolderToContent(folderId: string, path = ''): Promise<ExportProcessInfo[]> {
+    const folder = await getFolder(spaceId, folderId);
+    const content = await getFolderContents(spaceId, folderId);
+
+    if (isUserErrorResponse(folder)) throw folder.error.message;
+    if (isUserErrorResponse(content)) throw content.error.message;
+
+    return (
+      await asyncMap(content, async (entry) => {
+        if (entry.type !== 'folder') {
+          return { definitionId: entry.id, folderPath: path + '/' + folder.name };
+        }
+
+        return mapFolderToContent(entry.id, path + '/' + folder.name);
+      })
+    ).flat();
+  }
+
+  const processes = (
+    await asyncMap(toExport, async (info) => {
+      if (isProcessExportInfo(info)) return info;
+
+      return mapFolderToContent(info.folderId);
+    })
+  ).flat();
 
   let processVersionsToAdd = processes.map((info) => ({ ...info, isImport: false }));
 
@@ -302,10 +344,11 @@ export async function prepareExport(
       selectedElements,
       rootSubprocessLayerId,
       isImport,
+      folderPath,
     } of processVersionsToAdd) {
       await ensureProcessInfo(
         exportData,
-        { definitionId, processVersion, selectedElements, rootSubprocessLayerId },
+        { definitionId, processVersion, selectedElements, rootSubprocessLayerId, folderPath },
         spaceId,
         isImport,
       );

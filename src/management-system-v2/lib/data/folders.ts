@@ -30,7 +30,7 @@ export async function createFolder(folderInput: FolderUserInput) {
 
     if (!folder.parentId) folder.parentId = (await getRootFolder(folder.environmentId)).id;
 
-    await _createFolder({ ...folder, createdBy: userId }, ability);
+    return await _createFolder({ ...folder, createdBy: userId }, ability);
   } catch (e) {
     return userError("Couldn't create folder");
   }

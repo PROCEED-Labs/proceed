@@ -7,8 +7,9 @@ import { notFound } from 'next/navigation';
 import {
   getAasConfigurations,
   getParentConfigurations,
-  syncOrganizationConfigs,
   syncOrganizationUsers,
+  syncPersonalSpaceUser,
+  syncSpaceConfigs,
 } from '@/lib/data/db/machine-config';
 import ParentConfigList from './parent-config-list';
 import { Config } from '@/lib/data/machine-config-schema';
@@ -32,8 +33,9 @@ const MachineConfigPage = async ({
 
   let folderContents;
   let AasContent = await getAasConfigurations(activeEnvironment.spaceId, ability);
-  await syncOrganizationConfigs();
+  await syncSpaceConfigs();
   if (activeEnvironment.isOrganization) await syncOrganizationUsers(activeEnvironment.spaceId);
+  else syncPersonalSpaceUser(activeEnvironment.spaceId);
 
   try {
     folderContents = (await getParentConfigurations(
@@ -49,8 +51,8 @@ const MachineConfigPage = async ({
 
   return (
     <>
-      <Content title={<Space>Tech Data Sets</Space>}>
-        <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+      <Content title={<Space>Configurations</Space>}>
+        <Space direction="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
           <ParentConfigList data={folderContents} />
         </Space>
       </Content>

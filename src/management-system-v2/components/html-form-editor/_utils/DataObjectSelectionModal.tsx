@@ -1,16 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Button, List, Tag, Tree, Tabs } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import { buildValueMap } from '@/lib/helpers/global-data-objects';
+import { buildScopedTree, ScopeFilter }  from '@/lib/helpers/global-data-tree';
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
 
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
 import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 import useEditorStateStore from '../use-editor-state-store';
 import { useEnvironment } from '@/components/auth-can';
-
-type ScopeFilter = '@worker' | '@process-initiator' | '@organization';
-
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -22,55 +19,6 @@ type Props = {
   ) => void;
 };
 
-// Build tree nodes from the raw config content
-function buildTreeNodes(params: any[], pathPrefix: string, depth: number): DataNode[] {
-  return params.map((param) => {
-    const currentPath = pathPrefix ? `${pathPrefix}.${param.name}` : param.name;
-    const hasChildren = param.subParameters?.length > 0;
-    const isDataNode = param.name === 'data' && depth === 0;
-    const isSelectable = !isDataNode;
-
-    return {
-      key: currentPath,
-      title: param.displayName?.find((d: any) => d.language === 'en')?.text || param.name,
-      selectable: isSelectable,
-      children: hasChildren
-        ? buildTreeNodes(param.subParameters, currentPath, depth + 1)
-        : undefined,
-    };
-  });
-}
-
-function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
-  const content = config.content ?? [];
-  const nodes: DataNode[] = [];
-
-  for (const topLevel of content) {
-    if (topLevel.name === 'organization') {
-      if (scope !== '@organization') continue;
-      const children = buildTreeNodes(topLevel.subParameters, '@global.@organization', 0);
-      nodes.push(...children);
-    } else if (topLevel.name === 'identity-and-access-management') {
-      const commonUserData = topLevel.subParameters.find((p: any) => p.name === 'common-user-data');
-
-      if (commonUserData && scope === '@worker') {
-        const children = buildTreeNodes(commonUserData.subParameters, '@global.@worker.data', 0);
-        nodes.push(...children);
-      }
-
-      if (commonUserData && scope === '@process-initiator') {
-        const children = buildTreeNodes(
-          commonUserData.subParameters,
-          '@global.@process-initiator.data',
-          0,
-        );
-        nodes.push(...children);
-      }
-    }
-  }
-
-  return nodes;
-}
 
 const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) => {
   const environment = useEnvironment();

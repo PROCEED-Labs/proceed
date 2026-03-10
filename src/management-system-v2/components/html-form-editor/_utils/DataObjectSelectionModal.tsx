@@ -54,13 +54,14 @@ function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
       const commonUserData = topLevel.subParameters.find((p: any) => p.name === 'common-user-data');
 
       if (commonUserData && scope === '@worker') {
-        const children = buildTreeNodes(commonUserData.subParameters, '@global.@worker', 0);
+        const children = buildTreeNodes(commonUserData.subParameters, '@global.@worker.data', 0);
         nodes.push(...children);
       }
+
       if (commonUserData && scope === '@process-initiator') {
         const children = buildTreeNodes(
           commonUserData.subParameters,
-          '@global.@process-initiator',
+          '@global.@process-initiator.data',
           0,
         );
         nodes.push(...children);

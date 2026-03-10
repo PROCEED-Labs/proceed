@@ -254,7 +254,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
 
         router.refresh();
         if (newId) {
-          router.push();
+          router.push(spaceURL(space, `/tasks/${newId}`));
         }
       },
     });

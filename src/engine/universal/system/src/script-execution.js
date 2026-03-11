@@ -173,7 +173,7 @@ class ScriptExecutor extends System {
                   path += `/user/${instanceInformation.processInitiator}`;
                 }
 
-                return path + `/${dataPath}${accessFn.includes('Full') ? '?full=true' : ''}`;
+                return `${path}/${dataPath}`;
               }
 
               const requestPath = createRequest(functionName, args[0]);
@@ -181,13 +181,34 @@ class ScriptExecutor extends System {
               let result;
 
               if (functionName.includes('setGlobal')) {
+                let value = args[1];
+
+                switch (typeof value) {
+                  case 'string':
+                    break;
+                  case 'number':
+                  case 'boolean':
+                    value = `${value}`;
+                    break;
+                  case 'object':
+                    value = JSON.stringify(value);
+                    break;
+                  default:
+                    return {
+                      response: {
+                        error: `Trying to call ${functionName} with invalid type ${typeof value}.`,
+                      },
+                      statusCode: 404,
+                    };
+                }
+
                 await this.options.network.sendData(
                   instanceInformation.managementSystemLocation,
                   undefined,
                   requestPath,
                   'PUT',
-                  'application/json',
-                  { value: args[1] },
+                  'text/plain',
+                  value,
                 );
               } else {
                 const response = await this.options.network.sendRequest(
@@ -196,6 +217,10 @@ class ScriptExecutor extends System {
                   requestPath,
                 );
                 result = JSON.parse(response.body);
+
+                if (!functionName.includes('Full')) {
+                  result = result.value;
+                }
               }
 
               return {

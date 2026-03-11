@@ -159,6 +159,7 @@ const DashboardLayout = async (
 
   if (
     msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+    ability.can('view', 'Task') &&
     automationSettings.active !== false &&
     automationSettings.tasklist?.active !== false
   ) {
@@ -250,7 +251,11 @@ const DashboardLayout = async (
       let childRegex = '';
       let children: ExtendedMenuItems = [];
 
-      if (automationSettings.dashboard?.active !== false) {
+      if (
+        ability.can('view', 'Machine') &&
+        ability.can('view', 'Execution') &&
+        automationSettings.dashboard?.active !== false
+      ) {
         const dashboardRegex = '/executions-dashboard($|/)';
         childRegex = !childRegex ? dashboardRegex : `(${childRegex})|(${dashboardRegex})`;
         children.push({
@@ -260,7 +265,7 @@ const DashboardLayout = async (
           selectedRegex: dashboardRegex,
         });
       }
-      if (automationSettings.executions?.active !== false) {
+      if (ability.can('view', 'Execution') && automationSettings.executions?.active !== false) {
         const executionsRegex = '/executions($|/)';
         childRegex = !childRegex ? executionsRegex : `(${childRegex})|(${executionsRegex})`;
         children.push({
@@ -270,7 +275,7 @@ const DashboardLayout = async (
           selectedRegex: executionsRegex,
         });
       }
-      if (automationSettings.machines?.active !== false) {
+      if (ability.can('view', 'Machine') && automationSettings.machines?.active !== false) {
         const machinesRegex = '/engines($|/)';
         childRegex = !childRegex ? machinesRegex : `(${childRegex})|(${machinesRegex})`;
         children.push({

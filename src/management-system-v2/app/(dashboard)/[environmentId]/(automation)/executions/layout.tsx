@@ -3,6 +3,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 type ExecutionLayoutProps = {
   params: Promise<{ environmentId: string }>;
@@ -17,7 +18,9 @@ const ExecutionsLayout: React.FC<ExecutionLayoutProps> = async (props) => {
 
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+
+  if (!ability.can('view', 'Execution')) return <UnauthorizedFallback />;
 
   const exeuctionsSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,

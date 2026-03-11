@@ -35,6 +35,7 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
 
   const {
     activeEnvironment: { spaceId },
+    ability,
   } = await getCurrentEnvironment(environmentId);
 
   const documentationSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
@@ -69,6 +70,7 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
 
   const sections = [
     PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
+      ability.can('view', 'Task') &&
       automationSettings.active !== false &&
       automationSettings?.tasklist?.active !== false && (
         <TaskSection
@@ -80,28 +82,29 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
           ]}
         />
       ),
-    PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE && documentationSettings?.active !== false && (
-      <ProcessSection
-        key="process"
-        tiles={[
-          documentationSettings?.editor?.active !== false && <ProcessEditorTile key="editor" />,
-          documentationSettings?.list?.active !== false && <ProcessListTile key="list" />,
-        ]}
-      />
-    ),
+    PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE &&
+      ability.can('view', 'Process') &&
+      documentationSettings?.active !== false && (
+        <ProcessSection
+          key="process"
+          tiles={[
+            documentationSettings?.editor?.active !== false && <ProcessEditorTile key="editor" />,
+            documentationSettings?.list?.active !== false && <ProcessListTile key="list" />,
+          ]}
+        />
+      ),
     !!PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && automationSettings?.active !== false && (
       <AutomationSection
         key="automation"
         tiles={[
-          automationSettings?.dashboard?.active !== false && (
+          automationSettings?.dashboard?.active !== false && ability.can('view', 'Machine') && (
             <ExecutionDashboardTile key="dashboard" />
           ),
-          automationSettings?.executions?.active !== false && (
+          automationSettings?.executions?.active !== false && ability.can('view', 'Execution') && (
             <ProcessExecutionsTile key="executions" />
           ),
-          automationSettings?.['process-engines']?.active !== false && (
-            <ProcessEngineTile key="engines" />
-          ),
+          automationSettings?.['process-engines']?.active !== false &&
+            ability.can('view', 'Machine') && <ProcessEngineTile key="engines" />,
         ]}
       />
     ),

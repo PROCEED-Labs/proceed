@@ -361,13 +361,21 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        margin: '10px',
                       }}
                     >
                       <Divider style={{ margin: '0px' }}>Variables</Divider>
                       <List
                         size="small"
+                        style={{ marginBottom: '20px' }}
                         header={<Search size="middle" placeholder="Search for variables"></Search>}
                         dataSource={variables}
+                        pagination={{
+                          align: 'center',
+                          responsive: true,
+                          style: { marginTop: '-10px' },
+                          hideOnSinglePage: true,
+                        }}
                         renderItem={(item) => (
                           <List.Item style={{ padding: '0.75rem 0' }}>
                             <span>{item.name}</span>

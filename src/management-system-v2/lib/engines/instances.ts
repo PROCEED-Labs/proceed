@@ -3,20 +3,37 @@
 import { Engine } from './machines';
 import { engineRequest } from './endpoints/index';
 import { userError } from '../user-error';
+import { env } from '../ms-config/env-vars';
+import os from 'os';
+import { truthyFilter } from '../typescript-utils';
 
 export async function startInstanceOnMachine(
   definitionId: string,
   versionId: string,
   machine: Engine,
   variables: { [key: string]: any } = {},
+  extras?: Record<string, any>,
 ) {
+  const nextAuthURL = env.NEXTAUTH_URL;
+  let port = '';
+  if (nextAuthURL) {
+    const url = new URL(nextAuthURL);
+    if (url.port) port = url.port;
+  }
+  const hostname = os.hostname();
+  const local = hostname && port ? `http://${hostname}:${port}` : undefined;
+
+  const managementSystemLocation = [nextAuthURL, local].filter(truthyFilter);
+
+  extras = extras ? { ...extras, managementSystemLocation } : { managementSystemLocation };
+
   try {
     const response = await engineRequest({
       method: 'post',
       endpoint: '/process/:definitionId/versions/:version/instance',
       engine: machine,
       pathParams: { definitionId, version: versionId },
-      body: { variables },
+      body: { variables, extras },
     });
 
     return response.instanceId as string;

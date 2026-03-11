@@ -73,6 +73,7 @@ describe('Tests for the function that is supposed to decide if a token can conti
         name: 'machine1',
         hostname: 'thisMachine',
       },
+      _instanceIdExtraInfoMapping: {},
       getToken: () => mockToken,
       updateToken: jest.fn(),
       getInstanceInformation: () => ({

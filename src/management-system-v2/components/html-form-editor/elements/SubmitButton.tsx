@@ -36,7 +36,12 @@ const SubmitButton: UserComponent<SubmitButtonProps> = ({
     <div>
       <button
         type="submit"
-        style={{ width: block ? '100%' : undefined, minWidth: '90px' }}
+        style={{
+          width: block ? '100%' : 'auto',
+          minWidth: 125,
+          height: 40,
+          padding: '0 16px',
+        }}
         onMouseEnter={() => setHovered(true)}
         className={cn('user-task-form-button', { 'primary-button': type == 'primary' })}
         ref={(r) => {

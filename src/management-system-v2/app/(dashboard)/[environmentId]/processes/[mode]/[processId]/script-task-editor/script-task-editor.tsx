@@ -438,6 +438,7 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                   <BlocklyEditor
                     editorRef={blocklyRef}
                     initialXml={initialScript}
+                    variables={variables}
                     onChange={(isScriptValid, code) => {
                       if (code.xml && initialScript !== code.xml) {
                         onChangeRef.current?.(true);

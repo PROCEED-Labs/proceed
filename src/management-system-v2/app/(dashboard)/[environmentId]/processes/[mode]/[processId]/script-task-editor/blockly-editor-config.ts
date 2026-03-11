@@ -1,6 +1,7 @@
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly';
+import { ProcessVariable, typeTypescriptMap } from '@/lib/process-variable-schema';
 
 type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
 const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;
@@ -869,10 +870,72 @@ javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
   return code;
 };
 
+export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) => {
+  const typeBlocklyTypeMap = {
+    string: 'String',
+    number: 'Number',
+    array: 'Array',
+    boolean: 'Boolean',
+    file: 'String',
+    object: 'OBJECT',
+    date: 'String',
+  } as const satisfies Record<ProcessVariable['dataType'], string>;
+
+  Blocks['proceed_variables_get'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField('Variable')
+        .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name');
+
+      this.setOutput(true, null);
+      this.setTooltip('Returns value for selected variable');
+      this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
+      this.setColour(75);
+    },
+    onchange: function () {
+      const varName = this.getFieldValue('name');
+      const variable = variables.find((v) => v.name === varName);
+
+      if (variable) {
+        this.setOutput(true, typeBlocklyTypeMap[variable.dataType]);
+      } else {
+        this.setOutput(true, null);
+      }
+    },
+  };
+
+  Blocks['proceed_variables_set'] = {
+    init: function () {
+      this.appendValueInput('value')
+        .appendField('Set variable')
+        .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name')
+        .appendField('to');
+      this.setInputsInline(true);
+      this.setTooltip('');
+      this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
+      this.setColour(75);
+      this.setPreviousStatement(true);
+      this.setNextStatement(true);
+    },
+    onchange: function () {
+      const input = this.getInput('value');
+
+      const varName = this.getFieldValue('name');
+      const variable = variables.find((v) => v.name === varName);
+
+      if (variable) {
+        input?.setCheck(typeBlocklyTypeMap[variable.dataType]);
+      } else {
+        input?.setCheck(null);
+      }
+    },
+  };
+};
+
 Blocks['proceed_variables_get_all'] = {
   init: function () {
     this.appendDummyInput().appendField('Get all variables');
-    this.setOutput(true, null);
+    this.setOutput(true, 'OBJECT');
     this.setTooltip('Returns an object containing all variables and values');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
     this.setColour(75);

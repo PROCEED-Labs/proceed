@@ -91,8 +91,8 @@ export async function moveIntoFolder(items: FolderChildren[], folderId: string) 
   }
 }
 
-export async function getFolder(environmentId: string, folderId?: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
+export async function getFolder(environmentId: string, folderId?: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
 
   let folder;
   if (!folderId) folder = await getRootFolder(environmentId, ability);
@@ -106,8 +106,12 @@ export async function getFolder(environmentId: string, folderId?: string) {
   return folder;
 }
 
-export async function getFolderContents(environmentId: string, folderId?: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
+export async function getFolderContents(
+  environmentId: string,
+  folderId?: string,
+  ability?: Ability,
+) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
 
   if (!folderId) folderId = (await getRootFolder(environmentId)).id;
 

@@ -58,10 +58,18 @@ const MonacoEditor = forwardRef<MonacoEditorRef, MonacoEditorProps>(
       if (initialized) {
         const languageExtension = getProceedLanguageExtension(variables);
 
+        monacoRef.current!.languages.typescript.typescriptDefaults.setExtraLibs([]);
         const lib =
           monacoRef.current!.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
 
-        return () => lib.dispose();
+        return () => {
+          lib.dispose();
+          // remove models of previous language extensions to force usage updated extensions that
+          // are added above
+          monacoRef.current!.editor.getModels().forEach((model) => {
+            if (!model.isAttachedToEditor()) model.dispose();
+          });
+        };
       }
     }, [initialized, variables]);
 

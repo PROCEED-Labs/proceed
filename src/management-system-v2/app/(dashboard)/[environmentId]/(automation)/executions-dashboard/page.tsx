@@ -4,6 +4,7 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import DashboardView from './dashboard-view';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 const Page = async (props: any) => {
   const params = await props.params;
@@ -11,6 +12,9 @@ const Page = async (props: any) => {
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+
+  if (!ability.can('view', 'Machine') || !ability.can('view', 'Execution'))
+    return <UnauthorizedFallback />;
 
   const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,

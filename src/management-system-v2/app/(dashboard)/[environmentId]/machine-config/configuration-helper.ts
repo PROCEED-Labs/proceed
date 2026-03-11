@@ -1980,3 +1980,22 @@ export function findPathToParameter(
   }
   return found;
 }
+
+/**
+ * Extracts a parameter at a given path from a config.
+ */
+export function extractParameter(configOrParameter: Config | Parameter, path: string[]) {
+  if (!path.length) return;
+
+  let current: Parameter | undefined;
+  if ('content' in configOrParameter) {
+    current = configOrParameter.content.find((p) => p.name === path[0]);
+    path = path.slice(1);
+  } else current = configOrParameter;
+
+  for (let i = 0; i < path.length && current; i++) {
+    current = current.subParameters?.find((p) => p.name === path[i]);
+  }
+
+  return current;
+}

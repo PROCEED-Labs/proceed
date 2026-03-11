@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import Tasklist from './tasklist';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 const TasklistPage = async (props: { params: Promise<{ environmentId: string }> }) => {
   const params = await props.params;
@@ -27,7 +28,10 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
 
   const {
     activeEnvironment: { spaceId },
+    ability,
   } = await getCurrentEnvironment(params.environmentId);
+
+  if (!ability.can('view', 'Task')) return <UnauthorizedFallback />;
 
   const automationSettings = await getSpaceSettingsValues(spaceId, 'process-automation');
   if (automationSettings.active === false || automationSettings.tasklist?.active === false) {

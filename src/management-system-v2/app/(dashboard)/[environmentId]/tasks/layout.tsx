@@ -3,6 +3,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { notFound } from 'next/navigation';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 type DocumentationLayoutProps = {
   params: Promise<{ environmentId: string }>;
@@ -18,7 +19,9 @@ const TaskEditorLayout: React.FC<DocumentationLayoutProps> = async (props) => {
     return notFound();
   }
 
-  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+
+  if (!ability.can('view', 'Task')) return <UnauthorizedFallback />;
 
   const automationSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,

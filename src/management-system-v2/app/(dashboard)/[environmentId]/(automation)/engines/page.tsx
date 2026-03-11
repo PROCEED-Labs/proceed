@@ -10,6 +10,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';
 import { spaceURL } from '@/lib/utils';
+import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
 const getEngineStatus = async (engine: DBEngine) => {
   const engines = await savedEnginesToEngines([engine]);
@@ -21,12 +22,13 @@ const getEngineStatus = async (engine: DBEngine) => {
   }
 };
 
-const EnginesPage = async (props: { params: Promise<{ environmentId: string }> }) => {
+type PageProps = { params: Promise<{ environmentId: string }> };
+
+const EnginesPage = async ({ environmentId }: { environmentId: string }) => {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const params = await props.params;
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
 
   const machinesSettings = await getSpaceSettingsValues(
     activeEnvironment.spaceId,
@@ -58,12 +60,16 @@ const EnginesPage = async (props: { params: Promise<{ environmentId: string }> }
   );
 };
 
-const Page = async (props: any) => {
+const Page = async (props: PageProps) => {
   const params = await props.params;
+
+  const { ability } = await getCurrentEnvironment(params.environmentId);
+  if (!ability.can('view', 'Machine')) return <UnauthorizedFallback />;
+
   return (
     <Content title="Engines">
       <Suspense fallback={<Skeleton />}>
-        <EnginesPage params={params} />
+        <EnginesPage environmentId={params.environmentId} />
       </Suspense>
     </Content>
   );

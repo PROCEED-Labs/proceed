@@ -186,7 +186,7 @@ export async function addRole(
     throw new UnauthorizedError();
   }
 
-  const { name, description, type, note, permissions, expiration, environmentId } =
+  const { name, description, organizationRoleType, note, permissions, expiration, environmentId } =
     roleRepresentation;
 
   // Check if role already exists in the database
@@ -210,7 +210,7 @@ export async function addRole(
       name,
       environmentId,
       description: description || null,
-      type: type || 'default',
+      organizationRoleType: organizationRoleType ?? [],
       note: note || null,
       permissions: permissions || {},
       expiration: expiration || null,

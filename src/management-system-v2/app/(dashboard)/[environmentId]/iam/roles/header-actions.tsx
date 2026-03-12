@@ -1,7 +1,7 @@
 'use client';
 
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, App, Select } from 'antd';
+import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Form, Input, Modal, App, Select, Tooltip } from 'antd';
 import { FC, useEffect, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -11,7 +11,11 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { RoleInputSchema } from '@/lib/data/role-schema';
 
-const schema = RoleInputSchema.pick({ name: true, description: true, type: true });
+const schema = RoleInputSchema.pick({
+  name: true,
+  description: true,
+  organizationRoleType: true,
+});
 
 const CreateRoleModal: FC<{
   modalOpen: boolean;
@@ -29,7 +33,10 @@ const CreateRoleModal: FC<{
   }, [form, modalOpen]);
 
   const submitData = async (
-    inputValues: Record<'name' | 'description' | 'expirationDayJs', 'post'>,
+    inputValues: Record<
+      'name' | 'description' | 'organizationRoleType' | 'expirationDayJs',
+      'post'
+    >,
   ) => {
     // let expiration;
     // if (typeof values.expirationDayJs === 'object')
@@ -65,10 +72,31 @@ const CreateRoleModal: FC<{
           <Input.TextArea />
         </Form.Item>
 
-        <Form.Item label="Type" name="type" initialValue="default">
+        <Form.Item
+          label={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Organisation Role Type
+              <Tooltip
+                title={
+                  <>
+                    Team: assign this role to users as their team. <br />
+                    Back Office: assign this role to users as their back office support. <br />A
+                    role can be both.
+                  </>
+                }
+              >
+                {' '}
+                <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+              </Tooltip>
+            </span>
+          }
+          name="organizationRoleType"
+        >
           <Select
+            mode="multiple"
+            allowClear
+            placeholder="Select organisation role type (optional)"
             options={[
-              { label: 'Default', value: 'default' },
               { label: 'Team', value: 'team' },
               { label: 'Back Office', value: 'back-office' },
             ]}

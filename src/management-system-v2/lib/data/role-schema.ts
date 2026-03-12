@@ -12,7 +12,10 @@ export const RoleInputSchema = z.object({
   environmentId: z.string(),
   name: z.string().min(5).max(100),
   description: z.string().nullish().optional(),
-  type: z.enum(['default', 'team', 'back-office']).optional().default('default'),
+  organizationRoleType: z
+    .array(z.enum(['team', 'back-office']))
+    .optional()
+    .default([]),
   note: z.string().nullish().optional(),
   permissions: z.object(perms as Permissions).partial(),
   expiration: z.date().nullish().optional(),

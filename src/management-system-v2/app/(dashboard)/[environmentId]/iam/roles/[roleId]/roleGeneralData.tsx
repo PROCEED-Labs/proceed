@@ -1,7 +1,7 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, Form, Input, Modal, Select, Space } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Select, Space, Tooltip } from 'antd';
 import { FC, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -16,6 +16,7 @@ import { FolderTree } from '@/components/FolderTree';
 import { ProcessListItemIcon } from '@/components/process-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const InputSchema = RoleInputSchema.omit({ environmentId: true, permissions: true });
 
@@ -148,11 +149,32 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
         <Input.TextArea disabled={!ability.can('update', role, { field: 'description' })} />
       </Form.Item>
 
-      <Form.Item label="Type" name="type">
+      <Form.Item
+        label={
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Organisation Role Type
+            <Tooltip
+              title={
+                <>
+                  Team: assign this role to users as their team. <br />
+                  Back Office: assign this role to users as their back office support. <br />A role
+                  can be both.
+                </>
+              }
+            >
+              {' '}
+              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+            </Tooltip>
+          </span>
+        }
+        name="organizationRoleType"
+      >
         <Select
-          disabled={!ability.can('update', role, { field: 'type' })}
+          mode="multiple"
+          allowClear
+          disabled={!ability.can('update', role, { field: 'organizationRoleType' })}
+          placeholder="Select organisation role type (optional)"
           options={[
-            { label: 'Default', value: 'default' },
             { label: 'Team', value: 'team' },
             { label: 'Back Office', value: 'back-office' },
           ]}

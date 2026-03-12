@@ -106,7 +106,7 @@ export function CreateUsersModal({
           <Col span={12}>
             <Form.Item
               name="Confirm Initial Password"
-              label="confirm-password"
+              label="Confirm Password"
               rules={[{ required: true }]}
               required
             >

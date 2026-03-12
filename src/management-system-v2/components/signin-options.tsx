@@ -78,12 +78,12 @@ const CredentialsSignIn = ({
     <Form
       onFinish={async (values) => {
         try {
-          let url = callbackUrl;
+          let url;
           if (typeof callbackUrl === 'function') {
             url = await callbackUrl();
-          }
+          } else url = callbackUrl;
 
-          signIn(provider.id, { ...values }, callbackUrl);
+          signIn(provider.id, { ...values }, url);
         } catch (e) {
           // Here it is assumed that the callbackUrl function will handle user feedback in case of an error
           console.error(e);

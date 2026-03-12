@@ -107,12 +107,6 @@ export const INITIAL_TOOLBOX_JSON = {
     },
     {
       kind: 'category',
-      name: 'Variables',
-      colour: 330,
-      custom: 'VARIABLE',
-    },
-    {
-      kind: 'category',
       name: 'Objects',
       colour: 230,
       contents: [
@@ -361,6 +355,17 @@ export const INITIAL_TOOLBOX_JSON = {
           kind: 'block',
           type: 'math_random_float',
         },
+        {
+          kind: 'block',
+          blockxml:
+            '    <block type="parse_float">\n' +
+            '      <value name="input">\n' +
+            '        <shadow type="text">\n' +
+            '          <field name="TEXT">0</field>\n' +
+            '        </shadow>\n' +
+            '      </value>\n' +
+            '    </block>\n',
+        },
       ],
     },
     {
@@ -437,22 +442,50 @@ export const INITIAL_TOOLBOX_JSON = {
     { kind: 'sep' },
     {
       kind: 'category',
-      name: 'Process Variables',
-      colour: 290,
+      name: 'Data',
+      colour: '%{BKY_VARIABLES_HUE}',
       contents: [
         {
-          kind: 'block',
-          type: 'proceed_variables_get',
+          kind: 'category',
+          name: 'Local Variables',
+          custom: 'VARIABLE',
         },
         {
-          kind: 'block',
-          type: 'proceed_variables_set',
+          kind: 'category',
+          name: 'Process Variables',
+          contents: [
+            {
+              kind: 'block',
+              type: 'proceed_variables_get',
+            },
+            {
+              kind: 'block',
+              type: 'proceed_variables_set',
+            },
+            {
+              kind: 'block',
+              type: 'proceed_variables_get_all',
+            },
+          ],
         },
         {
-          kind: 'block',
-          type: 'proceed_variables_get_all',
+          kind: 'category',
+          name: 'Global Data',
+          contents: [
+            {
+              kind: 'block',
+              type: 'proceed_global_get',
+            },
+            {
+              kind: 'block',
+              type: 'proceed_global_set',
+            },
+          ],
         },
       ],
+    },
+    {
+      kind: 'sep',
     },
     {
       kind: 'category',
@@ -822,18 +855,41 @@ javascriptGenerator.forBlock['object_delete_key'] = function (block) {
 };
 
 // --------------------------------------------
+// Math
+// --------------------------------------------
+
+Blocks['parse_float'] = {
+  init: function () {
+    const input = this.appendValueInput('input');
+    input.setCheck('String');
+    this.setInputsInline(true);
+    this.setOutput(true, 'Number');
+    this.setTooltip('Converts text that represents a number into that number.');
+    this.setColour(230);
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+  },
+};
+
+javascriptGenerator.forBlock['parse_float'] = function (block) {
+  const value = javascriptGenerator.valueToCode(block, 'input', BlocklyJavaScript.Order.ATOMIC);
+
+  return [`parseFloat(${value})`, BlocklyJavaScript.Order.FUNCTION_CALL];
+};
+
+// --------------------------------------------
 // Variables
 // --------------------------------------------
 
 Blocks['proceed_variables_get'] = {
   init: function () {
     this.appendDummyInput()
-      .appendField('Variable')
+      .appendField('Process Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name');
     this.setOutput(true, null);
     this.setTooltip('Returns value for selected variable');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour(75);
+    this.setColour('%{BKY_VARIABLES_HUE}');
   },
 };
 
@@ -846,13 +902,13 @@ javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
 Blocks['proceed_variables_set'] = {
   init: function () {
     this.appendValueInput('value')
-      .appendField('Set variable')
+      .appendField('Set Process Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name')
       .appendField('to');
     this.setInputsInline(true);
     this.setTooltip('');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour(75);
+    this.setColour('%{BKY_VARIABLES_HUE}');
     this.setPreviousStatement(true);
     this.setNextStatement(true);
   },
@@ -884,13 +940,13 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
   Blocks['proceed_variables_get'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('Variable')
+        .appendField('Process Variable')
         .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name');
 
       this.setOutput(true, null);
       this.setTooltip('Returns value for selected variable');
       this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-      this.setColour(75);
+      this.setColour('%{BKY_VARIABLES_HUE}');
     },
     onchange: function () {
       const varName = this.getFieldValue('name');
@@ -907,13 +963,13 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
   Blocks['proceed_variables_set'] = {
     init: function () {
       this.appendValueInput('value')
-        .appendField('Set variable')
+        .appendField('Set Process Variable')
         .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name')
         .appendField('to');
       this.setInputsInline(true);
       this.setTooltip('');
       this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-      this.setColour(75);
+      this.setColour('%{BKY_VARIABLES_HUE}');
       this.setPreviousStatement(true);
       this.setNextStatement(true);
     },
@@ -934,16 +990,82 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
 
 Blocks['proceed_variables_get_all'] = {
   init: function () {
-    this.appendDummyInput().appendField('Get all variables');
+    this.appendDummyInput().appendField('Get all Process Variables');
     this.setOutput(true, 'OBJECT');
-    this.setTooltip('Returns an object containing all variables and values');
+    this.setTooltip('Returns an object containing all process variables and values');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour(75);
+    this.setColour('%{BKY_VARIABLES_HUE}');
   },
 };
 
 javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
   return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
+};
+
+// --------------------------------------------
+// Global Data (Organization | Instance Initiator)
+// --------------------------------------------
+
+Blocks['proceed_global_get'] = {
+  init: function () {
+    this.appendDummyInput()
+      .appendField('Get')
+      .appendField(
+        new Blockly.FieldDropdown([
+          ['Organization', 'organization'],
+          ['Instance Initiator', 'instance-initiator'],
+        ]),
+        'target',
+      )
+      .appendField(new Blockly.FieldTextInput('data.'), 'path');
+    this.setOutput(true, 'String');
+    this.setTooltip('Returns value for selected variable');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
+    this.setColour('%{BKY_VARIABLES_HUE}');
+  },
+};
+
+javascriptGenerator.forBlock['proceed_global_get'] = function (block) {
+  const target = block.getFieldValue('target');
+  const path = block.getFieldValue('path');
+  const code = `variable.get("@${target}.${path}")`;
+  return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
+};
+
+Blocks['proceed_global_set'] = {
+  init: function () {
+    const input = this.appendValueInput('value')
+      .appendField('Set')
+      .appendField(
+        new Blockly.FieldDropdown([
+          ['Organization', 'Organization'],
+          ['Instance Initiator', 'instance-initiator'],
+        ]),
+        'target',
+      )
+      .appendField(new Blockly.FieldTextInput('data.'), 'path')
+      .appendField('to');
+    input.setCheck('String');
+    this.setInputsInline(true);
+    this.setTooltip('');
+    this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
+    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setPreviousStatement(true);
+    this.setNextStatement(true);
+  },
+};
+
+javascriptGenerator.forBlock['proceed_global_set'] = function (block) {
+  const target = block.getFieldValue('target');
+  const path = block.getFieldValue('path');
+  const variableValue = javascriptGenerator.valueToCode(
+    block,
+    'value',
+    BlocklyJavaScript.Order.ATOMIC,
+  );
+
+  const code = `variable.set("@${target}.${path}", ${variableValue || ''});\n`;
+  return code;
 };
 
 // --------------------------------------------

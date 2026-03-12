@@ -47,7 +47,11 @@ export default async function getProcesses({ userCode }: InferSchema<typeof sche
     if (!result) return `Error: No processes found.`;
 
     const processesWithLatestVersion = await asyncMap(result, async (process) => {
-      return getProcessLatestVersion(process.id, false);
+      const p: Omit<Awaited<ReturnType<typeof getProcessLatestVersion>>, 'processIds'> & {
+        processIds?: any[];
+      } = await getProcessLatestVersion(process.id, false);
+      delete p.processIds;
+      return p;
     });
 
     return {

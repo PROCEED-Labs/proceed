@@ -490,7 +490,7 @@ export const INITIAL_TOOLBOX_JSON = {
     {
       kind: 'category',
       name: 'Engine Log',
-      colour: 290,
+      colour: 75,
       contents: [
         { kind: 'block', type: 'log_trace' },
         { kind: 'block', type: 'log_debug' },
@@ -502,7 +502,7 @@ export const INITIAL_TOOLBOX_JSON = {
     {
       kind: 'category',
       name: 'Console',
-      colour: 290,
+      colour: 75,
       contents: [
         { kind: 'block', type: 'console_log' },
         { kind: 'block', type: 'console_trace' },
@@ -517,7 +517,7 @@ export const INITIAL_TOOLBOX_JSON = {
     {
       kind: 'category',
       name: 'Network',
-      colour: 290,
+      colour: 75,
       contents: [
         {
           kind: 'block',
@@ -570,7 +570,7 @@ export const INITIAL_TOOLBOX_JSON = {
     {
       kind: 'category',
       name: 'Timeouts',
-      colour: 290,
+      colour: 75,
       contents: [
         {
           kind: 'block',
@@ -588,7 +588,7 @@ export const INITIAL_TOOLBOX_JSON = {
     {
       kind: 'category',
       name: 'Error',
-      colour: 290,
+      colour: 75,
       contents: [
         {
           kind: 'block',
@@ -600,7 +600,7 @@ export const INITIAL_TOOLBOX_JSON = {
     // {
     //   kind: 'category',
     //   name: 'Progress',
-    //   colour: 290,
+    //   colour: 75,
     //   contents: [
     //     {
     //       kind: 'block',
@@ -653,7 +653,7 @@ export const connectionCheckerPlugin = {
 // --------------------------------------------
 
 Blocks['object_create'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       message0: 'Key-Value store\n%1',
       args0: [
@@ -669,7 +669,7 @@ Blocks['object_create'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_create'] = function (block) {
+javascriptGenerator.forBlock['object_create'] = function(block) {
   let entries = '';
   let n = 0;
   do {
@@ -699,7 +699,7 @@ function objectBuildingBlockConnectionCheck(a: Blockly.Connection, b: Blockly.Co
 connectionTypeCheckers.push(objectBuildingBlockConnectionCheck);
 
 Blocks['object_key_value'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       message0: 'key %1 ',
       args0: [
@@ -724,7 +724,7 @@ Blocks['object_key_value'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_key_value'] = function (block) {
+javascriptGenerator.forBlock['object_key_value'] = function(block) {
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '';
   const value =
     javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ASSIGNMENT) ||
@@ -753,7 +753,7 @@ function objectKeyValueChecker(a: Blockly.Connection, b: Blockly.Connection) {
 connectionTypeCheckers.push(objectKeyValueChecker);
 
 Blocks['object_set_key'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       message0: 'Set key of %1\n',
       args0: [
@@ -781,7 +781,7 @@ Blocks['object_set_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_set_key'] = function (block) {
+javascriptGenerator.forBlock['object_set_key'] = function(block) {
   const object =
     javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
@@ -792,7 +792,7 @@ javascriptGenerator.forBlock['object_set_key'] = function (block) {
 };
 
 Blocks['object_get_key'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       message0: 'Get key of %1\n',
       args0: [
@@ -815,7 +815,7 @@ Blocks['object_get_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_get_key'] = function (block) {
+javascriptGenerator.forBlock['object_get_key'] = function(block) {
   const object =
     javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
@@ -823,7 +823,7 @@ javascriptGenerator.forBlock['object_get_key'] = function (block) {
 };
 
 Blocks['object_delete_key'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       message0: 'Delete key of %1\n',
       args0: [
@@ -847,7 +847,7 @@ Blocks['object_delete_key'] = {
   },
 };
 
-javascriptGenerator.forBlock['object_delete_key'] = function (block) {
+javascriptGenerator.forBlock['object_delete_key'] = function(block) {
   const object =
     javascriptGenerator.valueToCode(block, 'input_object', BlocklyJavaScript.Order.MEMBER) || '{}';
   const key = javascriptGenerator.valueToCode(block, 'key', BlocklyJavaScript.Order.MEMBER) || '""';
@@ -859,7 +859,7 @@ javascriptGenerator.forBlock['object_delete_key'] = function (block) {
 // --------------------------------------------
 
 Blocks['parse_float'] = {
-  init: function () {
+  init: function() {
     const input = this.appendValueInput('input');
     input.setCheck('String');
     this.setInputsInline(true);
@@ -871,7 +871,7 @@ Blocks['parse_float'] = {
   },
 };
 
-javascriptGenerator.forBlock['parse_float'] = function (block) {
+javascriptGenerator.forBlock['parse_float'] = function(block) {
   const value = javascriptGenerator.valueToCode(block, 'input', BlocklyJavaScript.Order.ATOMIC);
 
   return [`parseFloat(${value})`, BlocklyJavaScript.Order.FUNCTION_CALL];
@@ -882,25 +882,25 @@ javascriptGenerator.forBlock['parse_float'] = function (block) {
 // --------------------------------------------
 
 Blocks['proceed_variables_get'] = {
-  init: function () {
+  init: function() {
     this.appendDummyInput()
       .appendField('Process Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name');
     this.setOutput(true, null);
     this.setTooltip('Returns value for selected variable');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setColour(295);
   },
 };
 
-javascriptGenerator.forBlock['proceed_variables_get'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_get'] = function(block) {
   const variableName = block.getFieldValue('name');
   const code = `variable.get("${variableName}")`;
   return [code, BlocklyJavaScript.Order.FUNCTION_CALL];
 };
 
 Blocks['proceed_variables_set'] = {
-  init: function () {
+  init: function() {
     this.appendValueInput('value')
       .appendField('Set Process Variable')
       .appendField(new Blockly.FieldTextInput('variableName'), 'name')
@@ -908,13 +908,13 @@ Blocks['proceed_variables_set'] = {
     this.setInputsInline(true);
     this.setTooltip('');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setColour(295);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
   },
 };
 
-javascriptGenerator.forBlock['proceed_variables_set'] = function (block) {
+javascriptGenerator.forBlock['proceed_variables_set'] = function(block) {
   const variableName = block.getFieldValue('name');
   const variableValue = javascriptGenerator.valueToCode(
     block,
@@ -938,7 +938,7 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
   } as const satisfies Record<ProcessVariable['dataType'], string>;
 
   Blocks['proceed_variables_get'] = {
-    init: function () {
+    init: function() {
       this.appendDummyInput()
         .appendField('Process Variable')
         .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name');
@@ -946,9 +946,9 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
       this.setOutput(true, null);
       this.setTooltip('Returns value for selected variable');
       this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-      this.setColour('%{BKY_VARIABLES_HUE}');
+      this.setColour(295);
     },
-    onchange: function () {
+    onchange: function() {
       const varName = this.getFieldValue('name');
       const variable = variables.find((v) => v.name === varName);
 
@@ -961,7 +961,7 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
   };
 
   Blocks['proceed_variables_set'] = {
-    init: function () {
+    init: function() {
       this.appendValueInput('value')
         .appendField('Set Process Variable')
         .appendField(new Blockly.FieldDropdown(variables.map((v) => [v.name, v.name])), 'name')
@@ -969,11 +969,11 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
       this.setInputsInline(true);
       this.setTooltip('');
       this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-      this.setColour('%{BKY_VARIABLES_HUE}');
+      this.setColour(295);
       this.setPreviousStatement(true);
       this.setNextStatement(true);
     },
-    onchange: function () {
+    onchange: function() {
       const input = this.getInput('value');
 
       const varName = this.getFieldValue('name');
@@ -989,16 +989,16 @@ export const regenerateProcessVariableBlocks = (variables: ProcessVariable[]) =>
 };
 
 Blocks['proceed_variables_get_all'] = {
-  init: function () {
+  init: function() {
     this.appendDummyInput().appendField('Get all Process Variables');
     this.setOutput(true, 'OBJECT');
     this.setTooltip('Returns an object containing all process variables and values');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setColour(295);
   },
 };
 
-javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
+javascriptGenerator.forBlock['proceed_variables_get_all'] = function(_) {
   return ['variable.getAll()', BlocklyJavaScript.Order.NONE];
 };
 
@@ -1007,7 +1007,7 @@ javascriptGenerator.forBlock['proceed_variables_get_all'] = function (_) {
 // --------------------------------------------
 
 Blocks['proceed_global_get'] = {
-  init: function () {
+  init: function() {
     this.appendDummyInput()
       .appendField('Get')
       .appendField(
@@ -1021,11 +1021,11 @@ Blocks['proceed_global_get'] = {
     this.setOutput(true, 'String');
     this.setTooltip('Returns value for selected variable');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setColour(350);
   },
 };
 
-javascriptGenerator.forBlock['proceed_global_get'] = function (block) {
+javascriptGenerator.forBlock['proceed_global_get'] = function(block) {
   const target = block.getFieldValue('target');
   const path = block.getFieldValue('path');
   const code = `variable.get("@${target}.${path}")`;
@@ -1033,7 +1033,7 @@ javascriptGenerator.forBlock['proceed_global_get'] = function (block) {
 };
 
 Blocks['proceed_global_set'] = {
-  init: function () {
+  init: function() {
     const input = this.appendValueInput('value')
       .appendField('Set')
       .appendField(
@@ -1049,13 +1049,13 @@ Blocks['proceed_global_set'] = {
     this.setInputsInline(true);
     this.setTooltip('');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
-    this.setColour('%{BKY_VARIABLES_HUE}');
+    this.setColour(350);
     this.setPreviousStatement(true);
     this.setNextStatement(true);
   },
 };
 
-javascriptGenerator.forBlock['proceed_global_set'] = function (block) {
+javascriptGenerator.forBlock['proceed_global_set'] = function(block) {
   const target = block.getFieldValue('target');
   const path = block.getFieldValue('path');
   const variableValue = javascriptGenerator.valueToCode(
@@ -1076,7 +1076,7 @@ for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
   const lowerCaseLevel = level.toLowerCase();
   const blockName = `log_${lowerCaseLevel}`;
   Blocks[blockName] = {
-    init: function (this: Blockly.Block) {
+    init: function(this: Blockly.Block) {
       this.jsonInit({
         message0: `${level} log %1`,
         args0: [
@@ -1094,7 +1094,7 @@ for (const level of ['Trace', 'Debug', 'Info', 'Warn', 'Error']) {
     },
   };
 
-  javascriptGenerator.forBlock[blockName] = function (block) {
+  javascriptGenerator.forBlock[blockName] = function(block) {
     const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
     return `log.${lowerCaseLevel}(${value});\n`;
   };
@@ -1108,7 +1108,7 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
   const lowerCaseLevel = level.toLowerCase();
   const blockName = `console_${lowerCaseLevel}`;
   Blocks[blockName] = {
-    init: function (this: Blockly.Block) {
+    init: function(this: Blockly.Block) {
       this.jsonInit({
         message0: `Console ${level} %1`,
         args0: [
@@ -1127,7 +1127,7 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
     },
   };
 
-  javascriptGenerator.forBlock[blockName] = function (block) {
+  javascriptGenerator.forBlock[blockName] = function(block) {
     const value = javascriptGenerator.valueToCode(block, 'value', BlocklyJavaScript.Order.ATOMIC);
     return `console.${lowerCaseLevel}(${value});\n`;
   };
@@ -1138,7 +1138,7 @@ for (const level of ['Log', 'Trace', 'Debug', 'Info', 'Warn', 'Error', 'Time', '
 // --------------------------------------------
 
 Blocks['wait'] = {
-  init: function (this: Blockly.Block) {
+  init: function(this: Blockly.Block) {
     this.jsonInit({
       message0: 'Wait %1 ms\n',
       args0: [
@@ -1159,7 +1159,7 @@ Blocks['wait'] = {
   },
 };
 
-javascriptGenerator.forBlock['wait'] = function (block) {
+javascriptGenerator.forBlock['wait'] = function(block) {
   const delay =
     javascriptGenerator.valueToCode(block, 'delay', BlocklyJavaScript.Order.ATOMIC) || 0;
 
@@ -1199,7 +1199,7 @@ javascriptGenerator.forBlock['wait'] = function (block) {
 // --------------------------------------------
 
 Blocks['throw_error'] = {
-  init: function () {
+  init: function() {
     this.jsonInit({
       type: 'throw_block',
       message0: 'Throw %1\n',
@@ -1238,7 +1238,7 @@ Blocks['throw_error'] = {
   },
 };
 
-javascriptGenerator.forBlock['throw_error'] = function (block) {
+javascriptGenerator.forBlock['throw_error'] = function(block) {
   const errorType = block.getFieldValue('name');
   const reference =
     javascriptGenerator.valueToCode(block, 'reference', BlocklyJavaScript.Order.COMMA) ||
@@ -1287,7 +1287,7 @@ for (const method of ['Get', 'Post', 'Put', 'Delete']) {
   }
 
   Blocks[methodName] = {
-    init: function () {
+    init: function() {
       this.jsonInit({
         type: methodName,
         message0: `${method} url %1\n${hasBody ? 'Body %3\nContent Type %4\n' : ''}Options %2`,
@@ -1300,7 +1300,7 @@ for (const method of ['Get', 'Post', 'Put', 'Delete']) {
     },
   };
 
-  javascriptGenerator.forBlock[methodName] = function (block) {
+  javascriptGenerator.forBlock[methodName] = function(block) {
     const url = javascriptGenerator.valueToCode(block, 'url', BlocklyJavaScript.Order.COMMA) || '';
     const options =
       javascriptGenerator.valueToCode(block, 'options', BlocklyJavaScript.Order.COMMA) ||

@@ -42,6 +42,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
     setLocalOpen(false);
     onOpenChange(false);
   };
+  console.log(record);
 
   return (
     <div
@@ -70,7 +71,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Edit',
-              disabled: !isChangeable,
+              disabled: isChangeable ? false : !record?.origin,
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onEdit);

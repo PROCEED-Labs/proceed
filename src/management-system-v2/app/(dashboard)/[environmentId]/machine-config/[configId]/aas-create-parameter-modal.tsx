@@ -547,7 +547,8 @@ const ParameterInputs = ({
   };
   // determine if transformation type should be disabled
   const isTransformationDisabled = formValueTemplateSource !== 'none';
-  const isAdminLocked = initialData?.[index]?.origin === 'admin';
+
+  const isAdminLocked = initialData?.[index]?.origin ? true : false;
   return (
     <Row gutter={16}>
       <Col span={12}>

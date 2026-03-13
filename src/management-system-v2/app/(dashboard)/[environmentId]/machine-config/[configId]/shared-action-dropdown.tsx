@@ -42,7 +42,6 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
     setLocalOpen(false);
     onOpenChange(false);
   };
-  console.log(record);
 
   return (
     <div

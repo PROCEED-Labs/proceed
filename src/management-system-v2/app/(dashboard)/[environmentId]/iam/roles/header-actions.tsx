@@ -79,9 +79,8 @@ const CreateRoleModal: FC<{
               <Tooltip
                 title={
                   <>
-                    Team: assign this role to users as their team. <br />
-                    Back Office: assign this role to users as their back office support. <br />A
-                    role can be both.
+                    Link this role to specific departments or teams. This ensures people can find
+                    the right role when updating user profiles or assigning tasks.
                   </>
                 }
               >

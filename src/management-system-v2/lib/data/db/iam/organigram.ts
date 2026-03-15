@@ -12,6 +12,8 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
       where: { userId_environmentId: { userId: input.userId, environmentId: input.environmentId } },
       data: {
         directManagerId: input.directManagerId ?? null,
+        teamRoleId: input.teamRoleId ?? null,
+        backOfficeRoleId: input.backOfficeRoleId ?? null,
       },
     });
   }
@@ -22,6 +24,8 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
       userId: input.userId,
       environmentId: input.environmentId,
       directManagerId: input.directManagerId ?? null,
+      teamRoleId: input.teamRoleId ?? null,
+      backOfficeRoleId: input.backOfficeRoleId ?? null,
     },
   });
 }

@@ -221,14 +221,16 @@ export async function createUserAndAddToOrganization(
         );
       }
 
-      // Store directManagerId in organigram
-      if (directManagerId) {
+      // Store organigram with all three reference fields
+      if (teamRoleId || backOfficeRoleId || directManagerId) {
         await tx.userOrganigram.create({
           data: {
             id: v4(),
             userId: user.id,
             environmentId: organizationId,
             directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
           },
         });
       }
@@ -312,7 +314,7 @@ export async function updateUserByAdmin(
         );
       }
 
-      // Upsert directManagerId in organigram
+      // Upsert organigram with all three reference fields
       const existing = await tx.userOrganigram.findUnique({
         where: { userId_environmentId: { userId, environmentId: organizationId } },
       });
@@ -322,15 +324,19 @@ export async function updateUserByAdmin(
           where: { userId_environmentId: { userId, environmentId: organizationId } },
           data: {
             directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
           },
         });
-      } else if (directManagerId) {
+      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
         await tx.userOrganigram.create({
           data: {
             id: v4(),
             userId,
             environmentId: organizationId,
             directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
           },
         });
       }

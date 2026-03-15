@@ -6,7 +6,13 @@ import { useQuery } from '@tanstack/react-query';
 import { getSpaceUsers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
 
-export function OrganigramFields({ spaceId }: { spaceId: string }) {
+export function OrganigramFields({
+  spaceId,
+  excludeUserId,
+}: {
+  spaceId: string;
+  excludeUserId?: string;
+}) {
   const { roles: teamRoles } = useOrganizationRoles(spaceId, 'team');
   const { roles: backOfficeRoles } = useOrganizationRoles(spaceId, 'back-office');
 
@@ -18,6 +24,9 @@ export function OrganigramFields({ spaceId }: { spaceId: string }) {
       return result;
     },
   });
+
+  // Filter out the current user from direct manager dropdown
+  const filteredUsers = (spaceUsers ?? []).filter((u) => u.id !== excludeUserId);
 
   return (
     <>
@@ -38,7 +47,7 @@ export function OrganigramFields({ spaceId }: { spaceId: string }) {
         <Select
           allowClear
           placeholder="Select direct manager"
-          options={(spaceUsers ?? []).map((u) => ({
+          options={filteredUsers.map((u) => ({
             label: u.username ?? u.email ?? u.id,
             value: u.id,
           }))}

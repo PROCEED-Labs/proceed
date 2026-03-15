@@ -26,7 +26,7 @@ export function EditUserModal({
   const router = useRouter();
   const { spaceId } = useEnvironment();
 
-  // Fetch existing organigram data for this user
+  // Fetch existing organigram data; the source of truth for team, backOffice, manager
   const { data: organigram } = useQuery({
     queryKey: ['organigram', user?.id, spaceId],
     enabled: !!user?.id && open,
@@ -37,18 +37,18 @@ export function EditUserModal({
     },
   });
 
-  // Fetch current roles for this user
-  const userRoles = ((user as any)?.roles as { id: string; name: string; type: string }[]) ?? [];
+  // All user roles
+  const userRoles = ((user as any)?.roles as { id: string; name: string }[]) ?? [];
 
-  // Split current roles by type
-  const currentDefaultRoleIds = userRoles.filter((r) => r.type === 'default').map((r) => r.id);
-  const currentTeamRoleId = userRoles.find((r) => r.type === 'team')?.id;
-  const currentBackOfficeRoleId = userRoles.find((r) => r.type === 'back-office')?.id;
+  // Default roles = all assigned roles other than team and back-office from organigram
+  const currentDefaultRoleIds = userRoles
+    .filter((r) => r.id !== organigram?.teamRoleId && r.id !== organigram?.backOfficeRoleId)
+    .map((r) => r.id);
 
-  // For the default roles dropdown
-  const { roles: allDefaultRoles } = useOrganizationRoles(spaceId, 'default');
+  // All roles dropdown (no type filter)
+  const { roles: allRoles } = useOrganizationRoles(spaceId);
 
-  // Populate form when user or organigram data changes
+  // Populate form when user or organigram data loads
   useEffect(() => {
     if (open && user) {
       form.setFieldsValue({
@@ -56,9 +56,9 @@ export function EditUserModal({
         lastName: user.lastName?.value ?? '',
         username: user.username?.value ?? '',
         roles: currentDefaultRoleIds,
-        teamRoleId: currentTeamRoleId ?? undefined,
+        teamRoleId: organigram?.teamRoleId ?? undefined,
         directManagerId: organigram?.directManagerId ?? undefined,
-        backOfficeRoleId: currentBackOfficeRoleId ?? undefined,
+        backOfficeRoleId: organigram?.backOfficeRoleId ?? undefined,
       });
     }
   }, [open, user, organigram, form]);
@@ -120,11 +120,11 @@ export function EditUserModal({
             allowClear
             style={{ width: '100%' }}
             placeholder="Select roles"
-            options={(allDefaultRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
+            options={(allRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
           />
         </Form.Item>
         {/* Organigram Fields (Team, Direct Manager, Back Office) */}
-        <OrganigramFields spaceId={spaceId} />
+        <OrganigramFields spaceId={spaceId} excludeUserId={user?.id} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
           <Button onClick={handleClose}>Cancel</Button>
           <Button type="primary" htmlType="submit">

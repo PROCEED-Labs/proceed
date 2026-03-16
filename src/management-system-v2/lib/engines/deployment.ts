@@ -19,6 +19,7 @@ import { engineRequest } from './endpoints/index';
 import { asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
 import { UserFacingError } from '../user-error';
 import { toCustomUTCString } from '../helpers/timeHelper';
+import Ability from '../ability/abilityHelper';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
@@ -210,6 +211,7 @@ export async function deployProcess(
   spaceId: string,
   method: 'static' | 'dynamic',
   machines: Engine[],
+  ability?: Ability,
 ) {
   if (machines.length === 0) throw new UserFacingError('No machines available for deployment');
 
@@ -229,6 +231,7 @@ export async function deployProcess(
       },
     ],
     spaceId,
+    ability,
   );
 
   // when deploying the latest version as a test deployment make sure it contains version

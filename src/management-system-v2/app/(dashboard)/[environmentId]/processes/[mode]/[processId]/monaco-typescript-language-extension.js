@@ -18,13 +18,25 @@ class Variable {
   // TODO: jsdoc for these
   getWithLogs(): any;
 
-  getGlobal(name: string): any;
+  getProcess(name: string): any;
 
-  getAllGlobal(): any;
+  getAllProcess(): any;
 
-  getWithLogsGlobal(): any;
+  getWithLogsProcess(): any;
 
-  setGlobal(name: string, value: any);
+  setProcess(name: string, value: any);
+
+  setGlobal(varPath: string, value: any): void;
+
+  getGlobal(varPath: string);
+
+  getGlobalFull(varPath: string);
+
+  setGlobalOrg(varPath: string, value: any): void;
+
+  getGlobalOrg(varPath: string);
+
+  getGlobalOrgFull(varPath: string);
 }
 declare var variable: Variable;
 

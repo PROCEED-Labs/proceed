@@ -1,5 +1,5 @@
 import { Engine } from '@/lib/engines/machines';
-import { getExtendedEngines } from '@/lib/engines/server-actions';
+import { getUniqueEngines } from '@/lib/engines/server-actions';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Modal, Select, Skeleton } from 'antd';
 import { useEnvironment } from './auth-can';
@@ -19,12 +19,12 @@ const automaticDeployment = {
   isAutomaticDeployment: true,
 } as const;
 
-export const useExtendedEngines = (disabled = false) => {
+export const useUniqueEngines = (disabled = false) => {
   const environment = useEnvironment();
 
   const { data } = useQuery({
-    queryFn: async () => await getExtendedEngines(environment.spaceId),
-    queryKey: ['extended-engines', environment.spaceId],
+    queryFn: async () => await getUniqueEngines(environment.spaceId),
+    queryKey: ['unique-engines', environment.spaceId],
     enabled: !disabled,
   });
 
@@ -34,7 +34,7 @@ export const useExtendedEngines = (disabled = false) => {
   return [automaticDeployment, ...data];
 };
 
-type SelectableEngines = ReturnType<typeof useExtendedEngines>;
+type SelectableEngines = ReturnType<typeof useUniqueEngines>;
 
 export const EngineSelection: React.FC<{
   selectedEngineId?: string;
@@ -57,7 +57,7 @@ export const EngineSelection: React.FC<{
 };
 
 const EngineSelectionModal: React.FC<EngineSelectionProps> = ({ open, onSubmit, onClose }) => {
-  const engines = useExtendedEngines();
+  const engines = useUniqueEngines();
 
   const [selectedId, setSelectedId] = useState(automaticDeploymentId);
   const [loading, setLoading] = useState(false);

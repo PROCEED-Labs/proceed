@@ -77,7 +77,7 @@ export async function getCorrectTargetEngines(
   return engines;
 }
 
-export async function getExtendedEngines(spaceId: string) {
+export async function getUniqueEngines(spaceId: string) {
   const engines = await getCorrectTargetEngines(spaceId);
 
   let extendedEngines = await asyncMap(engines, async (engine) => {

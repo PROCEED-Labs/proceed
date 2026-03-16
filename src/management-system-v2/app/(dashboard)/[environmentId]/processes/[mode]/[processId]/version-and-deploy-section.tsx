@@ -25,7 +25,7 @@ import VersionCreationButton from '@/components/version-creation-button';
 import EngineSelectionModal, {
   EngineSelection,
   automaticDeploymentId,
-  useExtendedEngines,
+  useUniqueEngines,
 } from '@/components/engine-selection';
 import { use, useMemo, useState } from 'react';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -386,7 +386,7 @@ export const VersionAndEngineSelectionModal: React.FC<{
 }> = ({ show, onOk, onClose, processId }) => {
   const environment = useEnvironment();
 
-  const engines = useExtendedEngines();
+  const engines = useUniqueEngines();
 
   const [selectedEngineId, setSelectedEngineId] = useState<string>(automaticDeploymentId);
 

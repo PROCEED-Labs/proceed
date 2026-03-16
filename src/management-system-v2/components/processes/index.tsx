@@ -93,7 +93,7 @@ import {
 } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
 import { EnvVarsContext } from '../env-vars-context';
 import EngineSelection from '../engine-selection';
-import StartFormModal from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/start-form-modal';
+import StartFormModal from '@/components/start-form-modal';
 
 // TODO: improve ordering
 export type ProcessActions = {

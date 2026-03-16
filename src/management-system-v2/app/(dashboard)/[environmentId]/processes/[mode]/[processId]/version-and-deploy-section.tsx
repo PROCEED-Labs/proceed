@@ -41,7 +41,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { deployProcess } from '@/lib/engines/server-actions';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import StartFormModal from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/start-form-modal';
+import StartFormModal from '@/components/start-form-modal';
 import {
   getElementsByTagName,
   getStartFormFileNameMapping,
@@ -51,7 +51,6 @@ import useProcessVariables from './use-process-variables';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useQuery } from '@tanstack/react-query';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { setSelected } from 'blockly/core/common';
 import BPMNCanvas from '@/components/bpmn-canvas';
 
 export const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 import { Modal } from 'antd';
-import { UserTaskForm } from '../../../tasklist/user-task-view';
+import { UserTaskForm } from '@/components/user-task-view';
 import { ProcessVariable } from '@/lib/process-variable-schema';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
@@ -27,7 +27,7 @@ const StartFormModal: React.FC<StartFormModalProps> = ({
       (variableDefinitions || [])
         .filter((variable) => variable.defaultValue !== undefined)
         .map((variable) => {
-          let value: string | number | boolean | undefined = variable.defaultValue;
+          let value: string | number | boolean | object | any[] | undefined = variable.defaultValue;
 
           if (value) {
             // transform from the string representation of the default value to the type defined for
@@ -38,6 +38,12 @@ const StartFormModal: React.FC<StartFormModalProps> = ({
                 break;
               case 'boolean':
                 value = value === 'true' ? true : false;
+                break;
+              case 'object':
+              case 'array':
+                // TODO: we assume that the value is a valid JSON string; maybe add a check to prevent
+                // unhandled errors here
+                value = JSON.stringify(value);
                 break;
             }
           }

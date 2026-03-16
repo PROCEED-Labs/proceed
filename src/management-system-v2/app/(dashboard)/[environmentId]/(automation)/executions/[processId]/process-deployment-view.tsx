@@ -30,9 +30,8 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
-import StartFormModal from './start-form-modal';
+import StartFormModal from '@/components/start-form-modal';
 import useInstanceVariables from './use-instance-variables';
-import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export default function ProcessDeploymentView({
   processId,

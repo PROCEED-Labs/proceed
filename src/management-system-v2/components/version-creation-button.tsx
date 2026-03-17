@@ -49,38 +49,6 @@ function useVersioningModal(processId: string, show: boolean, form: FormInstance
   return { ...useCanSubmit(form, validator), unchangedVersion };
 }
 
-const VersioningBaseFields: React.FC<{
-  unchangedVersion?: UnchangedVersion;
-  form: FormInstance;
-}> = ({ unchangedVersion, form }) => {
-  useEffect(() => {
-    form.setFieldValue('versionName', unchangedVersion?.name || '');
-    form.setFieldValue('versionDescription', unchangedVersion?.description || '');
-  }, [unchangedVersion, form]);
-
-  return (
-    <>
-      <Form.Item
-        name="versionName"
-        rules={[{ required: true, message: 'Please input the Version Name!' }]}
-      >
-        <Input placeholder="Version Name" />
-      </Form.Item>
-      <Form.Item
-        name="versionDescription"
-        rules={[{ required: true, message: 'Please input the Version Description!' }]}
-      >
-        <Input.TextArea
-          showCount
-          maxLength={150}
-          style={{ height: 100 }}
-          placeholder="Version Description"
-        />
-      </Form.Item>
-    </>
-  );
-};
-
 const unchangedError = 'No changes from previous version';
 
 type VersionAndDeployModalProps = {
@@ -117,6 +85,11 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
     if (!loading) close();
     form.resetFields();
   };
+
+  useEffect(() => {
+    form.setFieldValue('versionName', unchangedVersion?.name || '');
+    form.setFieldValue('versionDescription', unchangedVersion?.description || '');
+  }, [unchangedVersion, form]);
 
   // we can deploy when the only thing preventing from submitting is that the version information has not changed and when deploying is enabled
   const deployable = (versionable || (completelyUnchanged && errors.length === 1)) && isDeployable;
@@ -178,7 +151,23 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
         autoComplete="off"
         layout="vertical"
       >
-        <VersioningBaseFields unchangedVersion={unchangedVersion} form={form} />
+        <Form.Item
+          name="versionName"
+          rules={[{ required: true, message: 'Please input the Version Name!' }]}
+        >
+          <Input placeholder="Version Name" />
+        </Form.Item>
+        <Form.Item
+          name="versionDescription"
+          rules={[{ required: true, message: 'Please input the Version Description!' }]}
+        >
+          <Input.TextArea
+            showCount
+            maxLength={150}
+            style={{ height: 100 }}
+            placeholder="Version Description"
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );

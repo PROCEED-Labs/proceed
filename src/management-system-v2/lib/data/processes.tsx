@@ -561,7 +561,7 @@ export const copyProcesses = async (
 /**
  * Function that checks if a process' latest version is unchanged from the version it is based on
  *
- * @returns if unchanged the version id of the based on version is returned otherwise undefined is
+ * @returns if unchanged, the version id of the based on version is returned, otherwise undefined is
  * returned
  **/
 export const processUnchangedFromBasedOnVersion = async (processId: string, spaceId: string) => {

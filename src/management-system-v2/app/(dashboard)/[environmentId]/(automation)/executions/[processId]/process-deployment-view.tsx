@@ -116,7 +116,7 @@ export default function ProcessDeploymentView({
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
-  const { variableDefinitions, variables } = useInstanceVariables({
+  const { variableDefinitions } = useInstanceVariables({
     process: deploymentInfo,
     version: currentVersion,
   });

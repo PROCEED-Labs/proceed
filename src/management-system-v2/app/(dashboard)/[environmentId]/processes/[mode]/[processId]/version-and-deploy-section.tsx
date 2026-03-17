@@ -6,7 +6,6 @@ import {
   Divider,
   Modal,
   Select,
-  SelectProps,
   Skeleton,
   Space,
   Tooltip,
@@ -55,11 +54,7 @@ type VersionAndDeployProps = {
   process: Process;
 };
 
-export function useVersionAndDeploy(
-  processId: string | undefined,
-  isExecutable: boolean,
-  afterCreateVersion?: () => Promise<void>,
-) {
+export function useVersionAndDeploy(processId: string | undefined, isExecutable: boolean) {
   const router = useRouter();
   const environment = useEnvironment();
 
@@ -87,8 +82,6 @@ export function useVersionAndDeploy(
         processId,
         environment.spaceId,
       );
-
-      await afterCreateVersion?.();
 
       if (isUserErrorResponse(newVersion)) throw new Error();
 
@@ -148,11 +141,12 @@ export function useVersionAndDeploy(
 
 const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
   const processId = process.id;
-  const router = useRouter();
   const query = useSearchParams();
   const environment = useEnvironment();
 
-  const { isListView, processContextPath } = useProcessView();
+  const router = useRouter();
+
+  const { isListView } = useProcessView();
   const showMobileView = useMobileModeler();
 
   const modeler = useModelerStateStore((state) => state.modeler);
@@ -166,27 +160,9 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
     process.versions.find((version) => version.id === (selectedVersionId ?? '-1')) ??
     LATEST_VERSION;
 
-  const filterOption: SelectProps['filterOption'] = (input, option) =>
-    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
-
-  const beforeVersioning = async () => {
-    // Ensure latest BPMN on server.
-    const xml = (await modeler?.getXML()) as string;
-    if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
-      throw new Error();
-  };
-
   const { handleVersionCreation, handleStartInstance, canDeploy } = useVersionAndDeploy(
     process.id,
     isExecutable,
-    async () => {
-      // reimport the new version since the backend has added versionBasedOn information that would
-      // be overwritten by following changes
-      const newBpmn = await getProcessBPMN(processId, environment.spaceId);
-      if (newBpmn && typeof newBpmn === 'string') {
-        await modeler?.loadBPMN(newBpmn);
-      }
-    },
   );
 
   const { message } = App.useApp();
@@ -220,41 +196,28 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
 
   return (
     <>
-      <Select
-        popupMatchSelectWidth={false}
-        placeholder="Select Version"
-        showSearch={{ filterOption }}
-        variant="borderless"
-        value={selectedVersion.id}
-        onChange={(value) => {
-          // change the version info in the query but keep other info (e.g. the currently open subprocess)
-          const searchParams = new URLSearchParams(query);
-          if (!value || value === '-1') searchParams.delete('version');
-          else searchParams.set(`version`, `${value}`);
-          router.push(
-            spaceURL(
-              environment,
-              `/processes${processContextPath}/${processId as string}${
-                searchParams.size ? '?' + searchParams.toString() : ''
-              }`,
-            ),
-          );
-        }}
-        options={(isListView ? [] : [LATEST_VERSION])
-          .concat(process.versions ?? [])
-          .map(({ id, name }) => ({
-            value: id,
-            label: name,
-          }))}
-      />
       {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
         <Tooltip title="Release a new Version of the Process">
           <VersionCreationButton
             processId={processId}
             icon={<PlusOutlined />}
             close={async (values, deploy) => {
-              await beforeVersioning();
-              await handleVersionCreation(processId, values, deploy);
+              // Ensure latest BPMN on server.
+              const xml = (await modeler?.getXML()) as string;
+              if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
+                throw new Error();
+
+              try {
+                await handleVersionCreation(processId, values, deploy);
+              } finally {
+                // reimport the new version since the backend has added versionBasedOn information that would
+                // be overwritten by following changes
+                const newBpmn = await getProcessBPMN(processId, environment.spaceId);
+                if (newBpmn && typeof newBpmn === 'string') {
+                  await modeler?.loadBPMN(newBpmn);
+                }
+                router.refresh();
+              }
             }}
             disabled={isListView}
             isDeployable={canDeploy}

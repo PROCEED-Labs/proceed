@@ -1,6 +1,6 @@
 import { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { Tooltip, Button, Space, Divider, Select } from 'antd';
+import { Tooltip, Button, Space, Divider, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
@@ -16,7 +16,7 @@ import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useMobileModeler from '@/lib/useMobileModeler';
 import { updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
@@ -40,6 +40,7 @@ import { ScriptTaskEditorEnvironment } from './script-task-editor/script-task-ed
 import { Folder } from '@/lib/data/folder-schema';
 
 import VersionAndDeploy, { LATEST_VERSION } from './version-and-deploy-section';
+import { spaceURL } from '@/lib/utils';
 
 type ModelerToolbarProps = {
   process: Process;
@@ -59,6 +60,8 @@ const ModelerToolbar = ({
 
   const environment = useEnvironment();
   const env = use(EnvVarsContext);
+
+  const router = useRouter();
 
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
 
@@ -106,7 +109,7 @@ const ModelerToolbar = ({
   const query = useSearchParams();
   const subprocessId = query.get('subprocess');
 
-  const { isListView } = useProcessView();
+  const { isListView, processContextPath } = useProcessView();
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const isExecutable = useModelerStateStore((state) => state.isExecutable);
@@ -211,6 +214,9 @@ const ModelerToolbar = ({
     }
   };
 
+  const filterOption: SelectProps['filterOption'] = (input, option) =>
+    ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
+
   const selectedVersion =
     process.versions.find((version) => version.id === (selectedVersionId ?? '-1')) ??
     LATEST_VERSION;
@@ -240,6 +246,37 @@ const ModelerToolbar = ({
           }}
         >
           <ToolbarGroup>
+            <Select
+              popupMatchSelectWidth={false}
+              placeholder="Select Version"
+              showSearch={{ filterOption }}
+              variant="borderless"
+              value={selectedVersion.id}
+              onChange={(value) => {
+                // change the version info in the query but keep other info (e.g. the currently open subprocess)
+                const searchParams = new URLSearchParams(query);
+                if (!value || value === '-1') searchParams.delete('version');
+                else searchParams.set(`version`, `${value}`);
+                router.push(
+                  spaceURL(
+                    environment,
+                    `/processes${processContextPath}/${processId as string}${
+                      searchParams.size ? '?' + searchParams.toString() : ''
+                    }`,
+                  ),
+                );
+              }}
+              options={(isListView ? [] : [LATEST_VERSION])
+                .concat(
+                  (process.versions ?? []).sort((a, b) => {
+                    return b.createdOn.getTime() - a.createdOn.getTime();
+                  }),
+                )
+                .map(({ id, name }) => ({
+                  value: id,
+                  label: name,
+                }))}
+            />
             <VersionAndDeploy process={process} />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>

@@ -621,7 +621,7 @@ const Processes = ({
                                       processId={selectedRowElements[0].id}
                                       type="text"
                                       icon={<BsFileEarmarkCheck />}
-                                      createVersion={async (values, deploy) => {
+                                      close={async (values, deploy) => {
                                         await handleVersionCreation(
                                           selectedRowElements[0].id,
                                           values,

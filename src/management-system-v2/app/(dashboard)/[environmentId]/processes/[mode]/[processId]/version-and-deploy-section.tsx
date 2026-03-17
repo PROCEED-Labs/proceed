@@ -102,8 +102,8 @@ export function useVersionAndDeploy(
     return {
       canDeploy,
       handleVersionCreation,
-      handleDeploy: async () => { },
-      handleStartInstance: async () => { },
+      handleDeploy: async () => {},
+      handleStartInstance: async () => {},
     };
   }
 
@@ -234,7 +234,8 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
+              `/processes${processContextPath}/${processId as string}${
+                searchParams.size ? '?' + searchParams.toString() : ''
               }`,
             ),
           );
@@ -251,7 +252,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           <VersionCreationButton
             processId={processId}
             icon={<PlusOutlined />}
-            createVersion={async (values, deploy) => {
+            close={async (values, deploy) => {
               await beforeVersioning();
               await handleVersionCreation(processId, values, deploy);
             }}

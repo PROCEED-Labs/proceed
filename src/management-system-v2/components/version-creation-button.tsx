@@ -9,12 +9,14 @@ import { getUnchangedVersionInfo } from '@/lib/data/processes';
 import { isUserErrorResponse } from '@/lib/user-error';
 import useCanSubmit, { ValidationError } from '@/lib/use-can-submit-form';
 
-type UnchangedVersion = { id: string; name: string; description: string };
-
 function useVersioningModal(processId: string, show: boolean, form: FormInstance) {
   const { spaceId } = useEnvironment();
 
-  const [unchangedVersion, setUnchangedVersion] = useState<UnchangedVersion>();
+  const [unchangedVersion, setUnchangedVersion] = useState<{
+    id: string;
+    name: string;
+    description: string;
+  }>();
 
   const validator = useCallback(() => {
     const name = form.getFieldValue('versionName');
@@ -51,16 +53,20 @@ function useVersioningModal(processId: string, show: boolean, form: FormInstance
 
 const unchangedError = 'No changes from previous version';
 
-type VersionAndDeployModalProps = {
+type VersionCreationButtonProps = ButtonProps & {
   processId: string;
-  show: boolean;
   close: (
     values?: { versionName: string; versionDescription: string },
     deploy?: boolean | string,
-  ) => void;
-  loading?: boolean;
+  ) => Promise<void> | void;
   isDeployable?: boolean;
 };
+
+type VersionAndDeployModalProps = VersionCreationButtonProps & {
+  show: boolean;
+  loading?: boolean;
+};
+
 export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
   processId,
   show,
@@ -82,10 +88,13 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
   );
 
   const handleClose = async () => {
-    if (!loading) close();
-    form.resetFields();
+    if (!loading) {
+      close();
+      form.resetFields();
+    }
   };
 
+  // reset fields when the initial info changes
   useEffect(() => {
     form.setFieldValue('versionName', unchangedVersion?.name || '');
     form.setFieldValue('versionDescription', unchangedVersion?.description || '');
@@ -94,48 +103,43 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
   // we can deploy when the only thing preventing from submitting is that the version information has not changed and when deploying is enabled
   const deployable = (versionable || (completelyUnchanged && errors.length === 1)) && isDeployable;
 
-  const footerButtons = [
-    <Button key="cancel" disabled={loading} onClick={handleClose}>
-      Cancel
-    </Button>,
-    <Tooltip key="submit" title={!!errors.length && errors[0] && errors[0].errors[0]}>
-      <Button
-        type="primary"
-        htmlType="submit"
-        loading={loading}
-        disabled={!versionable}
-        onClick={() => close(values, false)}
-      >
-        Release Version
-      </Button>
-    </Tooltip>,
-  ];
-
-  if (isDeployable) {
-    footerButtons.push(
-      <Tooltip key="version_and_deploy">
-        <Button
-          key="version_and_deploy"
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          disabled={!deployable}
-          onClick={() =>
-            completelyUnchanged ? close(undefined, unchangedVersion!.id) : close(values, true)
-          }
-        >
-          {completelyUnchanged ? 'Deploy' : 'Release and Deploy'}
-        </Button>
-      </Tooltip>,
-    );
-  }
-
   return (
     <Modal
       title="Release a new Process Version"
       open={show}
       onCancel={handleClose}
-      footer={footerButtons}
+      footer={[
+        <Button key="cancel" disabled={loading} onClick={handleClose}>
+          Cancel
+        </Button>,
+        <Tooltip key="submit" title={!!errors.length && errors[0] && errors[0].errors[0]}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            disabled={!versionable}
+            onClick={() => close(values, false)}
+          >
+            Release Version
+          </Button>
+        </Tooltip>,
+        !!isDeployable && (
+          <Tooltip key="version_and_deploy">
+            <Button
+              key="version_and_deploy"
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              disabled={!deployable}
+              onClick={() =>
+                completelyUnchanged ? close(undefined, unchangedVersion!.id) : close(values, true)
+              }
+            >
+              {completelyUnchanged ? 'Deploy' : 'Release and Deploy'}
+            </Button>
+          </Tooltip>
+        ),
+      ]}
     >
       {!!completelyUnchanged && (
         <Alert
@@ -167,23 +171,15 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
   );
 };
 
-type VersionCreationButtonProps = ButtonProps & {
-  processId: string;
-  createVersion: (
-    values?: { versionName: string; versionDescription: string },
-    deploy?: boolean | string,
-  ) => any;
-  isDeployable?: boolean;
-};
 const VersionAndDeployButton = forwardRef<HTMLAnchorElement, VersionCreationButtonProps>(
-  ({ processId, createVersion, isDeployable, ...props }, ref) => {
+  ({ processId, close, isDeployable, ...props }, ref) => {
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit: VersionAndDeployModalProps['close'] = async (values, deploy) => {
       if (values || deploy) {
         setLoading(true);
-        await createVersion(values, deploy);
+        await close(values, deploy);
         setLoading(false);
       }
 

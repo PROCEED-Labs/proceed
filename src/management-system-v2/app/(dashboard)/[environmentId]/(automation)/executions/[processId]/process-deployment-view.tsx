@@ -12,6 +12,7 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -34,6 +35,11 @@ import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
+// TODO: implement this function — should activate/deactivate timer start events for the process
+async function toggleProcessActivation(versionId: string, activate: boolean): Promise<void> {
+  // placeholder — wire up your real API call here
+}
+
 export default function ProcessDeploymentView({
   processId,
   initialDeploymentInfo,
@@ -50,6 +56,8 @@ export default function ProcessDeploymentView({
   const [resumingInstance, setResumingInstance] = useState(false);
   const [pausingInstance, setPausingInstance] = useState(false);
   const [stoppingInstance, setStoppingInstance] = useState(false);
+  const [togglingActivation, setTogglingActivation] = useState(false);
+  const [isProcessActivated, setIsProcessActivated] = useState(false);
 
   const [startForm, setStartForm] = useState('');
 
@@ -74,18 +82,25 @@ export default function ProcessDeploymentView({
     instanceIsRunning,
     instanceIsPausing,
     instanceIsPaused,
+    hasTimerStartEvents,
   } = useMemo(() => {
     let selectedVersion, instances, selectedInstance, currentVersion;
     let instanceIsRunning = false;
     let instanceIsPausing = false;
     let instanceIsPaused = false;
+    let hasTimerStartEvents = false;
 
     const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
 
     if (deploymentInfo) {
       selectedVersion = deploymentInfo.versions.find((v) => v.versionId === selectedVersionId);
 
-      instances = getVersionInstances(deploymentInfo, selectedVersionId);
+      // sort instances newest first
+      const rawInstances = getVersionInstances(deploymentInfo, selectedVersionId);
+      instances = [...rawInstances].sort(
+        (a, b) => new Date(b.globalStartTime).getTime() - new Date(a.globalStartTime).getTime(),
+      );
+
       selectedInstance = selectedInstanceId
         ? instances.find((i) => i.processInstanceId === selectedInstanceId)
         : undefined;
@@ -104,6 +119,9 @@ export default function ProcessDeploymentView({
       currentVersion = deploymentInfo.versions.find(
         (version) => version.versionId === currentVersionId,
       );
+
+      // TODO: detect timer start events in the current version's BPMN may be call a function here
+      // hasTimerStartEvents = isimerStartEventExists(currentVersion)
     }
 
     return {
@@ -114,6 +132,7 @@ export default function ProcessDeploymentView({
       instanceIsRunning,
       instanceIsPausing,
       instanceIsPaused,
+      hasTimerStartEvents,
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
@@ -163,6 +182,7 @@ export default function ProcessDeploymentView({
               alignItems: 'start',
             }}
           >
+            {/* Left group: Select Instance + Filter + Color */}
             <ToolbarGroup>
               <Select
                 value={
@@ -178,44 +198,6 @@ export default function ProcessDeploymentView({
                 }))}
                 placeholder="Select an instance"
               />
-              <Tooltip title="Start new instance">
-                <Button
-                  icon={<PlusOutlined />}
-                  loading={startingInstance}
-                  onClick={async () => {
-                    setStartingInstance(true);
-                    await wrapServerCall({
-                      fn: async () => {
-                        const latestDeployment = getLatestDeployment(deploymentInfo);
-                        const versionId = latestDeployment.versionId;
-
-                        let startForm = await getStartForm(versionId);
-
-                        if (typeof startForm !== 'string') return startForm;
-
-                        if (startForm) {
-                          const mappedVariables = Object.fromEntries(
-                            variables
-                              .filter((variable) => variable.value !== undefined)
-                              .map((variable) => [variable.name, variable.value]),
-                          );
-                          startForm = inlineScript(startForm, '', '', variableDefinitions);
-                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
-
-                          setStartForm(startForm);
-                        } else {
-                          return startInstance(versionId);
-                        }
-                      },
-                      onSuccess: async (instanceId) => {
-                        await refetch();
-                        setSelectedInstanceId(instanceId);
-                      },
-                    });
-                    setStartingInstance(false);
-                  }}
-                />
-              </Tooltip>
 
               <Tooltip title="Filter by version">
                 <Dropdown
@@ -278,43 +260,119 @@ export default function ProcessDeploymentView({
               </Tooltip>
             </ToolbarGroup>
 
-            {selectedInstance && (
-              <ToolbarGroup>
+            {/* New middle group: Start + Activate/Deactivate */}
+            <ToolbarGroup>
+              <Tooltip title="Start new instance">
+                <Button
+                  icon={<PlusOutlined />}
+                  loading={startingInstance}
+                  onClick={async () => {
+                    setStartingInstance(true);
+                    await wrapServerCall({
+                      fn: async () => {
+                        const latestDeployment = getLatestDeployment(deploymentInfo);
+                        const versionId = latestDeployment.versionId;
+
+                        let startForm = await getStartForm(versionId);
+
+                        if (typeof startForm !== 'string') return startForm;
+
+                        if (startForm) {
+                          const mappedVariables = Object.fromEntries(
+                            variables
+                              .filter((variable) => variable.value !== undefined)
+                              .map((variable) => [variable.name, variable.value]),
+                          );
+                          startForm = inlineScript(startForm, '', '', variableDefinitions);
+                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
+
+                          setStartForm(startForm);
+                        } else {
+                          return startInstance(versionId);
+                        }
+                      },
+                      onSuccess: async (instanceId) => {
+                        await refetch();
+                        setSelectedInstanceId(instanceId);
+                      },
+                    });
+                    setStartingInstance(false);
+                  }}
+                />
+              </Tooltip>
+
+              {/* Activate/Deactivate button which is only shown when timer start events exist */}
+              {hasTimerStartEvents && (
                 <Tooltip
-                  title={instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'}
+                  title={
+                    isProcessActivated
+                      ? 'Deactivate process (stop automatic timer-triggered instances)'
+                      : 'Activate process (allow timer start events to create instances)'
+                  }
                 >
                   <Button
-                    className={styles.PlayIcon}
-                    icon={<CaretRightOutlined />}
-                    loading={resumingInstance}
-                    disabled={!instanceIsPausing && !instanceIsPaused}
+                    icon={<CheckOutlined />}
+                    loading={togglingActivation}
+                    type={isProcessActivated ? 'primary' : 'default'}
                     onClick={async () => {
-                      setResumingInstance(true);
+                      setTogglingActivation(true);
+                      const nextState = !isProcessActivated;
+                      const versionId = getLatestDeployment(deploymentInfo).versionId;
                       await wrapServerCall({
-                        fn: () => resumeInstance(selectedInstance.processInstanceId),
-                        onSuccess: async () => await refetch(),
+                        fn: () => toggleProcessActivation(versionId, nextState),
+                        onSuccess: async () => {
+                          setIsProcessActivated(nextState);
+                          await refetch();
+                        },
                       });
-                      setResumingInstance(false);
+                      setTogglingActivation(false);
                     }}
                   />
                 </Tooltip>
+              )}
+            </ToolbarGroup>
 
-                <Tooltip title="Pause the instance">
-                  <Button
-                    className={styles.PauseIcon}
-                    icon={<PauseOutlined />}
-                    loading={pausingInstance || instanceIsPausing}
-                    disabled={!instanceIsRunning || instanceIsPausing || instanceIsPaused}
-                    onClick={async () => {
-                      setPausingInstance(true);
-                      await wrapServerCall({
-                        fn: async () => pauseInstance(selectedInstance.processInstanceId),
-                        onSuccess: async () => await refetch(),
-                      });
-                      setPausingInstance(false);
-                    }}
-                  />
-                </Tooltip>
+            {/* 2-icon group: 1. Play shown when paused, Pause shown when running. 2. Stop button */}
+            {selectedInstance && (
+              <ToolbarGroup>
+                {instanceIsPaused || instanceIsPausing ? (
+                  // Show Resume (Play) when paused or pausing
+                  <Tooltip
+                    title={instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'}
+                  >
+                    <Button
+                      className={styles.PlayIcon}
+                      icon={<CaretRightOutlined />}
+                      loading={resumingInstance}
+                      onClick={async () => {
+                        setResumingInstance(true);
+                        await wrapServerCall({
+                          fn: () => resumeInstance(selectedInstance.processInstanceId),
+                          onSuccess: async () => await refetch(),
+                        });
+                        setResumingInstance(false);
+                      }}
+                    />
+                  </Tooltip>
+                ) : (
+                  // Show Pause when running (or any other non-paused state)
+                  <Tooltip title="Pause the instance">
+                    <Button
+                      className={styles.PauseIcon}
+                      icon={<PauseOutlined />}
+                      loading={pausingInstance}
+                      disabled={!instanceIsRunning}
+                      onClick={async () => {
+                        setPausingInstance(true);
+                        await wrapServerCall({
+                          fn: async () => pauseInstance(selectedInstance.processInstanceId),
+                          onSuccess: async () => await refetch(),
+                        });
+                        setPausingInstance(false);
+                      }}
+                    />
+                  </Tooltip>
+                )}
 
                 <Tooltip title="Stop the instance">
                   <Button

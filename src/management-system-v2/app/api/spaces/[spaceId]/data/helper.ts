@@ -4,11 +4,7 @@ import {
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { getMembers } from '@/lib/data/db/iam/memberships';
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
-import {
-  Parameter,
-  StoredParameter,
-  StoredVirtualParameter,
-} from '@/lib/data/machine-config-schema';
+import { Parameter, StoredParameter, StoredMetaParameter } from '@/lib/data/machine-config-schema';
 import { NextResponse } from 'next/server';
 import { validate as uuidValidate } from 'uuid';
 import { z } from 'zod';
@@ -69,7 +65,7 @@ export async function getDataObject(spaceId: string, dataObjectId: string, userI
 export async function parseAndGetChanges(rawBody: string, originalParameter: Parameter) {
   const schema = z.string().refine((s) => /^(?!.*\p{C}).+$/u.test(s), 'Binary data detected');
   const body = schema.parse(rawBody);
-  const parameterChanges: Partial<StoredParameter | StoredVirtualParameter> = {
+  const parameterChanges: Partial<StoredParameter | StoredMetaParameter> = {
     value: body,
     ...((originalParameter.transformation?.transformationType === 'linked' ||
       originalParameter.transformation?.transformationType === 'algorithm') && {

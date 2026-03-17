@@ -221,7 +221,7 @@ export const BaseParameterZod = z.object({
   hasChanges: z.boolean(),
 });
 
-const BaseVirtualParameterZod = z.object({
+const BaseMetaParameterZod = z.object({
   id: z.string(),
   name: z.string(),
   parameterType: z.enum(['meta', 'content', 'none']),
@@ -238,11 +238,11 @@ const BaseVirtualParameterZod = z.object({
 });
 
 export const ParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
-  subParameters: z.lazy(() => z.array(z.union([ParameterZod, VirtualParameterZod]))),
+  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
 });
 
-export const VirtualParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
-  subParameters: z.lazy(() => z.array(z.union([ParameterZod, VirtualParameterZod]))),
+export const MetaParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
+  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
 });
 
 export const ConfigZod = z.object({
@@ -254,7 +254,7 @@ export const ConfigZod = z.object({
   name: MetaAttributeZod,
   description: MetaAttributeZod,
   category: MetaAttributeZod,
-  content: z.array(z.union([ParameterZod, VirtualParameterZod])),
+  content: z.array(z.union([ParameterZod, MetaParameterZod])),
   folderId: z.string().optional(),
   latestVersionNumber: z.number().int().optional(),
   hasChanges: z.boolean(),
@@ -267,7 +267,7 @@ export const StoredParameterZod = BaseParameterZod.extend({
   parentType: z.enum(['config', 'parameter']),
 });
 
-export const StoredVirtualParameterZod = BaseVirtualParameterZod.extend({
+export const StoredMetaParameterZod = BaseMetaParameterZod.extend({
   subParameters: z.array(z.string()),
   parentId: z.string(),
   parentType: z.enum(['config', 'parameter']),
@@ -318,16 +318,16 @@ export type LinkedParameter = z.infer<typeof LinkedParameterZod>;
 export type ConfigMetadata = z.infer<typeof ConfigMetadataZod>;
 
 export type Parameter = z.infer<typeof BaseParameterZod> & {
-  subParameters: (Parameter | VirtualParameter)[];
+  subParameters: (Parameter | MetaParameter)[];
 };
 
-export type VirtualParameter = z.infer<typeof BaseVirtualParameterZod> & {
-  subParameters: (Parameter | VirtualParameter)[];
+export type MetaParameter = z.infer<typeof BaseMetaParameterZod> & {
+  subParameters: (Parameter | MetaParameter)[];
 };
 export type Config = Prettify<z.infer<typeof ConfigZod> & Metadata & NamelessVersionedObject>;
 
 export type StoredParameter = z.infer<typeof StoredParameterZod>;
-export type StoredVirtualParameter = z.infer<typeof StoredVirtualParameterZod>;
+export type StoredMetaParameter = z.infer<typeof StoredMetaParameterZod>;
 export type StoredConfig = Prettify<z.infer<typeof StoredConfigZod> & NamelessVersionedObject>;
 
 export type MachineVersionReference = z.infer<typeof MachineVersionReferenceZod>;

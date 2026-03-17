@@ -9,7 +9,7 @@ import {
   MetaAttribute,
   Parameter,
   ParameterTranformation,
-  VirtualParameter,
+  MetaParameter,
 } from '@/lib/data/machine-config-schema';
 import { v4 } from 'uuid';
 
@@ -60,7 +60,7 @@ export function defaultParameter(
   };
 }
 /**
- * Creates a parameter of type AasVirtualParameter.
+ * Creates a parameter of type MetaParameter.
  * @param name Name and key for the parameter.
  * @param displayName Display name(s) for the parameter. : AasLocalizedText[]
  * @param description Description(s) for the parameter. : AasLocalizedText[]
@@ -69,15 +69,15 @@ export function defaultParameter(
  * @param valueType (optional) Type of the parameters value.
  * @param unitRef (optional) Reference to the unit for the parameters value.
  */
-export function defaultVirtualParameter(
+export function defaultMetaParameter(
   name: string,
   displayName: LocalizedText[],
   description: LocalizedText[],
-  parameterType: VirtualParameter['parameterType'] = 'none',
-  valueTemplateSource: VirtualParameter['valueTemplateSource'],
+  parameterType: MetaParameter['parameterType'] = 'none',
+  valueTemplateSource: MetaParameter['valueTemplateSource'],
   valueType?: string,
   unitRef?: string,
-): VirtualParameter {
+): MetaParameter {
   return {
     id: v4(),
     // type: 'https://schema.org/' + (displayName?.[0]?.text ?? ''),
@@ -402,7 +402,7 @@ function createTdsTemplateHeader(): Parameter {
   };
 
   let newIdentifier: Parameter = {
-    ...defaultVirtualParameter(
+    ...defaultMetaParameter(
       'TDSIdentifier',
       [
         {
@@ -434,7 +434,7 @@ function createTdsTemplateHeader(): Parameter {
     ],
   };
   let newName = {
-    ...defaultVirtualParameter(
+    ...defaultMetaParameter(
       'Name',
       [
         {
@@ -463,7 +463,7 @@ function createTdsTemplateHeader(): Parameter {
     structureVisible: true,
   };
   let newDescription = {
-    ...defaultVirtualParameter(
+    ...defaultMetaParameter(
       'Description',
       [
         {
@@ -554,7 +554,7 @@ function createTdsTemplateHeader(): Parameter {
     structureVisible: true,
   };
   let newCategory = {
-    ...defaultVirtualParameter(
+    ...defaultMetaParameter(
       'Categories',
       [
         {
@@ -1919,7 +1919,7 @@ function parameterDataToQualifiers(parameter: Parameter) {
           {
             type: 'PROCEED-valueTemplateSource',
             valueType: 'xs:string',
-            value: (parameter as VirtualParameter).valueTemplateSource,
+            value: (parameter as MetaParameter).valueTemplateSource,
           },
         ]
       : []),

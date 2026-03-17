@@ -17,8 +17,8 @@ import {
   StoredConfigZod,
   StoredParameter,
   StoredParameterZod,
-  StoredVirtualParameter,
-  VirtualParameter,
+  StoredMetaParameter,
+  MetaParameter,
 } from '../machine-config-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
@@ -582,7 +582,7 @@ export async function setParentConfigVersionAsLatest(versionId: string) {
 
 export const updateBacklinks = async (
   idListFilter: (LinkedParameter | undefined)[],
-  field: Parameter | VirtualParameter | StoredParameter | StoredVirtualParameter,
+  field: Parameter | MetaParameter | StoredParameter | StoredMetaParameter,
   operation: 'remove' | 'add',
   parentConfigId: string,
 ) => {
@@ -671,9 +671,9 @@ export async function addParameter(
         if (
           linkedParamResult &&
           linkedParamResult.data &&
-          'valueTemplateSource' in (linkedParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (linkedParamResult.data as StoredMetaParameter)
         ) {
-          const linkedParam = linkedParamResult.data as StoredVirtualParameter;
+          const linkedParam = linkedParamResult.data as StoredMetaParameter;
           calculatedValue = parentConfig[linkedParam.valueTemplateSource].value;
         } else {
           calculatedValue = (linkedParamResult?.data as StoredParameter)?.value;
@@ -691,9 +691,9 @@ export async function addParameter(
         if (
           inputParamResult &&
           inputParamResult.data &&
-          'valueTemplateSource' in (inputParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (inputParamResult.data as StoredMetaParameter)
         ) {
-          const inputParam = inputParamResult.data as StoredVirtualParameter;
+          const inputParam = inputParamResult.data as StoredMetaParameter;
           inputValues[key.substring(1)] = possiblyNumber(
             parentConfig[inputParam.valueTemplateSource].value ?? '',
           );
@@ -1866,9 +1866,9 @@ export async function updateParameter(
         if (
           linkedParamResult &&
           linkedParamResult.data &&
-          'valueTemplateSource' in (linkedParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (linkedParamResult.data as StoredMetaParameter)
         ) {
-          const linkedParam = linkedParamResult.data as StoredVirtualParameter;
+          const linkedParam = linkedParamResult.data as StoredMetaParameter;
           calculatedValue = parentConfig[linkedParam.valueTemplateSource].value;
         } else {
           calculatedValue = (linkedParamResult?.data as StoredParameter)?.value;
@@ -1887,9 +1887,9 @@ export async function updateParameter(
         if (
           inputParamResult &&
           inputParamResult.data &&
-          'valueTemplateSource' in (inputParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (inputParamResult.data as StoredMetaParameter)
         ) {
-          const inputParam = inputParamResult.data as StoredVirtualParameter;
+          const inputParam = inputParamResult.data as StoredMetaParameter;
           inputValues[key.substring(1)] = possiblyNumber(
             parentConfig[inputParam.valueTemplateSource].value ?? '',
           );
@@ -1918,7 +1918,7 @@ export async function updateParameter(
 
   let actualValue;
   if ('valueTemplateSource' in parameter && !hasValueChanged) {
-    actualValue = parentConfig[(parameter as StoredVirtualParameter).valueTemplateSource].value;
+    actualValue = parentConfig[(parameter as StoredMetaParameter).valueTemplateSource].value;
   } else {
     actualValue = changed.value ?? parameter.value;
   }
@@ -1958,10 +1958,10 @@ export async function updateParameter(
           if (
             inputParameterQuery &&
             inputParameterQuery.data &&
-            'valueTemplateSource' in (inputParameterQuery.data as StoredVirtualParameter)
+            'valueTemplateSource' in (inputParameterQuery.data as StoredMetaParameter)
           ) {
             inputParamResult =
-              parentConfig[(inputParameterQuery.data as StoredVirtualParameter).valueTemplateSource]
+              parentConfig[(inputParameterQuery.data as StoredMetaParameter).valueTemplateSource]
                 .value;
           } else {
             inputParamResult = (inputParameterQuery?.data as StoredParameter).value;
@@ -2079,7 +2079,7 @@ async function updateCommonUserDataPropagation(
 
 export async function convertParameterType(
   parameterId: string,
-  newParameter: Parameter | VirtualParameter,
+  newParameter: Parameter | MetaParameter,
   parentConfigId: string,
 ) {
   // get existing parameter from database
@@ -2469,7 +2469,7 @@ async function deleteParameterFromStorage(parameterId: string) {
 
   // remove reference from metadata if virtual parameter
   if ('valueTemplateSource' in parameter) {
-    await deleteMetadataLink(parameter as StoredVirtualParameter);
+    await deleteMetadataLink(parameter as StoredMetaParameter);
   }
 
   // recursively remove all referenced parameters
@@ -2504,7 +2504,7 @@ async function deleteParameterLink(parameterId: string, linkedId: string) {
   }
 }
 
-async function deleteMetadataLink(linkedParameter: StoredVirtualParameter) {
+async function deleteMetadataLink(linkedParameter: StoredMetaParameter) {
   let config = await findParentConfig(linkedParameter);
   let newMetadata = config[linkedParameter.valueTemplateSource];
   newMetadata.linkValueToParameterValue = { id: '', path: [] };
@@ -3087,7 +3087,7 @@ export async function submodelElementToParameter(
   element: AasSubmodelElement | AasProperty | AasOperation,
   parentId: string,
   conceptDescriptions: AasConceptDescription[],
-): Promise<Parameter | VirtualParameter> {
+): Promise<Parameter | MetaParameter> {
   // parameter ID from qualifiers
   const id: string = element.qualifiers.find((e) => e.type === 'PROCEED-id')!.value;
   if (!id) throw new Error('Prop does not contain an ID.');
@@ -3179,9 +3179,8 @@ export async function submodelElementToParameter(
             `Invalid metadata set for valueTemplateSource: ${rawValueTemplateSource}`,
           );
         }
-        const valueTemplateSource =
-          rawValueTemplateSource as VirtualParameter['valueTemplateSource'];
-        const newParameter: VirtualParameter = {
+        const valueTemplateSource = rawValueTemplateSource as MetaParameter['valueTemplateSource'];
+        const newParameter: MetaParameter = {
           id,
           name: elementTyped.idShort,
           displayName: elementTyped.displayName ?? [],
@@ -3225,7 +3224,7 @@ export async function submodelElementToParameter(
 
 export async function partialPropToParameter(
   element: Partial<AasProperty>,
-): Promise<Partial<Parameter | VirtualParameter>> {
+): Promise<Partial<Parameter | MetaParameter>> {
   // parameter ID from qualifiers
   const id = element.qualifiers?.find((e) => e.type === 'PROCEED-id')?.value;
 
@@ -3266,8 +3265,8 @@ export async function partialPropToParameter(
     if (!['category', 'description', 'name', 'shortName'].includes(rawValueTemplateSource)) {
       throw new Error(`Invalid metadata set for valueTemplateSource: ${rawValueTemplateSource}`);
     }
-    const valueTemplateSource = rawValueTemplateSource as VirtualParameter['valueTemplateSource'];
-    let newParameter: Partial<VirtualParameter> = {
+    const valueTemplateSource = rawValueTemplateSource as MetaParameter['valueTemplateSource'];
+    let newParameter: Partial<MetaParameter> = {
       id,
       name: element.idShort,
       displayName: element.displayName ?? [],
@@ -3408,8 +3407,8 @@ export async function getParameterParent(parameterId: string) {
  * Compares all relevant fields to detect any changes.
  */
 function deepCompareParameters(
-  param1: Parameter | VirtualParameter | undefined,
-  param2: Parameter | VirtualParameter | undefined,
+  param1: Parameter | MetaParameter | undefined,
+  param2: Parameter | MetaParameter | undefined,
   excludeNames: string[] = [],
 ): { difference: boolean; structureChange: boolean } {
   const equal = { difference: false, structureChange: false };
@@ -3439,7 +3438,7 @@ function deepCompareParameters(
     return different;
   }
 
-  // Compare value field (only exists on Parameter, not VirtualParameter)
+  // Compare value field (only exists on Parameter, not MetaParameter)
   if ('value' in param1 && 'value' in param2) {
     if (param1.value !== param2.value) return different;
   } else if ('value' in param1 || 'value' in param2) {
@@ -3447,7 +3446,7 @@ function deepCompareParameters(
     return different;
   }
 
-  // Compare valueTemplateSource (only exists on VirtualParameter)
+  // Compare valueTemplateSource (only exists on MetaParameter)
   if ('valueTemplateSource' in param1 && 'valueTemplateSource' in param2) {
     if (param1.valueTemplateSource !== param2.valueTemplateSource) return different;
   } else if ('valueTemplateSource' in param1 || 'valueTemplateSource' in param2) {
@@ -3480,7 +3479,7 @@ function deepCompareParameters(
     }
   }
 
-  // Compare transformation (only exists on Parameter, not VirtualParameter)
+  // Compare transformation (only exists on Parameter, not MetaParameter)
   const param1Transformation = 'transformation' in param1 ? param1.transformation : undefined;
   const param2Transformation = 'transformation' in param2 ? param2.transformation : undefined;
   if (JSON.stringify(param1Transformation) !== JSON.stringify(param2Transformation)) {

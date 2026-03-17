@@ -17,13 +17,11 @@ import { IoPlayOutline } from 'react-icons/io5';
 
 import { useEnvironment } from '@/components/auth-can';
 import { Process } from '@/lib/data/process-schema';
-import { Engine } from '@/lib/engines/machines';
 import { spaceURL } from '@/lib/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useProcessView } from './process-view-context';
 import useMobileModeler from '@/lib/useMobileModeler';
 import VersionCreationButton from '@/components/version-creation-button';
-import { automaticDeploymentId, useUniqueEngines } from '@/components/engine-selection';
 import { use, useMemo, useState } from 'react';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -49,6 +47,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useQuery } from '@tanstack/react-query';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import BPMNCanvas from '@/components/bpmn-canvas';
+import useEngines from '@/lib/engines/use-engines';
 
 export const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -67,8 +66,8 @@ export function useVersionAndDeploy(
   const { message } = App.useApp();
 
   const env = use(EnvVarsContext);
-  const engines = useUniqueEngines(!isExecutable);
-  const engine = engines?.find((e) => e.id !== automaticDeploymentId) as Engine | undefined;
+  const { data: engines } = useEngines(environment);
+  const engine = engines?.[0];
 
   const canDeploy =
     !!processId && !!env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && !!isExecutable && !!engine;
@@ -103,8 +102,8 @@ export function useVersionAndDeploy(
     return {
       canDeploy,
       handleVersionCreation,
-      handleDeploy: async () => {},
-      handleStartInstance: async () => {},
+      handleDeploy: async () => { },
+      handleStartInstance: async () => { },
     };
   }
 
@@ -235,8 +234,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${processContextPath}/${processId as string}${
-                searchParams.size ? '?' + searchParams.toString() : ''
+              `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
               }`,
             ),
           );

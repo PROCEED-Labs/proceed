@@ -46,7 +46,7 @@ import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } fro
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import { getUserById } from '../data/db/iam/users';
-import { engineRequest } from './endpoints';
+import Ability from '../ability/abilityHelper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -75,27 +75,6 @@ export async function getCorrectTargetEngines(
   if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
 
   return engines;
-}
-
-export async function getUniqueEngines(spaceId: string) {
-  const engines = await getCorrectTargetEngines(spaceId);
-
-  let extendedEngines = await asyncMap(engines, async (engine) => {
-    const { name } = (await engineRequest({
-      engine,
-      method: 'get',
-      endpoint: '/machine/:properties',
-      pathParams: { properties: 'name' },
-    })) as { name: string };
-
-    return { ...engine, name };
-  });
-
-  const uniqueEngines: Record<string, (typeof extendedEngines)[number]> = {};
-
-  extendedEngines.forEach((engine) => (uniqueEngines[engine.id] = engine));
-
-  return Object.values(uniqueEngines);
 }
 
 export async function deployProcess(

@@ -1,7 +1,7 @@
 import { Form, FormInstance } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 
-export class ValidationError extends Error { }
+export class ValidationError extends Error {}
 
 function useCanSubmit(
   form: FormInstance,

@@ -187,7 +187,7 @@ const Processes = ({
   const [movingItem, startMovingItemTransition] = useTransition();
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
-    new URLSearchParams(document.location.search).has('createprocess'),
+      new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
   const [openVersionModal, setOpenVersionModal] = useState(false);
@@ -818,9 +818,9 @@ const Processes = ({
                 const items =
                   selectedRowKeys.length > 0
                     ? selectedRowElements.map((element) => ({
-                      type: element.type,
-                      id: element.id,
-                    }))
+                        type: element.type,
+                        id: element.id,
+                      }))
                     : [{ type: active.type, id: active.id }];
 
                 moveItems(items, over.id);

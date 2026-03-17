@@ -103,8 +103,8 @@ export function useVersionAndDeploy(
     return {
       canDeploy,
       handleVersionCreation,
-      handleDeploy: async () => { },
-      handleStartInstance: async () => { },
+      handleDeploy: async () => {},
+      handleStartInstance: async () => {},
     };
   }
 
@@ -235,7 +235,8 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
+              `/processes${processContextPath}/${processId as string}${
+                searchParams.size ? '?' + searchParams.toString() : ''
               }`,
             ),
           );

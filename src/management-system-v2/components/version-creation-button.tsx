@@ -144,13 +144,7 @@ export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
           title="This process has not been changed since the last version."
         />
       )}
-      <Form
-        form={form}
-        name="versioning"
-        wrapperCol={{ span: 24 }}
-        autoComplete="off"
-        layout="vertical"
-      >
+      <Form form={form} name="versioning" wrapperCol={{ span: 24 }} autoComplete="off">
         <Form.Item
           name="versionName"
           rules={[{ required: true, message: 'Please input the Version Name!' }]}

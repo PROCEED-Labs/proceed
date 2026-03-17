@@ -12,11 +12,10 @@ type StartFormModalProps = {
   onCancel: () => void;
 };
 
-const StartFormModal: React.FC<StartFormModalProps> = ({
+export const StartForm: React.FC<Omit<StartFormModalProps, 'onCancel'>> = ({
   html,
   variableDefinitions,
   onSubmit,
-  onCancel,
 }) => {
   const finalHtml = useMemo(() => {
     if (!html) return;
@@ -64,9 +63,18 @@ const StartFormModal: React.FC<StartFormModalProps> = ({
     onSubmit(mappedVariables);
   };
 
+  return !!html && <UserTaskForm html={finalHtml} onSubmit={handleSubmit} />;
+};
+
+const StartFormModal: React.FC<StartFormModalProps> = ({
+  html,
+  variableDefinitions,
+  onSubmit,
+  onCancel,
+}) => {
   return (
     <Modal
-      open={!!finalHtml}
+      open={!!html}
       onCancel={onCancel}
       footer={null}
       title="Confirm this form to start the instance"
@@ -86,7 +94,7 @@ const StartFormModal: React.FC<StartFormModalProps> = ({
         },
       }}
     >
-      <UserTaskForm html={finalHtml} onSubmit={handleSubmit} />
+      <StartForm html={html} variableDefinitions={variableDefinitions} onSubmit={onSubmit} />
     </Modal>
   );
 };

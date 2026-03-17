@@ -49,7 +49,6 @@ import {
   checkIfProcessExistsByName,
   copyProcesses,
   deleteProcesses,
-  getProcessBPMN,
   updateProcesses,
 } from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
@@ -78,7 +77,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
 import { useProcessView } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/process-view-context';
 import { spaceURL } from '@/lib/utils';
-import VersionCreationButton, { VersionModal } from '../version-creation-button';
+import VersionCreationButton, { VersionAndDeployModal } from '../version-creation-button';
 
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
@@ -88,12 +87,10 @@ import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
 import {
-  VersionAndEngineSelectionModal,
+  VersionStartModal,
   useVersionAndDeploy,
 } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
 import { EnvVarsContext } from '../env-vars-context';
-import EngineSelection from '../engine-selection';
-import StartFormModal from '@/components/start-form-modal';
 
 // TODO: improve ordering
 export type ProcessActions = {
@@ -141,7 +138,6 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
-  const environment = useEnvironment();
 
   const env = use(EnvVarsContext);
 
@@ -191,7 +187,7 @@ const Processes = ({
   const [movingItem, startMovingItemTransition] = useTransition();
   const [openCreateProcessModal, setOpenCreateProcessModal] = useState(
     typeof window !== 'undefined' &&
-      new URLSearchParams(document.location.search).has('createprocess'),
+    new URLSearchParams(document.location.search).has('createprocess'),
   );
   const [openCreateFolderModal, setOpenCreateFolderModal] = useState(false);
   const [openVersionModal, setOpenVersionModal] = useState(false);
@@ -488,19 +484,10 @@ const Processes = ({
     return [undefined, false];
   }, [selectedRowElements, rowClickedProcess, processes]);
 
-  const {
-    createProcessVersion,
-    deployVersion,
-    startForm,
-    cancelStartForm,
-    versionToDeploy,
-    cancelDeploy,
-    startInstance,
-  } = useVersionAndDeploy(selectedProcessId, isExecutable, async (versionId) => {
-    return await wrapServerCall({
-      fn: () => getProcessBPMN(selectedProcessId!, space.spaceId, versionId),
-    });
-  });
+  const { canDeploy, handleVersionCreation, handleStartInstance } = useVersionAndDeploy(
+    selectedProcessId,
+    isExecutable,
+  );
 
   const contextActions: ContextActions = {
     viewDocumentation,
@@ -634,8 +621,14 @@ const Processes = ({
                                       processId={selectedRowElements[0].id}
                                       type="text"
                                       icon={<BsFileEarmarkCheck />}
-                                      createVersion={createProcessVersion}
-                                      isExecutable={isExecutable}
+                                      createVersion={async (values, deploy) => {
+                                        await handleVersionCreation(
+                                          selectedRowElements[0].id,
+                                          values,
+                                          deploy,
+                                        );
+                                      }}
+                                      isDeployable={canDeploy}
                                     />
                                   </Tooltip>
                                 )}
@@ -825,9 +818,9 @@ const Processes = ({
                 const items =
                   selectedRowKeys.length > 0
                     ? selectedRowElements.map((element) => ({
-                        type: element.type,
-                        id: element.id,
-                      }))
+                      type: element.type,
+                      id: element.id,
+                    }))
                     : [{ type: active.type, id: active.id }];
 
                 moveItems(items, over.id);
@@ -1002,25 +995,17 @@ const Processes = ({
           onOk: deleteCreateProcessSearchParams,
         }}
       />
-      <VersionModal
+      <VersionAndDeployModal
         processId={rowClickedProcess || ''}
-        close={(values, deploy) => {
+        close={async (values, deploy) => {
+          if (rowClickedProcess) {
+            await handleVersionCreation(rowClickedProcess, values, deploy);
+          }
           setOpenVersionModal(false);
-          createProcessVersion(values, deploy);
         }}
         show={openVersionModal}
-        isExecutable={isExecutable}
+        isDeployable={canDeploy}
       />
-      {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && isExecutable && (
-        <>
-          <EngineSelection
-            open={!!versionToDeploy}
-            onClose={cancelDeploy}
-            onSubmit={deployVersion}
-          />
-          <StartFormModal html={startForm} onSubmit={startInstance} onCancel={cancelStartForm} />
-        </>
-      )}
       <FolderCreationModal
         open={openCreateFolderModal}
         close={() => {
@@ -1055,12 +1040,12 @@ const Processes = ({
 
       <AddUserControls name={'process-list'} />
 
-      {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
-        <VersionAndEngineSelectionModal
+      {canDeploy && (
+        <VersionStartModal
           show={showVersionSelectionModal}
           processId={selectedProcessId}
-          onOk={(version, engine) => {
-            deployVersion(engine, true, version);
+          onOk={(version, variables) => {
+            handleStartInstance(version, variables);
             setShowVersionSelectionModal(false);
           }}
           onClose={() => setShowVersionSelectionModal(false)}

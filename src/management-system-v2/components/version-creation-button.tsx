@@ -1,20 +1,89 @@
 'use client';
 
-import React, { forwardRef, use, useEffect, useState } from 'react';
+import React, { forwardRef, useCallback, useEffect, useState } from 'react';
 
-import { Button, Modal, Form, Input, Alert } from 'antd';
-import type { ButtonProps } from 'antd';
-import FormSubmitButton from './form-submit-button';
-import { EnvVarsContext } from './env-vars-context';
+import { Button, Modal, Form, Input, Alert, Tooltip } from 'antd';
+import type { ButtonProps, FormInstance } from 'antd';
 import { useEnvironment } from './auth-can';
-import {
-  getProcess,
-  getProcessBPMN,
-  processHasChangesSinceLastVersion,
-} from '@/lib/data/processes';
-import { getDefinitionsVersionInformation } from '@proceed/bpmn-helper';
+import { getUnchangedVersionInfo } from '@/lib/data/processes';
+import { isUserErrorResponse } from '@/lib/user-error';
+import useCanSubmit, { ValidationError } from '@/lib/use-can-submit-form';
 
-type VersionModalProps = {
+type UnchangedVersion = { id: string; name: string; description: string };
+
+function useVersioningModal(processId: string, show: boolean, form: FormInstance) {
+  const { spaceId } = useEnvironment();
+
+  const [unchangedVersion, setUnchangedVersion] = useState<UnchangedVersion>();
+
+  const validator = useCallback(() => {
+    const name = form.getFieldValue('versionName');
+    const description = form.getFieldValue('versionDescription');
+
+    if (
+      unchangedVersion &&
+      name === unchangedVersion.name &&
+      description === unchangedVersion.description
+    ) {
+      throw new ValidationError('No changes from previous version');
+    }
+  }, [form, unchangedVersion]);
+
+  useEffect(() => {
+    if (show) {
+      async function checkForChanges() {
+        const unchangedVersion = await getUnchangedVersionInfo(processId as string, spaceId);
+        if (isUserErrorResponse(unchangedVersion)) return;
+
+        if (unchangedVersion) setUnchangedVersion(unchangedVersion);
+
+        return () => {
+          setUnchangedVersion(undefined);
+        };
+      }
+
+      checkForChanges();
+    }
+  }, [show, processId, spaceId, form]);
+
+  return { ...useCanSubmit(form, validator), unchangedVersion };
+}
+
+const VersioningBaseFields: React.FC<{
+  unchangedVersion?: UnchangedVersion;
+  form: FormInstance;
+}> = ({ unchangedVersion, form }) => {
+  useEffect(() => {
+    form.setFieldValue('versionName', unchangedVersion?.name || '');
+    form.setFieldValue('versionDescription', unchangedVersion?.description || '');
+  }, [unchangedVersion, form]);
+
+  return (
+    <>
+      <Form.Item
+        name="versionName"
+        rules={[{ required: true, message: 'Please input the Version Name!' }]}
+      >
+        <Input placeholder="Version Name" />
+      </Form.Item>
+      <Form.Item
+        name="versionDescription"
+        rules={[{ required: true, message: 'Please input the Version Description!' }]}
+      >
+        <Input.TextArea
+          showCount
+          maxLength={150}
+          style={{ height: 100 }}
+          placeholder="Version Description"
+        />
+      </Form.Item>
+    </>
+  );
+};
+
+const unchangedError = 'No changes from previous version';
+
+type VersionAndDeployModalProps = {
   processId: string;
   show: boolean;
   close: (
@@ -22,166 +91,94 @@ type VersionModalProps = {
     deploy?: boolean | string,
   ) => void;
   loading?: boolean;
-  isExecutable?: boolean;
+  isDeployable?: boolean;
 };
-export const VersionModal: React.FC<VersionModalProps> = ({
+export const VersionAndDeployModal: React.FC<VersionAndDeployModalProps> = ({
   processId,
   show,
   close,
   loading,
-  isExecutable,
+  isDeployable,
 }) => {
   const [form] = Form.useForm();
-  const [canSubmit, setCanSubmit] = useState(false);
 
-  const [unchangedVersion, setUnchangedVersion] = useState('');
-  const [unchangedVersionName, setUnchangedVersionName] = useState('');
-  const [unchangedVersionDescription, setUnchangedVersionDescription] = useState('');
+  const {
+    submittable: versionable,
+    values,
+    errors,
+    unchangedVersion,
+  } = useVersioningModal(processId, show, form);
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const completelyUnchanged = errors.some((error) =>
+    error.errors.some((message) => message === unchangedError),
+  );
 
-  const env = use(EnvVarsContext);
-
-  const values = Form.useWatch([], form);
-
-  useEffect(() => {
-    form
-      .validateFields({ validateOnly: true })
-      .then(() => setCanSubmit(true))
-      .catch(() => setCanSubmit(false));
-  }, [values]);
-
-  const { spaceId } = useEnvironment();
-
-  useEffect(() => {
-    if (show) {
-      async function checkForChanges() {
-        const hasChanges = await processHasChangesSinceLastVersion(processId as string, spaceId);
-
-        if (!hasChanges) {
-          const bpmn = await getProcessBPMN(processId, spaceId);
-
-          const { versionBasedOn } = await getDefinitionsVersionInformation(bpmn);
-
-          if (versionBasedOn) {
-            const processInfo = await getProcess(processId, spaceId);
-
-            if (processInfo && !('error' in processInfo)) {
-              const version = processInfo.versions.find((v) => v.id === versionBasedOn);
-
-              if (version) {
-                setUnchangedVersion(version.id);
-                setUnchangedVersionName(version.name);
-                form.setFieldValue('versionName', version.name);
-                setName(version.name);
-                setUnchangedVersionDescription(version.description);
-                form.setFieldValue('versionDescription', version.description);
-                setDescription(version.description);
-              }
-            }
-          }
-        }
-
-        return () => {
-          setUnchangedVersion('');
-          setUnchangedVersionName('');
-          setUnchangedVersionDescription('');
-        };
-      }
-
-      checkForChanges();
-    }
-  }, [show]);
-
-  const completelyUnchanged =
-    !!unchangedVersion &&
-    name === unchangedVersionName &&
-    description === unchangedVersionDescription;
-
-  const handleSubmit = async (deploy: boolean) => {
-    if (completelyUnchanged) {
-      close(undefined, unchangedVersion);
-    } else {
-      const values = (await form.validateFields()) as Parameters<typeof close>[0];
-      close(values, deploy);
-    }
+  const handleClose = async () => {
+    if (!loading) close();
     form.resetFields();
   };
 
-  const handleClose = async () => {
-    if (!loading) {
-      close();
-      form.resetFields();
-      setName('');
-      setDescription('');
-    }
-  };
+  // we can deploy when the only thing preventing from submitting is that the version information has not changed and when deploying is enabled
+  const deployable = (versionable || (completelyUnchanged && errors.length === 1)) && isDeployable;
+
+  const footerButtons = [
+    <Button key="cancel" disabled={loading} onClick={handleClose}>
+      Cancel
+    </Button>,
+    <Tooltip key="submit" title={!!errors.length && errors[0] && errors[0].errors[0]}>
+      <Button
+        type="primary"
+        htmlType="submit"
+        loading={loading}
+        disabled={!versionable}
+        onClick={() => close(values, false)}
+      >
+        Release Version
+      </Button>
+    </Tooltip>,
+  ];
+
+  if (isDeployable) {
+    footerButtons.push(
+      <Tooltip key="version_and_deploy">
+        <Button
+          key="version_and_deploy"
+          type="primary"
+          htmlType="submit"
+          loading={loading}
+          disabled={!deployable}
+          onClick={() =>
+            completelyUnchanged ? close(undefined, unchangedVersion!.id) : close(values, true)
+          }
+        >
+          {completelyUnchanged ? 'Deploy' : 'Release and Deploy'}
+        </Button>
+      </Tooltip>,
+    );
+  }
 
   return (
     <Modal
       title="Release a new Process Version"
       open={show}
       onCancel={handleClose}
-      footer={[
-        <Button key="cancel" disabled={loading} onClick={handleClose}>
-          Cancel
-        </Button>,
-        <Button
-          key="submit"
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          disabled={!canSubmit || completelyUnchanged}
-          onClick={() => handleSubmit(false)}
-        >
-          Create Version
-        </Button>,
-        env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && isExecutable && (
-          <Button
-            key="version_and_deploy"
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            disabled={!canSubmit}
-            onClick={() => handleSubmit(true)}
-          >
-            {completelyUnchanged ? 'Deploy' : 'Version and Deploy'}
-          </Button>
-        ),
-      ]}
+      footer={footerButtons}
     >
       {!!completelyUnchanged && (
         <Alert
           style={{ marginBottom: '10px' }}
           type="warning"
-          message="This process has not been changed since the last version."
+          title="This process has not been changed since the last version."
         />
       )}
-      <Form form={form} name="versioning" wrapperCol={{ span: 24 }} autoComplete="off">
-        <Form.Item
-          name="versionName"
-          rules={[{ required: true, message: 'Please input the Version Name!' }]}
-        >
-          <Input
-            placeholder="Version Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item
-          name="versionDescription"
-          rules={[{ required: true, message: 'Please input the Version Description!' }]}
-        >
-          <Input.TextArea
-            showCount
-            maxLength={150}
-            style={{ height: 100 }}
-            placeholder="Version Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </Form.Item>
+      <Form
+        form={form}
+        name="versioning"
+        wrapperCol={{ span: 24 }}
+        autoComplete="off"
+        layout="vertical"
+      >
+        <VersioningBaseFields unchangedVersion={unchangedVersion} form={form} />
       </Form>
     </Modal>
   );
@@ -193,12 +190,22 @@ type VersionCreationButtonProps = ButtonProps & {
     values?: { versionName: string; versionDescription: string },
     deploy?: boolean | string,
   ) => any;
-  isExecutable?: boolean;
+  isDeployable?: boolean;
 };
-const VersionCreationButton = forwardRef<HTMLAnchorElement, VersionCreationButtonProps>(
-  ({ processId, createVersion, isExecutable, ...props }, ref) => {
+const VersionAndDeployButton = forwardRef<HTMLAnchorElement, VersionCreationButtonProps>(
+  ({ processId, createVersion, isDeployable, ...props }, ref) => {
     const [isVersionModalOpen, setIsVersionModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const handleSubmit: VersionAndDeployModalProps['close'] = async (values, deploy) => {
+      if (values || deploy) {
+        setLoading(true);
+        await createVersion(values, deploy);
+        setLoading(false);
+      }
+
+      setIsVersionModalOpen(false);
+    };
 
     return (
       <>
@@ -210,29 +217,18 @@ const VersionCreationButton = forwardRef<HTMLAnchorElement, VersionCreationButto
             setIsVersionModalOpen(true);
           }}
         ></Button>
-        <VersionModal
+        <VersionAndDeployModal
           processId={processId}
-          close={async (values, deploy) => {
-            if (values || deploy) {
-              const createResult = createVersion(values, deploy);
-              if (createResult instanceof Promise) {
-                setLoading(true);
-                await createResult;
-                setLoading(false);
-              }
-            }
-
-            setIsVersionModalOpen(false);
-          }}
           show={isVersionModalOpen}
           loading={loading}
-          isExecutable={isExecutable}
-        ></VersionModal>
+          close={handleSubmit}
+          isDeployable={isDeployable}
+        />
       </>
     );
   },
 );
 
-VersionCreationButton.displayName = 'VersionCreationButton';
+VersionAndDeployButton.displayName = 'VersionCreationButton';
 
-export default VersionCreationButton;
+export default VersionAndDeployButton;

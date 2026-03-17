@@ -1,15 +1,7 @@
-import { Engine } from '@/lib/engines/machines';
 import { getUniqueEngines } from '@/lib/engines/server-actions';
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Modal, Select, Skeleton } from 'antd';
+import { Alert, Select } from 'antd';
 import { useEnvironment } from './auth-can';
-import { useState } from 'react';
-
-type EngineSelectionProps = {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (engine: Engine) => Promise<void>;
-};
 
 export const automaticDeploymentId = '__automatic_engine_selection__';
 
@@ -55,52 +47,3 @@ export const EngineSelection: React.FC<{
     />
   );
 };
-
-const EngineSelectionModal: React.FC<EngineSelectionProps> = ({ open, onSubmit, onClose }) => {
-  const engines = useUniqueEngines();
-
-  const [selectedId, setSelectedId] = useState(automaticDeploymentId);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async () => {
-    if (engines) {
-      if (engines.length === 1) {
-        onClose();
-        setSelectedId(automaticDeploymentId);
-        return;
-      }
-
-      const target = engines.find((e) => e.id === selectedId);
-      if (target) {
-        setLoading(true);
-        if ('isAutomaticDeployment' in target) {
-          await onSubmit(engines.find((e) => e.id !== automaticDeploymentId) as Engine);
-        } else {
-          await onSubmit(target);
-        }
-        setSelectedId(automaticDeploymentId);
-        setLoading(false);
-      }
-    }
-  };
-
-  return (
-    <Modal
-      open={open}
-      centered
-      title="Select an Engine"
-      onCancel={onClose}
-      onOk={handleSubmit}
-      okText={engines?.length === 1 ? 'Ok' : 'Deploy'}
-      okButtonProps={{ loading, disabled: !engines?.length }}
-    >
-      {engines ? (
-        <EngineSelection selectedEngineId={selectedId} engines={engines} onChange={setSelectedId} />
-      ) : (
-        <Skeleton active />
-      )}
-    </Modal>
-  );
-};
-
-export default EngineSelectionModal;

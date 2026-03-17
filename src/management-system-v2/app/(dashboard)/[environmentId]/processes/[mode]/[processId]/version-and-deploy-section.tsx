@@ -3,6 +3,7 @@ import {
   App,
   Button,
   Card,
+  Divider,
   Modal,
   Select,
   SelectProps,
@@ -22,11 +23,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useProcessView } from './process-view-context';
 import useMobileModeler from '@/lib/useMobileModeler';
 import VersionCreationButton from '@/components/version-creation-button';
-import EngineSelectionModal, {
-  EngineSelection,
-  automaticDeploymentId,
-  useUniqueEngines,
-} from '@/components/engine-selection';
+import { automaticDeploymentId, useUniqueEngines } from '@/components/engine-selection';
 import { use, useMemo, useState } from 'react';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -41,7 +38,7 @@ import useModelerStateStore from './use-modeler-state-store';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { deployProcess } from '@/lib/engines/server-actions';
 import { EnvVarsContext } from '@/components/env-vars-context';
-import StartFormModal from '@/components/start-form-modal';
+import StartFormModal, { StartForm } from '@/components/start-form-modal';
 import {
   getElementsByTagName,
   getStartFormFileNameMapping,
@@ -62,184 +59,91 @@ type VersionAndDeployProps = {
 export function useVersionAndDeploy(
   processId: string | undefined,
   isExecutable: boolean,
-  getBpmn: (versionId?: string) => Promise<string | undefined>,
-  beforeCreateVersion?: () => Promise<void>,
   afterCreateVersion?: () => Promise<void>,
 ) {
   const router = useRouter();
   const environment = useEnvironment();
 
-  const env = use(EnvVarsContext);
-
   const { message } = App.useApp();
 
-  const [versionToDeploy, setVersionToDeploy] = useState('');
-  const [autoStartInstance, setAutoStartInstance] = useState(false);
+  const env = use(EnvVarsContext);
+  const engines = useUniqueEngines(!isExecutable);
+  const engine = engines?.find((e) => e.id !== automaticDeploymentId) as Engine | undefined;
 
-  const [startForm, setStartForm] = useState('');
+  const canDeploy =
+    !!processId && !!env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && !!isExecutable && !!engine;
 
-  const [deployTo, setDeployTo] = useState<Engine | undefined>();
-
-  const cancelStartForm = () => {
-    setStartForm('');
-    setDeployTo(undefined);
-  };
-
-  const cancelDeploy = () => {
-    setAutoStartInstance(false);
-    setVersionToDeploy('');
-  };
-
-  if (!processId) {
-    return {
-      createProcessVersion: async () => {},
-      deployVersion: async () => {},
-      startInstance: async () => {},
-      startForm,
-      cancelStartForm,
-      versionToDeploy,
-      setVersionToDeploy,
-      cancelDeploy,
-      autoStartInstance: () => setAutoStartInstance(true),
-    };
-  }
-
-  const createProcessVersion = async (
+  const handleVersionCreation = async (
+    processId: string,
     values?: {
       versionName: string;
       versionDescription: string;
     },
     deploy?: boolean | string,
   ) => {
-    try {
-      let toDeploy = deploy;
-
-      if (values) {
-        if (beforeCreateVersion) await beforeCreateVersion();
-
-        const newVersion = await createVersion(
-          values.versionName,
-          values.versionDescription,
-          processId,
-          environment.spaceId,
-        );
-
-        if (isUserErrorResponse(newVersion)) throw new Error();
-
-        toDeploy = newVersion || false;
-
-        if (afterCreateVersion) await afterCreateVersion();
-
-        router.refresh();
-        message.success('Version Created');
-      }
-
-      if (typeof toDeploy === 'string') {
-        setVersionToDeploy(toDeploy);
-      }
-    } catch (_) {
-      message.error('Something went wrong');
-    }
-  };
-
-  const startInstance = async (variables?: Record<string, { value: any }>) => {
-    if (!env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return;
-
-    if (!isExecutable) {
-      message.error(
-        'Starting an instance is not possible while the process is not set to executable.',
-      );
-      return;
-    }
-
-    if (deployTo) {
-      const instanceId = await startInstanceOnMachine(
+    if (values) {
+      const newVersion = await createVersion(
+        values.versionName,
+        values.versionDescription,
         processId,
-        versionToDeploy === 'latest' ? '_latest' : versionToDeploy,
-        deployTo,
-        variables,
+        environment.spaceId,
       );
-      router.push(spaceURL(environment, `/executions/${processId}?instance=${instanceId}`));
+
+      await afterCreateVersion?.();
+
+      if (isUserErrorResponse(newVersion)) throw new Error();
+
+      if (deploy && newVersion) deploy = newVersion;
     }
-    setStartForm('');
-    setVersionToDeploy('');
-    setAutoStartInstance(false);
-    setDeployTo(undefined);
+
+    if (typeof deploy === 'string' && canDeploy) handleDeploy(processId, deploy);
   };
 
-  const deployVersion = async (engine: Engine, autoStart = false, version?: string) => {
-    if (!env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return;
+  if (!canDeploy) {
+    return {
+      canDeploy,
+      handleVersionCreation,
+      handleDeploy: async () => { },
+      handleStartInstance: async () => { },
+    };
+  }
 
-    if (!isExecutable) {
-      message.error('Deploying the version is not possible since it is not set to executable.');
-      return;
-    }
-
-    const toDeploy = version || versionToDeploy;
-
+  const handleDeploy = async (processId: string, deploy: string, noReroute = false) => {
     await wrapServerCall({
       fn: async () =>
-        await deployProcess(
-          processId,
-          toDeploy === 'latest' ? '' : toDeploy,
-          environment.spaceId,
-          'dynamic',
-          engine,
-        ),
+        await deployProcess(processId, deploy, environment.spaceId, 'dynamic', engine),
       onSuccess: async () => {
         message.success('Process Deployed');
-        let path = `/executions/${processId}`;
-        if (autoStart || autoStartInstance) {
-          setAutoStartInstance(false);
-          const bpmn = await getBpmn(toDeploy === 'latest' ? undefined : toDeploy);
-
-          if (bpmn) {
-            const [startFormId] = Object.values(await getStartFormFileNameMapping(bpmn));
-
-            if (startFormId) {
-              let startForm = await getProcessHtmlFormHTML(
-                processId,
-                startFormId,
-                environment.spaceId,
-              );
-
-              if (typeof startForm !== 'string') {
-                message.error('Failed to fetch the start form of the process');
-                return;
-              }
-
-              setVersionToDeploy(toDeploy);
-              setStartForm(startForm);
-              setDeployTo(engine);
-              return;
-            }
-          }
-          const instanceId = await startInstanceOnMachine(
-            processId,
-            toDeploy === 'latest' ? '_latest' : toDeploy,
-            engine,
-          );
-          path += `?instance=${instanceId}`;
+        if (!noReroute) {
+          let path = `/executions/${processId}`;
+          router.push(spaceURL(environment, path));
         }
-        router.push(spaceURL(environment, path));
       },
-      onError: () => {
-        message.error('Failed to deploy the process');
-        setVersionToDeploy('');
-      },
+      onError: 'Failed to deploy the process',
     });
   };
 
+  const handleStartInstance = async (
+    version: string,
+    variables?: Record<string, { value: any }>,
+  ) => {
+    await handleDeploy(processId, version === 'latest' ? '' : version, true);
+
+    const instanceId = await startInstanceOnMachine(
+      processId,
+      version === 'latest' ? '_latest' : version,
+      engine,
+      variables,
+    );
+
+    router.push(spaceURL(environment, `/executions/${processId}?instance=${instanceId}`));
+  };
+
   return {
-    createProcessVersion,
-    deployVersion,
-    startInstance,
-    startForm,
-    cancelStartForm,
-    versionToDeploy,
-    setVersionToDeploy,
-    cancelDeploy,
-    autoStartInstance: () => setAutoStartInstance(true),
+    handleVersionCreation,
+    handleDeploy,
+    handleStartInstance,
+    canDeploy: !!engine,
   };
 }
 
@@ -251,8 +155,6 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
 
   const { isListView, processContextPath } = useProcessView();
   const showMobileView = useMobileModeler();
-
-  const env = use(EnvVarsContext);
 
   const modeler = useModelerStateStore((state) => state.modeler);
   const isExecutable = useModelerStateStore((state) => state.isExecutable);
@@ -268,26 +170,16 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
   const filterOption: SelectProps['filterOption'] = (input, option) =>
     ((option?.label as string) ?? '').toLowerCase().includes(input.toLowerCase());
 
-  const {
-    createProcessVersion,
-    deployVersion,
-    startInstance,
-    startForm,
-    cancelStartForm,
-    versionToDeploy,
-    setVersionToDeploy,
-    cancelDeploy,
-    autoStartInstance,
-  } = useVersionAndDeploy(
+  const beforeVersioning = async () => {
+    // Ensure latest BPMN on server.
+    const xml = (await modeler?.getXML()) as string;
+    if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
+      throw new Error();
+  };
+
+  const { handleVersionCreation, handleStartInstance, canDeploy } = useVersionAndDeploy(
     process.id,
     isExecutable,
-    async () => await modeler?.getXML(),
-    async () => {
-      // Ensure latest BPMN on server.
-      const xml = (await modeler?.getXML()) as string;
-      if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
-        throw new Error();
-    },
     async () => {
       // reimport the new version since the backend has added versionBasedOn information that would
       // be overwritten by following changes
@@ -298,13 +190,42 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
     },
   );
 
+  const { message } = App.useApp();
+  const [startForm, setStartForm] = useState('');
+
+  const tryStartInstance = async (version: string) => {
+    if (!canDeploy) return;
+
+    const rootElement = modeler?.getCurrentRoot();
+
+    if (!rootElement) return;
+
+    const [startFormId] = Object.values(
+      await getStartFormFileNameMapping(rootElement?.businessObject),
+    );
+
+    if (startFormId) {
+      let startForm = await getProcessHtmlFormHTML(processId, startFormId, environment.spaceId);
+
+      if (typeof startForm !== 'string') {
+        message.error('Failed to fetch the start form of the process');
+        return;
+      }
+
+      setStartForm(startForm);
+      return;
+    }
+
+    await handleStartInstance(version);
+  };
+
   return (
     <>
       <Select
         popupMatchSelectWidth={false}
         placeholder="Select Version"
-        showSearch
-        filterOption={filterOption}
+        showSearch={{ filterOption }}
+        variant="borderless"
         value={selectedVersion.id}
         onChange={(value) => {
           // change the version info in the query but keep other info (e.g. the currently open subprocess)
@@ -314,8 +235,7 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           router.push(
             spaceURL(
               environment,
-              `/processes${processContextPath}/${processId as string}${
-                searchParams.size ? '?' + searchParams.toString() : ''
+              `/processes${processContextPath}/${processId as string}${searchParams.size ? '?' + searchParams.toString() : ''
               }`,
             ),
           );
@@ -332,21 +252,23 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
           <VersionCreationButton
             processId={processId}
             icon={<PlusOutlined />}
-            createVersion={createProcessVersion}
+            createVersion={async (values, deploy) => {
+              await beforeVersioning();
+              await handleVersionCreation(processId, values, deploy);
+            }}
             disabled={isListView}
-            isExecutable={isExecutable}
+            isDeployable={canDeploy}
           />
         </Tooltip>
       )}
-      {!showMobileView && env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && isExecutable && (
+      {!showMobileView && canDeploy && isExecutable && (
         <>
           {LATEST_VERSION.id === selectedVersion.id ? (
             <Tooltip title="Test Deploy and Start">
               <Button
                 icon={<ExperimentOutlined />}
                 onClick={() => {
-                  autoStartInstance();
-                  setVersionToDeploy('latest');
+                  tryStartInstance(selectedVersionId || 'latest');
                 }}
               />
             </Tooltip>
@@ -355,22 +277,19 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
               <Button
                 icon={<IoPlayOutline />}
                 onClick={() => {
-                  autoStartInstance();
-                  setVersionToDeploy(selectedVersion.id);
+                  tryStartInstance(selectedVersionId || 'latest');
                 }}
               />
             </Tooltip>
           )}
-          <EngineSelectionModal
-            open={!!versionToDeploy}
-            onClose={cancelDeploy}
-            onSubmit={deployVersion}
-          />
           <StartFormModal
             html={startForm}
             variableDefinitions={variables}
-            onSubmit={(variables) => startInstance(variables)}
-            onCancel={() => cancelStartForm()}
+            onSubmit={async (variables) => {
+              await handleStartInstance(selectedVersionId || 'latest', variables);
+              setStartForm('');
+            }}
+            onCancel={() => setStartForm('')}
           />
         </>
       )}
@@ -378,20 +297,35 @@ const VersionAndDeploy: React.FC<VersionAndDeployProps> = ({ process }) => {
   );
 };
 
-export const VersionAndEngineSelectionModal: React.FC<{
+export const VersionStartModal: React.FC<{
   show: boolean;
-  onOk: (version: string, engine: Engine) => void;
+  onOk: (version: string, variables?: Record<string, { value: any }>) => void;
   onClose: () => void;
   processId: string | undefined;
 }> = ({ show, onOk, onClose, processId }) => {
   const environment = useEnvironment();
 
-  const engines = useUniqueEngines();
-
-  const [selectedEngineId, setSelectedEngineId] = useState<string>(automaticDeploymentId);
-
   const { data, isLoading } = useQuery({
     queryFn: async () => {
+      const getStartForm = async (processId: string, bpmn: string) => {
+        const [startFormId] = Object.values(await getStartFormFileNameMapping(bpmn));
+
+        let startForm: string | undefined = undefined;
+        if (startFormId) {
+          let startFormHtml = await getProcessHtmlFormHTML(
+            processId,
+            startFormId,
+            environment.spaceId,
+          );
+
+          if (!isUserErrorResponse(startFormHtml) && typeof startFormHtml === 'string') {
+            startForm = startFormHtml;
+          }
+        }
+
+        return startForm;
+      };
+
       if (processId) {
         const metadata = await getProcess(processId, environment.spaceId);
         if (isUserErrorResponse(metadata)) throw metadata.error;
@@ -407,6 +341,7 @@ export const VersionAndEngineSelectionModal: React.FC<{
           versionDescription: 'Current editing state of the process.',
           bpmn,
           executable: metadata.executable,
+          startForm: await getStartForm(processId, bpmn),
         };
         const versions = await asyncMap(metadata.versions, async (version) => {
           const bpmn = await getProcessBPMN(processId, environment.spaceId, version.id);
@@ -421,6 +356,8 @@ export const VersionAndEngineSelectionModal: React.FC<{
             executable = processEls[0].isExecutable || false;
           }
 
+          const startForm = await getStartForm(processId, bpmn);
+
           return {
             label: version.name,
             value: version.id,
@@ -429,6 +366,7 @@ export const VersionAndEngineSelectionModal: React.FC<{
             versionDescription: version.description,
             bpmn,
             executable,
+            startForm,
           };
         });
 
@@ -455,58 +393,63 @@ export const VersionAndEngineSelectionModal: React.FC<{
       open={show}
       onCancel={() => {
         setSelectedVersionId('latest');
-        setSelectedEngineId(automaticDeploymentId);
         onClose();
       }}
-      title="Please select a version and an engine"
+      width={selectedVersion?.startForm ? '60vw' : undefined}
+      height={selectedVersion?.startForm ? '80vh' : undefined}
+      styles={{
+        container: { height: '100%', display: 'flex', flexDirection: 'column' },
+        body: { flexGrow: 1, display: 'flex', flexDirection: 'column' },
+      }}
+      title="Please select a version"
       okText="Deploy and Start"
       okButtonProps={{
-        disabled: !selectedVersion || !selectedVersion.executable || !engines || !engines.length,
+        disabled: !selectedVersion || !selectedVersion.executable,
+        hidden: !!selectedVersion?.startForm,
       }}
-      onOk={() => {
-        setSelectedEngineId(automaticDeploymentId);
-        if (!engines) return;
-        let engine = engines.find((e) => e.id === selectedEngineId);
-        if (engine && 'isAutomaticDeployment' in engine) {
-          engine = engines.find((e) => e.id !== selectedEngineId);
-        }
-        onOk(selectedVersionId, engine as Engine);
-      }}
+      onOk={() => onOk(selectedVersionId)}
     >
-      {isLoading || !engines ? (
+      {isLoading ? (
         <Skeleton />
       ) : (
-        <Space style={{ width: '100%' }} direction="vertical">
-          <Typography.Text>Version:</Typography.Text>
-          <Select
-            style={{ width: '100%' }}
-            options={data}
-            defaultValue={'latest'}
-            popupMatchSelectWidth={false}
-            value={selectedVersionId}
-            onChange={(id) => setSelectedVersionId(id)}
-            optionRender={({ data: { versionName, versionDescription } }) => (
-              <Tooltip placement="right" title={versionDescription}>
-                {versionName}
-              </Tooltip>
-            )}
-          />
-          {selectedVersion && (
-            <Space style={{ width: '100%' }} direction="vertical">
-              <Card>{selectedVersion.versionDescription}</Card>
-              {!selectedVersion.executable && (
-                <Alert message="This version is not executable." type="warning" />
+        <>
+          <Space style={{ width: '100%' }} orientation="vertical">
+            <Typography.Text>Version:</Typography.Text>
+            <Select
+              style={{ width: '100%' }}
+              options={data}
+              defaultValue={'latest'}
+              popupMatchSelectWidth={false}
+              value={selectedVersionId}
+              onChange={(id) => setSelectedVersionId(id)}
+              optionRender={({ data: { versionName, versionDescription } }) => (
+                <Tooltip placement="right" title={versionDescription}>
+                  {versionName}
+                </Tooltip>
               )}
-              <BPMNCanvas type="viewer" bpmn={{ bpmn: selectedVersion.bpmn }} />
-              <Typography.Text>Engine:</Typography.Text>
-              <EngineSelection
-                selectedEngineId={selectedEngineId}
-                engines={engines}
-                onChange={setSelectedEngineId}
+            />
+            {selectedVersion && (
+              <Space style={{ width: '100%' }} orientation="vertical">
+                <Card>{selectedVersion.versionDescription}</Card>
+                {!selectedVersion.executable && (
+                  <Alert title="This version is not executable." type="warning" />
+                )}
+                <BPMNCanvas type="viewer" bpmn={{ bpmn: selectedVersion.bpmn }} />
+              </Space>
+            )}
+          </Space>
+          {!!selectedVersion?.startForm && (
+            <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+              <Divider />
+              <StartForm
+                html={selectedVersion.startForm}
+                onSubmit={async (variables) => {
+                  onOk(selectedVersionId, variables);
+                }}
               />
-            </Space>
+            </div>
           )}
-        </Space>
+        </>
       )}
     </Modal>
   );

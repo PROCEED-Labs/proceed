@@ -8,6 +8,7 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
+  DeployedProcessInfo,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -106,6 +107,39 @@ export async function deployProcess(
     }
 
     if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
+
+    const processAlreadyDeployedInfo = await asyncMap(engines, async (engine) => {
+      let deployment;
+      try {
+        deployment = await fetchDeployment(engine, definitionId);
+        // ignore not found errors on engines that don't have a deployment of the process
+      } catch (err) {
+        deployment = undefined;
+      }
+      return [engine, deployment] as const;
+    });
+
+    function withDeployment(
+      info: (typeof processAlreadyDeployedInfo)[number],
+    ): info is readonly [Engine, DeployedProcessInfo] {
+      return !!info[1];
+    }
+    const enginesWithDeployment = processAlreadyDeployedInfo.filter(withDeployment);
+
+    // check if the version is already deployed to some engine since we don't
+    // need to redeploy it in that case
+    if (
+      enginesWithDeployment.some(([_, deployment]) =>
+        deployment.versions.some((version) => version.versionId === versionId),
+      )
+    ) {
+      return;
+    }
+
+    // check if an engine already has another version in which case that engine is selected
+    if (enginesWithDeployment.length) {
+      engines = enginesWithDeployment.map(([engine]) => engine);
+    }
 
     await _deployProcess(definitionId, versionId, spaceId, method, engines);
   } catch (e) {

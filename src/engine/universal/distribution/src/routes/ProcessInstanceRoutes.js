@@ -39,7 +39,7 @@ module.exports = (path, management) => {
               if (res.response.statusCode === 200) {
                 extras.managementSystemLocation = address;
               }
-            } catch (err) {}
+            } catch (err) { }
           }
         }
       }
@@ -394,7 +394,7 @@ module.exports = (path, management) => {
     },
   );
 
-  network.post(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
+  network.put(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
 
     const {

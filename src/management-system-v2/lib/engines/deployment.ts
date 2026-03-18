@@ -338,6 +338,21 @@ export async function getDeployment(engine: Engine, definitionId: string) {
   return deployment as DeployedProcessInfo;
 }
 
+export async function changeDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string,
+  value: boolean,
+) {
+  await engineRequest({
+    method: 'put',
+    endpoint: '/process/:definitionId/versions/:version/active',
+    engine,
+    pathParams: { definitionId, version },
+    body: { active: value },
+  });
+}
+
 export async function getProcessImageFromMachine(
   engine: Engine,
   definitionId: string,

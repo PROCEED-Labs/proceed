@@ -393,4 +393,22 @@ module.exports = (path, management) => {
       });
     },
   );
+
+  network.post(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
+    const { definitionId, version } = req.params;
+
+    const {
+      body: { active },
+    } = req;
+
+    if (active) {
+      management.ensureProcessEngineWithVersion(definitionId, version);
+    } else {
+      const engine = await management.getEngineWithDefinitionId(definitionId);
+
+      if (engine) {
+        engine.undeployProcessVersion(version);
+      }
+    }
+  });
 };

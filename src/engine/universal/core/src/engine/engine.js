@@ -213,6 +213,22 @@ class Engine {
       this._versionProcessMapping[versionId] = process;
       this._versionBpmnMapping[versionId] = bpmn;
       this.versions.push(versionId);
+    } else if (!this._versionProcessMapping[versionId].isDeployed()) {
+      // activate the process so auto-start events like timer events are allowed to trigger new
+      // instances
+      this._versionProcessMapping[versionId].deploy();
+    }
+  }
+
+  /**
+   * Removes the deployed state from the process version in the NeoBPMN Engine preventing it from starting instances
+   *
+   * @param {string} the version of the process to undeploy
+   */
+  async undeployProcessVersion(versionId) {
+    const process = this._versionProcessMapping[versionId];
+    if (process && process.isDeployed()) {
+      process.undeploy();
     }
   }
 

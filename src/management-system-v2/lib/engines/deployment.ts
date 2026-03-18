@@ -106,6 +106,17 @@ async function deployProcessToMachines(
     });
 
     await Promise.all(allMachineRequests);
+
+    // TODO: if we handle static deployment with machine mapping of process elements in the future
+    // we might need to make sure that we only activate the process in a way that start events that are not mapped to a machine are not triggered on that machine
+    // (maybe we need to split the process into multiple sections and deploy them seperately
+    await asyncForEach(machines, async (machine) => {
+      await asyncForEach(processesExportData, async (process) => {
+        await asyncForEach(Object.keys(process.versions), async (version) => {
+          await changeDeploymentActivation(machine, process.definitionId, version, true);
+        });
+      });
+    });
   } catch (error) {
     // TODO: don't remove the whole process when deploying a single version fails
     await asyncForEach(Object.values(processesExportData), async ({ definitionId }) => {

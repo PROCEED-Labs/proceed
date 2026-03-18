@@ -39,7 +39,7 @@ module.exports = (path, management) => {
               if (res.response.statusCode === 200) {
                 extras.managementSystemLocation = address;
               }
-            } catch (err) { }
+            } catch (err) {}
           }
         }
       }
@@ -410,5 +410,11 @@ module.exports = (path, management) => {
         engine.undeployProcessVersion(version);
       }
     }
+
+    return {
+      statusCode: 200,
+      mimeType: 'application/json',
+      response: '{}',
+    };
   });
 };

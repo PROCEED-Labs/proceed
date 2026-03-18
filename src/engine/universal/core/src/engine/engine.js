@@ -129,6 +129,16 @@ class Engine {
    * @param {string} the version of the process to deploy
    */
   async deployProcessVersion(definitionId, versionId) {
+    const otherVersions = this.versions.filter((version) => version !== versionId);
+    otherVersions.forEach((version) => {
+      const process = this._versionProcessMapping[version];
+
+      // deactivate other versions so they don't keep spawning new instances automatically
+      if (process) {
+        process.undeploy();
+      }
+    });
+
     if (!this._versionProcessMapping[versionId]) {
       // Fetch the stored BPMN
       const bpmn = await distribution.db.getProcessVersion(definitionId, versionId);

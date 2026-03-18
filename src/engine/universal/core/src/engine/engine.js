@@ -1040,6 +1040,9 @@ class Engine {
    * Clean up some data when the engine is supposed to be removed
    */
   destroy() {
+    for (const version of this.versions) {
+      this._versionProcessMapping[version].undeploy();
+    }
     for (const instanceId of this.instanceIDs) {
       this.deleteInstance(instanceId);
     }

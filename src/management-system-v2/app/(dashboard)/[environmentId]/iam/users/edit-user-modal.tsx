@@ -1,5 +1,17 @@
 'use client';
-import { App, Button, Col, Divider, Form, Input, Modal, Row, Select, Typography } from 'antd';
+import {
+  App,
+  Button,
+  Col,
+  Divider,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Typography,
+  Tooltip,
+} from 'antd';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
@@ -11,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { ListUser } from '@/components/user-list';
 import useOrganizationRoles from './use-org-roles';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 
 export function EditUserModal({
   open,
@@ -41,9 +54,7 @@ export function EditUserModal({
   const userRoles = ((user as any)?.roles as { id: string; name: string }[]) ?? [];
 
   // Default roles = all assigned roles other than team and back-office from organigram
-  const currentDefaultRoleIds = userRoles
-    .filter((r) => r.id !== organigram?.teamRoleId && r.id !== organigram?.backOfficeRoleId)
-    .map((r) => r.id);
+  const currentDefaultRoleIds = userRoles.map((r) => r.id);
 
   // All roles dropdown (no type filter)
   const { roles: allRoles } = useOrganizationRoles(spaceId);
@@ -112,7 +123,14 @@ export function EditUserModal({
         {/* Default Roles */}
         <Divider />
         <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>
-          Roles
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Roles
+            <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
+              <QuestionCircleOutlined
+                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+              />
+            </Tooltip>
+          </span>
         </Typography.Title>
         <Form.Item name="roles">
           <Select

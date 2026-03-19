@@ -1,10 +1,29 @@
 'use client';
 
-import { Form, Select, Divider, Typography } from 'antd';
+import { Form, Select, Divider, Typography, Tooltip } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import useOrganizationRoles from './use-org-roles';
 import { useQuery } from '@tanstack/react-query';
 import { getSpaceUsers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
+
+function getUserDisplayName(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+}): string {
+  return `${user.firstName} ${user.lastName}`;
+}
+
+function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
+  return (
+    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      {label}
+      <Tooltip title={tooltip}>
+        <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+      </Tooltip>
+    </span>
+  );
+}
 
 export function OrganigramFields({
   spaceId,
@@ -25,7 +44,6 @@ export function OrganigramFields({
     },
   });
 
-  // Filter out the current user from direct manager dropdown
   const filteredUsers = (spaceUsers ?? []).filter((u) => u.id !== excludeUserId);
 
   return (
@@ -35,7 +53,15 @@ export function OrganigramFields({
         Organisation Info
       </Typography.Title>
 
-      <Form.Item label="Team" name="teamRoleId">
+      <Form.Item
+        label={
+          <LabelWithTooltip
+            label="Team / Department"
+            tooltip="Specify the user's organizational team or department."
+          />
+        }
+        name="teamRoleId"
+      >
         <Select
           allowClear
           placeholder="Select team"
@@ -43,18 +69,34 @@ export function OrganigramFields({
         />
       </Form.Item>
 
-      <Form.Item label="Direct Manager" name="directManagerId">
+      <Form.Item
+        label={
+          <LabelWithTooltip
+            label="Direct Manager"
+            tooltip="Specify the user's direct, organizational manager."
+          />
+        }
+        name="directManagerId"
+      >
         <Select
           allowClear
           placeholder="Select direct manager"
           options={filteredUsers.map((u) => ({
-            label: u.username ?? u.email ?? u.id,
+            label: getUserDisplayName(u),
             value: u.id,
           }))}
         />
       </Form.Item>
 
-      <Form.Item label="Back Office" name="backOfficeRoleId">
+      <Form.Item
+        label={
+          <LabelWithTooltip
+            label="Back Office"
+            tooltip="Specify the user's organizational back office. (The user will not become a member of that role.)"
+          />
+        }
+        name="backOfficeRoleId"
+      >
         <Select
           allowClear
           placeholder="Select back office"

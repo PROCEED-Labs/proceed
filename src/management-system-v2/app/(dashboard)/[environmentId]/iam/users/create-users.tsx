@@ -16,10 +16,11 @@ import {
   Select,
   Space,
   Typography,
+  Tooltip,
 } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import useOrganizationRoles from './use-org-roles';
-
 import { OrganigramFields } from './organigram-fields';
 // TODO: check permissions
 
@@ -118,10 +119,16 @@ export function CreateUsersModal({
           <>
             <Divider />
 
-            <Typography.Title style={{ marginBottom: 0 }}>Roles</Typography.Title>
-            <Typography.Text style={{ display: 'block', marginBottom: '0.5rem' }}>
-              You can select roles for this user.
-            </Typography.Text>
+            <Typography.Title style={{ marginBottom: '0.5rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                Roles
+                <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
+                  <QuestionCircleOutlined
+                    style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+                  />
+                </Tooltip>
+              </span>
+            </Typography.Title>
 
             <Form.Item name="roles">
               <Select

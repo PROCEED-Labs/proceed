@@ -76,18 +76,6 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
       );
     }
 
-    // Add team role mapping
-    if (invite.teamRoleId && (await getRoleById(invite.teamRoleId))) {
-      await addRoleMappings([{ environmentId: invite.spaceId, roleId: invite.teamRoleId, userId }]);
-    }
-
-    // Add back-office role mapping
-    if (invite.backOfficeRoleId && (await getRoleById(invite.backOfficeRoleId))) {
-      await addRoleMappings([
-        { environmentId: invite.spaceId, roleId: invite.backOfficeRoleId, userId },
-      ]);
-    }
-
     // save directManagerId and associated role reference in organigram
     if (invite.teamRoleId || invite.backOfficeRoleId || invite.directManagerId) {
       await upsertUserOrganigram({

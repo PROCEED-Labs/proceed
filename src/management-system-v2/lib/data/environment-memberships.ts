@@ -202,16 +202,10 @@ export async function createUserAndAddToOrganization(
       await setUserPassword(user.id, passwordHash, tx, true);
 
       await addMember(organizationId, user.id, ability, tx);
-      // Add all role mappings (default + team + back-office)
-      const allRoleIds = [
-        ...roles,
-        ...(teamRoleId ? [teamRoleId] : []),
-        ...(backOfficeRoleId ? [backOfficeRoleId] : []),
-      ];
-
-      if (allRoleIds.length > 0) {
+      // Add all role mappings
+      if (roles.length > 0) {
         await addRoleMappings(
-          allRoleIds.map((roleId) => ({
+          roles.map((roleId) => ({
             roleId,
             environmentId: organizationId,
             userId: user.id,
@@ -283,12 +277,7 @@ export async function updateUserByAdmin(
       const currentRoleIds = currentMappings.map((m) => m.roleId);
 
       // Figure out which roles to add and which to remove
-      // Combine all new roles (default + team + back-office)
-      const newRoleIds = [
-        ...roles,
-        ...(teamRoleId ? [teamRoleId] : []),
-        ...(backOfficeRoleId ? [backOfficeRoleId] : []),
-      ];
+      const newRoleIds = [...roles];
 
       // Diff and update role mappings
       const roleIdsToAdd = newRoleIds.filter((id) => !currentRoleIds.includes(id));

@@ -21,6 +21,9 @@ import {
   toBpmnXml,
   getAllElements,
   getStartFormFileNameMapping,
+  initXml,
+  setDefinitionsId,
+  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -250,6 +253,30 @@ async function ensureProcessInfo(
   isImport = false,
   ability?: Ability,
 ) {
+  if (definitionId.startsWith(dummyProcessId)) {
+    let bpmn = initXml();
+    bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
+    bpmn = (await setDefinitionsName(bpmn, 'Dummy Process')) as string;
+    exportData[definitionId] = {
+      definitionName: 'Dummy Process',
+      folderPath,
+      isImport,
+      versions: {
+        latest: {
+          bpmn,
+          isImport,
+          layers: [],
+          imports: [],
+        },
+      },
+      scriptTasks: [],
+      userTasks: [],
+      images: [],
+    };
+
+    return;
+  }
+
   if (!exportData[definitionId]) {
     const process = await getProcess(definitionId, spaceId, undefined, ability);
 
@@ -295,6 +322,12 @@ async function ensureProcessInfo(
   }
 }
 
+export const dummyProcessId = '___empty_dummy_process___';
+
+export function isDummyFolderProcess(input: { id?: string }) {
+  return 'id' in input && input.id?.startsWith(dummyProcessId);
+}
+
 /**
  * Gets the data that is needed to export all the requested processes with the given options
  *
@@ -320,6 +353,16 @@ export async function prepareExport(
 
     if (isUserErrorResponse(folder)) throw folder.error.message;
     if (isUserErrorResponse(content)) throw content.error.message;
+
+    // make sure empty folders are exported by placing a dummy process into the folder
+    if (!content.length) {
+      return [
+        {
+          definitionId: `${dummyProcessId}_${path.split('/').join('_')}_${folder.name}`,
+          folderPath: path + '/' + folder.name,
+        },
+      ];
+    }
 
     return (
       await asyncMap(content, async (entry) => {

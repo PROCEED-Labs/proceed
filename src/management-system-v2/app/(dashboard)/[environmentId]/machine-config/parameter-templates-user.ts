@@ -1,4 +1,4 @@
-import { Parameter } from '@/lib/data/machine-config-schema';
+import { Parameter, VirtualUserParameter } from '@/lib/data/machine-config-schema';
 
 import { defaultParameter } from './configuration-helper';
 
@@ -21,7 +21,231 @@ export function defaultUserParameterTemplate(
   };
 
   userParameter.id = membershipId;
-  userParameter.subParameters = [dataParameter];
+  userParameter.subParameters = [dataParameter, createTemplateUserInfo(userId)];
 
   return userParameter;
+}
+
+function createTemplateUserInfo(userId: string): Parameter {
+  let newUserInfo: VirtualUserParameter = {
+    ...defaultParameter(
+      'userInfo',
+      [
+        {
+          text: 'User Info',
+          language: 'en',
+        },
+        {
+          text: 'Nutzer Informationen',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: '',
+          language: 'en',
+        },
+        {
+          text: '',
+          language: 'de',
+        },
+      ],
+    ),
+    userId,
+  };
+
+  let firstName: Parameter = {
+    ...defaultParameter(
+      'firstName',
+      [
+        {
+          text: 'First Name',
+          language: 'en',
+        },
+        {
+          text: 'Vorname',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'First name of the user.',
+          language: 'en',
+        },
+        {
+          text: 'Vorname des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let lastName: Parameter = {
+    ...defaultParameter(
+      'lastName',
+      [
+        {
+          text: 'Last Name',
+          language: 'en',
+        },
+        {
+          text: 'Nachname',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'Last name of the user.',
+          language: 'en',
+        },
+        {
+          text: 'Nachname des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let username: Parameter = {
+    ...defaultParameter(
+      'username',
+      [
+        {
+          text: 'Username',
+          language: 'en',
+        },
+        {
+          text: 'Nutzername',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'Username of the user.',
+          language: 'en',
+        },
+        {
+          text: 'Nutzername des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let email: Parameter = {
+    ...defaultParameter(
+      'email',
+      [
+        {
+          text: 'E-Mail',
+          language: 'en',
+        },
+        {
+          text: 'E-Mail',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'E-Mail address of the user.',
+          language: 'en',
+        },
+        {
+          text: 'E-Mail-Adresse des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let team: Parameter = {
+    ...defaultParameter(
+      'team',
+      [
+        {
+          text: 'Team',
+          language: 'en',
+        },
+        {
+          text: 'Team',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'Team description.',
+          language: 'en',
+        },
+        {
+          text: 'Teambeschreibung.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let directManager: Parameter = {
+    ...defaultParameter(
+      'directManager',
+      [
+        {
+          text: 'Direct Manager',
+          language: 'en',
+        },
+        {
+          text: 'unmittelbarer Vorgesetzter',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'Direct Manager of the user.',
+          language: 'en',
+        },
+        {
+          text: 'Unmittelbarer Vorgesetzter des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  let backOffice: Parameter = {
+    ...defaultParameter(
+      'backOffice',
+      [
+        {
+          text: 'Back Office',
+          language: 'en',
+        },
+        {
+          text: 'Backoffice',
+          language: 'de',
+        },
+      ],
+      [
+        {
+          text: 'Back office of the user.',
+          language: 'en',
+        },
+        {
+          text: 'Backoffice des Nutzers.',
+          language: 'de',
+        },
+      ],
+    ),
+    changeableByUser: false,
+  };
+
+  return {
+    ...newUserInfo,
+    subParameters: [firstName, lastName, username, email, team, directManager, backOffice],
+    changeableByUser: false,
+  };
 }

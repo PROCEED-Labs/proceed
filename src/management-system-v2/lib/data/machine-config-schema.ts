@@ -220,7 +220,11 @@ export type MetaParameter = z.infer<typeof BaseMetaParameterZod> & {
   subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
 };
 
-export type VirtualUserParameter = z.infer<typeof VirtualUserDataParameterZod>;
+// export type VirtualUserParameter = z.infer<typeof VirtualUserDataParameterZod>;
+export type VirtualUserParameter = z.infer<typeof BaseVirtualParameterZod> & {
+  userId: string;
+  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
+};
 
 // export type Config = Prettify<z.infer<typeof ConfigZod> & Metadata & NamelessVersionedObject>;
 export type Config = z.infer<typeof ConfigZod>;

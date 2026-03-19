@@ -1,8 +1,4 @@
 import {
-  AasOperation,
-  AasProperty,
-  AasReferenceElement,
-  AasSubmodelElement,
   Config,
   LinkedParameter,
   LocalizedText,
@@ -11,6 +7,12 @@ import {
   ParameterTranformation,
   MetaParameter,
 } from '@/lib/data/machine-config-schema';
+import {
+  AasProperty,
+  AasSubmodelElement,
+  AasOperation,
+  AasReferenceElement,
+} from '@/lib/data/machine-config-aas-schema';
 import { v4 } from 'uuid';
 
 /**

@@ -2,13 +2,6 @@
 
 import { v4 } from 'uuid';
 import {
-  AasConceptDescription,
-  AasJson,
-  AasOperation,
-  AasProperty,
-  AasSubmodel,
-  AasSubmodelElement,
-  AasSubmodelZod,
   Config,
   LinkedParameter,
   MachineVersionReference,
@@ -21,6 +14,15 @@ import {
   MetaParameter,
   ConfigZod,
 } from '../machine-config-schema';
+import {
+  AasJson,
+  AasProperty,
+  AasSubmodel,
+  AasSubmodelElement,
+  AasSubmodelZod,
+  AasConceptDescription,
+  AasOperation,
+} from '@/lib/data/machine-config-aas-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
 import { UserError, userError } from '@/lib/user-error';

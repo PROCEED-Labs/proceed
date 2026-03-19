@@ -59,7 +59,6 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
   if (!(await isMember(invite.spaceId, userId))) {
     addMember(invite.spaceId, userId);
 
-    // Add default role mappings
     if (invite.roleIds) {
       const validRoles = [];
       for (const roleId of invite.roleIds) {

@@ -202,18 +202,15 @@ export async function createUserAndAddToOrganization(
       await setUserPassword(user.id, passwordHash, tx, true);
 
       await addMember(organizationId, user.id, ability, tx);
-      // Add all role mappings
-      if (roles.length > 0) {
-        await addRoleMappings(
-          roles.map((roleId) => ({
-            roleId,
-            environmentId: organizationId,
-            userId: user.id,
-          })),
-          ability,
-          tx,
-        );
-      }
+      await addRoleMappings(
+        roles.map((roleId) => ({
+          roleId,
+          environmentId: organizationId,
+          userId: user.id,
+        })),
+        ability,
+        tx,
+      );
 
       // Store organigram with all three reference fields
       if (teamRoleId || backOfficeRoleId || directManagerId) {

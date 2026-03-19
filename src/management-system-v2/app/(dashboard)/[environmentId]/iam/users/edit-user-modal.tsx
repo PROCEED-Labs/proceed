@@ -53,10 +53,9 @@ export function EditUserModal({
   // All user roles
   const userRoles = ((user as any)?.roles as { id: string; name: string }[]) ?? [];
 
-  // Default roles = all assigned roles other than team and back-office from organigram
   const currentDefaultRoleIds = userRoles.map((r) => r.id);
 
-  // All roles dropdown (no type filter)
+  // All roles dropdown
   const { roles: allRoles } = useOrganizationRoles(spaceId);
 
   // Populate form when user or organigram data loads

@@ -31,13 +31,9 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import {
   buildLinkedInputParametersFromIds,
-  createTdsTemplateMachineDatasetHeader,
   defaultConfiguration,
-  defaultMachineDataSet,
-  defaultOrganizationConfigurationTemplate,
   defaultParameter,
   defaultParentConfiguration,
-  defaultUserParameterTemplate,
   extractParameter,
   findParameter,
   findPathToParameter,
@@ -50,6 +46,12 @@ import { getUserById } from './iam/users';
 import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
 import { truthyFilter } from '@/lib/typescript-utils';
+import {
+  createTdsTemplateMachineDatasetHeader,
+  defaultMachineDataSet,
+} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
+import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates-user';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;

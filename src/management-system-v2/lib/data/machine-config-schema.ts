@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { VersionedObject } from './versioned-object-schema';
 import { Prettify } from '../typescript-utils';
 import { LocalizationZod } from './locale';
 import { User } from './user-schema';
@@ -115,6 +114,7 @@ const DBMetaData = z.object({
   lastEditedOn: z.date(),
 });
 
+// following './versioned-object-schema'
 const ConfigVersioningData = z.object({
   id: z.string(),
   folderId: z.string(),

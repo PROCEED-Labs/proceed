@@ -361,7 +361,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           label: 'Edit',
           key: 'edit',
           onClick: () => setEditFieldOpen(true),
-          disabled: !editMode || !isChangeable,
+          disabled: !editMode || (isChangeable ? false : !currentParameter?.origin),
         },
         {
           label: 'Add Nested Parameter',

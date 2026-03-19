@@ -57,8 +57,12 @@ export async function getDataObject(spaceId: string, dataObjectId: string, userI
       return toErrorResponse(`Parameter ${dataObjectId} not found in config of space ${spaceId}.`);
 
     return { data: parameter };
-  } catch {
-    return toErrorResponse(`No config found for spaceId ${spaceId}.`);
+  } catch (e: any) {
+    if (e instanceof Error) {
+      return toErrorResponse(e.message);
+    } else {
+      return toErrorResponse('An unknown error occurred.');
+    }
   }
 }
 

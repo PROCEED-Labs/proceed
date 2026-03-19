@@ -1,7 +1,9 @@
 import { z } from 'zod';
 import { VersionedObject } from './versioned-object-schema';
-import { Prettify, WithRequired } from '../typescript-utils';
+import { Prettify } from '../typescript-utils';
 import { LocalizationZod } from './locale';
+import { User } from './user-schema';
+import { getUser } from './db/machine-config';
 
 export const configNameLUT = {
   config: 'Tech Data Set',
@@ -204,6 +206,8 @@ export const ConfigMetadataZod = z.object({
   category: z.string().optional(),
 });
 
+// ------------- parameter schemas ------------
+
 export const BaseParameterZod = z.object({
   id: z.string(),
   name: z.string(),
@@ -219,33 +223,87 @@ export const BaseParameterZod = z.object({
   changeableByUser: z.boolean(),
   origin: z.enum(['system', 'admin', 'user']),
   hasChanges: z.boolean(),
+  parentId: z.string().optional(),
+  parentType: z.enum(['config', 'parameter']).optional(),
 });
 
-const BaseMetaParameterZod = z.object({
-  id: z.string(),
-  name: z.string(),
-  parameterType: z.enum(['meta', 'content', 'none']),
-  structureVisible: z.boolean(),
-  displayName: z.array(LocalizedTextZod),
-  description: z.array(LocalizedTextZod).optional(),
-  valueType: z.string().optional(),
+const BaseMetaParameterZod = BaseParameterZod.extend({
   valueTemplateSource: z.enum(['shortName', 'name', 'description', 'category']),
-  unitRef: z.string().optional(),
-  usedAsInputParameterIn: z.array(LinkedParameterZod),
-  changeableByUser: z.boolean(),
-  origin: z.enum(['system', 'admin', 'user']),
-  hasChanges: z.boolean(),
+}).omit({ value: true, transformation: true });
+
+const BaseVirtualParameterZod = BaseParameterZod.omit({
+  transformation: true,
 });
 
 export const ParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
-  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
+  subParameters: z.lazy(() =>
+    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+  ),
+}).strict();
+
+export const MetaParameterZod: z.ZodType<Parameter> = BaseMetaParameterZod.extend({
+  subParameters: z.lazy(() =>
+    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+  ),
 });
 
-export const MetaParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
-  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
+export const VirtualUserDataParameterZod: z.ZodType<Parameter> = BaseVirtualParameterZod.extend({
+  userId: z.string(),
+  subParameters: z.lazy(() =>
+    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+  ),
+}).transform(async (userParameter) => {
+  const userInfo = await getUser(userParameter.userId);
+  let subParameters: typeof userParameter.subParameters = [];
+  if (!userInfo.isGuest) {
+    subParameters = userParameter.subParameters.map((param) => {
+      const infoValue = userInfo[param.name as keyof User];
+      return { ...param, ...(infoValue && { value: infoValue }) };
+    });
+  }
+  const parameter = { ...userParameter, subParameters, userId: undefined };
+  delete parameter.userId;
+  return parameter;
 });
 
-export const ConfigZod = z.object({
+// ------------- config schema -------------
+
+const DBMetaData = z.object({
+  createdOn: z.date(),
+  createdBy: z.string(),
+  lastEditedBy: z.string(),
+  lastEditedOn: z.date(),
+});
+
+const ConfigVersioningData = z.object({
+  id: z.string(),
+  folderId: z.string(),
+  type: z.literal('config'),
+  inEditingBy: z
+    .array(
+      z.object({
+        userId: z.string(),
+        timestamp: z.number(),
+      }),
+    )
+    .optional(),
+  createdOn: z.date(),
+  lastEditedOn: z.date(),
+  sharedAs: z.enum(['public', 'protected']),
+  shareTimestamp: z.number(),
+  allowIframeTimestamp: z.number(),
+  versions: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      description: z.string(),
+      versionBasedOn: z.string().optional(),
+      createdOn: z.date(),
+    }),
+  ),
+});
+
+const ConfigBaseZod = z.object({
   id: z.string(),
   versionId: z.union([z.string(), z.literal('latest')]), // maybe rather undefined as latest?
   versionPreviousConfigSetId: z.string().optional(),
@@ -254,12 +312,20 @@ export const ConfigZod = z.object({
   name: MetaAttributeZod,
   description: MetaAttributeZod,
   category: MetaAttributeZod,
-  content: z.array(z.union([ParameterZod, MetaParameterZod])),
+  content: z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
   folderId: z.string().optional(),
   latestVersionNumber: z.number().int().optional(),
   hasChanges: z.boolean(),
   configType: z.enum(['default', 'dummy', 'tds', 'organization']),
 });
+
+export const ConfigZod = z.object({
+  ...ConfigBaseZod.shape,
+  ...ConfigVersioningData.shape,
+  ...DBMetaData.shape,
+});
+
+// ------------- stored variants -------------
 
 export const StoredParameterZod = BaseParameterZod.extend({
   subParameters: z.array(z.string()),
@@ -276,6 +342,8 @@ export const StoredMetaParameterZod = BaseMetaParameterZod.extend({
 export const StoredConfigZod = ConfigZod.extend({
   content: z.array(z.string()),
   environmentId: z.string(),
+  createdOn: z.string(),
+  lastEditedOn: z.string(),
 });
 
 // ------------- versioning schemas ------------
@@ -318,17 +386,21 @@ export type LinkedParameter = z.infer<typeof LinkedParameterZod>;
 export type ConfigMetadata = z.infer<typeof ConfigMetadataZod>;
 
 export type Parameter = z.infer<typeof BaseParameterZod> & {
-  subParameters: (Parameter | MetaParameter)[];
+  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
 };
 
 export type MetaParameter = z.infer<typeof BaseMetaParameterZod> & {
-  subParameters: (Parameter | MetaParameter)[];
+  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
 };
-export type Config = Prettify<z.infer<typeof ConfigZod> & Metadata & NamelessVersionedObject>;
+
+export type VirtualUserParameter = z.infer<typeof VirtualUserDataParameterZod>;
+
+// export type Config = Prettify<z.infer<typeof ConfigZod> & Metadata & NamelessVersionedObject>;
+export type Config = z.infer<typeof ConfigZod>;
 
 export type StoredParameter = z.infer<typeof StoredParameterZod>;
 export type StoredMetaParameter = z.infer<typeof StoredMetaParameterZod>;
-export type StoredConfig = Prettify<z.infer<typeof StoredConfigZod> & NamelessVersionedObject>;
+export type StoredConfig = Prettify<z.infer<typeof StoredConfigZod>>;
 
 export type MachineVersionReference = z.infer<typeof MachineVersionReferenceZod>;
 export type ConfigVersion = z.infer<typeof ConfigVersionZod>;

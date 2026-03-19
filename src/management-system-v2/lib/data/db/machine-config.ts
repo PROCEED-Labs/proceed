@@ -19,6 +19,7 @@ import {
   StoredParameterZod,
   StoredMetaParameter,
   MetaParameter,
+  ConfigZod,
 } from '../machine-config-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
@@ -42,7 +43,7 @@ import {
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { getUserById } from './iam/users';
 import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
@@ -287,8 +288,8 @@ export async function copyParentConfig(
       ...(JSON.parse(JSON.stringify(originalConfig)) as typeof originalConfig),
       environmentId,
       createdBy: userId,
-      createdOn: date,
-      lastEditedOn: date,
+      createdOn: date.toISOString(),
+      lastEditedOn: date.toISOString(),
       id: newId,
       // TODO duplicate virtual paramters pointing to the same config data might currently be possible
       // maybe reuse the linkpath provided my the origins meta data
@@ -369,7 +370,6 @@ export async function addParentConfig(configInput: Config, environmentId: string
 
     newConfig.createdBy = newUserId;
     newConfig.folderId = folderId;
-    newConfig.environmentId = environmentId;
 
     const folderData = await getFolderById(newConfig.folderId);
     if (!folderData) throw new Error('Folder not found');
@@ -379,7 +379,7 @@ export async function addParentConfig(configInput: Config, environmentId: string
     if (existingConfig) {
       throw new Error(`Config with id ${parentConfigId} already exists!`);
     }
-    let storeId = await parentConfigToStorage(newConfig);
+    let storeId = await parentConfigToStorage(newConfig, environmentId);
     await addConfigCategories(environmentId, newConfig.category.value.split(';'));
     await storeAllCachedData();
     return { storeId };
@@ -1282,7 +1282,11 @@ async function parametersToMachineStorage(
  * @param newId Boolean determining if new IDs are to be generated.
  * @param version Version-ID of the config if a versioned config is to be stored.
  */
-async function parentConfigToStorage(parentConfig: Config, newId: boolean = false) {
+async function parentConfigToStorage(
+  parentConfig: Config,
+  environmentId: string,
+  newId: boolean = false,
+) {
   const { content } = parentConfig;
   if (!parentConfig.id || newId) {
     parentConfig.id = v4();
@@ -1290,6 +1294,9 @@ async function parentConfigToStorage(parentConfig: Config, newId: boolean = fals
   let creationDate = new Date(parentConfig.createdOn);
   const configToStore = {
     ...parentConfig,
+    environmentId,
+    createdOn: parentConfig.createdOn.toISOString(),
+    lastEditedOn: parentConfig.lastEditedOn.toISOString(),
     content: [],
   } as StoredConfig;
 
@@ -1297,7 +1304,7 @@ async function parentConfigToStorage(parentConfig: Config, newId: boolean = fals
 
   dataToParentConfigTable.push({
     id: parentConfig.id,
-    environmentId: parentConfig.environmentId,
+    environmentId: environmentId,
     creatorId: parentConfig.createdBy,
     createdOn: creationDate,
     data: configToStore,
@@ -1643,20 +1650,29 @@ export async function getDeepConfigurationById(
   if (!configResult) throw new Error(`Configuration with id ${parentConfigId} does not exist!`);
   let config = configResult?.data as unknown as StoredConfig;
 
-  const parentConfig = {
+  const parentConfigRaw = {
     ...config,
-    content: {},
+    createdOn: new Date(config.createdOn),
+    lastEditedOn: new Date(config.lastEditedOn),
+    content: [],
   } as Config;
 
-  parentConfig.content = await nestedParametersFromStorage(config.content);
+  parentConfigRaw.content = await nestedParametersFromStorage(config.content);
   // TODO: check if the user can access the config
   if (
-    parentConfig &&
+    parentConfigRaw &&
     false /*!ability.can('view', toCaslResource('MachineConfig', machineConfig))*/
-  )
+  ) {
     throw new UnauthorizedError();
-
-  return parentConfig;
+  }
+  try {
+    const parentConfig = await ConfigZod.parseAsync(parentConfigRaw);
+    return parentConfig;
+  } catch (e: any) {
+    throw new Error(
+      `Configuration with id ${parentConfigId} could not be parsed. ${JSON.stringify(e)}`,
+    );
+  }
 }
 
 /** Returns all shallow Configs in form of an array */
@@ -4815,4 +4831,8 @@ export async function syncSpaceConfigs() {
   for (const oldConfig of configsToRemove) {
     await removeParentConfiguration(oldConfig.id);
   }
+}
+
+export async function getUser(userId: string) {
+  return await getUserById(userId);
 }

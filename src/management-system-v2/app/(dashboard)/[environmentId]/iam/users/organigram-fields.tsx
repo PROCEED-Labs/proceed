@@ -7,10 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getSpaceUsers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
 
-function getUserDisplayName(user: {
-  firstName?: string | null;
-  lastName?: string | null;
-}): string {
+function getUserDisplayName(user: { firstName?: string | null; lastName?: string | null }): string {
   return `${user.firstName} ${user.lastName}`;
 }
 

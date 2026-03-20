@@ -256,9 +256,9 @@ async function ensureProcessInfo(
   if (definitionId.startsWith(dummyProcessId)) {
     let bpmn = initXml();
     bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
-    bpmn = (await setDefinitionsName(bpmn, 'Dummy Process')) as string;
+    bpmn = (await setDefinitionsName(bpmn, 'Placeholder Process To Keep The Folder')) as string;
     exportData[definitionId] = {
-      definitionName: 'Dummy Process',
+      definitionName: 'Placeholder Process To Keep The Folder',
       folderPath,
       isImport,
       versions: {

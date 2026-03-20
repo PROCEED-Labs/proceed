@@ -4,12 +4,12 @@ import { OrganigramInput } from '@/lib/data/organigram-schema';
 
 export async function upsertUserOrganigram(input: OrganigramInput) {
   const existing = await db.userOrganigram.findUnique({
-    where: { userId_environmentId: { userId: input.userId, environmentId: input.environmentId } },
+    where: { memberId: input.memberId },
   });
 
   if (existing) {
     return db.userOrganigram.update({
-      where: { userId_environmentId: { userId: input.userId, environmentId: input.environmentId } },
+      where: { memberId: input.memberId },
       data: {
         directManagerId: input.directManagerId ?? null,
         teamRoleId: input.teamRoleId ?? null,
@@ -21,8 +21,7 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
   return db.userOrganigram.create({
     data: {
       id: v4(),
-      userId: input.userId,
-      environmentId: input.environmentId,
+      memberId: input.memberId,
       directManagerId: input.directManagerId ?? null,
       teamRoleId: input.teamRoleId ?? null,
       backOfficeRoleId: input.backOfficeRoleId ?? null,
@@ -31,7 +30,12 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
 }
 
 export async function getUserOrganigram(userId: string, environmentId: string) {
+  const membership = await db.membership.findFirst({
+    where: { userId, environmentId },
+  });
+  if (!membership) return null;
+
   return db.userOrganigram.findUnique({
-    where: { userId_environmentId: { userId, environmentId } },
+    where: { memberId: membership.id },
   });
 }

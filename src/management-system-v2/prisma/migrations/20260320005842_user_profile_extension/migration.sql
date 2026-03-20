@@ -4,8 +4,7 @@ ALTER TABLE "role" ADD COLUMN     "organizationRoleType" TEXT[] DEFAULT ARRAY[]:
 -- CreateTable
 CREATE TABLE "user_organigram" (
     "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "environmentId" TEXT NOT NULL,
+    "memberId" TEXT NOT NULL,
     "directManagerId" TEXT,
     "teamRoleId" TEXT,
     "backOfficeRoleId" TEXT,
@@ -14,16 +13,13 @@ CREATE TABLE "user_organigram" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "user_organigram_userId_environmentId_key" ON "user_organigram"("userId", "environmentId");
+CREATE UNIQUE INDEX "user_organigram_memberId_key" ON "user_organigram"("memberId");
 
 -- AddForeignKey
-ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "membership"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_environmentId_fkey" FOREIGN KEY ("environmentId") REFERENCES "space"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_directManagerId_fkey" FOREIGN KEY ("directManagerId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_directManagerId_fkey" FOREIGN KEY ("directManagerId") REFERENCES "membership"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_teamRoleId_fkey" FOREIGN KEY ("teamRoleId") REFERENCES "role"("id") ON DELETE SET NULL ON UPDATE CASCADE;

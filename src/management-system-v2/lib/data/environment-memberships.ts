@@ -202,6 +202,11 @@ export async function createUserAndAddToOrganization(
       await setUserPassword(user.id, passwordHash, tx, true);
 
       await addMember(organizationId, user.id, ability, tx);
+
+      // Get the membership id just created
+      const membership = await tx.membership.findFirst({
+        where: { userId: user.id, environmentId: organizationId },
+      });
       await addRoleMappings(
         roles.map((roleId) => ({
           roleId,
@@ -211,15 +216,15 @@ export async function createUserAndAddToOrganization(
         ability,
         tx,
       );
+      // directManagerId is already a membershipId from the frontend dropdown
+      const directManagerMembershipId: string | null = directManagerId ?? null;
 
-      // Store organigram with all three reference fields
-      if (teamRoleId || backOfficeRoleId || directManagerId) {
+      if (membership && (teamRoleId || backOfficeRoleId || directManagerMembershipId)) {
         await tx.userOrganigram.create({
           data: {
             id: v4(),
-            userId: user.id,
-            environmentId: organizationId,
-            directManagerId: directManagerId ?? null,
+            memberId: membership.id,
+            directManagerId: directManagerMembershipId,
             teamRoleId: teamRoleId ?? null,
             backOfficeRoleId: backOfficeRoleId ?? null,
           },
@@ -300,31 +305,38 @@ export async function updateUserByAdmin(
         );
       }
 
-      // Upsert organigram with all three reference fields
-      const existing = await tx.userOrganigram.findUnique({
-        where: { userId_environmentId: { userId, environmentId: organizationId } },
+      // Get membership for this user
+      const membership = await tx.membership.findFirst({
+        where: { userId, environmentId: organizationId },
       });
 
-      if (existing) {
-        await tx.userOrganigram.update({
-          where: { userId_environmentId: { userId, environmentId: organizationId } },
-          data: {
-            directManagerId: directManagerId ?? null,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
-          },
+      if (membership) {
+        // directManagerId is already a membershipId from the frontend dropdown
+        const directManagerMembershipId: string | null = directManagerId ?? null;
+        const existing = await tx.userOrganigram.findUnique({
+          where: { memberId: membership.id },
         });
-      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
-        await tx.userOrganigram.create({
-          data: {
-            id: v4(),
-            userId,
-            environmentId: organizationId,
-            directManagerId: directManagerId ?? null,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
-          },
-        });
+
+        if (existing) {
+          await tx.userOrganigram.update({
+            where: { memberId: membership.id },
+            data: {
+              directManagerId: directManagerMembershipId,
+              teamRoleId: teamRoleId ?? null,
+              backOfficeRoleId: backOfficeRoleId ?? null,
+            },
+          });
+        } else if (teamRoleId || backOfficeRoleId || directManagerMembershipId) {
+          await tx.userOrganigram.create({
+            data: {
+              id: v4(),
+              memberId: membership.id,
+              directManagerId: directManagerMembershipId,
+              teamRoleId: teamRoleId ?? null,
+              backOfficeRoleId: backOfficeRoleId ?? null,
+            },
+          });
+        }
       }
     });
   } catch (error) {

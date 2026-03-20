@@ -4,23 +4,8 @@ import { Form, Select, Divider, Typography, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import useOrganizationRoles from './use-org-roles';
 import { useQuery } from '@tanstack/react-query';
-import { getSpaceUsers } from '@/lib/data/organigram';
+import { getSpaceMembers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
-
-function getUserDisplayName(user: { firstName?: string | null; lastName?: string | null }): string {
-  return `${user.firstName} ${user.lastName}`;
-}
-
-function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
-  return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-      {label}
-      <Tooltip title={tooltip}>
-        <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
-      </Tooltip>
-    </span>
-  );
-}
 
 export function OrganigramFields({
   spaceId,
@@ -32,16 +17,16 @@ export function OrganigramFields({
   const { roles: teamRoles } = useOrganizationRoles(spaceId, 'team');
   const { roles: backOfficeRoles } = useOrganizationRoles(spaceId, 'back-office');
 
-  const { data: spaceUsers } = useQuery({
-    queryKey: ['space-users', spaceId],
+  const { data: members } = useQuery({
+    queryKey: ['space-members', spaceId],
     queryFn: async () => {
-      const result = await getSpaceUsers(spaceId);
+      const result = await getSpaceMembers(spaceId);
       if (isUserErrorResponse(result)) throw new Error();
       return result;
     },
   });
 
-  const filteredUsers = (spaceUsers ?? []).filter((u) => u.id !== excludeUserId);
+  const filteredMembers = (members ?? []).filter((m) => m.user.id !== excludeUserId);
 
   return (
     <>
@@ -52,10 +37,12 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <LabelWithTooltip
-            label="Team / Department"
-            tooltip="Specify the user's organizational team or department."
-          />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Team / Department
+            <Tooltip title="Specify the user's organizational team or department.">
+              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+            </Tooltip>
+          </span>
         }
         name="teamRoleId"
       >
@@ -68,29 +55,33 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <LabelWithTooltip
-            label="Direct Manager"
-            tooltip="Specify the user's direct, organizational manager."
-          />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Direct Manager
+            <Tooltip title="Specify the user's direct, organizational manager.">
+              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+            </Tooltip>
+          </span>
         }
         name="directManagerId"
       >
         <Select
           allowClear
           placeholder="Select direct manager"
-          options={filteredUsers.map((u) => ({
-            label: getUserDisplayName(u),
-            value: u.id,
+          options={filteredMembers.map((m) => ({
+            value: m.id,
+            label: [m.user.firstName, m.user.lastName].filter(Boolean).join(' '),
           }))}
         />
       </Form.Item>
 
       <Form.Item
         label={
-          <LabelWithTooltip
-            label="Back Office"
-            tooltip="Specify the user's organizational back office. (The user will not become a member of that role.)"
-          />
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Back Office
+            <Tooltip title="Specify the user's organizational back office. (The user will not become a member of that role.)">
+              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+            </Tooltip>
+          </span>
         }
         name="backOfficeRoleId"
       >

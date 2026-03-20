@@ -10,6 +10,7 @@ import { getRoleById } from './data/db/iam/roles';
 import { addRoleMappings } from './data/db/iam/role-mappings';
 import { syncOrganizationUsers } from './data/db/machine-config';
 import { upsertUserOrganigram } from './data/db/iam/organigram';
+import db from './data/db';
 
 const baseInvitationSchema = {
   spaceId: z.string(),
@@ -77,13 +78,21 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
 
     // save directManagerId and associated role reference in organigram
     if (invite.teamRoleId || invite.backOfficeRoleId || invite.directManagerId) {
-      await upsertUserOrganigram({
-        userId,
-        environmentId: invite.spaceId,
-        directManagerId: invite.directManagerId ?? null,
-        teamRoleId: invite.teamRoleId ?? null,
-        backOfficeRoleId: invite.backOfficeRoleId ?? null,
+      const membership = await db.membership.findFirst({
+        where: { userId, environmentId: invite.spaceId },
       });
+
+      if (membership) {
+        // directManagerId is already a membershipId from the frontend dropdown
+        const directManagerMembershipId: string | null = invite.directManagerId ?? null;
+
+        await upsertUserOrganigram({
+          memberId: membership.id,
+          directManagerId: directManagerMembershipId,
+          teamRoleId: invite.teamRoleId ?? null,
+          backOfficeRoleId: invite.backOfficeRoleId ?? null,
+        });
+      }
     }
   }
 

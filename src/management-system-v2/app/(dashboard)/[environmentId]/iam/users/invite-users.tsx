@@ -3,7 +3,7 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -21,6 +21,7 @@ import {
   InputRef,
   Dropdown,
   MenuProps,
+  Tooltip,
 } from 'antd';
 import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
@@ -31,7 +32,7 @@ import useDebounce from '@/lib/useDebounce';
 import { queryUsers } from '@/lib/data/users';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserAvatar from '@/components/user-avatar';
-import { getSpaceUsers } from '@/lib/data/organigram';
+import { getSpaceMembers } from '@/lib/data/organigram';
 import { z } from 'zod';
 
 const emailSchema = z.string().email();
@@ -78,10 +79,10 @@ const AddUsersModal: FC<{
   const { roles: teamRoles } = useOrganizationRoles(spaceId, 'team');
   const { roles: backOfficeRoles } = useOrganizationRoles(spaceId, 'back-office');
 
-  const { data: spaceUsers } = useQuery({
-    queryKey: ['space-users', spaceId],
+  const { data: spaceMembers } = useQuery({
+    queryKey: ['space-members', spaceId],
     queryFn: async () => {
-      const result = await getSpaceUsers(spaceId);
+      const result = await getSpaceMembers(spaceId);
       if (isUserErrorResponse(result)) throw new Error();
       return result;
     },
@@ -301,10 +302,16 @@ const AddUsersModal: FC<{
         <>
           <Divider />
 
-          <Typography.Title style={{ marginBottom: 0 }}>Roles</Typography.Title>
-          <Typography.Text style={{ display: 'block', marginBottom: '0.5rem' }}>
-            You can select roles for the users you're inviting
-          </Typography.Text>
+          <Typography.Title style={{ marginBottom: '0.5rem' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Roles
+              <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
+                <QuestionCircleOutlined
+                  style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+                />
+              </Tooltip>
+            </span>
+          </Typography.Title>
 
           <Select
             mode="multiple"
@@ -324,8 +331,15 @@ const AddUsersModal: FC<{
             Organisation Info
           </Typography.Title>
 
-          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+          <Typography.Text
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
+          >
             Team
+            <Tooltip title="Specify the user's organizational team or department.">
+              <QuestionCircleOutlined
+                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+              />
+            </Tooltip>
           </Typography.Text>
           <Select
             allowClear
@@ -335,22 +349,37 @@ const AddUsersModal: FC<{
             options={(teamRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
           />
 
-          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+          <Typography.Text
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
+          >
             Direct Manager
+            <Tooltip title="Specify the user's direct, organizational manager.">
+              <QuestionCircleOutlined
+                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+              />
+            </Tooltip>
           </Typography.Text>
           <Select
             allowClear
             style={{ width: '100%', marginBottom: '1rem' }}
             placeholder="Select direct manager"
             onChange={(value) => setDirectManagerId(value)}
-            options={(spaceUsers ?? []).map((u) => ({
-              label: u.username ?? u.email ?? u.id,
-              value: u.id,
+            options={(spaceMembers ?? []).map((m) => ({
+              value: m.id,
+              label:
+                [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.username,
             }))}
           />
 
-          <Typography.Text style={{ display: 'block', marginBottom: '0.3rem' }}>
+          <Typography.Text
+            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
+          >
             Back Office
+            <Tooltip title="Specify the user's organizational back office. (The user will not become a member of that role.)">
+              <QuestionCircleOutlined
+                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
+              />
+            </Tooltip>
           </Typography.Text>
           <Select
             allowClear

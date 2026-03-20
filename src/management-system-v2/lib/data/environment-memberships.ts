@@ -271,8 +271,19 @@ export async function updateUserByAdmin(
     }
 
     await db.$transaction(async (tx) => {
-      // Update basic user info
-      await updateUser(userId, { firstName, lastName, username }, tx);
+      // Fetch current user to compare username before updating
+      const currentUser = await tx.user.findUnique({ where: { id: userId } });
+
+      // Update basic user info and only pass username if it actually changed
+      await updateUser(
+        userId,
+        {
+          firstName,
+          lastName,
+          ...(username !== currentUser?.username && { username }),
+        },
+        tx,
+      );
 
       // Get current role mappings for this user in this environment
       const currentMappings = await getRoleMappingByUserId(userId, organizationId);

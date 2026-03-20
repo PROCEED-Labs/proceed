@@ -60,6 +60,7 @@ const BPMNViewer: FC<BPMNViewerProps> = ({
 };
 
 type LazyLoadingBPMNViewerProps = BPMNViewerProps & {
+  visible?: boolean;
   fallback?: React.ReactNode;
 };
 
@@ -68,15 +69,21 @@ export const LazyBPMNViewer: FC<LazyLoadingBPMNViewerProps> = ({
   ...props
 }) => {
   const ViewerContainerRef = useRef(null);
-  const visible = useLazyRendering(ViewerContainerRef);
+  const internalVisible = useLazyRendering(ViewerContainerRef);
+
+  const _visible = props.visible !== undefined ? props.visible : internalVisible;
+  const _props = { ...props, visible: undefined };
 
   return (
     <>
-      <div ref={ViewerContainerRef} style={{ height: '100%', width: '100%' }}>
-        {visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
+      <div
+        ref={ViewerContainerRef}
+        style={{ height: '100%', width: '100%', display: 'flex', justifyContent: 'center' }}
+      >
+        {_visible /* This ensures, that only elements, that are visible or close to beeing visible are rendered -> reduces requests for bpmn/xml */ ? (
           <Suspense fallback={fallback}>
             {/* Prevent sequential rendering/ get from showing the Icon-list */}
-            <BPMNViewer {...props} />
+            <BPMNViewer {..._props} />
           </Suspense>
         ) : (
           fallback

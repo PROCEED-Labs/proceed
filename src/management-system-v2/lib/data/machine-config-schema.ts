@@ -60,7 +60,7 @@ export const BaseParameterZod = z.object({
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   transformation: TranformationZod.optional(),
   changeableByUser: z.boolean(),
-  origin: z.enum(['system', 'admin', 'user']),
+  origin: z.enum(['common-user-data']).nullable(),
   hasChanges: z.boolean(),
   parentId: z.string().optional(),
   parentType: z.enum(['config', 'parameter']).optional(),

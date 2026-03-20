@@ -56,7 +56,7 @@ export function defaultParameter(
     subParameters: [],
     usedAsInputParameterIn: [],
     changeableByUser: true,
-    origin: 'system',
+    origin: null,
     // unit: newUnit as AasUnit,
     hasChanges: false,
   };
@@ -94,7 +94,7 @@ export function defaultMetaParameter(
     subParameters: [],
     usedAsInputParameterIn: [],
     changeableByUser: true,
-    origin: 'system',
+    origin: null,
     hasChanges: false,
   };
 }

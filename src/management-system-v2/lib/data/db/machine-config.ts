@@ -759,7 +759,7 @@ export async function addParameter(
     ) {
       // a new IAM common-user-data parameter is added
       const linkedParams = await addCommonUserDataPropagation(
-        { ...parameter, origin: 'admin' },
+        { ...parameter, origin: 'common-user-data' },
         parameterPath.slice(2, -1),
         fullConfig,
       );
@@ -800,7 +800,7 @@ async function addCommonUserDataPropagation(
         const parameterCopy: Parameter = JSON.parse(JSON.stringify(parameter));
         // create new ID for copied parameter
         parameterCopy.id = v4();
-        // parameterCopy.changeableByUser = false;
+        parameterCopy.changeableByUser = false;
         // create linked transformation from the original parameter
         parameterCopy.transformation = {
           transformationType: 'linked',
@@ -839,7 +839,6 @@ async function addCommonUserDataPropagation(
   return parameterCopyIds;
 }
 
-// TODO add transformation
 async function addUserParameterDataImport(parameter: Parameter, orgConfig: Config) {
   const dataParent = extractParameter(parameter, ['data']);
   const commonUserData = extractParameter(orgConfig, [
@@ -850,7 +849,6 @@ async function addUserParameterDataImport(parameter: Parameter, orgConfig: Confi
     const subparameterKeys = await asyncMap(
       commonUserData.subParameters,
       async (commonUserParameter: Parameter) => {
-        // TODO handle IDs?
         return await linkedCopyParameter(
           commonUserParameter.id,
           dataParent.id,
@@ -861,11 +859,6 @@ async function addUserParameterDataImport(parameter: Parameter, orgConfig: Confi
       },
     );
     await updateParameter(dataParent.id, { subParameters: subparameterKeys }, orgConfig.id);
-    // TODO not necessary anymore, I think
-    // marking copied values as unchangeable
-    // asyncForEach(subparameterKeys, async (paramId) => {
-    //   await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
-    // });
   } else {
     // TODO error for missing users parameter
   }
@@ -3149,7 +3142,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
-        origin: 'system',
+        origin: null,
         hasChanges: false,
       };
       const childParameters: Parameter[] = [];
@@ -3178,7 +3171,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
-        origin: 'system',
+        origin: null,
         hasChanges: false,
       };
       return newParameter;
@@ -3213,7 +3206,7 @@ export async function submodelElementToParameter(
           structureVisible,
           subParameters: [],
           changeableByUser,
-          origin: 'system',
+          origin: null,
           hasChanges: false,
         };
         return newParameter;
@@ -3233,7 +3226,7 @@ export async function submodelElementToParameter(
           usedAsInputParameterIn: [],
           subParameters: [],
           changeableByUser,
-          origin: 'system',
+          origin: null,
           hasChanges: false,
         };
         return newParameter;
@@ -3866,7 +3859,7 @@ export async function versioningCreateNewVersionForTargetOrReferenceSet(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
-      origin: 'system',
+      origin: null,
       hasChanges: false,
     };
 
@@ -3989,7 +3982,7 @@ export async function versioningCreateNewVersion(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
-      origin: 'system',
+      origin: null,
       hasChanges: false,
     } as Parameter;
 

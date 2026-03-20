@@ -51,7 +51,7 @@ import {
   createTdsTemplateMachineDatasetHeader,
   defaultMachineDataSet,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
-import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates-user';
+import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
 import { User } from '../user-schema';
 

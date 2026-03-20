@@ -558,16 +558,23 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
-// TODO: fix: this function doesn't work yet
-export const processHasChangesSinceLastVersion = async (processId: string, spaceId: string) => {
+/**
+ * Function that checks if a process' latest version is unchanged from the version it is based on
+ *
+ * @returns if unchanged, the version id of the based on version is returned, otherwise undefined is
+ * returned
+ **/
+export const processUnchangedFromBasedOnVersion = async (processId: string, spaceId: string) => {
   const error = await checkValidity(processId, 'view', spaceId);
   if (error) return error;
 
   const process = await _getProcess(processId, true);
   if (!process) return userError('Process not found', UserErrorType.NotFoundError);
 
+  if (!process.versions.length) return;
+
   const bpmnObj = await toBpmnObject(process.bpmn!);
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
@@ -578,7 +585,27 @@ export const processHasChangesSinceLastVersion = async (processId: string, space
       : undefined;
 
   const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
-  return !versionsAreEqual;
+
+  if (versionsAreEqual) return versionBasedOn;
+};
+
+export const getUnchangedVersionInfo = async (processId: string, spaceId: string) => {
+  // this also checks if the user is allowed to use this function
+  const unchangedVersion = await processUnchangedFromBasedOnVersion(processId, spaceId);
+
+  if (isUserErrorResponse(unchangedVersion)) return unchangedVersion;
+
+  if (!unchangedVersion) return;
+
+  const process = await _getProcess(processId, false);
+  if (!process?.versions.length) return;
+
+  const version = process.versions.find((v) => v.id === unchangedVersion);
+
+  // this should not happen when the data in the MS is correct
+  if (!version) return;
+
+  return version;
 };
 
 export const createVersion = async (

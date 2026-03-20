@@ -11,6 +11,7 @@ import {
   setScriptTaskData,
   getStartFormFileNameMapping,
   setStartFormFileName,
+  getDefinitionsId,
 } from '@proceed/bpmn-helper';
 import { asyncForEach } from './javascriptHelpers';
 
@@ -27,7 +28,6 @@ import {
   getProcessHtmlFormJSON,
   getHtmlForm,
 } from '@/lib/data/db/process';
-import { getProcessHtmlFormHTML } from '../data/processes';
 const { diff } = require('bpmn-js-differ');
 
 // TODO: This used to be a helper file in the old management system. It used
@@ -36,39 +36,57 @@ const { diff } = require('bpmn-js-differ');
 // should be refactored to reflect the fact this runs on the server now.
 
 export async function areVersionsEqual(bpmn: string, otherBpmn: string) {
+  // compare the bpmn of both versions excluding the differences that would come from one being
+  // versioned and the other not being versioned
+  const unversionedOther = await convertToEditableBpmn(otherBpmn);
+
   const bpmnObj = await toBpmnObject(bpmn);
-  const otherBpmnObj = await toBpmnObject(otherBpmn);
+  const unversionedOtherObj = await toBpmnObject(unversionedOther.bpmn);
 
-  const {
-    versionId,
-    name: versionName,
-    description: versionDescription,
-    versionBasedOn,
-    versionCreatedOn,
-  } = await getDefinitionsVersionInformation(otherBpmnObj);
+  // compare the two bpmns in a way that is not affected by the ordering of elements in the text
+  // file
+  const changes = diff(unversionedOtherObj, bpmnObj);
+  const hasChanges =
+    Object.keys(changes._changed).length ||
+    Object.keys(changes._removed).length ||
+    Object.keys(changes._added).length ||
+    Object.keys(changes._layoutChanged).length;
 
-  if (versionId) {
-    // check if the two bpmns were the same if they had the same version information
-    await setDefinitionsVersionInformation(bpmnObj, {
-      versionId,
-      versionName,
-      versionDescription,
-      versionBasedOn,
-      versionCreatedOn,
-    });
+  if (hasChanges) return false;
 
-    // compare the two bpmns
-    const changes = diff(otherBpmnObj, bpmnObj);
-    const hasChanges =
-      Object.keys(changes._changed).length ||
-      Object.keys(changes._removed).length ||
-      Object.keys(changes._added).length ||
-      Object.keys(changes._layoutChanged).length;
+  const definitionsId = await getDefinitionsId(bpmnObj);
 
-    return !hasChanges;
+  // compare the assets used in the bpmns
+  // (we expect that the "same" asset names are referenced since the comparison above would find differences otherwise)
+
+  // compare start forms
+  for (const [versioned, unversioned] of Object.entries(
+    unversionedOther.changedStartFormTaskFileNames,
+  )) {
+    const versionedHtmlForm = await getHtmlForm(definitionsId, versioned);
+    const unversionedHtmlForm = await getHtmlForm(definitionsId, unversioned);
+    if (versionedHtmlForm !== unversionedHtmlForm) return false;
   }
 
-  return false;
+  // compare user tasks
+  for (const [versioned, unversioned] of Object.entries(
+    unversionedOther.changedUserTaskFileNames,
+  )) {
+    const versionedHtmlForm = await getHtmlForm(definitionsId, versioned);
+    const unversionedHtmlForm = await getHtmlForm(definitionsId, unversioned);
+    if (versionedHtmlForm !== unversionedHtmlForm) return false;
+  }
+
+  // compare script tasks
+  for (const [versioned, unversioned] of Object.entries(
+    unversionedOther.changedScriptTaskFileNames,
+  )) {
+    const versionedScript = await getProcessScriptTaskScript(definitionsId, versioned + '.js');
+    const unversionedScript = await getProcessScriptTaskScript(definitionsId, unversioned + '.js');
+    if (versionedScript !== unversionedScript) return false;
+  }
+
+  return true;
 }
 
 export async function convertToEditableBpmn(bpmn: string) {

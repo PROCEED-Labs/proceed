@@ -58,10 +58,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
   const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
 
-  useEffect(() => {
-    setIsExecutable(process.executable || false);
-  }, [process]);
-
   const { isListView, processContextPath } = useProcessView();
 
   /// Derived State
@@ -167,7 +163,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   }, [process.id]);
 
   useEffect(() => {
-    console.log('modeler changed');
     setModeler(modeler.current);
 
     setCanUndo(false);
@@ -210,7 +205,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
 
   const onRootChange = useCallback<Required<BPMNCanvasProps>['onRootChange']>(
     async (root) => {
-      console.log('root changed');
       setRootElement(root);
       // When the current root (the visible layer [the main
       // process/collaboration or some collapsed subprocess]) is changed to a
@@ -275,7 +269,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
     // (unless the subprocess does not exist anymore because the process
     // changed)
     setLoaded(true);
-    console.log('onLoaded');
     if (subprocessId && modeler.current) {
       const canvas = modeler.current.getCanvas();
       const subprocessPlane = canvas
@@ -288,6 +281,13 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
           'The sub-process that was open does not exist anymore. Switched to the main process view.',
         );
       }
+    }
+
+    // set the executable value for the currently open version
+    const root = modeler.current?.getCurrentRoot();
+    if (root && bpmnIs(root, 'bpmn:Process')) {
+      const executable = root.businessObject.isExecutable;
+      setIsExecutable(executable || false);
     }
   }, [messageApi, subprocessId]);
 

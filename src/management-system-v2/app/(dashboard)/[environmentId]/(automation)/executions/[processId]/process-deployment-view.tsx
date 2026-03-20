@@ -30,9 +30,8 @@ import { getLatestDeployment, getVersionInstances, getYoungestInstance } from '.
 import useColors from './use-colors';
 import useTokens from './use-tokens';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
-import StartFormModal from './start-form-modal';
+import StartFormModal from '@/components/start-form-modal';
 import useInstanceVariables from './use-instance-variables';
-import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -117,7 +116,7 @@ export default function ProcessDeploymentView({
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
 
-  const { variableDefinitions, variables } = useInstanceVariables({
+  const { variableDefinitions } = useInstanceVariables({
     process: deploymentInfo,
     version: currentVersion,
   });
@@ -194,14 +193,6 @@ export default function ProcessDeploymentView({
                         if (typeof startForm !== 'string') return startForm;
 
                         if (startForm) {
-                          const mappedVariables = Object.fromEntries(
-                            variables
-                              .filter((variable) => variable.value !== undefined)
-                              .map((variable) => [variable.name, variable.value]),
-                          );
-                          startForm = inlineScript(startForm, '', '', variableDefinitions);
-                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
-
                           setStartForm(startForm);
                         } else {
                           return startInstance(versionId);
@@ -364,19 +355,13 @@ export default function ProcessDeploymentView({
 
         <StartFormModal
           html={startForm}
+          variableDefinitions={variableDefinitions}
           onSubmit={async (submitVariables) => {
             const versionId = getLatestDeployment(deploymentInfo).versionId;
 
-            const mappedVariables: Record<string, { value: any }> = {};
-
-            // set the values of variables to the ones coming from the start form
-            Object.entries(submitVariables).forEach(
-              ([key, value]) => (mappedVariables[key] = { value }),
-            );
-
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () => startInstance(versionId, mappedVariables),
+              fn: () => startInstance(versionId, submitVariables),
 
               onSuccess: async (instanceId) => {
                 await refetch();

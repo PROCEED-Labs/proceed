@@ -24,9 +24,9 @@ import {
   Divider,
   Typography,
 } from 'antd';
-import { InfoCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, PlayCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 
-import { ComponentProps, useRef, useState, useTransition } from 'react';
+import { ComponentProps, use, useMemo, useRef, useState, useTransition } from 'react';
 import {
   DeleteOutlined,
   UnorderedListOutlined,
@@ -48,7 +48,6 @@ import { useRouter } from 'next/navigation';
 import {
   checkIfProcessExistsByName,
   copyProcesses,
-  createVersion,
   deleteProcesses,
   updateProcesses,
 } from '@/lib/data/processes';
@@ -78,7 +77,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import { handleOpenDocumentation } from '@/app/(dashboard)/[environmentId]/processes/processes-helper';
 import { useProcessView } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/process-view-context';
 import { spaceURL } from '@/lib/utils';
-import VersionCreationButton, { VersionModal } from '../version-creation-button';
+import VersionCreationButton, { VersionAndDeployModal } from '../version-creation-button';
 
 import { ShareModal } from '../share-modal/share-modal';
 import MoveToFolderModal from '../folder-move-modal';
@@ -87,6 +86,11 @@ import { ContextActions, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
+import {
+  VersionStartModal,
+  useVersionAndDeploy,
+} from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/version-and-deploy-section';
+import { EnvVarsContext } from '../env-vars-context';
 
 // TODO: improve ordering
 export type ProcessActions = {
@@ -134,7 +138,8 @@ const Processes = ({
   const ability = useAbilityStore((state) => state.ability);
   const space = useEnvironment();
   const router = useRouter();
-  const environment = useEnvironment();
+
+  const env = use(EnvVarsContext);
 
   useInitialisePotentialOwnerStore();
   const user = useSession().data?.user;
@@ -164,6 +169,7 @@ const Processes = ({
   const [exportModalTab, setExportModalTab] = useState<'bpmn' | 'share-public-link' | undefined>(
     undefined,
   );
+  const [showVersionSelectionModal, setShowVersionSelectionModal] = useState(false);
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
@@ -432,20 +438,6 @@ const Processes = ({
     setOpenVersionModal(true);
   };
 
-  const createVersionFromList = async (values: {
-    versionName: string;
-    versionDescription: string;
-    processId?: string;
-  }) => {
-    if (isListView) return;
-    await createVersion(
-      values.versionName,
-      values.versionDescription,
-      values.processId ?? selectedRowKeys[0],
-      environment.spaceId,
-    );
-  };
-
   const share = (item: ProcessListProcess) => {
     setSelectedRowElements([item]);
     setExportModalTab('share-public-link');
@@ -472,6 +464,30 @@ const Processes = ({
     releaseProcess,
     share,
   };
+
+  const [selectedProcessId, isExecutable] = useMemo(() => {
+    let process: { id: string; executable?: boolean } | undefined;
+
+    if (rowClickedProcess) {
+      const candidate = processes.find((p) => p.id === rowClickedProcess);
+      if (candidate?.type === 'process') process = candidate;
+    }
+
+    if (!process && selectedRowElements.length === 1 && selectedRowElements[0].type === 'process') {
+      [process] = selectedRowElements;
+    }
+
+    if (process) {
+      return [process.id, process.executable || false];
+    }
+
+    return [undefined, false];
+  }, [selectedRowElements, rowClickedProcess, processes]);
+
+  const { canDeploy, handleVersionCreation, handleStartInstance } = useVersionAndDeploy(
+    selectedProcessId,
+    isExecutable,
+  );
 
   const contextActions: ContextActions = {
     viewDocumentation,
@@ -602,10 +618,29 @@ const Processes = ({
                                 {!isListView && canCreateProcess && (
                                   <Tooltip placement="top" title={'Release Process'}>
                                     <VersionCreationButton
+                                      processId={selectedRowElements[0].id}
                                       type="text"
                                       icon={<BsFileEarmarkCheck />}
-                                      createVersion={createVersionFromList}
-                                    ></VersionCreationButton>
+                                      close={async (values, deploy) => {
+                                        await handleVersionCreation(
+                                          selectedRowElements[0].id,
+                                          values,
+                                          deploy,
+                                        );
+                                      }}
+                                      isDeployable={canDeploy}
+                                    />
+                                  </Tooltip>
+                                )}
+                                {env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
+                                  <Tooltip placement="top" title="Start Instance">
+                                    <Button
+                                      type="text"
+                                      icon={<PlayCircleOutlined />}
+                                      onClick={() => {
+                                        setShowVersionSelectionModal(true);
+                                      }}
+                                    />
                                   </Tooltip>
                                 )}
                               </div>
@@ -960,15 +995,16 @@ const Processes = ({
           onOk: deleteCreateProcessSearchParams,
         }}
       />
-      <VersionModal
-        close={(values) => {
-          setOpenVersionModal(false);
-
-          if (values) {
-            createVersionFromList({ ...values, processId: rowClickedProcess });
+      <VersionAndDeployModal
+        processId={rowClickedProcess || ''}
+        close={async (values, deploy) => {
+          if (rowClickedProcess) {
+            await handleVersionCreation(rowClickedProcess, values, deploy);
           }
+          setOpenVersionModal(false);
         }}
         show={openVersionModal}
+        isDeployable={canDeploy}
       />
       <FolderCreationModal
         open={openCreateFolderModal}
@@ -1003,6 +1039,18 @@ const Processes = ({
       />
 
       <AddUserControls name={'process-list'} />
+
+      {canDeploy && (
+        <VersionStartModal
+          show={showVersionSelectionModal}
+          processId={selectedProcessId}
+          onOk={(version, variables) => {
+            handleStartInstance(version, variables);
+            setShowVersionSelectionModal(false);
+          }}
+          onClose={() => setShowVersionSelectionModal(false)}
+        />
+      )}
     </>
   );
 };

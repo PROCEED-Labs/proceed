@@ -9,7 +9,7 @@ import { IoArrowBack } from 'react-icons/io5';
 import styles from './tasklist.module.scss';
 import ScrollBar from '@/components/scrollbar';
 
-import UserTaskView from './user-task-view';
+import UserTaskView from '@/components/user-task-view';
 import { ItemType } from 'antd/es/menu/interface';
 import {
   FilterOrSortButton,

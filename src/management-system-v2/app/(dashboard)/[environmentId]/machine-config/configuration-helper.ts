@@ -6,6 +6,7 @@ import {
   Parameter,
   ParameterTranformation,
   MetaParameter,
+  VirtualUserParameter,
 } from '@/lib/data/machine-config-schema';
 import {
   AasProperty,
@@ -608,4 +609,8 @@ export function extractParameter(configOrParameter: Config | Parameter, path: st
   }
 
   return current;
+}
+
+export function isVirtualUserParameter(p: unknown): p is VirtualUserParameter {
+  return typeof p === 'object' && p !== null && 'userId' in p;
 }

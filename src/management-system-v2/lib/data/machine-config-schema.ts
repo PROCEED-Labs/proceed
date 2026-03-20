@@ -60,7 +60,7 @@ export const BaseParameterZod = z.object({
   usedAsInputParameterIn: z.array(LinkedParameterZod),
   transformation: TranformationZod.optional(),
   changeableByUser: z.boolean(),
-  origin: z.enum(['common-user-data']).nullable(),
+  origin: z.enum(['common-user-data', 'external']).nullable(),
   hasChanges: z.boolean(),
   parentId: z.string().optional(),
   parentType: z.enum(['config', 'parameter']).optional(),
@@ -91,19 +91,21 @@ export const VirtualUserDataParameterZod: z.ZodType<Parameter> = BaseVirtualPara
   subParameters: z.lazy(() =>
     z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
   ),
-}).transform(async (userParameter) => {
-  const userInfo = await getUser(userParameter.userId);
-  let subParameters: typeof userParameter.subParameters = [];
-  if (!userInfo.isGuest) {
-    subParameters = userParameter.subParameters.map((param) => {
-      const infoValue = userInfo[param.name as keyof User];
-      return { ...param, ...(infoValue && { value: infoValue }) };
-    });
-  }
-  const parameter = { ...userParameter, subParameters, userId: undefined };
-  delete parameter.userId;
-  return parameter;
 });
+// TODO to be added and tested when zod v4 is available:
+// .transform(async (userParameter) => {
+//   const userInfo = await getUser(userParameter.userId);
+//   let subParameters: typeof userParameter.subParameters = [];
+//   if (!userInfo.isGuest) {
+//     subParameters = userParameter.subParameters.map((param) => {
+//       const infoValue = userInfo[param.name as keyof User];
+//       return { ...param, ...(infoValue && { value: infoValue }) };
+//     });
+//   }
+//   const parameter = { ...userParameter, subParameters, userId: undefined };
+//   delete parameter.userId;
+//   return parameter;
+// });
 
 // ------------- config schema -------------
 

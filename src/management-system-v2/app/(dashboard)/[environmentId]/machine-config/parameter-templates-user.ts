@@ -78,7 +78,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let lastName: Parameter = {
@@ -105,7 +105,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let username: Parameter = {
@@ -132,7 +132,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let email: Parameter = {
@@ -159,7 +159,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let team: Parameter = {
@@ -186,7 +186,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let directManager: Parameter = {
@@ -213,7 +213,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   let backOffice: Parameter = {
@@ -240,7 +240,7 @@ function createTemplateUserInfo(userId: string): Parameter {
         },
       ],
     ),
-    changeableByUser: false,
+    origin: 'external',
   };
 
   return {

@@ -12,7 +12,7 @@ import {
   StoredParameterZod,
   StoredMetaParameter,
   MetaParameter,
-  ConfigZod,
+  VirtualUserParameter,
 } from '../machine-config-schema';
 import {
   AasJson,
@@ -37,6 +37,7 @@ import {
   extractParameter,
   findParameter,
   findPathToParameter,
+  isVirtualUserParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
@@ -52,6 +53,7 @@ import {
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
 import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates-user';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+import { User } from '../user-schema';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -1538,35 +1540,37 @@ async function referencedParentConfigFromStorage(configId: string) {
 export async function nestedParametersFromStorage(parameterIds: string[]): Promise<Parameter[]> {
   const parameters: Parameter[] = [];
 
-  // await asyncForEach(parameterIds, async (id, idx) => {
-  //   let storedParameterResult = await db.configParameter.findUnique({
-  //     where: { id: id },
-  //   });
-  //   const storedParameter = storedParameterResult?.data as StoredParameter;
-  //   if (!storedParameter) throw new Error(`Parameter with id ${id} does not exists!`);
-  //   if (storedParameter && storedParameter.name) {
-  //     parameters.push({
-  //       ...storedParameter,
-  //       subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
-  //     });
-  //   }
-  // });
-
   for (const id of parameterIds) {
+    let newParameter;
     let storedParameterResult = await db.configParameter.findUnique({
       where: { id: id },
     });
     const storedParameter = storedParameterResult?.data as StoredParameter;
     if (!storedParameter) throw new Error(`Parameter with id ${id} does not exists!`);
     if (storedParameter && storedParameter.name) {
-      parameters.push({
+      newParameter = {
         ...storedParameter,
         subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
-      });
+      };
+      if (isVirtualUserParameter(newParameter)) {
+        newParameter = await getVirtualUserData(newParameter);
+      }
+      parameters.push(newParameter);
     }
   }
-
   return parameters;
+}
+
+export async function getVirtualUserData(parameter: VirtualUserParameter): Promise<Parameter> {
+  const userInfo = await getUser(parameter.userId);
+  let subParameters: typeof parameter.subParameters = [];
+  if (!userInfo.isGuest) {
+    subParameters = parameter.subParameters.map((param) => {
+      const infoValue = userInfo[param.name as keyof User];
+      return { ...param, ...(infoValue && { value: infoValue }) };
+    });
+  }
+  return { ...parameter, subParameters };
 }
 
 // TODO rework handling of subConfigs (target, reference, machine)
@@ -1647,23 +1651,22 @@ export async function getDeepConfigurationById(
   if (!configResult) throw new Error(`Configuration with id ${parentConfigId} does not exist!`);
   let config = configResult?.data as unknown as StoredConfig;
 
-  const parentConfigRaw = {
+  const parentConfig = {
     ...config,
     createdOn: new Date(config.createdOn),
     lastEditedOn: new Date(config.lastEditedOn),
     content: [],
   } as Config;
 
-  parentConfigRaw.content = await nestedParametersFromStorage(config.content);
+  parentConfig.content = await nestedParametersFromStorage(config.content);
   // TODO: check if the user can access the config
   if (
-    parentConfigRaw &&
+    parentConfig &&
     false /*!ability.can('view', toCaslResource('MachineConfig', machineConfig))*/
   ) {
     throw new UnauthorizedError();
   }
   try {
-    const parentConfig = await ConfigZod.parseAsync(parentConfigRaw);
     return parentConfig;
   } catch (e: any) {
     throw new Error(

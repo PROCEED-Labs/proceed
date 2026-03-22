@@ -24,8 +24,6 @@ import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { removeParameter, syncOrganizationUsers } from './db/machine-config';
-import { v4 } from 'uuid';
-import { updateUser } from '@/lib/data/db/iam/users';
 import { getRoleMappingByUserId } from '@/lib/data/db/iam/role-mappings';
 
 const EmailListSchema = z.array(
@@ -201,12 +199,8 @@ export async function createUserAndAddToOrganization(
       const passwordHash = await hashPassword(password);
       await setUserPassword(user.id, passwordHash, tx, true);
 
-      await addMember(organizationId, user.id, ability, tx);
-
-      // Get the membership id just created
-      const membership = await tx.membership.findFirst({
-        where: { userId: user.id, environmentId: organizationId },
-      });
+      // add and get newly created created membership
+      const membership = await addMember(organizationId, user.id, ability, tx);
       await addRoleMappings(
         roles.map((roleId) => ({
           roleId,
@@ -216,15 +210,12 @@ export async function createUserAndAddToOrganization(
         ability,
         tx,
       );
-      // directManagerId is already a membershipId from the frontend dropdown
-      const directManagerMembershipId: string | null = directManagerId ?? null;
 
-      if (membership && (teamRoleId || backOfficeRoleId || directManagerMembershipId)) {
+      if (membership && (teamRoleId || backOfficeRoleId || directManagerId)) {
         await tx.userOrganigram.create({
           data: {
-            id: v4(),
             memberId: membership.id,
-            directManagerId: directManagerMembershipId,
+            directManagerId: directManagerId ?? null,
             teamRoleId: teamRoleId ?? null,
             backOfficeRoleId: backOfficeRoleId ?? null,
           },
@@ -239,21 +230,15 @@ export async function createUserAndAddToOrganization(
   }
 }
 
-export async function updateUserByAdmin(
+export async function updateMemberByAdmin(
   organizationId: string,
   userId: string,
   {
-    firstName,
-    lastName,
-    username,
     roles,
     teamRoleId,
     backOfficeRoleId,
     directManagerId,
   }: {
-    firstName?: string;
-    lastName?: string;
-    username?: string;
     roles: string[];
     teamRoleId?: string | null;
     backOfficeRoleId?: string | null;
@@ -271,30 +256,20 @@ export async function updateUserByAdmin(
     }
 
     await db.$transaction(async (tx) => {
-      // Fetch current user to compare username before updating
-      const currentUser = await tx.user.findUnique({ where: { id: userId } });
+      // Check membership exists first before any updates
+      const membership = await tx.membership.findUnique({
+        where: { userId_environmentId: { userId, environmentId: organizationId } },
+      });
 
-      // Update basic user info and only pass username if it actually changed
-      await updateUser(
-        userId,
-        {
-          firstName,
-          lastName,
-          ...(username !== currentUser?.username && { username }),
-        },
-        tx,
-      );
+      if (!membership) throw new Error('User is not a member of this organization');
 
       // Get current role mappings for this user in this environment
       const currentMappings = await getRoleMappingByUserId(userId, organizationId);
       const currentRoleIds = currentMappings.map((m) => m.roleId);
 
-      // Figure out which roles to add and which to remove
-      const newRoleIds = [...roles];
-
       // Diff and update role mappings
-      const roleIdsToAdd = newRoleIds.filter((id) => !currentRoleIds.includes(id));
-      const roleIdsToRemove = currentRoleIds.filter((id) => !newRoleIds.includes(id));
+      const roleIdsToAdd = roles.filter((id) => !currentRoleIds.includes(id));
+      const roleIdsToRemove = currentRoleIds.filter((id) => !roles.includes(id));
 
       // Remove roles that are no longer assigned
       for (const roleId of roleIdsToRemove) {
@@ -316,38 +291,29 @@ export async function updateUserByAdmin(
         );
       }
 
-      // Get membership for this user
-      const membership = await tx.membership.findFirst({
-        where: { userId, environmentId: organizationId },
+      // Upsert organigram using confirmed membership
+      const existing = await tx.userOrganigram.findUnique({
+        where: { memberId: membership.id },
       });
 
-      if (membership) {
-        // directManagerId is already a membershipId from the frontend dropdown
-        const directManagerMembershipId: string | null = directManagerId ?? null;
-        const existing = await tx.userOrganigram.findUnique({
+      if (existing) {
+        await tx.userOrganigram.update({
           where: { memberId: membership.id },
+          data: {
+            directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+          },
         });
-
-        if (existing) {
-          await tx.userOrganigram.update({
-            where: { memberId: membership.id },
-            data: {
-              directManagerId: directManagerMembershipId,
-              teamRoleId: teamRoleId ?? null,
-              backOfficeRoleId: backOfficeRoleId ?? null,
-            },
-          });
-        } else if (teamRoleId || backOfficeRoleId || directManagerMembershipId) {
-          await tx.userOrganigram.create({
-            data: {
-              id: v4(),
-              memberId: membership.id,
-              directManagerId: directManagerMembershipId,
-              teamRoleId: teamRoleId ?? null,
-              backOfficeRoleId: backOfficeRoleId ?? null,
-            },
-          });
-        }
+      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
+        await tx.userOrganigram.create({
+          data: {
+            memberId: membership.id,
+            directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+          },
+        });
       }
     });
   } catch (error) {

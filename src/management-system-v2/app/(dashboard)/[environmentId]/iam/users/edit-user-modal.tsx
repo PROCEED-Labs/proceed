@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { getOrganigram } from '@/lib/data/organigram';
-import { updateUserByAdmin } from '@/lib/data/environment-memberships';
+import { updateMemberByAdmin } from '@/lib/data/environment-memberships';
 import { OrganigramFields } from './organigram-fields';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -50,11 +50,6 @@ export function EditUserModal({
     },
   });
 
-  // All user roles
-  const userRoles = ((user as any)?.roles as { id: string; name: string }[]) ?? [];
-
-  const currentDefaultRoleIds = userRoles.map((r) => r.id);
-
   // All roles dropdown
   const { roles: allRoles } = useOrganizationRoles(spaceId);
 
@@ -62,10 +57,7 @@ export function EditUserModal({
   useEffect(() => {
     if (open && user) {
       form.setFieldsValue({
-        firstName: user.firstName?.value ?? '',
-        lastName: user.lastName?.value ?? '',
-        username: user.username?.value ?? '',
-        roles: currentDefaultRoleIds,
+        roles: (user as typeof user & { roles?: { id: string }[] })?.roles?.map((r) => r.id) ?? [],
         teamRoleId: organigram?.teamRoleId ?? undefined,
         directManagerId: organigram?.directManagerId ?? undefined,
         backOfficeRoleId: organigram?.backOfficeRoleId ?? undefined,
@@ -82,10 +74,7 @@ export function EditUserModal({
     if (!user) return;
     await wrapServerCall({
       fn: () =>
-        updateUserByAdmin(spaceId, user.id, {
-          firstName: values.firstName,
-          lastName: values.lastName,
-          username: values.username,
+        updateMemberByAdmin(spaceId, user.id, {
           roles: values.roles ?? [],
           teamRoleId: values.teamRoleId ?? null,
           directManagerId: values.directManagerId ?? null,
@@ -103,22 +92,6 @@ export function EditUserModal({
   return (
     <Modal open={open} onCancel={handleClose} title="Edit User" footer={null} width={500}>
       <Form form={form} layout="vertical" onFinish={submitEdit}>
-        {/* Basic Info */}
-        <Row gutter={12}>
-          <Col span={12}>
-            <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
-              <Input />
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item name="username" label="Username" rules={[{ required: true }]}>
-          <Input />
-        </Form.Item>
         {/* Default Roles */}
         <Divider />
         <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>

@@ -69,11 +69,7 @@ export async function wrapServerCall<Return>(args: {
     return response as Exclude<Return, ReturnType<typeof userError>>;
   } catch (error) {
     // Next.js redirect() works by throwing a special error internally so propagate it
-    if (
-      isRedirectError(error) ||
-      (error instanceof Error &&
-        (error.message === 'NEXT_REDIRECT' || (error as any)?.digest?.startsWith('NEXT_REDIRECT')))
-    ) {
+    if (isRedirectError(error)) {
       return;
     }
     if (typeof args.onError === 'function') {

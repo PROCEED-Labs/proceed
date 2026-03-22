@@ -175,7 +175,8 @@ model Membership {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   organigram         UserOrganigram?  @relation("memberOrganigram")
-  managedOrganigrams UserOrganigram[] @relation("organigramManager")
+  managerIn     UserOrganigram[] @relation("organigramManager")
+  @@unique([userId, environmentId])
 
   @@map("membership")
 }

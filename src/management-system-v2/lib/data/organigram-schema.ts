@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 export const OrganigramInputSchema = z.object({
   memberId: z.string(),
-  directManagerId: z.string().optional().nullable(),
-  teamRoleId: z.string().optional().nullable(),
-  backOfficeRoleId: z.string().optional().nullable(),
+  directManagerId: z.string().nullish(),
+  teamRoleId: z.string().nullish(),
+  backOfficeRoleId: z.string().nullish(),
 });
 
 export type OrganigramInput = z.infer<typeof OrganigramInputSchema>;

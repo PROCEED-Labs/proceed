@@ -1,5 +1,4 @@
 import db from '@/lib/data/db';
-import { v4 } from 'uuid';
 import { OrganigramInput } from '@/lib/data/organigram-schema';
 
 export async function upsertUserOrganigram(input: OrganigramInput) {
@@ -20,7 +19,6 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
 
   return db.userOrganigram.create({
     data: {
-      id: v4(),
       memberId: input.memberId,
       directManagerId: input.directManagerId ?? null,
       teamRoleId: input.teamRoleId ?? null,

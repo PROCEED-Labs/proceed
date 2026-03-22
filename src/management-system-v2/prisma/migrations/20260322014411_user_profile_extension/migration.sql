@@ -1,3 +1,9 @@
+/*
+  Warnings:
+
+  - A unique constraint covering the columns `[userId,environmentId]` on the table `membership` will be added. If there are existing duplicate values, this will fail.
+
+*/
 -- AlterTable
 ALTER TABLE "role" ADD COLUMN     "organizationRoleType" TEXT[] DEFAULT ARRAY[]::TEXT[];
 
@@ -14,6 +20,9 @@ CREATE TABLE "user_organigram" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "user_organigram_memberId_key" ON "user_organigram"("memberId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "membership_userId_environmentId_key" ON "membership"("userId", "environmentId");
 
 -- AddForeignKey
 ALTER TABLE "user_organigram" ADD CONSTRAINT "user_organigram_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "membership"("id") ON DELETE CASCADE ON UPDATE CASCADE;

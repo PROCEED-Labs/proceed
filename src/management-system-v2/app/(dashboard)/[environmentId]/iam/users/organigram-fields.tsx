@@ -6,6 +6,18 @@ import useOrganizationRoles from './use-org-roles';
 import { useQuery } from '@tanstack/react-query';
 import { getSpaceMembers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
+import styles from './organigram-fields.module.scss';
+
+function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
+  return (
+    <span className={styles.labelWrapper}>
+      {label}
+      <Tooltip title={tooltip}>
+        <QuestionCircleOutlined className={styles.helpIcon} />
+      </Tooltip>
+    </span>
+  );
+}
 
 export function OrganigramFields({
   spaceId,
@@ -37,12 +49,10 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Team / Department
-            <Tooltip title="Specify the user's organizational team or department.">
-              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
-            </Tooltip>
-          </span>
+          <LabelWithTooltip
+            label="Team / Department"
+            tooltip="Specify the user's organizational team or department."
+          />
         }
         name="teamRoleId"
       >
@@ -55,12 +65,10 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Direct Manager
-            <Tooltip title="Specify the user's direct, organizational manager.">
-              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
-            </Tooltip>
-          </span>
+          <LabelWithTooltip
+            label="Direct Manager"
+            tooltip="Specify the user's direct, organizational manager."
+          />
         }
         name="directManagerId"
       >
@@ -76,12 +84,10 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Back Office
-            <Tooltip title="Specify the user's organizational back office. (The user will not become a member of that role.)">
-              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
-            </Tooltip>
-          </span>
+          <LabelWithTooltip
+            label="Back Office"
+            tooltip="Specify the user's organizational back office. (The user will not become a member of that role.)"
+          />
         }
         name="backOfficeRoleId"
       >

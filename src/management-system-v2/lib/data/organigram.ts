@@ -8,7 +8,7 @@ import db from '@/lib/data/db';
 export async function getOrganigram(environmentId: string, userId: string) {
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
-    if (!ability.can('admin', 'All'))
+    if (!ability.can('view', 'User') && !ability.can('admin', 'All'))
       return userError('Permission denied', UserErrorType.PermissionError);
 
     return await getUserOrganigram(userId, environmentId);
@@ -21,7 +21,7 @@ export async function getOrganigram(environmentId: string, userId: string) {
 export async function getSpaceMembers(environmentId: string) {
   try {
     const { ability } = await getCurrentEnvironment(environmentId);
-    if (!ability.can('admin', 'All'))
+    if (!ability.can('view', 'User') && !ability.can('admin', 'All'))
       return userError('Permission denied', UserErrorType.PermissionError);
 
     return await db.membership.findMany({

@@ -262,6 +262,28 @@ export async function updateRole(
   });
   rulesCacheDeleteAll();
 
+  // If organizationRoleType changed, clear organigram references for removed types
+  if (roleRepresentationInput.organizationRoleType !== undefined) {
+    const hadTeam = targetRole.organizationRoleType?.includes('team');
+    const hasTeam = roleRepresentation.organizationRoleType?.includes('team');
+    const hadBackOffice = targetRole.organizationRoleType?.includes('back-office');
+    const hasBackOffice = roleRepresentation.organizationRoleType?.includes('back-office');
+
+    if (hadTeam && !hasTeam) {
+      await db.userOrganigram.updateMany({
+        where: { teamRoleId: roleId },
+        data: { teamRoleId: null },
+      });
+    }
+
+    if (hadBackOffice && !hasBackOffice) {
+      await db.userOrganigram.updateMany({
+        where: { backOfficeRoleId: roleId },
+        data: { backOfficeRoleId: null },
+      });
+    }
+  }
+
   return updatedRole as Role;
 }
 

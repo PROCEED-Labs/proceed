@@ -14,9 +14,6 @@ import {
   Grid,
   FloatButton,
   Tag,
-  Divider,
-  Select,
-  Typography,
   Spin,
   InputRef,
   Dropdown,
@@ -34,6 +31,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import UserAvatar from '@/components/user-avatar';
 import { getSpaceMembers } from '@/lib/data/organigram';
 import { z } from 'zod';
+import { UserFormFields } from './organigram-fields';
 
 const emailSchema = z.string().email();
 
@@ -65,28 +63,6 @@ const AddUsersModal: FC<{
   const { spaceId } = useEnvironment();
   const envVars = use(EnvVarsContext);
   const proceedMailServerActive = !!envVars.PROCEED_PUBLIC_MAILSERVER_ACTIVE;
-
-  /* -------------------------------------------------------------------------------------------------
-   * Organigram State
-   * -----------------------------------------------------------------------------------------------*/
-  const [teamRoleId, setTeamRoleId] = useState<string | undefined>();
-  const [backOfficeRoleId, setBackOfficeRoleId] = useState<string | undefined>();
-  const [directManagerId, setDirectManagerId] = useState<string | undefined>();
-
-  /* -------------------------------------------------------------------------------------------------
-   * Organigram Data (roles + users)
-   * -----------------------------------------------------------------------------------------------*/
-  const { roles: teamRoles } = useOrganizationRoles(spaceId, 'team');
-  const { roles: backOfficeRoles } = useOrganizationRoles(spaceId, 'back-office');
-
-  const { data: spaceMembers } = useQuery({
-    queryKey: ['space-members', spaceId],
-    queryFn: async () => {
-      const result = await getSpaceMembers(spaceId);
-      if (isUserErrorResponse(result)) throw new Error();
-      return result;
-    },
-  });
 
   /* -------------------------------------------------------------------------------------------------
    * Invited Users Management
@@ -196,36 +172,35 @@ const AddUsersModal: FC<{
    * Roles Management
    * -----------------------------------------------------------------------------------------------*/
   const { roles } = useOrganizationRoles(environment.spaceId);
-  const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
   /* -------------------------------------------------------------------------------------------------
    * Submit Data
    * -----------------------------------------------------------------------------------------------*/
+  const [form] = Form.useForm();
+
   function closeModal() {
     close();
     setIsMailInvalid(false);
     setSearch('');
     setUsers([]);
-    setTeamRoleId(undefined);
-    setBackOfficeRoleId(undefined);
-    setDirectManagerId(undefined);
+    form.resetFields();
   }
 
   const [submittingUsers, startTransition] = useTransition();
   const submitData = () => {
     startTransition(async () => {
       try {
-        const roleIds = selectedRoles.map((role) => role.value as string);
+        const values = await form.validateFields();
 
         await wrapServerCall({
           fn: () =>
             inviteUsersToEnvironment(
               environment.spaceId,
               users,
-              roleIds,
-              teamRoleId,
-              backOfficeRoleId,
-              directManagerId,
+              values.roles ?? [],
+              values.teamRoleId,
+              values.backOfficeRoleId,
+              values.directManagerId,
             ),
           onSuccess: () => {
             app.message.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
@@ -298,97 +273,10 @@ const AddUsersModal: FC<{
         ))}
       </div>
 
-      {roles && roles.length > 0 && users.length > 0 && (
-        <>
-          <Divider />
-
-          <Typography.Title style={{ marginBottom: '0.5rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Roles
-              <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
-                <QuestionCircleOutlined
-                  style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-                />
-              </Tooltip>
-            </span>
-          </Typography.Title>
-
-          <Select
-            mode="multiple"
-            allowClear
-            style={{ width: '100%' }}
-            placeholder="Select roles"
-            onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
-            options={roles.map((role) => ({ label: role.name, value: role.id }))}
-          />
-        </>
-      )}
-
       {users.length > 0 && (
-        <>
-          <Divider />
-          <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>
-            Organisation Info
-          </Typography.Title>
-
-          <Typography.Text
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
-          >
-            Team
-            <Tooltip title="Specify the user's organizational team or department.">
-              <QuestionCircleOutlined
-                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-              />
-            </Tooltip>
-          </Typography.Text>
-          <Select
-            allowClear
-            style={{ width: '100%', marginBottom: '1rem' }}
-            placeholder="Select team"
-            onChange={(value) => setTeamRoleId(value)}
-            options={(teamRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
-          />
-
-          <Typography.Text
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
-          >
-            Direct Manager
-            <Tooltip title="Specify the user's direct, organizational manager.">
-              <QuestionCircleOutlined
-                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-              />
-            </Tooltip>
-          </Typography.Text>
-          <Select
-            allowClear
-            style={{ width: '100%', marginBottom: '1rem' }}
-            placeholder="Select direct manager"
-            onChange={(value) => setDirectManagerId(value)}
-            options={(spaceMembers ?? []).map((m) => ({
-              value: m.id,
-              label:
-                [m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || m.user.username,
-            }))}
-          />
-
-          <Typography.Text
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '0.3rem' }}
-          >
-            Back Office
-            <Tooltip title="Specify the user's organizational back office. (The user will not become a member of that role.)">
-              <QuestionCircleOutlined
-                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-              />
-            </Tooltip>
-          </Typography.Text>
-          <Select
-            allowClear
-            style={{ width: '100%', marginBottom: '1rem' }}
-            placeholder="Select back office"
-            onChange={(value) => setBackOfficeRoleId(value)}
-            options={(backOfficeRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
-          />
-        </>
+        <Form form={form} layout="vertical">
+          <UserFormFields spaceId={spaceId} roles={roles ?? []} />
+        </Form>
       )}
     </Modal>
   );

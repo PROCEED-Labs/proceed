@@ -1,29 +1,16 @@
 'use client';
-import {
-  App,
-  Button,
-  Col,
-  Divider,
-  Form,
-  Input,
-  Modal,
-  Row,
-  Select,
-  Typography,
-  Tooltip,
-} from 'antd';
+import { App, Button, Form, Modal } from 'antd';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { getOrganigram } from '@/lib/data/organigram';
 import { updateMemberByAdmin } from '@/lib/data/environment-memberships';
-import { OrganigramFields } from './organigram-fields';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { ListUser } from '@/components/user-list';
 import useOrganizationRoles from './use-org-roles';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { UserFormFields } from './organigram-fields';
 
 export function EditUserModal({
   open,
@@ -92,29 +79,11 @@ export function EditUserModal({
   return (
     <Modal open={open} onCancel={handleClose} title="Edit User" footer={null} width={500}>
       <Form form={form} layout="vertical" onFinish={submitEdit}>
-        {/* Default Roles */}
-        <Divider />
-        <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Roles
-            <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
-              <QuestionCircleOutlined
-                style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-              />
-            </Tooltip>
-          </span>
-        </Typography.Title>
-        <Form.Item name="roles">
-          <Select
-            mode="multiple"
-            allowClear
-            style={{ width: '100%' }}
-            placeholder="Select roles"
-            options={(allRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
-          />
-        </Form.Item>
-        {/* Organigram Fields (Team, Direct Manager, Back Office) */}
-        <OrganigramFields spaceId={spaceId} excludeUserId={user?.id} />
+        <UserFormFields
+          spaceId={spaceId}
+          excludeUserId={user?.id ?? undefined}
+          roles={allRoles ?? []}
+        />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>
           <Button onClick={handleClose}>Cancel</Button>
           <Button type="primary" htmlType="submit">

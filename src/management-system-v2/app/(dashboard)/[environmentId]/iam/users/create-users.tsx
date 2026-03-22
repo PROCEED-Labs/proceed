@@ -3,25 +3,10 @@
 import { useEnvironment } from '@/components/auth-can';
 import { createUserAndAddToOrganization } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import {
-  App,
-  Button,
-  Col,
-  Divider,
-  Form,
-  Input,
-  Modal,
-  ModalProps,
-  Row,
-  Select,
-  Space,
-  Typography,
-  Tooltip,
-} from 'antd';
-import { QuestionCircleOutlined } from '@ant-design/icons';
+import { App, Button, Col, Form, Input, Modal, ModalProps, Row, Space } from 'antd';
 import { useRouter } from 'next/navigation';
 import useOrganizationRoles from './use-org-roles';
-import { OrganigramFields } from './organigram-fields';
+import { UserFormFields } from './organigram-fields';
 // TODO: check permissions
 
 export function CreateUsersModal({
@@ -115,34 +100,7 @@ export function CreateUsersModal({
             </Form.Item>
           </Col>
         </Row>
-        {roles && roles.length > 0 && (
-          <>
-            <Divider />
-
-            <Typography.Title style={{ marginBottom: '0.5rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                Roles
-                <Tooltip title="Assign one or more roles to the user. The user becomes a member of that role.">
-                  <QuestionCircleOutlined
-                    style={{ color: '#888', cursor: 'pointer', fontSize: '14px' }}
-                  />
-                </Tooltip>
-              </span>
-            </Typography.Title>
-
-            <Form.Item name="roles">
-              <Select
-                mode="multiple"
-                allowClear
-                style={{ width: '100%' }}
-                placeholder="Select roles"
-                options={roles.map((role) => ({ label: role.name, value: role.id }))}
-              />
-            </Form.Item>
-          </>
-        )}
-
-        <OrganigramFields spaceId={spaceId} />
+        <UserFormFields spaceId={spaceId} roles={roles ?? []} />
         <Space style={{ justifyContent: 'end', width: '100%' }}>
           <Button onClick={close}>Cancel</Button>
           <Button type="primary" htmlType="submit">

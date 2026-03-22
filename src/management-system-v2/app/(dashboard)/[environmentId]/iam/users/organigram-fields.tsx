@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, Select, Divider, Typography, Tooltip } from 'antd';
+import { Divider, Form, Select, Typography, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import useOrganizationRoles from './use-org-roles';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { getSpaceMembers } from '@/lib/data/organigram';
 import { isUserErrorResponse } from '@/lib/user-error';
 import styles from './organigram-fields.module.scss';
 
-function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
+export function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
   return (
     <span className={styles.labelWrapper}>
       {label}
@@ -97,6 +97,42 @@ export function OrganigramFields({
           options={(backOfficeRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
         />
       </Form.Item>
+    </>
+  );
+}
+
+export function UserFormFields({
+  spaceId,
+  excludeUserId,
+  roles,
+}: {
+  spaceId: string;
+  excludeUserId?: string;
+  roles: { id: string; name: string }[];
+}) {
+  return (
+    <>
+      {roles.length > 0 && (
+        <>
+          <Divider />
+          <Typography.Title level={5} style={{ marginBottom: '0.5rem' }}>
+            <LabelWithTooltip
+              label="Roles"
+              tooltip="Assign one or more roles to the user. The user becomes a member of that role."
+            />
+          </Typography.Title>
+          <Form.Item name="roles">
+            <Select
+              mode="multiple"
+              allowClear
+              style={{ width: '100%' }}
+              placeholder="Select roles"
+              options={roles.map((r) => ({ label: r.name, value: r.id }))}
+            />
+          </Form.Item>
+        </>
+      )}
+      <OrganigramFields spaceId={spaceId} excludeUserId={excludeUserId} />
     </>
   );
 }

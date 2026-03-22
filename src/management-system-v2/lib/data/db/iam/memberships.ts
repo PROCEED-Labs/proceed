@@ -175,7 +175,7 @@ export async function addMember(
   if (!user) throw new Error('User not found');
   if (user.isGuest) throw new Error('Guest users cannot be added to environments');
 
-  await dbMutator.membership.create({
+  return await dbMutator.membership.create({
     data: {
       id: v4(),
       userId: userId,

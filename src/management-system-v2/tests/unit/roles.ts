@@ -126,6 +126,7 @@ function buildAbility(roles: Pick<Role, 'permissions' | 'parentId'>[]) {
       createdOn: new Date('2024-02-23T15:46:30.243Z'),
       lastEditedOn: new Date('2024-02-23T16:46:30.243Z'),
       environmentId: '1',
+      organizationRoleType: [],
       ...role,
     })),
   });

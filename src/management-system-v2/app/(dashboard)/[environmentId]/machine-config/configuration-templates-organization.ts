@@ -1,4 +1,4 @@
-import { Config } from '@/lib/data/machine-config-schema';
+import { Config, VirtualOrganizationRolesParameter } from '@/lib/data/machine-config-schema';
 
 import { defaultConfiguration, defaultParameter } from './configuration-helper';
 
@@ -10,7 +10,7 @@ export function defaultOrganizationConfigurationTemplate(
 ): Config {
   const organizaionConfig = defaultConfiguration(environmentId, `${name} Data Objects`, name);
   const organizationParameter = createOrgConfigTemplateOrganization();
-  const iamParameter = createOrgConfigTemplateIam();
+  const iamParameter = createOrgConfigTemplateIam(environmentId);
   organizaionConfig.content = [organizationParameter, iamParameter];
   organizaionConfig.id = environmentId;
   organizaionConfig.configType = 'organization';
@@ -30,19 +30,24 @@ function createOrgConfigTemplateOrganization() {
   return organizationParameter;
 }
 
-function createOrgConfigTemplateIam() {
+function createOrgConfigTemplateIam(environmentId: string) {
   const iamParameter = defaultParameter(
     'identity-and-access-management',
     [{ text: 'IAM', language: 'en' }],
     [],
   );
-  const userParameter = defaultParameter('user', [{ text: 'User', language: 'en' }], []);
   const commonUserDataParameter = defaultParameter(
     'common-user-data',
     [{ text: 'Common User Data', language: 'en' }],
     [],
   );
+  const userParameter = defaultParameter('user', [{ text: 'User', language: 'en' }], []);
+  const rolesParameter: VirtualOrganizationRolesParameter = {
+    ...defaultParameter('roles', [{ text: 'Roles', language: 'en' }], []),
+    environmentId,
+    virtualType: 'org-roles',
+  };
 
-  iamParameter.subParameters = [commonUserDataParameter, userParameter];
+  iamParameter.subParameters = [commonUserDataParameter, userParameter, rolesParameter];
   return iamParameter;
 }

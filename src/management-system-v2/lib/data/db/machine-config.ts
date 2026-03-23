@@ -12,7 +12,9 @@ import {
   StoredParameterZod,
   StoredMetaParameter,
   MetaParameter,
-  VirtualUserParameter,
+  VirtualUserInfoParameter,
+  VirtualUserRolesParameter,
+  VirtualOrganizationRolesParameter,
 } from '../machine-config-schema';
 import {
   AasJson,
@@ -37,7 +39,9 @@ import {
   extractParameter,
   findParameter,
   findPathToParameter,
-  isVirtualUserParameter,
+  isVirtualOrganizationRolesParameter,
+  isVirtualUserInfoParameter,
+  isVirtualUserRolesParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
@@ -54,6 +58,7 @@ import {
 import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
 import { User } from '../user-schema';
+import { getRoles, getUserRoles } from '../roles';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -1552,8 +1557,12 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
         ...storedParameter,
         subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
       };
-      if (isVirtualUserParameter(newParameter)) {
-        newParameter = await getVirtualUserData(newParameter);
+      if (isVirtualUserInfoParameter(newParameter)) {
+        newParameter = await getVirtualUserInfo(newParameter);
+      } else if (isVirtualUserRolesParameter(newParameter)) {
+        newParameter = await getVirtualUserRoles(newParameter);
+      } else if (isVirtualOrganizationRolesParameter(newParameter)) {
+        newParameter = await getVirtualOrganizationRoles(newParameter);
       }
       parameters.push(newParameter);
     }
@@ -1561,7 +1570,7 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
   return parameters;
 }
 
-export async function getVirtualUserData(parameter: VirtualUserParameter): Promise<Parameter> {
+export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): Promise<Parameter> {
   const userInfo = await getUser(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
@@ -1571,6 +1580,36 @@ export async function getVirtualUserData(parameter: VirtualUserParameter): Promi
     });
   }
   return { ...parameter, subParameters };
+}
+
+export async function getVirtualUserRoles(
+  parameter: VirtualUserRolesParameter,
+): Promise<Parameter> {
+  let roleParameters: Parameter[] = [];
+  const roles = await getUserRoles(parameter.environmentId, parameter.userId);
+  if ('error' in roles) {
+    throw new Error(
+      `Cannot get roles for user ${parameter.userId} in space ${parameter.environmentId}.`,
+    );
+  }
+  roleParameters = roles.map((role) => {
+    return defaultParameter(role.name, [{ text: role.name, language: 'en' }], []);
+  });
+  return { ...parameter, subParameters: roleParameters };
+}
+
+export async function getVirtualOrganizationRoles(
+  parameter: VirtualOrganizationRolesParameter,
+): Promise<Parameter> {
+  let roles = await getRoles(parameter.environmentId);
+  let roleParameters: Parameter[] = [];
+  if ('error' in roles) {
+    throw new Error(`Cannot get roles for space ${parameter.environmentId}.`);
+  }
+  roleParameters = roles.map((role) => {
+    return defaultParameter(role.name, [{ text: role.name, language: 'en' }], []);
+  });
+  return { ...parameter, subParameters: roleParameters };
 }
 
 // TODO rework handling of subConfigs (target, reference, machine)
@@ -4600,8 +4639,7 @@ export async function addMemberParameter(member: Membership) {
   const user = await getUserById(member.userId);
   if (user && !user.isGuest) {
     const newUserParameter = defaultUserParameterTemplate(
-      user.id,
-      member.id,
+      member,
       user.firstName || 'N/A',
       user.lastName || 'N/A',
     );

@@ -1,17 +1,21 @@
-import { Parameter, VirtualUserParameter } from '@/lib/data/machine-config-schema';
+import {
+  Parameter,
+  VirtualUserInfoParameter,
+  VirtualUserRolesParameter,
+} from '@/lib/data/machine-config-schema';
 
 import { defaultParameter } from './configuration-helper';
+import { Membership } from '@prisma/client';
 
 //---------------- User Template ----------------
 // TODO loading from Organization Template not implemented yet
 export function defaultUserParameterTemplate(
-  userId: string,
-  membershipId: string,
+  membership: Membership,
   firstName: string,
   lastName: string,
 ): Parameter {
   function createTemplateUserInfo(userId: string): Parameter {
-    let newUserInfo: VirtualUserParameter = {
+    let newUserInfo: VirtualUserInfoParameter = {
       ...defaultParameter(
         'userInfo',
         [
@@ -36,6 +40,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       userId,
+      virtualType: 'user-info',
     };
 
     let firstName: Parameter = {
@@ -233,8 +238,9 @@ export function defaultUserParameterTemplate(
       changeableByUser: false,
     };
   }
+
   const userParameter = defaultParameter(
-    userId,
+    membership.userId,
     [{ text: `${lastName}, ${firstName}`, language: 'en' }],
     [],
   );
@@ -242,9 +248,20 @@ export function defaultUserParameterTemplate(
     ...defaultParameter('data', [{ text: `Data`, language: 'en' }], []),
     changeableByUser: false,
   };
+  const rolesParameter: VirtualUserRolesParameter = {
+    ...defaultParameter('roles', [{ text: `Roles`, language: 'en' }], []),
+    userId: membership.userId,
+    environmentId: membership.environmentId,
+    virtualType: 'user-roles',
+    changeableByUser: false,
+  };
 
-  userParameter.id = membershipId;
-  userParameter.subParameters = [dataParameter, createTemplateUserInfo(userId)];
+  userParameter.id = membership.id;
+  userParameter.subParameters = [
+    dataParameter,
+    rolesParameter,
+    createTemplateUserInfo(membership.userId),
+  ];
 
   return userParameter;
 }

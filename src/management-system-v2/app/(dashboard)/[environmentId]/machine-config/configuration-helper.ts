@@ -6,7 +6,9 @@ import {
   Parameter,
   ParameterTranformation,
   MetaParameter,
-  VirtualUserParameter,
+  VirtualUserInfoParameter,
+  VirtualUserRolesParameter,
+  VirtualOrganizationRolesParameter,
 } from '@/lib/data/machine-config-schema';
 import {
   AasProperty,
@@ -611,6 +613,28 @@ export function extractParameter(configOrParameter: Config | Parameter, path: st
   return current;
 }
 
-export function isVirtualUserParameter(p: unknown): p is VirtualUserParameter {
-  return typeof p === 'object' && p !== null && 'userId' in p;
+export function isVirtualUserInfoParameter(p: unknown): p is VirtualUserInfoParameter {
+  return isNonNullObject(p) && 'userId' in p && 'virtualType' in p && p.virtualType == 'user-info';
+}
+
+export function isVirtualUserRolesParameter(p: unknown): p is VirtualUserRolesParameter {
+  return (
+    isNonNullObject(p) &&
+    'userId' in p &&
+    'environmentId' in p &&
+    'virtualType' in p &&
+    p.virtualType == 'user-roles'
+  );
+}
+
+export function isVirtualOrganizationRolesParameter(
+  p: unknown,
+): p is VirtualOrganizationRolesParameter {
+  return (
+    isNonNullObject(p) && 'environmentId' in p && 'virtualType' in p && p.virtualType == 'org-roles'
+  );
+}
+
+function isNonNullObject(p: unknown): p is Object {
+  return typeof p === 'object' && p !== null;
 }

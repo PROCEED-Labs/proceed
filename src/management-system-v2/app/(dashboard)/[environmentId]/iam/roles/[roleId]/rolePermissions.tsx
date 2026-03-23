@@ -182,7 +182,7 @@ const basePermissionOptions: PermissionCategory[] = [
         key: 'Manage Executions',
         title: 'Manage Executions',
         description: 'Allows a user to to start, modify and delete process executions.',
-        permission: 'view',
+        permission: 'manage',
       },
     ],
   },

@@ -1281,10 +1281,10 @@ async function parametersToMachineStorage(
 // }
 
 /**
- * Stores a given ParentConfig (or ParentConfigVersion) into db referencing other elements by id instead of having them nested.
- * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
+ * Stores a given ParentConfig into db referencing other elements by id instead of having them nested.
+ * @param parentConfig ParentConfig that is to be stored.
+ * @param environmentId EnvironmentId for the space for which the config is stored.
  * @param newId Boolean determining if new IDs are to be generated.
- * @param version Version-ID of the config if a versioned config is to be stored.
  */
 async function parentConfigToStorage(
   parentConfig: Config,
@@ -1571,7 +1571,7 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
 }
 
 export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): Promise<Parameter> {
-  const userInfo = await getUser(parameter.userId);
+  const userInfo = await getUserById(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
     subParameters = parameter.subParameters.map((param) => {
@@ -1705,13 +1705,7 @@ export async function getDeepConfigurationById(
   ) {
     throw new UnauthorizedError();
   }
-  try {
-    return parentConfig;
-  } catch (e: any) {
-    throw new Error(
-      `Configuration with id ${parentConfigId} could not be parsed. ${JSON.stringify(e)}`,
-    );
-  }
+  return parentConfig;
 }
 
 /** Returns all shallow Configs in form of an array */

@@ -137,7 +137,10 @@ class ScriptExecutor extends System {
               'managementSystemLocation',
             ];
 
-            if (!initiatorInfo.every((info) => info in instanceInformation)) {
+            if (
+              !instanceInformation ||
+              !initiatorInfo.every((info) => info in instanceInformation)
+            ) {
               return {
                 response: { error: 'Unable to access global data' },
                 statusCode: 404,
@@ -159,7 +162,9 @@ class ScriptExecutor extends System {
                   // setGlobalOrg and getGlobalOrg already define what data to access so any other
                   // type of meta path is not allowed
                   if (dataPath.includes('@')) {
-                    throw new Error(`Invalid meta parameter (@...) in call to ${accessFn}.`);
+                    throw new Error(
+                      `Invalid meta parameter (${dataPath.split('.')[0]}) in call to ${accessFn}.`,
+                    );
                   }
 
                   path += '/organization';
@@ -169,6 +174,10 @@ class ScriptExecutor extends System {
                 } else {
                   if (dataPath.startsWith('@user')) {
                     dataPath = dataPath.split('.').slice(1).join('.');
+                  } else if (dataPath.startsWith('@')) {
+                    throw new Error(
+                      `Invalid meta parameter (${dataPath.split('.')[0]}) in call to ${accessFn}.`,
+                    );
                   }
                   path += `/user/${instanceInformation.processInitiator}`;
                 }
@@ -224,7 +233,7 @@ class ScriptExecutor extends System {
               }
 
               return {
-                response: { result: result || undefined },
+                response: { result: result ?? undefined },
               };
             } catch (err) {
               return {

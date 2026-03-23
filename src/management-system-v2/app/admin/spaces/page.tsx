@@ -4,7 +4,6 @@ import {
   getEnvironmentById,
   getEnvironments,
 } from '@/lib/data/db/iam/environments';
-import { getSystemAdminByUserId } from '@/lib/data/db/iam/system-admins';
 import { redirect } from 'next/navigation';
 import SpacesTable from './spaces-table';
 import { UserErrorType, userError } from '@/lib/user-error';
@@ -28,12 +27,12 @@ async function deleteSpace(spaceIds: string[]) {
 }
 export type deleteSpace = typeof deleteSpace;
 
-export default async function SysteAdminDashboard(props: { params?: Promise<{ userId: string }> }) {
+export default async function SystemAdminDashboard(props: {
+  params?: Promise<{ userId: string }>;
+}) {
   const params = await props.params;
   const user = await getCurrentUser();
-  if (!user.session) redirect('/');
-  const adminData = getSystemAdminByUserId(user.userId);
-  if (!adminData) redirect('/');
+  if (!user.session || !user.systemAdmin) redirect('/');
 
   let spacesTableRepresentation;
   let title: ReactNode = 'MS Spaces';

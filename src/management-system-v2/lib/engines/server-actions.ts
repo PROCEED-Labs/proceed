@@ -54,8 +54,9 @@ export async function getCorrectTargetEngines(
   spaceId: string,
   onlyProceedEngines = false,
   validatorFunc?: (engine: Engine) => Promise<boolean>,
+  ability?: Ability,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   let engines: Engine[] = [];
   if (onlyProceedEngines) {

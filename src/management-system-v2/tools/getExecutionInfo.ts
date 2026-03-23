@@ -52,8 +52,6 @@ export default async function startProcess({ userCode, instanceId }: InferSchema
 
     if (!instance) return 'Could not find an execution with the given id.';
 
-    console.log(instance);
-
     return {
       content: [{ type: 'text', text: JSON.stringify(instance) }],
     };

@@ -1,5 +1,5 @@
 'use client';
-import { App, Button, Form, Modal } from 'antd';
+import { App, Button, Col, Form, Input, Modal, Row } from 'antd';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from '@/components/auth-can';
@@ -77,8 +77,30 @@ export function EditUserModal({
   }
 
   return (
-    <Modal open={open} onCancel={handleClose} title="Edit User" footer={null} width={500}>
+    <Modal
+      open={open}
+      onCancel={handleClose}
+      title={user ? `Edit User - ${user.firstName.value} ${user.lastName.value}` : 'Edit User'}
+      footer={null}
+      width={500}
+    >
+      {' '}
       <Form form={form} layout="vertical" onFinish={submitEdit}>
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item label="First Name">
+              <Input value={user?.firstName.value} disabled />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item label="Last Name">
+              <Input value={user?.lastName.value} disabled />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Form.Item label="Username">
+          <Input value={user?.username.value} disabled />
+        </Form.Item>
         <UserFormFields
           spaceId={spaceId}
           excludeUserId={user?.id ?? undefined}

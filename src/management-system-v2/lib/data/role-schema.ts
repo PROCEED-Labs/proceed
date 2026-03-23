@@ -20,7 +20,7 @@ export const RoleInputSchema = z.object({
   parentId: z.string().optional().nullable(),
 });
 
-export type RoleInput = z.infer<typeof RoleInputSchema>;
+export type RoleInput = z.input<typeof RoleInputSchema>;
 
 export type Role = RoleInput & {
   id: string;

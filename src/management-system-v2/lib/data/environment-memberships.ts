@@ -25,6 +25,7 @@ import db from '@/lib/data/db';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { removeParameter, syncOrganizationUsers } from './db/machine-config';
 import { getRoleMappingByUserId } from '@/lib/data/db/iam/role-mappings';
+import { upsertUserOrganigram } from './db/iam/organigram';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -292,32 +293,44 @@ export async function updateMemberByAdmin(
       }
 
       // Upsert organigram using confirmed membership
-      const existing = await tx.userOrganigram.findUnique({
-        where: { memberId: membership.id },
-      });
-
-      if (existing) {
-        await tx.userOrganigram.update({
-          where: { memberId: membership.id },
-          data: {
-            directManagerId: directManagerId ?? null,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
-          },
-        });
-      } else if (teamRoleId || backOfficeRoleId || directManagerId) {
-        await tx.userOrganigram.create({
-          data: {
-            memberId: membership.id,
-            directManagerId: directManagerId ?? null,
-            teamRoleId: teamRoleId ?? null,
-            backOfficeRoleId: backOfficeRoleId ?? null,
-          },
-        });
-      }
+      await upsertUserOrganigram(
+        {
+          memberId: membership.id,
+          directManagerId: directManagerId ?? null,
+          teamRoleId: teamRoleId ?? null,
+          backOfficeRoleId: backOfficeRoleId ?? null,
+        },
+        tx,
+      );
     });
   } catch (error) {
     const message = getErrorMessage(error);
     return userError(message);
+  }
+}
+
+// Returns members with their userId for the direct manager dropdown
+export async function getSpaceMembers(environmentId: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    if (!ability.can('view', 'User'))
+      return userError('Permission denied', UserErrorType.PermissionError);
+
+    return await db.membership.findMany({
+      where: { environmentId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  } catch (_) {
+    return userError('Error fetching members');
   }
 }

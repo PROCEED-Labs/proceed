@@ -3,7 +3,7 @@
 import { AuthCan, useEnvironment } from '@/components/auth-can';
 import { inviteUsersToEnvironment } from '@/lib/data/environment-memberships';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import {
   Button,
@@ -18,7 +18,6 @@ import {
   InputRef,
   Dropdown,
   MenuProps,
-  Tooltip,
 } from 'antd';
 import { DefaultOptionType } from 'antd/es/select';
 import { useRouter } from 'next/navigation';
@@ -29,7 +28,6 @@ import useDebounce from '@/lib/useDebounce';
 import { queryUsers } from '@/lib/data/users';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserAvatar from '@/components/user-avatar';
-import { getSpaceMembers } from '@/lib/data/organigram';
 import { z } from 'zod';
 import { UserFormFields } from './organigram-fields';
 

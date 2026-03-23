@@ -1,13 +1,15 @@
 import db from '@/lib/data/db';
 import { OrganigramInput } from '@/lib/data/organigram-schema';
+import { Prisma } from '@prisma/client';
 
-export async function upsertUserOrganigram(input: OrganigramInput) {
-  const existing = await db.userOrganigram.findUnique({
+export async function upsertUserOrganigram(input: OrganigramInput, tx?: Prisma.TransactionClient) {
+  const dbMutator = tx || db;
+  const existing = await dbMutator.userOrganigram.findUnique({
     where: { memberId: input.memberId },
   });
 
   if (existing) {
-    return db.userOrganigram.update({
+    return dbMutator.userOrganigram.update({
       where: { memberId: input.memberId },
       data: {
         directManagerId: input.directManagerId ?? null,
@@ -17,7 +19,7 @@ export async function upsertUserOrganigram(input: OrganigramInput) {
     });
   }
 
-  return db.userOrganigram.create({
+  return dbMutator.userOrganigram.create({
     data: {
       memberId: input.memberId,
       directManagerId: input.directManagerId ?? null,

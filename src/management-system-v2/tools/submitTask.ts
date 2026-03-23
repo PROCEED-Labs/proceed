@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import prisma from '@/lib/data/db';
 import { type InferSchema } from 'xmcp';
-import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
+import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import {
   completeTasklistEntry,
@@ -46,7 +46,18 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
 
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
-    const { environmentId, ability } = verification;
+    const { userId, environmentId, ability } = verification;
+
+    let accessible = await isAccessible(
+      userId,
+      environmentId,
+      ['PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE'],
+      ['process-automation.tasklist'],
+      [['view', 'Task']],
+    );
+
+    if (!accessible)
+      return 'Error: The user cannot access tasks in this space. This might be due to a space wide setting or due to the user not having the permission to view tasks.';
 
     const validate = variableSchema.safeParse(variables);
 

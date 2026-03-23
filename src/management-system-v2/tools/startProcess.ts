@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
-import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
+import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getCorrectTargetEngines } from '@/lib/engines/server-actions';
 import { deployProcess } from '@/lib/engines/deployment';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
-import { getProcessLatestVersion } from '@/lib/data/db/process';
+import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -41,7 +42,24 @@ export default async function startProcess({
     const verification = await verifyCode(userCode);
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
-    const { environmentId, ability } = verification;
+    const { userId, environmentId, ability } = verification;
+
+    let accessible = await isAccessible(
+      userId,
+      environmentId,
+      ['PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE'],
+      ['process-automation.executions'],
+      [['create', 'Execution']],
+    );
+
+    // check if the user can access the specified process
+    // (the process might be in a directory that the user cannot access)
+    const internalProcess = await getProcess(processId);
+    accessible = accessible && ability.can('view', toCaslResource('Process', internalProcess));
+
+    if (!accessible) {
+      return 'Error: The user cannot start processes in this space. This might be due to a space wide setting or due to the user not having the permission to start processes.';
+    }
 
     const process = await getProcessLatestVersion(processId, false);
 
@@ -72,7 +90,7 @@ export default async function startProcess({
       process.version.id,
       engine,
       startParameters &&
-        Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
+      Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
     );
 
     if (isUserErrorResponse(instanceId)) {

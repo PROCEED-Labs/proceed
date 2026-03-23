@@ -1,5 +1,5 @@
 import { type InferSchema } from 'xmcp';
-import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
+import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getCorrectTargetEngines, getTasklistEntryHTML } from '@/lib/engines/server-actions';
 import { z } from 'zod';
@@ -30,7 +30,18 @@ export default async function getTask({ userCode, id }: InferSchema<typeof schem
 
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
 
-    const { environmentId, ability } = verification;
+    const { userId, environmentId, ability } = verification;
+
+    let accessible = await isAccessible(
+      userId,
+      environmentId,
+      ['PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE'],
+      ['process-automation.tasklist'],
+      [['view', 'Task']],
+    );
+
+    if (!accessible)
+      return 'Error: The user cannot access tasks in this space. This might be due to a space wide setting or due to the user not having the permission to view tasks.';
 
     const task = await prisma.userTask.findUnique({ where: { id } });
 

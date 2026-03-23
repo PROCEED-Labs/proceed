@@ -9,11 +9,15 @@ import {
   populateSpaceSettingsGroup as _populateSpaceSettingsGroup,
   updateSpaceSettings as _updateSpaceSettings,
 } from '@/lib/data/db/space-settings';
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 
-export async function getSpaceSettingsValues(spaceId: string, searchKey: string) {
+export async function getSpaceSettingsValues(
+  spaceId: string,
+  searchKey: string,
+  ability?: Ability,
+) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
     return await _getSpaceSettingsValues(spaceId, searchKey, ability);
   } catch (e) {
     if (e instanceof UnauthorizedError)

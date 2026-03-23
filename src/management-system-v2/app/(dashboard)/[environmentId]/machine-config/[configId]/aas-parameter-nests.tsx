@@ -1,17 +1,8 @@
 'use client';
 
-import {
-  Config,
-  LinkedParameter,
-  Parameter,
-  StoredParameter,
-  StoredMetaParameter,
-  MetaParameter,
-} from '@/lib/data/machine-config-schema';
+import { Config, Parameter, MetaParameter } from '@/lib/data/machine-config-schema';
 import { Divider, Modal, Row, Table, Col } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { updateConfigMetadata, updateParameter } from '@/lib/data/db/machine-config';
-import { buildLinkedInputParametersFromIds, findParameter } from '../configuration-helper';
 import { useRouter } from 'next/navigation';
 import { Localization } from '@/lib/data/locale';
 import AasCreateParameterModal, {

@@ -8,13 +8,13 @@ export function defaultOrganizationConfigurationTemplate(
   environmentId: string,
   name: string,
 ): Config {
-  const organizaionConfig = defaultConfiguration(environmentId, `${name} Data Objects`, name);
+  const organizationConfig = defaultConfiguration(environmentId, `${name} Data Objects`, name);
   const organizationParameter = createOrgConfigTemplateOrganization();
   const iamParameter = createOrgConfigTemplateIam();
-  organizaionConfig.content = [organizationParameter, iamParameter];
-  organizaionConfig.id = environmentId;
-  organizaionConfig.configType = 'organization';
-  return organizaionConfig;
+  organizationConfig.content = [organizationParameter, iamParameter];
+  organizationConfig.id = environmentId;
+  organizationConfig.configType = 'organization';
+  return organizationConfig;
 }
 
 function createOrgConfigTemplateOrganization() {

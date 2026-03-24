@@ -137,7 +137,10 @@ class ScriptExecutor extends System {
               'managementSystemLocation',
             ];
 
-            if (!initiatorInfo.every((info) => info in instanceInformation)) {
+            if (
+              !instanceInformation ||
+              !initiatorInfo.every((info) => info in instanceInformation)
+            ) {
               return {
                 response: { error: 'Unable to access global data' },
                 statusCode: 404,
@@ -159,7 +162,9 @@ class ScriptExecutor extends System {
                   // setGlobalOrg and getGlobalOrg already define what data to access so any other
                   // type of meta path is not allowed
                   if (dataPath.includes('@')) {
-                    throw new Error(`Invalid meta parameter (@...) in call to ${accessFn}.`);
+                    throw new Error(
+                      `Invalid meta parameter (${dataPath.split('.')[0]}) in call to ${accessFn}.`,
+                    );
                   }
 
                   path += '/organization';
@@ -169,11 +174,15 @@ class ScriptExecutor extends System {
                 } else {
                   if (dataPath.startsWith('@user') || dataPath.startsWith('@process-initiator')) {
                     dataPath = dataPath.split('.').slice(1).join('.');
+                  } else if (dataPath.startsWith('@')) {
+                    throw new Error(
+                      `Invalid meta parameter (${dataPath.split('.')[0]}) in call to ${accessFn}.`,
+                    );
                   }
                   path += `/user/${instanceInformation.processInitiator}`;
                 }
 
-                return path + `/${dataPath}${accessFn.includes('Full') ? '?full=true' : ''}`;
+                return `${path}/${dataPath}`;
               }
 
               const requestPath = createRequest(functionName, args[0]);
@@ -181,13 +190,34 @@ class ScriptExecutor extends System {
               let result;
 
               if (functionName.includes('setGlobal')) {
+                let value = args[1];
+
+                switch (typeof value) {
+                  case 'string':
+                    break;
+                  case 'number':
+                  case 'boolean':
+                    value = `${value}`;
+                    break;
+                  case 'object':
+                    value = JSON.stringify(value);
+                    break;
+                  default:
+                    return {
+                      response: {
+                        error: `Trying to call ${functionName} with invalid type ${typeof value}.`,
+                      },
+                      statusCode: 404,
+                    };
+                }
+
                 await this.options.network.sendData(
                   instanceInformation.managementSystemLocation,
                   undefined,
                   requestPath,
                   'PUT',
-                  'application/json',
-                  { value: args[1] },
+                  'text/plain',
+                  value,
                 );
               } else {
                 const response = await this.options.network.sendRequest(
@@ -196,10 +226,14 @@ class ScriptExecutor extends System {
                   requestPath,
                 );
                 result = JSON.parse(response.body);
+
+                if (!functionName.includes('Full')) {
+                  result = result.value;
+                }
               }
 
               return {
-                response: { result: result || undefined },
+                response: { result: result ?? undefined },
               };
             } catch (err) {
               return {

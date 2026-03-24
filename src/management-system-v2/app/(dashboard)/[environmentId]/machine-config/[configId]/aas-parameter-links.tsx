@@ -5,7 +5,7 @@ import {
   Config,
   LinkedParameter,
   Parameter,
-  VirtualParameter,
+  MetaParameter,
 } from '@/lib/data/machine-config-schema';
 import {
   buildLinkedInputParametersFromIds,
@@ -115,7 +115,7 @@ const AasParamLinks: React.FC<CustomFieldProps> = ({
 
   const linkedParametersChange = async (
     paramIdList: string[],
-    field: Parameter | VirtualParameter,
+    field: Parameter | MetaParameter,
   ) => {
     let linkedInputParametersArray: LinkedParameter[] = buildLinkedInputParametersFromIds(
       paramIdList,

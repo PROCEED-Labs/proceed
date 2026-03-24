@@ -7,7 +7,8 @@ import { RiAdminFill } from 'react-icons/ri';
 import { type ReactNode } from 'react';
 import { FaGear } from 'react-icons/fa6';
 import { env } from '@/lib/ms-config/env-vars';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { getCurrentUser } from '@/components/auth';
 
 let adminViews = [
   {
@@ -51,13 +52,16 @@ let adminViews = [
 if (!env.PROCEED_PUBLIC_IAM_ACTIVE)
   adminViews = adminViews.filter(({ key }) => !['users', 'systemadmins'].includes(key));
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
   if (
     env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE &&
     !env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE
   ) {
     return notFound();
   }
+
+  const user = await getCurrentUser();
+  if (!user.session || !user.systemAdmin) redirect('/');
 
   return (
     <Layout

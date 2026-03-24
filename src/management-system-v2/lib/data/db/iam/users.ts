@@ -16,6 +16,8 @@ import { Prisma, PasswordAccount } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
 import { env } from '@/lib/ms-config/env-vars';
 import { NextAuthEmailTakenError, NextAuthUsernameTakenError } from '@/lib/authjs-error-message';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { removeParentConfiguration } from '../machine-config';
 
 export async function getUsers(page: number = 1, pageSize: number = 10) {
   // TODO ability check
@@ -175,6 +177,13 @@ export async function deleteUser(userId: string, tx?: Prisma.TransactionClient):
       });
     }
   }
+
+  // remove the configs for the users space (we currently cannot just use "onDelete: cascade", so we have to call our remove-methods manually)
+  const spaceConfigs = await db.config.findMany({
+    where: { environmentId: userId },
+    select: { id: true },
+  });
+  await asyncForEach(spaceConfigs, async (config) => removeParentConfiguration(config.id));
 
   if (orgsWithNoNextAdmin.length > 0)
     throw new UserHasToDeleteOrganizationsError(orgsWithNoNextAdmin);

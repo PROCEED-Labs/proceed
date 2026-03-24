@@ -7,10 +7,10 @@ import {
   ArrowUpOutlined,
   ArrowDownOutlined,
 } from '@ant-design/icons';
-import { Parameter, VirtualParameter } from '@/lib/data/machine-config-schema';
+import { Parameter, MetaParameter } from '@/lib/data/machine-config-schema';
 
 interface ActionDropdownProps {
-  record: Parameter | VirtualParameter;
+  record: Parameter | MetaParameter;
   isFirst: boolean;
   isLast: boolean;
   isOpen: boolean;
@@ -70,7 +70,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Edit',
-              disabled: !isChangeable,
+              disabled: isChangeable ? false : !record?.origin,
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onEdit);
@@ -88,7 +88,6 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Add nested metadata/parameter',
-              disabled: !isChangeable,
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onAddNested);

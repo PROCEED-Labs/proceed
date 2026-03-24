@@ -90,7 +90,7 @@
 
     // used when the option for a separate title page is selected so there is a page break after the table of contents
     .TableOfContentPage {
-      break-after: always;
+      break-after: page;
     }
 
     .ElementPage {

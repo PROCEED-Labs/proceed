@@ -4654,40 +4654,6 @@ export async function getUserConfig(
   }
 }
 
-function getParameterFromPath(data: (Parameter | VirtualParameter)[], dataPath: string) {
-  const segments = dataPath.split('.');
-
-  let parameter: Parameter | undefined = undefined;
-  for (const segment of segments) {
-    parameter = data.find((entry) => entry.name === segment);
-    if (!parameter) return;
-    data = parameter.subParameters;
-  }
-
-  return parameter;
-}
-
-export async function getNestedUserParameter(
-  userId: string,
-  spaceId: string,
-  parameterPath: string,
-) {
-  const config = await getUserConfig(userId, spaceId);
-
-  if (isUserErrorResponse(config)) return config;
-
-  return getParameterFromPath(config.content[0].subParameters, parameterPath);
-}
-
-export async function getNestedOrgParameter(spaceId: string, parameterPath: string) {
-  const conf = await getDeepConfigurationById(spaceId);
-
-  let org = conf.content.find((entry) => entry.name === 'organization');
-  if (!org) return;
-
-  return getParameterFromPath(org.subParameters, parameterPath);
-}
-
 /**
  * Retrieves the user-specific data for a given personal space. The returned userdata is
  * wrapped in a dummy config to allow convenient display in the config editor.

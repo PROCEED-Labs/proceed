@@ -1215,7 +1215,7 @@ async function getPotentialOwnersFromElementById(elementId, bpmn) {
         );
         user = user.concat(_user);
         roles = roles.concat(_roles);
-      } catch (err) { }
+      } catch (err) {}
     }
   });
 

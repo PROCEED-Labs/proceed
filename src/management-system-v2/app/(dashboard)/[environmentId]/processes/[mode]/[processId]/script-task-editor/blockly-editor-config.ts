@@ -1017,7 +1017,7 @@ Blocks['proceed_global_get'] = {
         ]),
         'target',
       )
-      .appendField(new Blockly.FieldTextInput('data.'), 'path');
+      .appendField(new Blockly.FieldTextInput('data'), 'path');
     this.setOutput(true, 'String');
     this.setTooltip('Returns value for selected variable');
     this.setHelpUrl('https://docs.proceed-labs.org/developer/script-task-api#variable');
@@ -1043,7 +1043,7 @@ Blocks['proceed_global_set'] = {
         ]),
         'target',
       )
-      .appendField(new Blockly.FieldTextInput('data.'), 'path')
+      .appendField(new Blockly.FieldTextInput('data'), 'path')
       .appendField('to');
     input.setCheck('String');
     this.setInputsInline(true);

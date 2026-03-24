@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getRoles } from '@/lib/data/roles';
 
-export default function useOrganizationRoles(spaceId: string) {
+export default function useOrganizationRoles(spaceId: string, type?: 'team' | 'back-office') {
   const { data, ...query } = useQuery({
     queryFn: async () => {
       const roles = await getRoles(spaceId);
@@ -10,7 +10,10 @@ export default function useOrganizationRoles(spaceId: string) {
     },
     queryKey: ['roles', spaceId],
   });
-  const roles = data?.filter((role) => !['@guest', '@everyone'].includes(role.name));
+
+  const roles = data
+    ?.filter((role) => !['@guest', '@everyone'].includes(role.name))
+    .filter((role) => (type ? role.organizationRoleType?.includes(type) : true));
 
   // NOTE: this will break memoization down the line
   return {

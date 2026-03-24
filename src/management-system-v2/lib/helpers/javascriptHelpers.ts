@@ -1,3 +1,5 @@
+import { Prettify } from '../typescript-utils';
+
 export async function asyncMap<Type, TReturn>(
   array: Array<Type>,
   cb: (entry: Type, index: number) => Promise<TReturn>,
@@ -24,6 +26,24 @@ export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) =>
       return keep ? entry : undefined;
     })
   ).filter((entry) => entry) as Array<Type>;
+}
+
+export function pick<T extends object, PickKeys extends (keyof T)[]>(
+  obj: T,
+  keys: PickKeys,
+): Prettify<Pick<T, PickKeys[number]>> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => keys.includes(key as keyof T)),
+  ) as Prettify<Pick<T, PickKeys[number]>>;
+}
+
+export function omit<T extends object, OmitKeys extends (keyof T)[]>(
+  obj: T,
+  keys: OmitKeys,
+): Prettify<Omit<T, OmitKeys[number]>> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keys.includes(key as keyof T)),
+  ) as Prettify<Omit<T, OmitKeys[number]>>;
 }
 
 export interface DiffResult {

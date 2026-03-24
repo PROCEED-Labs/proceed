@@ -48,11 +48,7 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
 
     const instanceIds = new Set<string>();
 
-    const instances = deployments.forEach((d) =>
-      d.instances.forEach((i) => instanceIds.add(i.processInstanceId)),
-    );
-
-    console.log(instanceIds);
+    deployments.forEach((d) => d.instances.forEach((i) => instanceIds.add(i.processInstanceId)));
 
     return {
       content: [{ type: 'text', text: JSON.stringify([...instanceIds]) }],

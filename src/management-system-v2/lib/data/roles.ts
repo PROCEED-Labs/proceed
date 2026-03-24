@@ -10,7 +10,7 @@ import {
   getRoles as _getRoles,
   getUserRoles as _getUserRoles,
 } from '@/lib/data/db/iam/roles';
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
   const { ability } = await getCurrentEnvironment(envitonmentId);
@@ -63,9 +63,9 @@ export async function updateRole(
   }
 }
 
-export async function getRoles(environmentId: string) {
+export async function getRoles(environmentId: string, ability?: Ability) {
   try {
-    const { ability } = await getCurrentEnvironment(environmentId);
+    if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
 
     return await _getRoles(environmentId, ability);
   } catch (_) {

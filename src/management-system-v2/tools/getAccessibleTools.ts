@@ -46,6 +46,14 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
       [['view', 'Task']],
     );
 
+    let canAccessInstances = await isAccessible(
+      userId,
+      environmentId,
+      ['PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE'],
+      ['process-automation.executions'],
+      [['view', 'Execution']],
+    );
+
     let canCreateInstances = await isAccessible(
       userId,
       environmentId,
@@ -61,6 +69,8 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
       'get-task': canAccessTasks,
       'submit-task': canAccessTasks,
       'start-process': canCreateInstances,
+      'get-executions': canAccessInstances,
+      'get-execution-info': canAccessInstances,
     };
 
     const result = Object.entries(tools)

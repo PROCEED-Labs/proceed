@@ -10,7 +10,7 @@ import {
 import {
   ParameterZod,
   Parameter,
-  VirtualParameter,
+  MetaParameter,
   StoredParameterZod,
 } from '@/lib/data/machine-config-schema';
 import { z } from 'zod';
@@ -85,7 +85,7 @@ export async function PUT(
     if (
       'valueTemplateSource' in body &&
       !['shortName', 'name', 'description', 'category'].includes(
-        (body as VirtualParameter).valueTemplateSource,
+        (body as MetaParameter).valueTemplateSource,
       )
     ) {
       throw new Error(

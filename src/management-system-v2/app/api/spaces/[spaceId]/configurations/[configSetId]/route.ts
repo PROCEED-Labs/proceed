@@ -40,8 +40,7 @@ export async function PUT(
     const { spaceId, configSetId } = await params;
     const body: Config = await request.json();
     ConfigZod.parse(body);
-    let usingId = uuidValidate(configSetId);
-    if (usingId) {
+    if (uuidValidate(configSetId)) {
       if (!(await validateUniqueConfigField(spaceId, 'id', configSetId))) {
         throw new Error(
           'Config ID already exists. Please first delete the existing Configuration Set first.',
@@ -51,7 +50,6 @@ export async function PUT(
         throw new Error('ID of the config and query ID do not match.');
       }
     } else {
-      console.log('USING SN!');
       if (!(await validateUniqueConfigField(spaceId, 'shortName', configSetId))) {
         throw new Error(
           'ShortName already exists. Please first delete the existing Configuration Set first.',

@@ -1,17 +1,8 @@
 'use client';
 
-import {
-  Config,
-  LinkedParameter,
-  Parameter,
-  StoredParameter,
-  StoredVirtualParameter,
-  VirtualParameter,
-} from '@/lib/data/machine-config-schema';
+import { Config, Parameter, MetaParameter } from '@/lib/data/machine-config-schema';
 import { Divider, Modal, Row, Table, Col } from 'antd';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { updateConfigMetadata, updateParameter } from '@/lib/data/db/machine-config';
-import { buildLinkedInputParametersFromIds, findParameter } from '../configuration-helper';
 import { useRouter } from 'next/navigation';
 import { Localization } from '@/lib/data/locale';
 import AasCreateParameterModal, {
@@ -66,16 +57,16 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
     currentLanguage,
   });
 
-  const moveRowUp = async (record: Parameter | VirtualParameter) => {
+  const moveRowUp = async (record: Parameter | MetaParameter) => {
     await moveParameterUp(record, parentConfig, () => router.refresh());
   };
 
-  const moveRowDown = async (record: Parameter | VirtualParameter) => {
+  const moveRowDown = async (record: Parameter | MetaParameter) => {
     await moveParameterDown(record, parentConfig, () => router.refresh());
   };
 
   const actionBarGenerator = useCallback(
-    (record: Parameter | VirtualParameter) => {
+    (record: Parameter | MetaParameter) => {
       const currentIndex = parameter.subParameters.findIndex(
         (item: { id: string }) => item.id === record.id,
       );
@@ -227,7 +218,6 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
             ) && (
               <AddButton
                 label={'Add Parameter'}
-                disabled={!parameter.changeableByUser}
                 onClick={() => {
                   setCurrentParameter(parameter);
                   setCreateFieldOpen(true);
@@ -301,6 +291,7 @@ const AasParamNests: React.FC<MachineDataViewProps> = ({
                     'valueTemplateSource' in currentParameter
                       ? currentParameter.valueTemplateSource
                       : 'none',
+                  origin: currentParameter.origin || '',
                 },
               ]
             : []

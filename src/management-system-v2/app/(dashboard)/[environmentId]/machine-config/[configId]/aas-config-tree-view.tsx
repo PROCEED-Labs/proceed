@@ -4,7 +4,7 @@ import { Config, LinkedParameter, Parameter } from '@/lib/data/machine-config-sc
 import { Dropdown, MenuProps, Modal, Tree, Button, TreeDataNode, App } from 'antd';
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
-import { Key, useMemo, useState } from 'react';
+import { Key, useEffect, useMemo, useState } from 'react';
 import { buildLinkedInputParametersFromIds, findParameter } from '../configuration-helper';
 import ConfigModal from '@/components/config-modal';
 import AasCreateParameterModal, {
@@ -32,6 +32,7 @@ type ConfigurationTreeViewProps = {
   onExpandedChange: (newExpanded: string[]) => void;
   onChangeSelection: (selection?: string) => void;
   currentLanguage: Localization;
+  externalSelectedKey?: string | null;
 };
 
 type ModalType =
@@ -51,6 +52,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
   onExpandedChange,
   onChangeSelection,
   currentLanguage,
+  externalSelectedKey,
 }) => {
   const app = App.useApp();
   const router = useRouter();
@@ -76,6 +78,21 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     onRefresh: () => router.refresh(),
     currentLanguage,
   });
+
+  useEffect(() => {
+    if (externalSelectedKey === null) {
+      // Home clicked, so clear tree selection
+      setSelectedOnTree([]);
+      setRightClickedId('');
+      setRightClickedType('config');
+    } else if (externalSelectedKey) {
+      // Breadcrumb ancestor clicked, so highlight that node
+      setSelectedOnTree([externalSelectedKey]);
+      setRightClickedId(externalSelectedKey);
+      const ref = findParameter(externalSelectedKey, parentConfig, 'config');
+      setRightClickedType(ref ? 'parameter' : 'config');
+    }
+  }, [externalSelectedKey]);
 
   const rightClickedNode = useMemo(() => {
     if (!rightClickedId || rightClickedType === 'config') return parentConfig;
@@ -344,7 +361,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           label: 'Edit',
           key: 'edit',
           onClick: () => setEditFieldOpen(true),
-          disabled: !editMode || !isChangeable,
+          disabled: !editMode || (isChangeable ? false : !currentParameter?.origin),
         },
         {
           label: 'Add Nested Parameter',
@@ -353,7 +370,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
             setCurrentParameter(currentParameter as Parameter);
             setOpenModal('parameter');
           },
-          disabled: !editMode || !isChangeable,
+          disabled: !editMode,
         },
         {
           label: 'Delete',
@@ -468,6 +485,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
                     'valueTemplateSource' in rightClickedNode
                       ? (rightClickedNode as any).valueTemplateSource
                       : 'none',
+                  origin: (rightClickedNode as Parameter).origin || '',
                 },
               ]
             : []

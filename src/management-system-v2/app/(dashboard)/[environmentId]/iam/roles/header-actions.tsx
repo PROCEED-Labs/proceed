@@ -1,7 +1,7 @@
 'use client';
 
-import { PlusOutlined } from '@ant-design/icons';
-import { Button, Form, Input, Modal, App } from 'antd';
+import { PlusOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Form, Input, Modal, App, Select, Tooltip } from 'antd';
 import { FC, useEffect, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -11,7 +11,11 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import { RoleInputSchema } from '@/lib/data/role-schema';
 
-const schema = RoleInputSchema.pick({ name: true, description: true });
+const schema = RoleInputSchema.pick({
+  name: true,
+  description: true,
+  organizationRoleType: true,
+});
 
 const CreateRoleModal: FC<{
   modalOpen: boolean;
@@ -29,7 +33,10 @@ const CreateRoleModal: FC<{
   }, [form, modalOpen]);
 
   const submitData = async (
-    inputValues: Record<'name' | 'description' | 'expirationDayJs', 'post'>,
+    inputValues: Record<
+      'name' | 'description' | 'organizationRoleType' | 'expirationDayJs',
+      'post'
+    >,
   ) => {
     // let expiration;
     // if (typeof values.expirationDayJs === 'object')
@@ -65,6 +72,35 @@ const CreateRoleModal: FC<{
           <Input.TextArea />
         </Form.Item>
 
+        <Form.Item
+          label={
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              Organisation Role Type
+              <Tooltip
+                title={
+                  <>
+                    Link this role to specific departments or teams. This ensures people can find
+                    the right role when updating user profiles or assigning tasks.
+                  </>
+                }
+              >
+                {' '}
+                <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+              </Tooltip>
+            </span>
+          }
+          name="organizationRoleType"
+        >
+          <Select
+            mode="multiple"
+            allowClear
+            placeholder="Select organisation role type (optional)"
+            options={[
+              { label: 'Team', value: 'team' },
+              { label: 'Back Office', value: 'back-office' },
+            ]}
+          />
+        </Form.Item>
         {/**<Form.Item
           label="Expiration"
           name="expirationDayJs"

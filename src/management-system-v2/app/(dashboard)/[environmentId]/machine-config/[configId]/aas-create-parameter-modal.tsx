@@ -45,6 +45,7 @@ export type CreateParameterModalReturnType = {
   parameterType?: string;
   structureVisible?: string;
   valueTemplateSource?: string;
+  origin?: string;
 };
 
 type TagRender = SelectProps['tagRender'];
@@ -298,6 +299,10 @@ const ParameterInputs = ({
     useState<Localization>(currentLanguage);
   const [valueTemplateChangedThisSession, setValueTemplateChangedThisSession] = useState(false);
   const [isTreeSelectOpen, setIsTreeSelectOpen] = useState(false);
+  const [localDisplayText, setLocalDisplayText] = useState<string>('');
+  const [localDescriptionText, setLocalDescriptionText] = useState<string>('');
+  const displayInputFocused = useRef(false);
+  const descriptionInputFocused = useRef(false);
   const form = Form.useFormInstance();
 
   // Watch valueTemplateSource directly from form
@@ -314,10 +319,6 @@ const ParameterInputs = ({
   ];
 
   // get text for selected language
-  const currentDisplayText =
-    displayNameArray.find((item: any) => item.language === currentDisplayLanguage)?.text || '';
-  const currentDescriptionText =
-    descriptionArray.find((item: any) => item.language === currentDescriptionLanguage)?.text || '';
 
   const isCategoryField = valueTemplateSource === 'category';
 
@@ -383,45 +384,47 @@ const ParameterInputs = ({
     }
   }, [displayNameArray, form, index, showKey, userEditedKey, initialData]);
 
-  // handle display name text change
-  const handleDisplayNameChange = (text: string) => {
-    const updatedArray = [...displayNameArray];
-    const existingIndex = updatedArray.findIndex(
-      (item: any) => item.language === currentDisplayLanguage,
-    );
+  // handle display name and description text change
 
+  const flushLocalizedArray = (
+    fieldName: 'displayName' | 'description',
+    text: string,
+    language: Localization,
+  ) => {
+    const current = form.getFieldValue([index, fieldName]) || [];
+    const updatedArray = [...current];
+    const existingIndex = updatedArray.findIndex((item: any) => item.language === language);
     if (existingIndex >= 0) {
-      updatedArray[existingIndex] = { text, language: currentDisplayLanguage };
+      updatedArray[existingIndex] = { text, language };
     } else {
-      updatedArray.push({ text, language: currentDisplayLanguage });
+      updatedArray.push({ text, language });
     }
-
-    form.setFieldValue([index, 'displayName'], updatedArray);
+    form.setFieldValue([index, fieldName], updatedArray);
   };
 
-  // handle display name language change
+  const handleDisplayNameBlur = () =>
+    flushLocalizedArray('displayName', localDisplayText, currentDisplayLanguage);
+
   const handleDisplayLanguageChange = (language: Localization) => {
+    flushLocalizedArray('displayName', localDisplayText, currentDisplayLanguage);
+    const newText =
+      (form.getFieldValue([index, 'displayName']) || []).find(
+        (item: any) => item.language === language,
+      )?.text || '';
+    setLocalDisplayText(newText);
     setCurrentDisplayLanguage(language);
   };
 
-  // description text change
-  const handleDescriptionChange = (text: string) => {
-    const updatedArray = [...descriptionArray];
-    const existingIndex = updatedArray.findIndex(
-      (item: any) => item.language === currentDescriptionLanguage,
-    );
+  const handleDescriptionBlur = () =>
+    flushLocalizedArray('description', localDescriptionText, currentDescriptionLanguage);
 
-    if (existingIndex >= 0) {
-      updatedArray[existingIndex] = { text, language: currentDescriptionLanguage };
-    } else {
-      updatedArray.push({ text, language: currentDescriptionLanguage });
-    }
-
-    form.setFieldValue([index, 'description'], updatedArray);
-  };
-
-  // description language change
   const handleDescriptionLanguageChange = (language: Localization) => {
+    flushLocalizedArray('description', localDescriptionText, currentDescriptionLanguage);
+    const newText =
+      (form.getFieldValue([index, 'description']) || []).find(
+        (item: any) => item.language === language,
+      )?.text || '';
+    setLocalDescriptionText(newText);
     setCurrentDescriptionLanguage(language);
   };
 
@@ -476,6 +479,24 @@ const ParameterInputs = ({
     return buildTreeNode(config.content);
   };
 
+  useEffect(() => {
+    if (displayInputFocused.current) return;
+    const displayText =
+      (form.getFieldValue([index, 'displayName']) || []).find(
+        (item: any) => item.language === currentDisplayLanguage,
+      )?.text || '';
+    setLocalDisplayText(displayText);
+  }, [displayNameArray]);
+
+  useEffect(() => {
+    if (descriptionInputFocused.current) return;
+    const descText =
+      (form.getFieldValue([index, 'description']) || []).find(
+        (item: any) => item.language === currentDescriptionLanguage,
+      )?.text || '';
+    setLocalDescriptionText(descText);
+  }, [descriptionArray]);
+
   const parametersTree = parentConfig ? getParametersAsTree(parentConfig) : [];
 
   // variable names for formula type
@@ -526,6 +547,8 @@ const ParameterInputs = ({
   };
   // determine if transformation type should be disabled
   const isTransformationDisabled = formValueTemplateSource !== 'none';
+
+  const isAdminLocked = initialData?.[index]?.origin ? true : false;
   return (
     <Row gutter={16}>
       <Col span={12}>
@@ -545,8 +568,16 @@ const ParameterInputs = ({
           >
             <Input
               size="small"
-              value={currentDisplayText}
-              onChange={(e) => handleDisplayNameChange(e.target.value)}
+              value={localDisplayText}
+              onChange={(e) => setLocalDisplayText(e.target.value)}
+              disabled={isAdminLocked}
+              onFocus={() => {
+                displayInputFocused.current = true;
+              }}
+              onBlur={() => {
+                displayInputFocused.current = false;
+                handleDisplayNameBlur();
+              }}
             />
           </Form.Item>
 
@@ -567,6 +598,7 @@ const ParameterInputs = ({
               options={languageItemsSelect}
               value={currentDisplayLanguage}
               onChange={handleDisplayLanguageChange}
+              disabled={isAdminLocked}
             />
           </Form.Item>
         </Card>
@@ -580,7 +612,7 @@ const ParameterInputs = ({
             ]}
             style={{ marginTop: '12px' }}
           >
-            <Input onChange={() => setUserEditedKey(true)} />
+            <Input onChange={() => setUserEditedKey(true)} disabled={isAdminLocked} />
           </Form.Item>
         )}
       </Col>
@@ -603,8 +635,16 @@ const ParameterInputs = ({
             <TextArea
               rows={5}
               size="small"
-              value={currentDescriptionText}
-              onChange={(e) => handleDescriptionChange(e.target.value)}
+              value={localDescriptionText}
+              onChange={(e) => setLocalDescriptionText(e.target.value)}
+              disabled={isAdminLocked}
+              onFocus={() => {
+                descriptionInputFocused.current = true;
+              }}
+              onBlur={() => {
+                descriptionInputFocused.current = false;
+                handleDescriptionBlur();
+              }}
             />
           </Form.Item>
           <Form.Item
@@ -624,6 +664,7 @@ const ParameterInputs = ({
               options={languageItemsSelect}
               value={currentDescriptionLanguage}
               onChange={handleDescriptionLanguageChange}
+              disabled={isAdminLocked}
             />
           </Form.Item>
         </Card>
@@ -659,9 +700,10 @@ const ParameterInputs = ({
               ) : (
                 <Input
                   disabled={
-                    transformationType === 'linked' ||
-                    transformationType === 'algorithm' ||
-                    (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession)
+                    !isAdminLocked &&
+                    (transformationType === 'linked' ||
+                      transformationType === 'algorithm' ||
+                      (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession))
                   }
                 />
               )}
@@ -674,7 +716,7 @@ const ParameterInputs = ({
                 label="Unit"
                 rules={[{ required: false, message: 'Please fill out the Unit' }]}
               >
-                <Input />
+                <Input disabled={isAdminLocked} />
               </Form.Item>
             </Col>
           )}
@@ -775,6 +817,7 @@ const ParameterInputs = ({
                   styles={{ popup: { root: { maxHeight: 600, overflow: 'auto' } } }}
                   virtual={false}
                   onChange={handleLinkedParametersChange}
+                  disabled={isAdminLocked}
                   onOpenChange={(open) => setIsTreeSelectOpen(open)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape' && isTreeSelectOpen) {
@@ -844,6 +887,7 @@ const ParameterInputs = ({
                 <TextArea
                   rows={2}
                   placeholder="Enter formula using variable names (e.g., $IN1 + $IN2 * 0.5)"
+                  disabled={isAdminLocked}
                 />
               </Form.Item>
             )}
@@ -873,6 +917,7 @@ const ParameterInputs = ({
                           { label: 'Meta', value: 'meta' },
                           { label: 'Content', value: 'content' },
                         ]}
+                        disabled={isAdminLocked}
                       />
                     </Form.Item>
                   </Col>
@@ -887,6 +932,7 @@ const ParameterInputs = ({
                           { label: 'Yes', value: 'yes' },
                           { label: 'No', value: 'no' },
                         ]}
+                        disabled={isAdminLocked}
                       />
                     </Form.Item>
                   </Col>
@@ -904,6 +950,7 @@ const ParameterInputs = ({
                           { label: 'Category', value: 'category' },
                           { label: 'Description', value: 'description' },
                         ]}
+                        disabled={isAdminLocked}
                         onChange={handleValueTemplateSourceChange}
                       />
                     </Form.Item>

@@ -2,13 +2,6 @@
 
 import { v4 } from 'uuid';
 import {
-  AasConceptDescription,
-  AasJson,
-  AasOperation,
-  AasProperty,
-  AasSubmodel,
-  AasSubmodelElement,
-  AasSubmodelZod,
   Config,
   LinkedParameter,
   MachineVersionReference,
@@ -17,9 +10,19 @@ import {
   StoredConfigZod,
   StoredParameter,
   StoredParameterZod,
-  StoredVirtualParameter,
-  VirtualParameter,
+  StoredMetaParameter,
+  MetaParameter,
+  VirtualUserParameter,
 } from '../machine-config-schema';
+import {
+  AasJson,
+  AasProperty,
+  AasSubmodel,
+  AasSubmodelElement,
+  AasSubmodelZod,
+  AasConceptDescription,
+  AasOperation,
+} from '@/lib/data/machine-config-aas-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
 import { UserError, isUserErrorResponse, userError } from '@/lib/user-error';
@@ -28,24 +31,29 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import {
   buildLinkedInputParametersFromIds,
-  createTdsTemplateMachineDatasetHeader,
   defaultConfiguration,
-  defaultMachineDataSet,
-  defaultOrganizationConfigurationTemplate,
   defaultParameter,
   defaultParentConfiguration,
-  defaultUserParameterTemplate,
+  extractParameter,
   findParameter,
   findPathToParameter,
+  isVirtualUserParameter,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { getUserById } from './iam/users';
 import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
 import { truthyFilter } from '@/lib/typescript-utils';
+import {
+  createTdsTemplateMachineDatasetHeader,
+  defaultMachineDataSet,
+} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
+import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+import { User } from '../user-schema';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -138,6 +146,73 @@ export async function copyParameter(
   return newId;
 }
 
+export async function linkedCopyParameter(
+  parameterId: string,
+  parentId: string,
+  parameterPath: string[],
+  parentPath: string[],
+  parentType: 'parameter' | 'config',
+) {
+  const storedParameterResult = await db.configParameter.findUnique({ where: { id: parameterId } });
+  const storedParameter = storedParameterResult?.data as StoredParameter;
+
+  if (!storedParameter) throw new Error(`Parameter with id ${parameterId} does not exist!`);
+
+  // this creates a deep clone of the element to prevent changes in the content of one to affect the other
+  const copy = StoredParameterZod.parse(storedParameter);
+
+  const newId = v4();
+  copy.id = newId;
+  copy.parentId = parentId;
+  copy.parentType = parentType;
+  copy.transformation = {
+    transformationType: 'linked',
+    linkedInputParameters: {
+      $IN1: {
+        id: parameterId,
+        path: [...parameterPath, storedParameter.name],
+      },
+    },
+    action: '',
+  };
+  copy.usedAsInputParameterIn = [];
+
+  // TODO update parent with
+
+  // recursively copy all referenced parameters
+  copy.subParameters = await asyncMap(copy.subParameters, (id) =>
+    linkedCopyParameter(
+      id,
+      newId,
+      [...parameterPath, storedParameter.name],
+      [...parentPath, storedParameter.name],
+      'parameter',
+    ),
+  );
+
+  // Adding the linked parameter
+  await db.configParameter.create({ data: { id: copy.id, data: copy } });
+  // Adding the reference to the link in the parent
+  await db.configParameter.update({
+    where: { id: parameterId },
+    data: {
+      data: {
+        ...storedParameter,
+        usedAsInputParameterIn: [
+          // TODO remove filter later, currently removeParameter does not remove references in
+          // parameters where the linked values are retrieved from
+          ...storedParameter.usedAsInputParameterIn.filter(
+            (input) => input.path.toString() != [...parentPath, storedParameter.name].toString(),
+          ),
+          { id: copy.id, path: [...parentPath, storedParameter.name] },
+        ],
+      },
+    },
+  });
+
+  return newId;
+}
+
 /**
  * Creates a copy of a machine- or target-config and all its nested parameters to be pasted as child of a given parent. Stores the copied config.
  * @param configId ID of the config which is to be copied.
@@ -219,8 +294,8 @@ export async function copyParentConfig(
       ...(JSON.parse(JSON.stringify(originalConfig)) as typeof originalConfig),
       environmentId,
       createdBy: userId,
-      createdOn: date,
-      lastEditedOn: date,
+      createdOn: date.toISOString(),
+      lastEditedOn: date.toISOString(),
       id: newId,
       // TODO duplicate virtual paramters pointing to the same config data might currently be possible
       // maybe reuse the linkpath provided my the origins meta data
@@ -301,7 +376,6 @@ export async function addParentConfig(configInput: Config, environmentId: string
 
     newConfig.createdBy = newUserId;
     newConfig.folderId = folderId;
-    newConfig.environmentId = environmentId;
 
     const folderData = await getFolderById(newConfig.folderId);
     if (!folderData) throw new Error('Folder not found');
@@ -311,7 +385,7 @@ export async function addParentConfig(configInput: Config, environmentId: string
     if (existingConfig) {
       throw new Error(`Config with id ${parentConfigId} already exists!`);
     }
-    let storeId = await parentConfigToStorage(newConfig);
+    let storeId = await parentConfigToStorage(newConfig, environmentId);
     await addConfigCategories(environmentId, newConfig.category.value.split(';'));
     await storeAllCachedData();
     return { storeId };
@@ -514,7 +588,7 @@ export async function setParentConfigVersionAsLatest(versionId: string) {
 
 export const updateBacklinks = async (
   idListFilter: (LinkedParameter | undefined)[],
-  field: Parameter | VirtualParameter | StoredParameter | StoredVirtualParameter,
+  field: Parameter | MetaParameter | StoredParameter | StoredMetaParameter,
   operation: 'remove' | 'add',
   parentConfigId: string,
 ) => {
@@ -603,9 +677,9 @@ export async function addParameter(
         if (
           linkedParamResult &&
           linkedParamResult.data &&
-          'valueTemplateSource' in (linkedParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (linkedParamResult.data as StoredMetaParameter)
         ) {
-          const linkedParam = linkedParamResult.data as StoredVirtualParameter;
+          const linkedParam = linkedParamResult.data as StoredMetaParameter;
           calculatedValue = parentConfig[linkedParam.valueTemplateSource].value;
         } else {
           calculatedValue = (linkedParamResult?.data as StoredParameter)?.value;
@@ -623,9 +697,9 @@ export async function addParameter(
         if (
           inputParamResult &&
           inputParamResult.data &&
-          'valueTemplateSource' in (inputParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (inputParamResult.data as StoredMetaParameter)
         ) {
-          const inputParam = inputParamResult.data as StoredVirtualParameter;
+          const inputParam = inputParamResult.data as StoredMetaParameter;
           inputValues[key.substring(1)] = possiblyNumber(
             parentConfig[inputParam.valueTemplateSource].value ?? '',
           );
@@ -686,7 +760,21 @@ export async function addParameter(
       ['identity-and-access-management', 'common-user-data'].toString()
     ) {
       // a new IAM common-user-data parameter is added
-      await addCommonUserDataPropagation(parameter, parameterPath.slice(2, -1), fullConfig);
+      const linkedParams = await addCommonUserDataPropagation(
+        { ...parameter, origin: 'common-user-data' },
+        parameterPath.slice(2, -1),
+        fullConfig,
+      );
+      // adding the linked parameter IDs to the original
+      // TODO maybe do this some what differently
+      const storedParameterResult = await db.configParameter.findUnique({
+        where: { id: parameter.id },
+      });
+      const storedParameter = storedParameterResult?.data as StoredParameter;
+      await db.configParameter.update({
+        where: { id: parameter.id },
+        data: { data: { ...storedParameter, usedAsInputParameterIn: linkedParams } },
+      });
     } else if (
       parameterPath.slice(0, -1).toString() == ['identity-and-access-management', 'user'].toString()
     ) {
@@ -701,20 +789,48 @@ async function addCommonUserDataPropagation(
   internalPath: string[],
   orgConfig: Config,
 ) {
+  const parameterCopyIds: LinkedParameter[] = [];
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
-    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+    await asyncForEach(users.subParameters, async (userParameter: Parameter) => {
       const parentParameter =
         internalPath.length === 0
-          ? extractParameterFromParameter(userParameter, ['data'])
-          : extractParameterFromParameter(userParameter, ['data', ...internalPath]);
+          ? extractParameter(userParameter, ['data'])
+          : extractParameter(userParameter, ['data', ...internalPath]);
       if (parentParameter) {
         // copy parameter
-        const parameterCopy = JSON.parse(JSON.stringify(parameter));
+        const parameterCopy: Parameter = JSON.parse(JSON.stringify(parameter));
         // create new ID for copied parameter
         parameterCopy.id = v4();
         parameterCopy.changeableByUser = false;
+        // create linked transformation from the original parameter
+        parameterCopy.transformation = {
+          transformationType: 'linked',
+          linkedInputParameters: {
+            $IN1: {
+              id: parameter.id,
+              path: [
+                'identity-and-access-management',
+                'common-user-data',
+                ...internalPath,
+                parameter.name,
+              ],
+            },
+          },
+          action: '',
+        };
         await addParameter(parentParameter.id, 'parameter', parameterCopy, orgConfig.id);
+        parameterCopyIds.push({
+          id: parameterCopy.id,
+          path: [
+            'identity-and-access-management',
+            'user',
+            userParameter.name,
+            'data',
+            ...internalPath,
+            parameter.name,
+          ],
+        });
       } else {
         // TODO error: internal parent could not be determined
       }
@@ -722,10 +838,11 @@ async function addCommonUserDataPropagation(
   } else {
     // TODO error for missing users parameter
   }
+  return parameterCopyIds;
 }
 
 async function addUserParameterDataImport(parameter: Parameter, orgConfig: Config) {
-  const dataParent = extractParameterFromParameter(parameter, ['data']);
+  const dataParent = extractParameter(parameter, ['data']);
   const commonUserData = extractParameter(orgConfig, [
     'identity-and-access-management',
     'common-user-data',
@@ -734,13 +851,16 @@ async function addUserParameterDataImport(parameter: Parameter, orgConfig: Confi
     const subparameterKeys = await asyncMap(
       commonUserData.subParameters,
       async (commonUserParameter: Parameter) => {
-        return await copyParameter(commonUserParameter.id, dataParent.id, 'parameter');
+        return await linkedCopyParameter(
+          commonUserParameter.id,
+          dataParent.id,
+          ['identity-and-access-management', 'common-user-data'],
+          ['identity-and-access-management', 'user', parameter.name, 'data'],
+          'parameter',
+        );
       },
     );
     await updateParameter(dataParent.id, { subParameters: subparameterKeys }, orgConfig.id);
-    asyncForEach(subparameterKeys, async (paramId) => {
-      await updateParameter(paramId, { changeableByUser: false }, orgConfig.id);
-    });
   } else {
     // TODO error for missing users parameter
   }
@@ -760,26 +880,17 @@ export async function addMachineDataSet(parentConfig: Config, name: string, disp
     'AcknowledgeModeDefault',
   ]);
 
-  const machineIdentifier = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'TDSIdentifier',
-  ]);
-  const machineStructureVersionNumber = extractParameterFromParameter(newMachineDataSet, [
+  const machineIdentifier = extractParameter(newMachineDataSet, ['Header', 'TDSIdentifier']);
+  const machineStructureVersionNumber = extractParameter(newMachineDataSet, [
     'Header',
     'StructureVersionNumber',
   ]);
-  const machineVersionNumber = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'VersionNumber',
-  ]);
-  const machineFullVersionNumber = extractParameterFromParameter(newMachineDataSet, [
+  const machineVersionNumber = extractParameter(newMachineDataSet, ['Header', 'VersionNumber']);
+  const machineFullVersionNumber = extractParameter(newMachineDataSet, [
     'Header',
     'FullVersionNumber',
   ]);
-  const machineAcknowledgeMode = extractParameterFromParameter(newMachineDataSet, [
-    'Header',
-    'AcknowledgeMode',
-  ]);
+  const machineAcknowledgeMode = extractParameter(newMachineDataSet, ['Header', 'AcknowledgeMode']);
 
   if (
     machineFullVersionNumber?.transformation &&
@@ -910,13 +1021,10 @@ async function parametersToMachineStorage(
       versionReference.fullVersion[2];
     if (param) {
       // add parameter to the table to be stored as machineConfig with the correct version
-      const header = extractParameterFromParameter(param, ['Header', 'StructureVersionNumber']);
+      const header = extractParameter(param, ['Header', 'StructureVersionNumber']);
 
       if (header) {
-        const structureNo = extractParameterFromParameter(param, [
-          'Header',
-          'StructureVersionNumber',
-        ]);
+        const structureNo = extractParameter(param, ['Header', 'StructureVersionNumber']);
         if (structureNo) {
           // setting structureNo to the given version
           structureNo.value = versionReference.fullVersion[1].toString();
@@ -958,7 +1066,7 @@ async function parametersToMachineStorage(
           }
         }
 
-        const updateNo = extractParameterFromParameter(param, ['Header', 'VersionNumber']);
+        const updateNo = extractParameter(param, ['Header', 'VersionNumber']);
         if (updateNo) {
           // setting updateNo to the given version
           updateNo.value = versionReference.fullVersion[2].toString();
@@ -1000,7 +1108,7 @@ async function parametersToMachineStorage(
           }
         }
 
-        const fullVersionNo = extractParameterFromParameter(param, ['Header', 'FullVersionNumber']);
+        const fullVersionNo = extractParameter(param, ['Header', 'FullVersionNumber']);
         if (fullVersionNo) {
           // setting fullVersion to the given version
           fullVersionNo.value = versionReference.fullVersion.join('.');
@@ -1043,11 +1151,8 @@ async function parametersToMachineStorage(
         }
       } else {
         param.subParameters.push(createTdsTemplateMachineDatasetHeader(''));
-        const updateNo = extractParameterFromParameter(param, ['Header', 'VersionNumber']);
-        const structureNo = extractParameterFromParameter(param, [
-          'Header',
-          'StructureVersionNumber',
-        ]);
+        const updateNo = extractParameter(param, ['Header', 'VersionNumber']);
+        const structureNo = extractParameter(param, ['Header', 'StructureVersionNumber']);
         if (structureNo) {
           // setting structureNo to the given version
           structureNo.value = versionReference.fullVersion[1].toString();
@@ -1056,7 +1161,7 @@ async function parametersToMachineStorage(
           // setting updateNo to the given version
           updateNo.value = versionReference.fullVersion[2].toString();
         }
-        const fullVersionNo = extractParameterFromParameter(param, ['Header', 'FullVersionNumber']);
+        const fullVersionNo = extractParameter(param, ['Header', 'FullVersionNumber']);
         if (fullVersionNo) {
           // setting fullVersion to the given version
           fullVersionNo.value = versionReference.fullVersion.join('.');
@@ -1171,12 +1276,16 @@ async function parametersToMachineStorage(
 // }
 
 /**
- * Stores a given ParentConfig (or ParentConfigVersion) into db referencing other elements by id instead of having them nested.
- * @param parentConfig ParentConfig that is to be stored, able to contain TargetConfigs, MachineConfigs and ParameterConfigs
+ * Stores a given ParentConfig into db referencing other elements by id instead of having them nested.
+ * @param parentConfig ParentConfig that is to be stored.
+ * @param environmentId EnvironmentId for the space for which the config is stored.
  * @param newId Boolean determining if new IDs are to be generated.
- * @param version Version-ID of the config if a versioned config is to be stored.
  */
-async function parentConfigToStorage(parentConfig: Config, newId: boolean = false) {
+async function parentConfigToStorage(
+  parentConfig: Config,
+  environmentId: string,
+  newId: boolean = false,
+) {
   const { content } = parentConfig;
   if (!parentConfig.id || newId) {
     parentConfig.id = v4();
@@ -1184,6 +1293,9 @@ async function parentConfigToStorage(parentConfig: Config, newId: boolean = fals
   let creationDate = new Date(parentConfig.createdOn);
   const configToStore = {
     ...parentConfig,
+    environmentId,
+    createdOn: parentConfig.createdOn.toISOString(),
+    lastEditedOn: parentConfig.lastEditedOn.toISOString(),
     content: [],
   } as StoredConfig;
 
@@ -1191,7 +1303,7 @@ async function parentConfigToStorage(parentConfig: Config, newId: boolean = fals
 
   dataToParentConfigTable.push({
     id: parentConfig.id,
-    environmentId: parentConfig.environmentId,
+    environmentId: environmentId,
     creatorId: parentConfig.createdBy,
     createdOn: creationDate,
     data: configToStore,
@@ -1428,35 +1540,40 @@ async function referencedParentConfigFromStorage(configId: string) {
 export async function nestedParametersFromStorage(parameterIds: string[]): Promise<Parameter[]> {
   const parameters: Parameter[] = [];
 
-  // await asyncForEach(parameterIds, async (id, idx) => {
-  //   let storedParameterResult = await db.configParameter.findUnique({
-  //     where: { id: id },
-  //   });
-  //   const storedParameter = storedParameterResult?.data as StoredParameter;
-  //   if (!storedParameter) throw new Error(`Parameter with id ${id} does not exists!`);
-  //   if (storedParameter && storedParameter.name) {
-  //     parameters.push({
-  //       ...storedParameter,
-  //       subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
-  //     });
-  //   }
-  // });
-
   for (const id of parameterIds) {
+    let newParameter;
     let storedParameterResult = await db.configParameter.findUnique({
       where: { id: id },
     });
     const storedParameter = storedParameterResult?.data as StoredParameter;
     if (!storedParameter) throw new Error(`Parameter with id ${id} does not exists!`);
     if (storedParameter && storedParameter.name) {
-      parameters.push({
+      newParameter = {
         ...storedParameter,
         subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
-      });
+      };
+      if (isVirtualUserParameter(newParameter)) {
+        newParameter = await getVirtualUserData(newParameter);
+      }
+      parameters.push(newParameter);
     }
   }
-
   return parameters;
+}
+
+export async function getVirtualUserData(parameter: VirtualUserParameter): Promise<Parameter> {
+  const userInfo = await getUserById(parameter.userId);
+  let subParameters: typeof parameter.subParameters = [];
+  if (!userInfo.isGuest) {
+    const { firstName, lastName } = userInfo;
+    const name = `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`;
+    const extendedInfo = { ...userInfo, name };
+    subParameters = parameter.subParameters.map((param) => {
+      const infoValue = extendedInfo[param.name as keyof User];
+      return { ...param, ...(infoValue && { value: infoValue }) };
+    });
+  }
+  return { ...parameter, subParameters };
 }
 
 // TODO rework handling of subConfigs (target, reference, machine)
@@ -1539,7 +1656,9 @@ export async function getDeepConfigurationById(
 
   const parentConfig = {
     ...config,
-    content: {},
+    createdOn: new Date(config.createdOn),
+    lastEditedOn: new Date(config.lastEditedOn),
+    content: [],
   } as Config;
 
   parentConfig.content = await nestedParametersFromStorage(config.content);
@@ -1547,9 +1666,9 @@ export async function getDeepConfigurationById(
   if (
     parentConfig &&
     false /*!ability.can('view', toCaslResource('MachineConfig', machineConfig))*/
-  )
+  ) {
     throw new UnauthorizedError();
-
+  }
   return parentConfig;
 }
 
@@ -1760,9 +1879,9 @@ export async function updateParameter(
         if (
           linkedParamResult &&
           linkedParamResult.data &&
-          'valueTemplateSource' in (linkedParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (linkedParamResult.data as StoredMetaParameter)
         ) {
-          const linkedParam = linkedParamResult.data as StoredVirtualParameter;
+          const linkedParam = linkedParamResult.data as StoredMetaParameter;
           calculatedValue = parentConfig[linkedParam.valueTemplateSource].value;
         } else {
           calculatedValue = (linkedParamResult?.data as StoredParameter)?.value;
@@ -1781,9 +1900,9 @@ export async function updateParameter(
         if (
           inputParamResult &&
           inputParamResult.data &&
-          'valueTemplateSource' in (inputParamResult.data as StoredVirtualParameter)
+          'valueTemplateSource' in (inputParamResult.data as StoredMetaParameter)
         ) {
-          const inputParam = inputParamResult.data as StoredVirtualParameter;
+          const inputParam = inputParamResult.data as StoredMetaParameter;
           inputValues[key.substring(1)] = possiblyNumber(
             parentConfig[inputParam.valueTemplateSource].value ?? '',
           );
@@ -1812,7 +1931,7 @@ export async function updateParameter(
 
   let actualValue;
   if ('valueTemplateSource' in parameter && !hasValueChanged) {
-    actualValue = parentConfig[(parameter as StoredVirtualParameter).valueTemplateSource].value;
+    actualValue = parentConfig[(parameter as StoredMetaParameter).valueTemplateSource].value;
   } else {
     actualValue = changed.value ?? parameter.value;
   }
@@ -1852,10 +1971,10 @@ export async function updateParameter(
           if (
             inputParameterQuery &&
             inputParameterQuery.data &&
-            'valueTemplateSource' in (inputParameterQuery.data as StoredVirtualParameter)
+            'valueTemplateSource' in (inputParameterQuery.data as StoredMetaParameter)
           ) {
             inputParamResult =
-              parentConfig[(inputParameterQuery.data as StoredVirtualParameter).valueTemplateSource]
+              parentConfig[(inputParameterQuery.data as StoredMetaParameter).valueTemplateSource]
                 .value;
           } else {
             inputParamResult = (inputParameterQuery?.data as StoredParameter).value;
@@ -1893,6 +2012,7 @@ export async function updateParameter(
     }
   }
 
+  const fullParentConfig = await getDeepConfigurationById(parentConfigId);
   // make sure to set backlinks
   if (changed.transformation) {
     await updateBacklinks(
@@ -1915,11 +2035,9 @@ export async function updateParameter(
           .includes(id),
     );
 
-    const parentConfig = await getDeepConfigurationById(parentConfigId);
-
     let removedLinkedInputParametersArray: LinkedParameter[] = buildLinkedInputParametersFromIds(
       removedIds,
-      parentConfig,
+      fullParentConfig,
     );
 
     await updateBacklinks(removedLinkedInputParametersArray, parameter, 'remove', parentConfigId);
@@ -1943,6 +2061,27 @@ export async function updateParameter(
   return { changedParameters };
 }
 
+async function updateCommonUserDataPropagation(
+  changes: Partial<StoredParameter>,
+  internalPath: string[],
+  orgConfig: Config,
+) {
+  const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
+  if (users) {
+    asyncForEach(users.subParameters, async (userParameter: Parameter) => {
+      const previousParameter = extractParameter(userParameter, ['data', ...internalPath]);
+      if (previousParameter) {
+        await updateParameter(previousParameter.id, changes, orgConfig.id);
+      } else {
+        // TODO error: user parameter could not be found. Error or create param?
+        // await addParameter(previousParameter.id, 'parameter', parameterCopy, orgConfig.id);
+      }
+    });
+  } else {
+    // TODO error for missing users parameter
+  }
+}
+
 /**
  * convert the type of the paramter (virtual to regular ot vice versa)
  * @param parameterId ID of the parameter that receives changes.
@@ -1953,7 +2092,7 @@ export async function updateParameter(
 
 export async function convertParameterType(
   parameterId: string,
-  newParameter: Parameter | VirtualParameter,
+  newParameter: Parameter | MetaParameter,
   parentConfigId: string,
 ) {
   // get existing parameter from database
@@ -2186,10 +2325,7 @@ async function removeCommonUserDataPropagation(internalPath: string[], orgConfig
   const users = extractParameter(orgConfig, ['identity-and-access-management', 'user']);
   if (users) {
     asyncForEach(users.subParameters, async (userParameter: Parameter) => {
-      const doubledParameter = extractParameterFromParameter(userParameter, [
-        'data',
-        ...internalPath,
-      ]);
+      const doubledParameter = extractParameter(userParameter, ['data', ...internalPath]);
       if (doubledParameter) {
         const parameterExists = await db.configParameter.findUnique({
           where: { id: doubledParameter.id },
@@ -2346,7 +2482,7 @@ async function deleteParameterFromStorage(parameterId: string) {
 
   // remove reference from metadata if virtual parameter
   if ('valueTemplateSource' in parameter) {
-    await deleteMetadataLink(parameter as StoredVirtualParameter);
+    await deleteMetadataLink(parameter as StoredMetaParameter);
   }
 
   // recursively remove all referenced parameters
@@ -2381,7 +2517,7 @@ async function deleteParameterLink(parameterId: string, linkedId: string) {
   }
 }
 
-async function deleteMetadataLink(linkedParameter: StoredVirtualParameter) {
+async function deleteMetadataLink(linkedParameter: StoredMetaParameter) {
   let config = await findParentConfig(linkedParameter);
   let newMetadata = config[linkedParameter.valueTemplateSource];
   newMetadata.linkValueToParameterValue = { id: '', path: [] };
@@ -2964,7 +3100,7 @@ export async function submodelElementToParameter(
   element: AasSubmodelElement | AasProperty | AasOperation,
   parentId: string,
   conceptDescriptions: AasConceptDescription[],
-): Promise<Parameter | VirtualParameter> {
+): Promise<Parameter | MetaParameter> {
   // parameter ID from qualifiers
   const id: string = element.qualifiers.find((e) => e.type === 'PROCEED-id')!.value;
   if (!id) throw new Error('Prop does not contain an ID.');
@@ -3006,6 +3142,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: null,
         hasChanges: false,
       };
       const childParameters: Parameter[] = [];
@@ -3034,6 +3171,7 @@ export async function submodelElementToParameter(
         parameterType,
         structureVisible,
         changeableByUser,
+        origin: null,
         hasChanges: false,
       };
       return newParameter;
@@ -3054,9 +3192,8 @@ export async function submodelElementToParameter(
             `Invalid metadata set for valueTemplateSource: ${rawValueTemplateSource}`,
           );
         }
-        const valueTemplateSource =
-          rawValueTemplateSource as VirtualParameter['valueTemplateSource'];
-        const newParameter: VirtualParameter = {
+        const valueTemplateSource = rawValueTemplateSource as MetaParameter['valueTemplateSource'];
+        const newParameter: MetaParameter = {
           id,
           name: elementTyped.idShort,
           displayName: elementTyped.displayName ?? [],
@@ -3069,6 +3206,7 @@ export async function submodelElementToParameter(
           structureVisible,
           subParameters: [],
           changeableByUser,
+          origin: null,
           hasChanges: false,
         };
         return newParameter;
@@ -3088,6 +3226,7 @@ export async function submodelElementToParameter(
           usedAsInputParameterIn: [],
           subParameters: [],
           changeableByUser,
+          origin: null,
           hasChanges: false,
         };
         return newParameter;
@@ -3098,7 +3237,7 @@ export async function submodelElementToParameter(
 
 export async function partialPropToParameter(
   element: Partial<AasProperty>,
-): Promise<Partial<Parameter | VirtualParameter>> {
+): Promise<Partial<Parameter | MetaParameter>> {
   // parameter ID from qualifiers
   const id = element.qualifiers?.find((e) => e.type === 'PROCEED-id')?.value;
 
@@ -3139,8 +3278,8 @@ export async function partialPropToParameter(
     if (!['category', 'description', 'name', 'shortName'].includes(rawValueTemplateSource)) {
       throw new Error(`Invalid metadata set for valueTemplateSource: ${rawValueTemplateSource}`);
     }
-    const valueTemplateSource = rawValueTemplateSource as VirtualParameter['valueTemplateSource'];
-    let newParameter: Partial<VirtualParameter> = {
+    const valueTemplateSource = rawValueTemplateSource as MetaParameter['valueTemplateSource'];
+    let newParameter: Partial<MetaParameter> = {
       id,
       name: element.idShort,
       displayName: element.displayName ?? [],
@@ -3281,8 +3420,8 @@ export async function getParameterParent(parameterId: string) {
  * Compares all relevant fields to detect any changes.
  */
 function deepCompareParameters(
-  param1: Parameter | VirtualParameter | undefined,
-  param2: Parameter | VirtualParameter | undefined,
+  param1: Parameter | MetaParameter | undefined,
+  param2: Parameter | MetaParameter | undefined,
   excludeNames: string[] = [],
 ): { difference: boolean; structureChange: boolean } {
   const equal = { difference: false, structureChange: false };
@@ -3312,7 +3451,7 @@ function deepCompareParameters(
     return different;
   }
 
-  // Compare value field (only exists on Parameter, not VirtualParameter)
+  // Compare value field (only exists on Parameter, not MetaParameter)
   if ('value' in param1 && 'value' in param2) {
     if (param1.value !== param2.value) return different;
   } else if ('value' in param1 || 'value' in param2) {
@@ -3320,7 +3459,7 @@ function deepCompareParameters(
     return different;
   }
 
-  // Compare valueTemplateSource (only exists on VirtualParameter)
+  // Compare valueTemplateSource (only exists on MetaParameter)
   if ('valueTemplateSource' in param1 && 'valueTemplateSource' in param2) {
     if (param1.valueTemplateSource !== param2.valueTemplateSource) return different;
   } else if ('valueTemplateSource' in param1 || 'valueTemplateSource' in param2) {
@@ -3353,7 +3492,7 @@ function deepCompareParameters(
     }
   }
 
-  // Compare transformation (only exists on Parameter, not VirtualParameter)
+  // Compare transformation (only exists on Parameter, not MetaParameter)
   const param1Transformation = 'transformation' in param1 ? param1.transformation : undefined;
   const param2Transformation = 'transformation' in param2 ? param2.transformation : undefined;
   if (JSON.stringify(param1Transformation) !== JSON.stringify(param2Transformation)) {
@@ -3408,47 +3547,6 @@ async function getLastNumericVersion(
   }
 
   return highestVersion;
-}
-
-/**
- * Extracts a parameter at a given path from a config.
- */
-function extractParameter(config: Config, path: string[]): Parameter | undefined {
-  if (path.length === 0) return undefined;
-
-  let current: Parameter | undefined = config.content.find(
-    (p: Parameter | VirtualParameter) => p.name === path[0],
-  ) as Parameter | undefined;
-
-  for (let i = 1; i < path.length && current; i++) {
-    current = current.subParameters?.find(
-      (p: Parameter | VirtualParameter) => p.name === path[i],
-    ) as Parameter | undefined;
-  }
-
-  return current;
-}
-
-/**
- * Extracts a parameter at a given path from a parameter.
- */
-function extractParameterFromParameter(
-  parameter: Parameter,
-  path: string[],
-): Parameter | undefined {
-  if (path.length === 0) return undefined;
-
-  let current: Parameter | undefined = parameter.subParameters.find(
-    (p: Parameter | VirtualParameter) => p.name === path[0],
-  ) as Parameter | undefined;
-
-  for (let i = 1; i < path.length && current; i++) {
-    current = current.subParameters?.find(
-      (p: Parameter | VirtualParameter) => p.name === path[i],
-    ) as Parameter | undefined;
-  }
-
-  return current;
 }
 
 type VersionChangeCheckResult = {
@@ -3761,6 +3859,7 @@ export async function versioningCreateNewVersionForTargetOrReferenceSet(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: null,
       hasChanges: false,
     };
 
@@ -3883,6 +3982,7 @@ export async function versioningCreateNewVersion(
       subParameters: [],
       usedAsInputParameterIn: [],
       changeableByUser: true,
+      origin: null,
       hasChanges: false,
     } as Parameter;
 
@@ -4540,7 +4640,7 @@ export async function getUserConfig(
     const userParam = await getUserParameter(userId, spaceId);
     if ('error' in userParam) throw userParam.error;
     const dummyConfig = defaultConfiguration(spaceId, 'dummy userConfig');
-    userParam.changeableByUser = false;
+    userParam.changeableByUser = true;
     dummyConfig.configType = 'dummy';
     dummyConfig.content = [userParam];
     dummyConfig.id = userId;
@@ -4586,6 +4686,37 @@ export async function getNestedOrgParameter(spaceId: string, parameterPath: stri
   if (!org) return;
 
   return getParameterFromPath(org.subParameters, parameterPath);
+}
+
+/**
+ * Retrieves the user-specific data for a given personal space. The returned userdata is
+ * wrapped in a dummy config to allow convenient display in the config editor.
+ * @param userId ID of the user whose data should be displayed.
+ * @returns A dummy config containing the userParameter as the sole element of its content field.
+ */
+export async function getUserPersonalConfig(
+  userId: string,
+): Promise<Config | { error: UserError }> {
+  try {
+    const userParam = (await nestedParametersFromStorage([userId]))[0];
+    const userData = extractParameter(userParam, ['data']);
+    if (userData) {
+      userData.changeableByUser = true;
+      const dummyConfig = defaultConfiguration(userId, 'dummy userConfig');
+      // userParam.changeableByUser = false;
+      dummyConfig.configType = 'dummy';
+      // dummyConfig.content = userData?.subParameters;
+      dummyConfig.content = [userData];
+      dummyConfig.id = userId;
+      return dummyConfig;
+    } else {
+      throw userError(`Userdata element 'data' for UserId ${userId} not found.`);
+    }
+  } catch (error) {
+    return userError(
+      error instanceof Error ? error.message : `user config cannot be loaded. \nUserID: ${userId}`,
+    );
+  }
 }
 
 /**
@@ -4635,43 +4766,91 @@ export async function syncOrganizationUsers(spaceId: string) {
 }
 
 /**
- * Synchronizes the database state of organizations with their corresponding organizational configs.
- * Creates a new config for any organization that does not yet have one. Removes outdated configs
- * that belong to organizations which no longer exist.
+ * Synchronizes the userParameter stored in the organizational config for the given personal space.
+ * Creates a new userParameter for the corresponding user if it doesn't exist.
+ * Removes userParameters belonging to users who do not belong to the personal space.
+ * @param spaceId ID of the personal space (userId).
+ * @returns UserError if the orgConfig has an invalid internal structure, or if the provided config
+ *          has the wrong configType (expected: 'organization').
+ */
+export async function syncPersonalSpaceUser(spaceId: string) {
+  console.info(`SYNCING: User for space-config ${spaceId}`);
+  const orgConfig = await getDeepConfigurationById(spaceId);
+  const parametersToRemove = [];
+  let userMissing = true;
+  if (orgConfig.configType === 'organization') {
+    const userListParameter = extractParameter(orgConfig, [
+      'identity-and-access-management',
+      'user',
+    ]);
+    if (userListParameter) {
+      for (const userParameter of userListParameter.subParameters) {
+        const matchFound = spaceId === userParameter.id;
+        if (!matchFound) {
+          parametersToRemove.push(userParameter.id);
+        } else {
+          userMissing = false;
+        }
+      }
+      if (userMissing) {
+        await addMemberParameter({
+          id: spaceId,
+          environmentId: spaceId,
+          createdOn: new Date(),
+          userId: spaceId,
+        });
+      }
+      for (const parameterId of parametersToRemove) {
+        await removeParameter(parameterId);
+      }
+    } else {
+      return userError(
+        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for organizational config ${spaceId}.`,
+      );
+    }
+  } else {
+    return userError(`Config ${spaceId} is not of type 'organization'.`);
+  }
+}
+
+/**
+ * Synchronizes the database state of spaces (formerly only organizations) with their corresponding
+ * organizational configs. Creates a new config for any space that does not yet have one.
+ * Removes outdated configs that belong to spaces which no longer exist.
  * @returns UserError if a configuration cannot be created.
  */
-export async function syncOrganizationConfigs() {
+export async function syncSpaceConfigs() {
   console.info(`SYNCING: Organization Configs`);
-  const organizations = await db.space.findMany({
-    where: {
-      isOrganization: true,
-    },
+  const spaces = await db.space.findMany({
+    // where: {
+    //   isOrganization: true,
+    // },
   });
   const configs = await db.config.findMany();
-  const organizationConfigs = await asyncFilter(
+  const spaceConfigs = await asyncFilter(
     configs,
     async (config) => (config.data as unknown as Config).configType === 'organization',
   );
-  const matchedOrganizations = new Set<string>();
-  const organizationsToAdd = [];
+  const matchedSpaces = new Set<string>();
+  const spacesToAdd = [];
 
   // matching all configs of configType:'organization' to the organizations
-  for (const org of organizations) {
+  for (const org of spaces) {
     const existingConfig = await db.config.findUnique({ where: { id: org.id } });
-    if (existingConfig) matchedOrganizations.add(existingConfig.id);
-    else organizationsToAdd.push(org);
+    if (existingConfig) matchedSpaces.add(existingConfig.id);
+    else spacesToAdd.push(org);
   }
 
-  // adding missing configs for the organizations that do not have a config yet
-  for (const newOrg of organizationsToAdd) {
+  // adding missing configs for the spaces that do not have a config yet
+  for (const newSpace of spacesToAdd) {
     const ret = await addParentConfig(
       {
         ...defaultOrganizationConfigurationTemplate(
-          newOrg.id,
-          newOrg.name || 'Organizational Config',
+          newSpace.id,
+          newSpace.name || 'Organizational Config',
         ),
       },
-      newOrg.id,
+      newSpace.id,
     );
     if (ret && 'error' in ret) {
       return ret;
@@ -4679,10 +4858,12 @@ export async function syncOrganizationConfigs() {
   }
 
   // removing organizational configs for which no organization exists anymore
-  const configsToRemove = organizationConfigs.filter(
-    (config) => !matchedOrganizations.has(config.id),
-  );
+  const configsToRemove = spaceConfigs.filter((config) => !matchedSpaces.has(config.id));
   for (const oldConfig of configsToRemove) {
     await removeParentConfiguration(oldConfig.id);
   }
+}
+
+export async function getUser(userId: string) {
+  return await getUserById(userId);
 }

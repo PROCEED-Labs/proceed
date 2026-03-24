@@ -186,7 +186,7 @@ class TaskListTab extends DisplayItem {
         );
         const result = JSON.parse(response.body);
 
-        return result;
+        return result.value;
       });
 
       variables = { ...variables, ...globalDataVariables };

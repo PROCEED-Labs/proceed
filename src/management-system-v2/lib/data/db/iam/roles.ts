@@ -186,7 +186,8 @@ export async function addRole(
     throw new UnauthorizedError();
   }
 
-  const { name, description, note, permissions, expiration, environmentId } = roleRepresentation;
+  const { name, description, organizationRoleType, note, permissions, expiration, environmentId } =
+    roleRepresentation;
 
   // Check if role already exists in the database
   const existingRole = await db.role.findFirst({
@@ -209,6 +210,7 @@ export async function addRole(
       name,
       environmentId,
       description: description || null,
+      organizationRoleType: organizationRoleType ?? [],
       note: note || null,
       permissions: permissions || {},
       expiration: expiration || null,
@@ -259,6 +261,28 @@ export async function updateRole(
     },
   });
   rulesCacheDeleteAll();
+
+  // If organizationRoleType changed, clear organigram references for removed types
+  if (roleRepresentationInput.organizationRoleType !== undefined) {
+    const hadTeam = targetRole.organizationRoleType?.includes('team');
+    const hasTeam = roleRepresentation.organizationRoleType?.includes('team');
+    const hadBackOffice = targetRole.organizationRoleType?.includes('back-office');
+    const hasBackOffice = roleRepresentation.organizationRoleType?.includes('back-office');
+
+    if (hadTeam && !hasTeam) {
+      await db.userOrganigram.updateMany({
+        where: { teamRoleId: roleId },
+        data: { teamRoleId: null },
+      });
+    }
+
+    if (hadBackOffice && !hasBackOffice) {
+      await db.userOrganigram.updateMany({
+        where: { backOfficeRoleId: roleId },
+        data: { backOfficeRoleId: null },
+      });
+    }
+  }
 
   return updatedRole as Role;
 }

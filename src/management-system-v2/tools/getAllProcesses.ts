@@ -2,6 +2,8 @@ import { type InferSchema } from 'xmcp';
 import prisma from '@/lib/data/db';
 import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { getProcessLatestVersion } from '@/lib/data/db/process';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -31,16 +33,25 @@ export default async function getProcesses({ userCode }: InferSchema<typeof sche
       where: {
         environmentId,
       },
-      select: { id: true, name: true, description: true, lastEditedOn: true },
+      select: {
+        id: true,
+        versions: true,
+      },
       take: 100,
     });
 
     result = ability ? ability.filter('view', 'Process', result) : result;
 
+    result = result.filter((process) => !!process.versions.length);
+
     if (!result) return `Error: No processes found.`;
 
+    const processesWithLatestVersion = await asyncMap(result, async (process) => {
+      return getProcessLatestVersion(process.id, false);
+    });
+
     return {
-      content: [{ type: 'text', text: JSON.stringify(result) }],
+      content: [{ type: 'text', text: JSON.stringify(processesWithLatestVersion) }],
     };
   } catch (err) {
     if (err instanceof Error) return err.message;

@@ -2,20 +2,18 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getCorrectTargetEngines, getDeployment } from '@/lib/engines/server-actions';
+import { getDeployments } from '@/lib/engines/deployment';
 
 // Define the schema for tool parameters
-export const schema = toAuthorizationSchema({
-  instanceId: z.string().describe('The id of the process execution to inspect.'),
-});
+export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-execution-info',
-  description:
-    "Returns information about the current state of a process' execution in the form of a json file.",
+  name: 'get-executions',
+  description: 'Get all process executions that are accessible to the current user.',
   annotations: {
-    title: 'Get execution info',
+    title: 'Get executions',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -23,10 +21,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function startExecutionInfo({
-  userCode,
-  instanceId,
-}: InferSchema<typeof schema>) {
+export default async function getExecutions({ userCode }: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
@@ -47,18 +42,20 @@ export default async function startExecutionInfo({
     if (!accessible)
       return 'Error: The user cannot access execution information in this space. This might be due to a space wide setting or due to the user not having the permission to view execution information.';
 
-    const [definitionId] = instanceId.split('-_');
+    const engines = await getCorrectTargetEngines(environmentId, undefined, undefined, ability);
 
-    const deployment = await getDeployment(environmentId, definitionId, ability);
+    const deployments = await getDeployments(engines, 'instances');
 
-    if (!deployment) return 'Could not find an execution with the given id.';
+    const instanceIds = new Set<string>();
 
-    const instance = deployment.instances.find((i) => i.processInstanceId === instanceId);
+    const instances = deployments.forEach((d) =>
+      d.instances.forEach((i) => instanceIds.add(i.processInstanceId)),
+    );
 
-    if (!instance) return 'Could not find an execution with the given id.';
+    console.log(instanceIds);
 
     return {
-      content: [{ type: 'text', text: JSON.stringify(instance) }],
+      content: [{ type: 'text', text: JSON.stringify([...instanceIds]) }],
     };
   } catch (err) {
     if (err instanceof Error) return err.message;

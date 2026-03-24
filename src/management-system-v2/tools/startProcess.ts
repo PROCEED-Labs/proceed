@@ -49,7 +49,10 @@ export default async function startProcess({
       environmentId,
       ['PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE'],
       ['process-automation.executions'],
-      [['create', 'Execution']],
+      [
+        ['create', 'Execution'],
+        ['view', 'Machine'],
+      ],
     );
 
     // check if the user can access the specified process

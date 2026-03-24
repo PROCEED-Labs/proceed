@@ -57,6 +57,7 @@ import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 import { getNestedOrgParameter, getNestedUserParameter } from '../data/db/machine-config';
 import { deleteInstances, getInstanceById } from '../data/instances';
+import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -270,37 +271,30 @@ export async function getGlobalVariablesForHTML(
   return await getGlobalVariables(html, async (varPath) => {
     let segments = varPath.split('.');
 
-    if (segments[0] === '@organization') {
-      const parameter = await getNestedOrgParameter(spaceId, segments.slice(1).join('.'));
-      return parameter?.value;
-    } else {
-      let { userId } = await getCurrentUser();
-      if (segments[0] === '@process-initiator' || segments[0] === '@worker') {
-        if (segments[0] === '@process-initiator') userId = initiatorId;
-        segments = segments.slice(1);
-      }
-      if (segments[0] === 'user-info') {
-        const info = await getUserById(userId);
-        if (!info || info.isGuest) return;
+    let userId: string | undefined;
 
-        const userInfo = { ...info, name: `${info.firstName} ${info.lastName}` };
-
-        return userInfo[segments[1] as keyof typeof userInfo];
-      } else {
-        const parameter = await getNestedUserParameter(userId, spaceId, segments.join('.'));
-
-        if (isUserErrorResponse(parameter)) {
-          console.error(parameter.error.message);
-          return;
-        }
-        if (!parameter) {
-          console.error('Could not get user data for a user task');
-          return;
-        }
-
-        return parameter.value;
-      }
+    if (segments[0] === '@process-initiator') {
+      userId = initiatorId;
+    } else if (segments[0] === '@worker' || !segments[0].startsWith('@')) {
+      ({ userId } = await getCurrentUser());
+    } else if (segments[0] !== '@organization') {
+      console.error(`Invalid selector for global data access in user task html. (${segments[0]})`);
+      return;
     }
+
+    if (segments[0].startsWith('@')) segments = segments.slice(1);
+
+    const result = await getDataObject(spaceId, segments.join('.'), userId);
+
+    if (isErrorResponse(result)) {
+      console.error(
+        'Ecountered error while trying to get global variable for user task rendering:',
+        await result.data.text(),
+      );
+      return;
+    }
+
+    return result.data.value;
   });
 }
 

@@ -9,14 +9,19 @@ import { getUserByEmail } from './data/db/iam/users';
 import { getRoleById } from './data/db/iam/roles';
 import { addRoleMappings } from './data/db/iam/role-mappings';
 import { syncOrganizationUsers } from './data/db/machine-config';
+import { upsertUserOrganigram } from './data/db/iam/organigram';
+import db from './data/db';
 
-const baseInvitationSchema = {
+const baseInvitationSchema = z.object({
   spaceId: z.string(),
   roleIds: z.array(z.string()).optional(),
-};
+  teamRoleId: z.string().optional(),
+  backOfficeRoleId: z.string().optional(),
+  directManagerId: z.string().optional(),
+});
 const invitationSchema = z.union([
-  z.object({ userId: z.string() }).extend(baseInvitationSchema),
-  z.object({ email: z.string().email() }).extend(baseInvitationSchema),
+  baseInvitationSchema.extend({ userId: z.string() }),
+  baseInvitationSchema.extend({ email: z.string().email() }),
 ]);
 
 export type Invitation = z.infer<typeof invitationSchema>;
@@ -53,7 +58,8 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
     return { error: 'WrongUser' as const };
 
   if (!(await isMember(invite.spaceId, userId))) {
-    addMember(invite.spaceId, userId);
+    // Await addMember and use return value directly
+    const membership = await addMember(invite.spaceId, userId);
 
     if (invite.roleIds) {
       const validRoles = [];
@@ -69,6 +75,16 @@ export async function acceptInvitation(invite: Invitation, userIdAcceptingInvite
           userId,
         })),
       );
+    }
+
+    // save directManagerId and associated role reference in organigram
+    if (invite.teamRoleId || invite.backOfficeRoleId || invite.directManagerId) {
+      await upsertUserOrganigram({
+        memberId: membership.id,
+        directManagerId: invite.directManagerId ?? null,
+        teamRoleId: invite.teamRoleId ?? null,
+        backOfficeRoleId: invite.backOfficeRoleId ?? null,
+      });
     }
   }
 

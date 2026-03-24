@@ -16,6 +16,24 @@
     font-weight: 500;
   }
 
+  @media print {
+    overflow: visible;
+  }
+
+  :global(.ant-layout) {
+    // hide the page header on the printed page
+    @media print {
+      overflow: visible;
+    }
+  }
+
+  :global(.ant-layout > *) {
+    // hide the page header on the printed page
+    @media print {
+      overflow: visible;
+    }
+  }
+
   :global(.ant-layout-header) {
     // hide the page header on the printed page
     @media print {

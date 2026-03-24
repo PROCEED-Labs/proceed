@@ -235,7 +235,7 @@ async function getUserTaskFileNameMapping(bpmn) {
  * (The attribute 'filename' is defined in the PROCEED XML Schema and not a standard BPMN attribute.)
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
- * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string }}> } an object (a map) with all scriptTaskIds as keys
+ * @returns { Promise.<{ [scriptTaskId: string]: { fileName?: string, taskName?: string }}> } an object (a map) with all scriptTaskIds as keys
  */
 async function getScriptTaskFileNameMapping(bpmn) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
@@ -1215,7 +1215,7 @@ async function getPotentialOwnersFromElementById(elementId, bpmn) {
         );
         user = user.concat(_user);
         roles = roles.concat(_roles);
-      } catch (err) {}
+      } catch (err) { }
     }
   });
 

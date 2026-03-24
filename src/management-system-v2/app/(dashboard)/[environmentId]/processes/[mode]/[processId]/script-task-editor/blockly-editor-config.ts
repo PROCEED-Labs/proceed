@@ -1,7 +1,7 @@
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly';
-import { ProcessVariable, typeTypescriptMap } from '@/lib/process-variable-schema';
+import { ProcessVariable } from '@/lib/process-variable-schema';
 
 type BlockDeclaration = Partial<Blockly.Block> & ThisType<Blockly.Block>;
 const Blocks = Blockly.Blocks as Record<string, BlockDeclaration>;

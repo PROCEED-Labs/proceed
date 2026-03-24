@@ -174,6 +174,9 @@ model Membership {
   createdOn     DateTime
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  organigram         UserOrganigram?  @relation("memberOrganigram")
+  managerIn     UserOrganigram[] @relation("organigramManager")
+  @@unique([userId, environmentId])
 
   @@map("membership")
 }
@@ -217,6 +220,7 @@ model Role {
   environmentId String
   name          String
   description   String?
+  organizationRoleType   String[] @default([])
   note          String?
   permissions   Json
   expiration    DateTime?
@@ -226,6 +230,8 @@ model Role {
   parentId      String?
   parentFolder  Folder?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
 
+  organigramTeam       UserOrganigram[] @relation("teamRole")
+  organigramBackOffice UserOrganigram[] @relation("backOfficeRole")
   members RoleMember[]
 
   @@map("role")
@@ -407,4 +413,19 @@ model MSConfig {
 model SeedVersion {
   id      Int      @id @default(0)
   version DateTime
+}
+
+model UserOrganigram {
+  id               String  @id @default(uuid())
+  memberId         String  @unique
+  directManagerId  String?
+  teamRoleId       String?
+  backOfficeRoleId String?
+
+  member         Membership  @relation("memberOrganigram", fields: [memberId], references: [id], onDelete: Cascade)
+  directManager  Membership? @relation("organigramManager", fields: [directManagerId], references: [id], onDelete: SetNull)
+  teamRole       Role?       @relation("teamRole", fields: [teamRoleId], references: [id], onDelete: SetNull)
+  backOfficeRole Role?       @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
+
+  @@map("user_organigram")
 }

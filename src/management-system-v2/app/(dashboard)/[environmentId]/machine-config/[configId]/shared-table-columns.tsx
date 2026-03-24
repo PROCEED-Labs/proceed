@@ -1,18 +1,18 @@
 import React from 'react';
 import { TableProps, Tooltip, Row } from 'antd';
-import { Parameter, VirtualParameter, Config } from '@/lib/data/machine-config-schema';
+import { Parameter, MetaParameter, Config } from '@/lib/data/machine-config-schema';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { Localization } from '@/lib/data/locale';
 interface GetTableColumnsParams {
   editable: boolean;
   parentConfig: Config;
   currentLanguage: Localization;
-  actionBarGenerator: (record: Parameter | VirtualParameter) => React.ReactNode;
+  actionBarGenerator: (record: Parameter | MetaParameter) => React.ReactNode;
 }
 
 // helper function to determine effective parameter type
 const getEffectiveParameterType = (
-  param: Parameter | VirtualParameter,
+  param: Parameter | MetaParameter,
   parentConfig: Config,
 ): 'meta' | 'content' => {
   if (param.parameterType !== 'none') {
@@ -67,7 +67,7 @@ export const getTableColumns = ({
   parentConfig,
   actionBarGenerator,
   currentLanguage,
-}: GetTableColumnsParams): TableProps<Parameter | VirtualParameter>['columns'] => [
+}: GetTableColumnsParams): TableProps<Parameter | MetaParameter>['columns'] => [
   {
     title: '',
     render: (id, record) => <Row justify="end">{editable && actionBarGenerator(record)}</Row>,
@@ -105,14 +105,14 @@ export const getTableColumns = ({
 
       // check if it Is a leaf parameter with no value; red takes priority
       const isLeafParameter = !record.subParameters || record.subParameters.length === 0;
-      const isVirtualParameter =
+      const isMetaParameter =
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
-        !isVirtualParameter;
+        !isMetaParameter;
 
       return (
         <Tooltip placement="topLeft" title={text}>
@@ -141,19 +141,19 @@ export const getTableColumns = ({
     render: (id, record) => {
       let displayValue = (record as Parameter).value || ' ';
       if ('valueTemplateSource' in record) {
-        displayValue = parentConfig[(record as VirtualParameter).valueTemplateSource].value;
+        displayValue = parentConfig[(record as MetaParameter).valueTemplateSource].value;
       }
       const hasChanges = (record as any).hasChanges === true;
 
       const isLeafParameter = !record.subParameters || record.subParameters.length === 0;
-      const isVirtualParameter =
+      const isMetaParameter =
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
-        !isVirtualParameter;
+        !isMetaParameter;
 
       return (
         <Tooltip placement="topLeft" title={displayValue}>
@@ -184,14 +184,14 @@ export const getTableColumns = ({
       const hasChanges = (record as any).hasChanges === true;
 
       const isLeafParameter = !record.subParameters || record.subParameters.length === 0;
-      const isVirtualParameter =
+      const isMetaParameter =
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
-        !isVirtualParameter;
+        !isMetaParameter;
 
       return (
         <span
@@ -221,14 +221,14 @@ export const getTableColumns = ({
       const hasChanges = (record as any).hasChanges === true;
 
       const isLeafParameter = !record.subParameters || record.subParameters.length === 0;
-      const isVirtualParameter =
+      const isMetaParameter =
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
-        !isVirtualParameter;
+        !isMetaParameter;
 
       //text = text || entries?.[0]?.text || ' ';
       return (
@@ -259,14 +259,14 @@ export const getTableColumns = ({
       const hasChanges = (record as any).hasChanges === true;
 
       const isLeafParameter = !record.subParameters || record.subParameters.length === 0;
-      const isVirtualParameter =
+      const isMetaParameter =
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
         effectiveType === 'content' &&
         (!record.value || record.value === '') &&
         isLeafParameter &&
-        !isVirtualParameter;
+        !isMetaParameter;
 
       const tooltipMessages: Record<string, string> = {
         none: 'Value can be set directly. It is not linked to any other input parameter and is never changed automatically.',

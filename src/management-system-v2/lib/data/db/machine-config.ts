@@ -42,6 +42,7 @@ import {
   isVirtualOrganizationRolesParameter,
   isVirtualUserInfoParameter,
   isVirtualUserRolesParameter,
+  stringifyValue,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
@@ -55,7 +56,10 @@ import {
   createTdsTemplateMachineDatasetHeader,
   defaultMachineDataSet,
 } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
-import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
+import {
+  defaultUserParameterTemplate,
+  userInfoMap,
+} from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
 import { User } from '../user-schema';
 import { getRoles, getUserRoles } from '../roles';
@@ -1574,12 +1578,58 @@ export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): P
   const userInfo = await getUserById(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
-    subParameters = parameter.subParameters.map((param) => {
-      const infoValue = userInfo[param.name as keyof User];
-      return { ...param, ...(infoValue && { value: infoValue }) };
-    });
+    // mapping all entries of userInfo to parameters (except keys: 'isGuest', 'emailVerifiedOn', 'profileImage', 'favourites')
+    subParameters = Object.entries(userInfo)
+      .filter(
+        ([key]) => !['isGuest', 'emailVerifiedOn', 'profileImage', 'favourites'].includes(key),
+      )
+      .map(([key, val]) => {
+        return {
+          ...defaultParameter(
+            key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
+            userInfoMap[key].displayName,
+            userInfoMap[key].description,
+            'none',
+            stringifyValue(val),
+          ),
+          origin: 'external',
+        };
+      });
+
+    // prepending a parameter for the full name
+    subParameters = [
+      {
+        ...defaultParameter(
+          'name',
+          [
+            {
+              text: 'Name',
+              language: 'en',
+            },
+            {
+              text: 'Name',
+              language: 'de',
+            },
+          ],
+          [
+            {
+              text: 'Name of the user.',
+              language: 'en',
+            },
+            {
+              text: 'Name des Nutzers.',
+              language: 'de',
+            },
+          ],
+          'none',
+          userInfo.firstName + ' ' + userInfo.lastName,
+        ),
+        origin: 'external',
+      },
+      ...subParameters,
+    ];
   }
-  return { ...parameter, subParameters };
+  return { ...parameter, subParameters: [...subParameters, ...parameter.subParameters] };
 }
 
 export async function getVirtualUserRoles(
@@ -1593,7 +1643,10 @@ export async function getVirtualUserRoles(
     );
   }
   roleParameters = roles.map((role) => {
-    return defaultParameter(role.name, [{ text: role.name, language: 'en' }], []);
+    return {
+      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      origin: 'external',
+    };
   });
   return { ...parameter, subParameters: roleParameters };
 }
@@ -1607,7 +1660,10 @@ export async function getVirtualOrganizationRoles(
     throw new Error(`Cannot get roles for space ${parameter.environmentId}.`);
   }
   roleParameters = roles.map((role) => {
-    return defaultParameter(role.name, [{ text: role.name, language: 'en' }], []);
+    return {
+      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      origin: 'external',
+    };
   });
   return { ...parameter, subParameters: roleParameters };
 }

@@ -1,4 +1,5 @@
 import {
+  LocalizedText,
   Parameter,
   VirtualUserInfoParameter,
   VirtualUserRolesParameter,
@@ -6,6 +7,144 @@ import {
 
 import { defaultParameter } from './configuration-helper';
 import { Membership } from '@prisma/client';
+
+export const userInfoMap: Record<
+  string,
+  { displayName: LocalizedText[]; description: LocalizedText[] }
+> = {
+  id: {
+    displayName: [
+      {
+        text: 'ID',
+        language: 'en',
+      },
+      {
+        text: 'ID',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'ID of the user.',
+        language: 'en',
+      },
+      {
+        text: 'ID des Nutzers',
+        language: 'de',
+      },
+    ],
+  },
+  firstName: {
+    displayName: [
+      {
+        text: 'First Name',
+        language: 'en',
+      },
+      {
+        text: 'Vorname',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'First name of the user.',
+        language: 'en',
+      },
+      {
+        text: 'Vorname des Nutzers.',
+        language: 'de',
+      },
+    ],
+  },
+  lastName: {
+    displayName: [
+      {
+        text: 'Last Name',
+        language: 'en',
+      },
+      {
+        text: 'Nachname',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Last name of the user.',
+        language: 'en',
+      },
+      {
+        text: 'Nachname des Nutzers.',
+        language: 'de',
+      },
+    ],
+  },
+  username: {
+    displayName: [
+      {
+        text: 'Username',
+        language: 'en',
+      },
+      {
+        text: 'Nutzername',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Username of the user.',
+        language: 'en',
+      },
+      {
+        text: 'Nutzername des Nutzers.',
+        language: 'de',
+      },
+    ],
+  },
+  email: {
+    displayName: [
+      {
+        text: 'E-Mail',
+        language: 'en',
+      },
+      {
+        text: 'E-Mail',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'E-Mail address of the user.',
+        language: 'en',
+      },
+      {
+        text: 'E-Mail-Adresse des Nutzers.',
+        language: 'de',
+      },
+    ],
+  },
+  phoneNumber: {
+    displayName: [
+      {
+        text: 'Phone number',
+        language: 'en',
+      },
+      {
+        text: 'Telefonnummer',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Phone number of the user.',
+        language: 'en',
+      },
+      {
+        text: 'Telefonnummer des Nutzers.',
+        language: 'de',
+      },
+    ],
+  },
+};
 
 //---------------- User Template ----------------
 // TODO loading from Organization Template not implemented yet
@@ -17,7 +156,7 @@ export function defaultUserParameterTemplate(
   function createTemplateUserInfo(userId: string): Parameter {
     let newUserInfo: VirtualUserInfoParameter = {
       ...defaultParameter(
-        'userInfo',
+        'user-info',
         [
           {
             text: 'User Info',
@@ -41,114 +180,6 @@ export function defaultUserParameterTemplate(
       ),
       userId,
       virtualType: 'user-info',
-    };
-
-    let firstName: Parameter = {
-      ...defaultParameter(
-        'firstName',
-        [
-          {
-            text: 'First Name',
-            language: 'en',
-          },
-          {
-            text: 'Vorname',
-            language: 'de',
-          },
-        ],
-        [
-          {
-            text: 'First name of the user.',
-            language: 'en',
-          },
-          {
-            text: 'Vorname des Nutzers.',
-            language: 'de',
-          },
-        ],
-      ),
-      origin: 'external',
-    };
-
-    let lastName: Parameter = {
-      ...defaultParameter(
-        'lastName',
-        [
-          {
-            text: 'Last Name',
-            language: 'en',
-          },
-          {
-            text: 'Nachname',
-            language: 'de',
-          },
-        ],
-        [
-          {
-            text: 'Last name of the user.',
-            language: 'en',
-          },
-          {
-            text: 'Nachname des Nutzers.',
-            language: 'de',
-          },
-        ],
-      ),
-      origin: 'external',
-    };
-
-    let username: Parameter = {
-      ...defaultParameter(
-        'username',
-        [
-          {
-            text: 'Username',
-            language: 'en',
-          },
-          {
-            text: 'Nutzername',
-            language: 'de',
-          },
-        ],
-        [
-          {
-            text: 'Username of the user.',
-            language: 'en',
-          },
-          {
-            text: 'Nutzername des Nutzers.',
-            language: 'de',
-          },
-        ],
-      ),
-      origin: 'external',
-    };
-
-    let email: Parameter = {
-      ...defaultParameter(
-        'email',
-        [
-          {
-            text: 'E-Mail',
-            language: 'en',
-          },
-          {
-            text: 'E-Mail',
-            language: 'de',
-          },
-        ],
-        [
-          {
-            text: 'E-Mail address of the user.',
-            language: 'en',
-          },
-          {
-            text: 'E-Mail-Adresse des Nutzers.',
-            language: 'de',
-          },
-        ],
-      ),
-      origin: 'external',
     };
 
     let team: Parameter = {
@@ -180,7 +211,7 @@ export function defaultUserParameterTemplate(
 
     let directManager: Parameter = {
       ...defaultParameter(
-        'directManager',
+        'direct-manager',
         [
           {
             text: 'Direct Manager',
@@ -207,7 +238,7 @@ export function defaultUserParameterTemplate(
 
     let backOffice: Parameter = {
       ...defaultParameter(
-        'backOffice',
+        'back-office',
         [
           {
             text: 'Back Office',
@@ -234,7 +265,8 @@ export function defaultUserParameterTemplate(
 
     return {
       ...newUserInfo,
-      subParameters: [firstName, lastName, username, email, team, directManager, backOffice],
+      // subParameters: [firstName, lastName, username, email, team, directManager, backOffice],
+      subParameters: [team, directManager, backOffice],
       changeableByUser: false,
     };
   }

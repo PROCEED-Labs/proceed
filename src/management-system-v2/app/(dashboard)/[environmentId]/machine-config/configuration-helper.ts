@@ -638,3 +638,7 @@ export function isVirtualOrganizationRolesParameter(
 function isNonNullObject(p: unknown): p is Object {
   return typeof p === 'object' && p !== null;
 }
+
+export function stringifyValue(value: any): string {
+  return typeof value === 'string' ? value : JSON.stringify(value);
+}

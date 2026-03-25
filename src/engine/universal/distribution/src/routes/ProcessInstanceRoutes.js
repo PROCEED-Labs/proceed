@@ -394,6 +394,46 @@ module.exports = (path, management) => {
     },
   );
 
+  network.put(`${path}/:definitionId/active`, { cors: true }, async (req) => {
+    const { definitionId, version } = req.params;
+
+    const {
+      body: { active },
+    } = req;
+
+    if (active === true) {
+      return {
+        statusCode: 400,
+        mimeType: 'text/plain',
+        response:
+          'Cannot set active true on a process. Please select a specific version to activate.',
+      };
+    } else if (active === false) {
+      console.log(`Deactivating process ${definitionId}`);
+      const engine = await management.getEngineWithDefinitionId(definitionId);
+
+      if (engine) {
+        for (const version of engine.versions) {
+          engine.undeployProcessVersion(version);
+          console.log(`Deactivated version ${version}`);
+        }
+      }
+
+      return {
+        statusCode: 200,
+        mimeType: 'application/json',
+        response: '{}',
+      };
+    } else {
+      return {
+        statusCode: 400,
+        mimeType: 'text/plain',
+        response:
+          'This endpoint expects the request body to contain an entry called active with a boolean value of "false".',
+      };
+    }
+  });
+
   network.put(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
 
@@ -401,14 +441,23 @@ module.exports = (path, management) => {
       body: { active },
     } = req;
 
-    if (active) {
+    if (active === true) {
+      console.log(`Activating process ${definitionId} version ${version}`);
       management.ensureProcessEngineWithVersion(definitionId, version);
-    } else {
+    } else if (active === false) {
+      console.log(`Deactivating process ${definitionId} version ${version}`);
       const engine = await management.getEngineWithDefinitionId(definitionId);
 
       if (engine) {
         engine.undeployProcessVersion(version);
       }
+    } else {
+      return {
+        statusCode: 400,
+        mimeType: 'text/plain',
+        response:
+          'This endpoint expects the request body to contain an entry called active with a boolean value',
+      };
     }
 
     return {

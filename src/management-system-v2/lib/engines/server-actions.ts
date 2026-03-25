@@ -129,6 +129,7 @@ export async function deployProcess(
     // check if the version is already deployed to some engine since we don't
     // need to redeploy it in that case
     if (
+      !_forceEngine &&
       enginesWithDeployment.some(([_, deployment]) =>
         deployment.versions.some((version) => version.versionId === versionId),
       )
@@ -136,12 +137,22 @@ export async function deployProcess(
       return;
     }
 
-    // check if an engine already has another version in which case that engine is selected
-    if (enginesWithDeployment.length) {
+    if (!_forceEngine && enginesWithDeployment.length) {
+      // check if an engine already has another version in which case that engine is selected
       engines = enginesWithDeployment.map(([engine]) => engine);
     }
 
-    await _deployProcess(definitionId, versionId, spaceId, method, engines);
+    const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
+
+    // deactivate the process on all engines that have a deployment but which were not target of the
+    // new deployment
+    await Promise.allSettled(
+      enginesWithDeployment.map(async ([engine]) => {
+        if (!deployedTo.some((dE) => dE.id === engine.id)) {
+          await _changeDeploymentActivation(engine, definitionId, undefined, false);
+        }
+      }),
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

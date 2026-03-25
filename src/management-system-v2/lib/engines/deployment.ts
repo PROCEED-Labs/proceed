@@ -164,6 +164,8 @@ async function dynamicDeployment(
   }
 
   await deployProcessToMachines([preferredMachine], processesExportData);
+
+  return [preferredMachine];
 }
 
 async function staticDeployment(
@@ -209,6 +211,8 @@ async function staticDeployment(
   //   targetedMachines.push(forceMachine);
 
   await deployProcessToMachines(targetedMachines, processesExportData);
+
+  return targetedMachines;
 }
 
 export async function deployProcess(
@@ -241,9 +245,9 @@ export async function deployProcess(
   );
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, machines);
+    return await staticDeployment(definitionId, version, processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, machines);
+    return await dynamicDeployment(definitionId, version, processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };
@@ -352,16 +356,26 @@ export async function getDeployment(engine: Engine, definitionId: string) {
 export async function changeDeploymentActivation(
   engine: Engine,
   definitionId: string,
-  version: string,
+  version: string | undefined,
   value: boolean,
 ) {
-  await engineRequest({
-    method: 'put',
-    endpoint: '/process/:definitionId/versions/:version/active',
-    engine,
-    pathParams: { definitionId, version },
-    body: { active: value },
-  });
+  if (version) {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/versions/:version/active',
+      engine,
+      pathParams: { definitionId, version },
+      body: { active: value },
+    });
+  } else {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/active',
+      engine,
+      pathParams: { definitionId },
+      body: { active: value },
+    });
+  }
 }
 
 export async function getProcessImageFromMachine(

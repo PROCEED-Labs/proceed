@@ -43,7 +43,7 @@ import {
   isVirtualUserInfoParameter,
   isVirtualUserRolesParameter,
   stringifyValue,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+} from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
@@ -55,12 +55,12 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import {
   createTdsTemplateMachineDatasetHeader,
   defaultMachineDataSet,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-templates-tds';
 import {
   defaultUserParameterTemplate,
   userInfoMap,
-} from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 import { User } from '../user-schema';
 import { getRoles, getUserRoles } from '../roles';
 

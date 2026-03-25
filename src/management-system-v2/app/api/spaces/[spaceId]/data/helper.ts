@@ -1,7 +1,7 @@
 import {
   extractParameter,
   findParameter,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+} from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import { getMembers } from '@/lib/data/db/iam/memberships';
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
 import { Parameter, StoredParameter, StoredMetaParameter } from '@/lib/data/machine-config-schema';

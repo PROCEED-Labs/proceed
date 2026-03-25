@@ -1,4 +1,4 @@
-import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import {
   addParameter,
   addParentConfig,

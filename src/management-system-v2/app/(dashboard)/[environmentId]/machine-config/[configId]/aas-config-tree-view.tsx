@@ -5,7 +5,7 @@ import { Dropdown, MenuProps, Modal, Tree, Button, TreeDataNode, App } from 'ant
 import { EventDataNode } from 'antd/es/tree';
 import { useRouter } from 'next/navigation';
 import { Key, useEffect, useMemo, useState } from 'react';
-import { buildLinkedInputParametersFromIds, findParameter } from '../configuration-helper';
+import { buildLinkedInputParametersFromIds, findParameter } from '../helpers/configuration-helper';
 import ConfigModal from '@/components/config-modal';
 import AasCreateParameterModal, {
   CreateParameterModalReturnType,

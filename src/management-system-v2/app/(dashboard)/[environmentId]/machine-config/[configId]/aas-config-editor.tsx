@@ -68,7 +68,7 @@ import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { MqttPublishButton } from './mqtt-publish-button';
 import AasContent from './aas-config-content';
 import Image from 'next/image';
-import { configToAasFormat, findParameter } from '../configuration-helper';
+import { findParameter } from '../configuration-helper';
 import { generateMachineDatasetNames, useParameterActions } from './shared-parameter-utils';
 import AasCreateParameterModal, {
   CreateParameterModalReturnType,
@@ -93,6 +93,7 @@ import { useCollapseItems } from './aas-config-editor-collapse';
 import LanguageDropdown from './language-dropdown';
 import { Localization } from '@/lib/data/locale';
 import PreviewFeatureModal from '../preview-feature-modal';
+import { configToAasFormat } from '../aas-configuration-helpers';
 const { Text } = Typography;
 
 type MachineDataViewProps = {

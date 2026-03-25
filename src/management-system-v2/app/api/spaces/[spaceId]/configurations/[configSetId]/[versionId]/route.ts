@@ -1,4 +1,4 @@
-import { configToAasFormat } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { configToAasFormat } from '@/app/(dashboard)/[environmentId]/machine-config/aas-configuration-helpers';
 import { getConfigIdFromShortName, getDeepConfigurationById } from '@/lib/data/db/machine-config';
 import { NextRequest, NextResponse } from 'next/server';
 import { validate as uuidValidate, v4 } from 'uuid';

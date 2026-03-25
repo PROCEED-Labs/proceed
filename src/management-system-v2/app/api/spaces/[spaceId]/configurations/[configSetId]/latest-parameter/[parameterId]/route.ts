@@ -16,7 +16,7 @@ import {
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { validate as uuidValidate } from 'uuid';
-import { parameterToProp } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { parameterToProp } from '@/app/(dashboard)/[environmentId]/machine-config/aas-configuration-helpers';
 
 export async function GET(
   request: NextRequest,

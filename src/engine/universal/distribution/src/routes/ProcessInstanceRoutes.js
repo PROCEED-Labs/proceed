@@ -409,13 +409,11 @@ module.exports = (path, management) => {
           'Cannot set active true on a process. Please select a specific version to activate.',
       };
     } else if (active === false) {
-      console.log(`Deactivating process ${definitionId}`);
       const engine = await management.getEngineWithDefinitionId(definitionId);
 
       if (engine) {
         for (const version of engine.versions) {
           engine.undeployProcessVersion(version);
-          console.log(`Deactivated version ${version}`);
         }
       }
 
@@ -442,10 +440,8 @@ module.exports = (path, management) => {
     } = req;
 
     if (active === true) {
-      console.log(`Activating process ${definitionId} version ${version}`);
       management.ensureProcessEngineWithVersion(definitionId, version);
     } else if (active === false) {
-      console.log(`Deactivating process ${definitionId} version ${version}`);
       const engine = await management.getEngineWithDefinitionId(definitionId);
 
       if (engine) {

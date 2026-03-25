@@ -1,9 +1,6 @@
 import { type InferSchema } from 'xmcp';
-import prisma from '@/lib/data/db';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getProcessLatestVersion } from '@/lib/data/db/process';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -63,14 +60,16 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
     );
 
     const tools = {
+      'get-organization-data': true,
+      'get-user-data': true,
       'get-processes': canAccessProcesses,
       'get-process-info': canAccessProcesses,
-      'get-tasks': canAccessTasks,
-      'get-task': canAccessTasks,
-      'submit-task': canAccessTasks,
       'start-process': canCreateInstances,
       'get-executions': canAccessInstances,
       'get-execution-info': canAccessInstances,
+      'get-tasks': canAccessTasks,
+      'get-task': canAccessTasks,
+      'submit-task': canAccessTasks,
     };
 
     const result = Object.entries(tools)

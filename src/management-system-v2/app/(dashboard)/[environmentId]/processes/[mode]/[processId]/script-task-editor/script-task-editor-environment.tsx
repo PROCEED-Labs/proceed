@@ -478,6 +478,7 @@ export function ScriptTaskEditorEnvironment({
     <Modal
       open={!!selectedElement}
       centered
+      focusable={{ trap: false }}
       width="90vw"
       styles={{ body: { height: '85vh', marginTop: '0.5rem' }, header: { margin: 0 } }}
       title={

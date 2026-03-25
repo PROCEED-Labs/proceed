@@ -67,9 +67,6 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
       'start-process': canCreateInstances,
       'get-executions': canAccessInstances,
       'get-execution-info': canAccessInstances,
-      'get-tasks': canAccessTasks,
-      'get-task': canAccessTasks,
-      'submit-task': canAccessTasks,
     };
 
     const result = Object.entries(tools)

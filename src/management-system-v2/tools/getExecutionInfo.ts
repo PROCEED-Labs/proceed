@@ -29,7 +29,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function startExecutionInfo({
+export default async function getExecutionInfo({
   userCode,
   instanceId,
 }: InferSchema<typeof schema>) {

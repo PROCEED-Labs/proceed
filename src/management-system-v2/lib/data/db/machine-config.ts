@@ -63,6 +63,7 @@ import {
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 import { User } from '../user-schema';
 import { getRoles, getUserRoles } from '../roles';
+import { getRoleMappings } from './iam/role-mappings';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -1655,14 +1656,42 @@ export async function getVirtualOrganizationRoles(
   parameter: VirtualOrganizationRolesParameter,
 ): Promise<Parameter> {
   let roles = await getRoles(parameter.environmentId);
+  // {role, userId} mappings
+  let roleMappings = (await getRoleMappings()).filter(
+    (e) => e.environmentId == parameter.environmentId,
+  );
+
+  // mapping to {role, userData} objects
+  let userRoles = await asyncMap(roleMappings, async (e) => ({
+    role: e.roleName,
+    user: await getUserById(e.userId),
+  }));
+
   let roleParameters: Parameter[] = [];
   if ('error' in roles) {
     throw new Error(`Cannot get roles for space ${parameter.environmentId}.`);
   }
   roleParameters = roles.map((role) => {
+    // creating subParameters for each user that has this role
+    let subParameters = userRoles
+      .filter((e) => e.role == role.name)
+      .map((e) => {
+        if (!e.user.isGuest) {
+          return {
+            ...defaultParameter(
+              e.user.id,
+              [{ text: e.user.lastName + ', ' + e.user.firstName, language: 'en' }],
+              [],
+            ),
+            origin: 'external' as const,
+          };
+        }
+      })
+      .filter(truthyFilter);
     return {
       ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
-      origin: 'external',
+      origin: 'external' as const,
+      subParameters,
     };
   });
   return { ...parameter, subParameters: roleParameters };

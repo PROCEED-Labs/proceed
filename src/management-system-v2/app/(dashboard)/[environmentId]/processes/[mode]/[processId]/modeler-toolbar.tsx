@@ -11,6 +11,7 @@ import Icon, {
   ArrowUpOutlined,
   FormOutlined,
   ShareAltOutlined,
+  RobotOutlined,
 } from '@ant-design/icons';
 import { GrDocumentUser } from 'react-icons/gr';
 import { PiDownloadSimple } from 'react-icons/pi';
@@ -41,6 +42,8 @@ import { useCanEdit } from '@/lib/can-edit-context';
 import { Element } from 'bpmn-js/lib/model/Types';
 import { ScriptTaskEditorEnvironment } from './script-task-editor/script-task-editor-environment';
 import { Folder } from '@/lib/data/folder-schema';
+import { enableBPMNChatbot } from 'FeatureFlags';
+import ChatbotDialog from '@/components/bpmn-chatbot';
 
 const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
 
@@ -261,6 +264,7 @@ const ModelerToolbar = ({
     LATEST_VERSION;
 
   const showMobileView = useMobileModeler();
+  const [showChatbotDialog, setShowChatbotDialog] = useState(false);
 
   let formEditorTitle = '';
 
@@ -444,9 +448,16 @@ const ModelerToolbar = ({
                     }}
                   />
                 </Tooltip>
+              )}{' '}
+              {enableBPMNChatbot && (
+                <Tooltip title={showChatbotDialog ? 'Close Chatbot' : 'Open Chatbot'}>
+                  <Button
+                    icon={<RobotOutlined></RobotOutlined>}
+                    onClick={() => setShowChatbotDialog(!showChatbotDialog)}
+                  ></Button>
+                </Tooltip>
               )}
             </ToolbarGroup>
-
             {showPropertiesPanel && selectedElement && (
               <PropertiesPanel
                 isOpen={showPropertiesPanel}
@@ -454,6 +465,9 @@ const ModelerToolbar = ({
                 selectedElement={selectedElement}
                 readOnly={isListView || !editingEnabled}
               />
+            )}
+            {enableBPMNChatbot && (
+              <ChatbotDialog show={showChatbotDialog} modeler={modeler}></ChatbotDialog>
             )}
           </Space>
         </Space>

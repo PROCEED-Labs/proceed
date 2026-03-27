@@ -1,11 +1,10 @@
 import { ComponentProps, use, useEffect, useState } from 'react';
 import { is as bpmnIs } from 'bpmn-js/lib/util/ModelUtil';
-import { App, Tooltip, Button, Space, Select, SelectProps, Divider } from 'antd';
+import { Tooltip, Button, Space, Divider, Select, SelectProps } from 'antd';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
 import styles from './modeler-toolbar.module.scss';
 import Icon, {
   InfoCircleOutlined,
-  PlusOutlined,
   UndoOutlined,
   RedoOutlined,
   ArrowUpOutlined,
@@ -17,15 +16,13 @@ import { PiDownloadSimple } from 'react-icons/pi';
 import { SvgGantt, SvgXML } from '@/components/svg';
 import PropertiesPanel from './properties-panel';
 import useModelerStateStore from './use-modeler-state-store';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import VersionCreationButton from '@/components/version-creation-button';
+import { useRouter, useSearchParams } from 'next/navigation';
 import useMobileModeler from '@/lib/useMobileModeler';
-import { createVersion, updateProcess, getProcessBPMN } from '@/lib/data/processes';
+import { updateProcess } from '@/lib/data/processes';
 import { Root } from 'bpmn-js/lib/model/Types';
 import { useEnvironment } from '@/components/auth-can';
 import { ShareModal } from '@/components/share-modal/share-modal';
 import { useAddControlCallback } from '@/lib/controls-store';
-import { spaceURL } from '@/lib/utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import useTimelineViewStore from '@/lib/use-timeline-view-store';
 import { handleOpenDocumentation } from '../../processes-helper';
@@ -42,7 +39,8 @@ import { Element } from 'bpmn-js/lib/model/Types';
 import { ScriptTaskEditorEnvironment } from './script-task-editor/script-task-editor-environment';
 import { Folder } from '@/lib/data/folder-schema';
 
-const LATEST_VERSION = { id: '-1', name: 'Latest Version', description: '' };
+import VersionAndDeploy, { LATEST_VERSION } from './version-and-deploy-section';
+import { spaceURL } from '@/lib/utils';
 
 type ModelerToolbarProps = {
   process: Process;
@@ -60,12 +58,10 @@ const ModelerToolbar = ({
 }: ModelerToolbarProps) => {
   const processId = process.id;
 
-  const router = useRouter();
-  const pathname = usePathname();
   const environment = useEnvironment();
-  const app = App.useApp();
-  const message = app.message;
   const env = use(EnvVarsContext);
+
+  const router = useRouter();
 
   const [showUserTaskEditor, setShowUserTaskEditor] = useState(false);
 
@@ -170,41 +166,6 @@ const ModelerToolbar = ({
 
   const selectedVersionId = query.get('version');
 
-  const createProcessVersion = async (values: {
-    versionName: string;
-    versionDescription: string;
-  }) => {
-    try {
-      // Ensure latest BPMN on server.
-      const xml = (await modeler?.getXML()) as string;
-      if (isUserErrorResponse(await updateProcess(processId, environment.spaceId, xml)))
-        throw new Error();
-
-      if (
-        isUserErrorResponse(
-          await createVersion(
-            values.versionName,
-            values.versionDescription,
-            processId,
-            environment.spaceId,
-          ),
-        )
-      )
-        throw new Error();
-
-      // reimport the new version since the backend has added versionBasedOn information that would
-      // be overwritten by following changes
-      const newBpmn = await getProcessBPMN(processId, environment.spaceId);
-      if (newBpmn && typeof newBpmn === 'string') {
-        await modeler?.loadBPMN(newBpmn);
-      }
-
-      router.refresh();
-      message.success('Version Created');
-    } catch (_) {
-      message.error('Something went wrong');
-    }
-  };
   const handlePropertiesPanelToggle = () => {
     setShowPropertiesPanel(!showPropertiesPanel);
   };
@@ -316,15 +277,9 @@ const ModelerToolbar = ({
                   label: name,
                 }))}
             />
+            <VersionAndDeploy process={process} />
             {!showMobileView && LATEST_VERSION.id === selectedVersion.id && (
               <>
-                <Tooltip title="Release a new Version of the Process">
-                  <VersionCreationButton
-                    icon={<PlusOutlined />}
-                    createVersion={createProcessVersion}
-                    disabled={isListView}
-                  ></VersionCreationButton>
-                </Tooltip>
                 <Tooltip title="Undo">
                   <Button icon={<UndoOutlined />} onClick={handleUndo} disabled={!canUndo}></Button>
                 </Tooltip>

@@ -9,13 +9,13 @@ import DeploymentsList from './deployments-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
-import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
+import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
 import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
 import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { SpaceEngine } from '@/lib/engines/machines';
-import { userError } from '@/lib/user-error';
+import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -58,22 +58,29 @@ const DeploymentsView = ({
     startCheckingProcessVersion(async () => {
       wrapServerCall({
         fn: async () => {
-          const processChangedSinceLastVersion = await processHasChangesSinceLastVersion(
+          const unchangedVersion = await processUnchangedFromBasedOnVersion(
             process.id,
             space.spaceId,
           );
-          if (typeof processChangedSinceLastVersion === 'object')
-            return processChangedSinceLastVersion;
+          if (isUserErrorResponse(unchangedVersion)) {
+            return unchangedVersion;
+          }
 
-          let latestVersion = process.versions[0];
-          for (const version of process.versions)
-            if (+version.createdOn > +latestVersion.createdOn) latestVersion = version;
+          let versionToUse = unchangedVersion;
 
-          if (!latestVersion) throw userError('Process has no versions').error;
+          if (!versionToUse) {
+            let latestVersion = process.versions[0];
+            for (const version of process.versions)
+              if (+version.createdOn > +latestVersion.createdOn) latestVersion = version;
+
+            versionToUse = latestVersion.id;
+          }
+
+          if (!versionToUse) throw userError('Process has no versions').error;
 
           const res = await serverDeployProcess(
             process.id,
-            latestVersion.id,
+            versionToUse,
             space.spaceId,
             'dynamic',
             forceEngine,

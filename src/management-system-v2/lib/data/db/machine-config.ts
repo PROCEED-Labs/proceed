@@ -1597,6 +1597,7 @@ export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): P
         };
       });
 
+    const { firstName, lastName } = userInfo;
     // prepending a parameter for the full name
     subParameters = [
       {
@@ -1623,7 +1624,7 @@ export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): P
             },
           ],
           'none',
-          userInfo.firstName + ' ' + userInfo.lastName,
+          `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`,
         ),
         origin: 'external',
       },

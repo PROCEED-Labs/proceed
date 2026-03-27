@@ -12,6 +12,7 @@ export const RoleInputSchema = z.object({
   environmentId: z.string(),
   name: z.string().min(5).max(100),
   description: z.string().nullish().optional(),
+  organizationRoleType: z.array(z.enum(['team', 'back-office'])).default([]),
   note: z.string().nullish().optional(),
   permissions: z.object(perms as Permissions).partial(),
   expiration: z.date().nullish().optional(),
@@ -19,7 +20,7 @@ export const RoleInputSchema = z.object({
   parentId: z.string().optional().nullable(),
 });
 
-export type RoleInput = z.infer<typeof RoleInputSchema>;
+export type RoleInput = z.input<typeof RoleInputSchema>;
 
 export type Role = RoleInput & {
   id: string;

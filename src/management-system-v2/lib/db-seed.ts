@@ -318,6 +318,7 @@ async function writeSeedToDb(seed: DBSeed) {
                 ...roleInput,
                 permissions: rolePermissions,
                 environmentId: org.id,
+                organizationRoleType: [],
               },
               undefined,
               tx,

@@ -6,11 +6,12 @@ import React, {
   useLayoutEffect,
   useRef,
 } from 'react';
-import { INITIAL_TOOLBOX_JSON } from './blockly-editor-config';
+import { INITIAL_TOOLBOX_JSON, regenerateProcessVariableBlocks } from './blockly-editor-config';
 import * as BlocklyJavaScript from 'blockly/javascript';
 const { javascriptGenerator } = BlocklyJavaScript;
 import * as Blockly from 'blockly';
 import { debounce } from '@/lib/utils';
+import { ProcessVariable } from '@/lib/process-variable-schema';
 
 /**
  * Checks that there aren't blocks "floating", that is that every block
@@ -51,6 +52,7 @@ type BlocklyEditorProps = PropsWithChildren<{
   initialXml: string;
   editorRef: React.Ref<BlocklyEditorRefType>;
   readOnly?: boolean;
+  variables: ProcessVariable[];
 }>;
 
 const BlocklyEditor = ({
@@ -58,6 +60,7 @@ const BlocklyEditor = ({
   initialXml,
   editorRef,
   readOnly = false,
+  variables,
 }: BlocklyEditorProps) => {
   const blocklyDivRef = useRef<HTMLDivElement | null>(null);
   const blocklyWorkspaceRef = useRef<Blockly.WorkspaceSvg>(undefined);
@@ -67,6 +70,10 @@ const BlocklyEditor = ({
   useEffect(() => {
     onChangeFunc.current = onChange;
   }, [onChange]);
+
+  useEffect(() => {
+    regenerateProcessVariableBlocks(variables);
+  }, [variables]);
 
   // useLayoutEffect to make sure this runs before anything else
   useLayoutEffect(() => {

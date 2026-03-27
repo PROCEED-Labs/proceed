@@ -235,7 +235,7 @@ class Engine {
    *
    * @param {string} the version of the process to undeploy
    */
-  async undeployProcessVersion(versionId) {
+  undeployProcessVersion(versionId) {
     const process = this._versionProcessMapping[versionId];
     if (process && process.isDeployed()) {
       process.undeploy();

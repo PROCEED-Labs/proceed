@@ -395,7 +395,7 @@ module.exports = (path, management) => {
   );
 
   network.put(`${path}/:definitionId/active`, { cors: true }, async (req) => {
-    const { definitionId, version } = req.params;
+    const { definitionId } = req.params;
 
     const {
       body: { active },
@@ -412,9 +412,7 @@ module.exports = (path, management) => {
       const engine = await management.getEngineWithDefinitionId(definitionId);
 
       if (engine) {
-        for (const version of engine.versions) {
-          engine.undeployProcessVersion(version);
-        }
+        engine.versions.forEach((version) => engine.undeployProcessVersion(version));
       }
 
       return {
@@ -440,7 +438,7 @@ module.exports = (path, management) => {
     } = req;
 
     if (active === true) {
-      management.ensureProcessEngineWithVersion(definitionId, version);
+      await management.ensureProcessEngineWithVersion(definitionId, version);
     } else if (active === false) {
       const engine = await management.getEngineWithDefinitionId(definitionId);
 

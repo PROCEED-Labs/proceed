@@ -12,7 +12,9 @@ import {
   StoredParameterZod,
   StoredMetaParameter,
   MetaParameter,
-  VirtualUserParameter,
+  VirtualUserInfoParameter,
+  VirtualUserRolesParameter,
+  VirtualOrganizationRolesParameter,
 } from '../machine-config-schema';
 import {
   AasJson,
@@ -37,8 +39,11 @@ import {
   extractParameter,
   findParameter,
   findPathToParameter,
-  isVirtualUserParameter,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+  isVirtualOrganizationRolesParameter,
+  isVirtualUserInfoParameter,
+  isVirtualUserRolesParameter,
+  stringifyValue,
+} from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
@@ -50,10 +55,15 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import {
   createTdsTemplateMachineDatasetHeader,
   defaultMachineDataSet,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
-import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-templates-tds';
+import {
+  defaultUserParameterTemplate,
+  userInfoMap,
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 import { User } from '../user-schema';
+import { getRoles, getUserRoles } from '../roles';
+import { getRoleMappings } from './iam/role-mappings';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -1552,8 +1562,12 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
         ...storedParameter,
         subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
       };
-      if (isVirtualUserParameter(newParameter)) {
-        newParameter = await getVirtualUserData(newParameter);
+      if (isVirtualUserInfoParameter(newParameter)) {
+        newParameter = await getVirtualUserInfo(newParameter);
+      } else if (isVirtualUserRolesParameter(newParameter)) {
+        newParameter = await getVirtualUserRoles(newParameter);
+      } else if (isVirtualOrganizationRolesParameter(newParameter)) {
+        newParameter = await getVirtualOrganizationRoles(newParameter);
       }
       parameters.push(newParameter);
     }
@@ -1561,19 +1575,130 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
   return parameters;
 }
 
-export async function getVirtualUserData(parameter: VirtualUserParameter): Promise<Parameter> {
+export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): Promise<Parameter> {
   const userInfo = await getUserById(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
+    // mapping all entries of userInfo to parameters (except keys: 'isGuest', 'emailVerifiedOn', 'profileImage', 'favourites')
+    subParameters = Object.entries(userInfo)
+      .filter(
+        ([key]) => !['isGuest', 'emailVerifiedOn', 'profileImage', 'favourites'].includes(key),
+      )
+      .map(([key, val]) => {
+        return {
+          ...defaultParameter(
+            key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
+            userInfoMap[key].displayName,
+            userInfoMap[key].description,
+            'none',
+            stringifyValue(val),
+          ),
+          origin: 'external',
+        };
+      });
+
     const { firstName, lastName } = userInfo;
-    const name = `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`;
-    const extendedInfo = { ...userInfo, name };
-    subParameters = parameter.subParameters.map((param) => {
-      const infoValue = extendedInfo[param.name as keyof User];
-      return { ...param, ...(infoValue && { value: infoValue }) };
-    });
+    // prepending a parameter for the full name
+    subParameters = [
+      {
+        ...defaultParameter(
+          'name',
+          [
+            {
+              text: 'Name',
+              language: 'en',
+            },
+            {
+              text: 'Name',
+              language: 'de',
+            },
+          ],
+          [
+            {
+              text: 'Name of the user.',
+              language: 'en',
+            },
+            {
+              text: 'Name des Nutzers.',
+              language: 'de',
+            },
+          ],
+          'none',
+          `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`,
+        ),
+        origin: 'external',
+      },
+      ...subParameters,
+    ];
   }
-  return { ...parameter, subParameters };
+  return { ...parameter, subParameters: [...subParameters, ...parameter.subParameters] };
+}
+
+export async function getVirtualUserRoles(
+  parameter: VirtualUserRolesParameter,
+): Promise<Parameter> {
+  let roleParameters: Parameter[] = [];
+  const roles = await getUserRoles(parameter.environmentId, parameter.userId);
+  if ('error' in roles) {
+    throw new Error(
+      `Cannot get roles for user ${parameter.userId} in space ${parameter.environmentId}.`,
+    );
+  }
+  roleParameters = roles.map((role) => {
+    return {
+      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      id: parameter.userId + role.name, // hardcoded ID for frontend consistency
+      origin: 'external',
+    };
+  });
+  return { ...parameter, subParameters: roleParameters };
+}
+
+export async function getVirtualOrganizationRoles(
+  parameter: VirtualOrganizationRolesParameter,
+): Promise<Parameter> {
+  let roles = await getRoles(parameter.environmentId);
+  // {role, userId} mappings
+  let roleMappings = (await getRoleMappings()).filter(
+    (e) => e.environmentId == parameter.environmentId,
+  );
+
+  // mapping to {role, userData} objects
+  let userRoles = await asyncMap(roleMappings, async (e) => ({
+    role: e.roleName,
+    user: await getUserById(e.userId),
+  }));
+
+  let roleParameters: Parameter[] = [];
+  if ('error' in roles) {
+    throw new Error(`Cannot get roles for space ${parameter.environmentId}.`);
+  }
+  roleParameters = roles.map((role) => {
+    // creating subParameters for each user that has this role
+    let subParameters = userRoles
+      .filter((e) => e.role == role.name)
+      .map((e) => {
+        if (!e.user.isGuest) {
+          return {
+            ...defaultParameter(
+              e.user.id,
+              [{ text: e.user.lastName + ', ' + e.user.firstName, language: 'en' }],
+              [],
+            ),
+            id: role.name + e.user.id, // hardcoded ID for frontend consistency
+            origin: 'external' as const,
+          };
+        }
+      })
+      .filter(truthyFilter);
+    return {
+      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      origin: 'external' as const,
+      id: role.name, // hardcoded ID for frontend consistency
+      subParameters,
+    };
+  });
+  return { ...parameter, subParameters: roleParameters };
 }
 
 // TODO rework handling of subConfigs (target, reference, machine)
@@ -4597,8 +4722,7 @@ export async function addMemberParameter(member: Membership) {
   const user = await getUserById(member.userId);
   if (user && !user.isGuest) {
     const newUserParameter = defaultUserParameterTemplate(
-      user.id,
-      member.id,
+      member,
       user.firstName || 'N/A',
       user.lastName || 'N/A',
     );

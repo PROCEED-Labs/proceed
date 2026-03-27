@@ -29,7 +29,7 @@ import {
   LinkedParameter,
   LocalizedText,
 } from '@/lib/data/machine-config-schema';
-import { buildLinkedInputParametersFromIds } from '../configuration-helper';
+import { buildLinkedInputParametersFromIds } from '../helpers/configuration-helper';
 import { getConfigurationCategories } from '@/lib/data/db/machine-config';
 import { useEnvironment } from '../../../../../components/auth-can';
 import { QuestionCircleOutlined } from '@ant-design/icons';

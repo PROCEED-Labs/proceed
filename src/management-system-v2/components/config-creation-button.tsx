@@ -9,7 +9,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { useAddControlCallback } from '@/lib/controls-store';
 import { spaceURL } from '@/lib/utils';
-import { defaultParentConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { defaultParentConfiguration } from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 
 type ConfigCreationButtonProps = ButtonProps & {
   customAction?: (values: { name: string; description: string }) => Promise<any>;

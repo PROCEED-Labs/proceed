@@ -48,7 +48,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import ConfigModal from '@/components/config-modal';
-import { defaultParameter } from './configuration-helper';
+import { defaultParameter } from './helpers/configuration-helper';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { validate } from 'uuid';
 import AasConfigCreationButton from '@/components/aas-config-creation-button';

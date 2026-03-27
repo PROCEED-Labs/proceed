@@ -21,7 +21,7 @@ import {
   defaultMetaParameter,
   buildLinkedInputParametersFromIds,
   findParameter,
-} from '../configuration-helper';
+} from '../helpers/configuration-helper';
 import { CreateParameterModalReturnType } from './aas-create-parameter-modal';
 import { updateConfigMetadata } from '@/lib/data/db/machine-config';
 import { Modal } from 'antd';

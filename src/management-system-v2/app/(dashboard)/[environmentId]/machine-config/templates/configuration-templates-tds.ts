@@ -4,7 +4,7 @@ import {
   defaultConfiguration,
   defaultMetaParameter,
   defaultParameter,
-} from './configuration-helper';
+} from '../helpers/configuration-helper';
 
 //---------------- TDS Template -----------------
 export const defaultTdsConfigurationTemplate = (

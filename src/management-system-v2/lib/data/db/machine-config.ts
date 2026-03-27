@@ -1646,6 +1646,7 @@ export async function getVirtualUserRoles(
   roleParameters = roles.map((role) => {
     return {
       ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      id: parameter.userId + role.name, // hardcoded ID for frontend consistency
       origin: 'external',
     };
   });
@@ -1683,6 +1684,7 @@ export async function getVirtualOrganizationRoles(
               [{ text: e.user.lastName + ', ' + e.user.firstName, language: 'en' }],
               [],
             ),
+            id: role.name + e.user.id, // hardcoded ID for frontend consistency
             origin: 'external' as const,
           };
         }
@@ -1691,6 +1693,7 @@ export async function getVirtualOrganizationRoles(
     return {
       ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
       origin: 'external' as const,
+      id: role.name, // hardcoded ID for frontend consistency
       subParameters,
     };
   });

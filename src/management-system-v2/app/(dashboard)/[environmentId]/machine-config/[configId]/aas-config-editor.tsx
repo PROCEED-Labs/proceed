@@ -68,11 +68,7 @@ import { getSpaceSettingsValues } from '@/lib/data/space-settings';
 import { MqttPublishButton } from './mqtt-publish-button';
 import AasContent from './aas-config-content';
 import Image from 'next/image';
-import {
-  configToAasFormat,
-  defaultUserParameterTemplate,
-  findParameter,
-} from '../configuration-helper';
+import { configToAasFormat, findParameter } from '../configuration-helper';
 import { generateMachineDatasetNames, useParameterActions } from './shared-parameter-utils';
 import AasCreateParameterModal, {
   CreateParameterModalReturnType,

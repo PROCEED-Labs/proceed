@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, useState, useTransition } from 'react';
-import { DeleteOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { DeleteOutlined, InfoCircleOutlined, EditOutlined } from '@ant-design/icons';
 import { Tooltip, App, Grid, Button, Space, Popover } from 'antd';
 import InviteUserButton, { FloatButtonActions } from './invite-users';
 import UserList, { ListUser } from '@/components/user-list';
@@ -20,6 +20,7 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import { userRepresentation } from '@/lib/utils';
 import SpaceLink from '@/components/space-link';
 
+import { EditUserModal } from './edit-user-modal';
 const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
@@ -28,7 +29,8 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
   const [showMobileUserSider, setShowMobileUserSider] = useState(false);
 
   const [createUserModalOpen, setCreateUserModalOpen] = useState(false);
-
+  const [editingUser, setEditingUser] = useState<ListUser | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const router = useRouter();
   const environment = useEnvironment();
 
@@ -99,9 +101,22 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
                 dataIndex: 'id',
                 key: 'tooltip',
                 title: '',
-                width: 100,
+                width: 120,
                 render: (id: string, user) => (
                   <Space>
+                    <Tooltip placement="top" title="Edit User">
+                      <Button
+                        icon={<EditOutlined />}
+                        type="text"
+                        style={{
+                          opacity: hoveredId === id && selectedRowKeys.length === 0 ? 1 : 0,
+                        }}
+                        onClick={() => {
+                          setEditingUser(user);
+                          setEditModalOpen(true);
+                        }}
+                      />
+                    </Tooltip>
                     <Tooltip placement="top" title="Remove From Environment">
                       <ConfirmationButton
                         title="Remove User"
@@ -177,6 +192,14 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
         />
       </div>
 
+      <EditUserModal
+        open={editModalOpen}
+        close={() => {
+          setEditModalOpen(false);
+          setEditingUser(null);
+        }}
+        user={editingUser}
+      />
       <CreateUsersModal open={createUserModalOpen} close={() => setCreateUserModalOpen(false)} />
     </>
   );

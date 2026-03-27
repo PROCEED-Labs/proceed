@@ -34,6 +34,9 @@ import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 
+import { GrDocumentUser } from 'react-icons/gr';
+import { handleOpenInstanceDocumentation } from '../../../processes/processes-helper';
+
 export default function ProcessDeploymentView({
   processId,
   initialDeploymentInfo,
@@ -337,6 +340,31 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
+                <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
+                  <Button
+                    icon={<InfoCircleOutlined />}
+                    onClick={() => setInfoPanelOpen((prev) => !prev)}
+                  />
+                </Tooltip>
+              </ToolbarGroup>
+
+              <ToolbarGroup>
+                {selectedInstance && (
+                  <Tooltip title="View Instance Documentation">
+                    <Button
+                      aria-label="view-instance-documentation"
+                      icon={<GrDocumentUser />}
+                      onClick={() =>
+                        handleOpenInstanceDocumentation(
+                          processId,
+                          selectedInstance.processInstanceId,
+                          selectedColoring,
+                          selectedInstance.processVersion,
+                        )
+                      }
+                    />
+                  </Tooltip>
+                )}
                 <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button
                     icon={<InfoCircleOutlined />}

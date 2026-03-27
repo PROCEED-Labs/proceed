@@ -21,6 +21,9 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
+import { getDeployment } from '@/lib/engines/server-actions';
+import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
+import InstanceDocumentationPage from './instance-documentation-page';
 
 interface PageProps {
   searchParams: Promise<{
@@ -126,7 +129,7 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
 
 const SharedViewer = async (props: PageProps) => {
   const searchParams = await props.searchParams;
-  const { token, version, settings } = searchParams;
+  const { token, version, settings, instance: instanceId, coloring } = searchParams;
   const { session, userId } = await getCurrentUser();
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
@@ -198,6 +201,19 @@ const SharedViewer = async (props: PageProps) => {
     redirect(loginPath);
   }
 
+  let instanceData = undefined;
+  if (typeof instanceId === 'string' && processData) {
+    try {
+      const deployment = await getDeployment(
+        // I am not completely sure about these paramteres
+        processData.creatorId ?? '',
+        processData.id,
+      );
+      instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
+    } catch (err) {
+      console.error('Failed to fetch instance data:', err);
+    }
+  }
   return (
     <>
       <div style={{ height: '100vh' }}>
@@ -212,13 +228,25 @@ const SharedViewer = async (props: PageProps) => {
               userEnvironments={userEnvironments}
               activeSpace={{ spaceId: userId || '', isOrganization: false }}
             >
-              <BPMNSharedViewer
-                isOwner={isOwner}
-                userWorkspaces={userEnvironments}
-                processData={processData as any}
-                defaultSettings={defaultSettings}
-                availableImports={availableImports}
-              />
+              {instanceData ? (
+                <InstanceDocumentationPage
+                  isOwner={isOwner}
+                  userWorkspaces={userEnvironments}
+                  processData={processData as any}
+                  defaultSettings={defaultSettings}
+                  availableImports={availableImports}
+                  instance={instanceData}
+                  coloring={(coloring as ColorOptions) || 'processColors'}
+                />
+              ) : (
+                <BPMNSharedViewer
+                  isOwner={isOwner}
+                  userWorkspaces={userEnvironments}
+                  processData={processData as any}
+                  defaultSettings={defaultSettings}
+                  availableImports={availableImports}
+                />
+              )}
             </Layout>
           </div>
         )}

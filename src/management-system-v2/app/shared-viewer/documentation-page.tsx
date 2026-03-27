@@ -70,7 +70,7 @@ const BPMNSharedViewer = ({
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
 
-  const [checkedSettings, setCheckedSettings] = useState<SettingsOption>(
+  const [checkedSettings, setCheckedSettings] = useState<string[]>(
     defaultSettings || settingsOptions,
   );
 

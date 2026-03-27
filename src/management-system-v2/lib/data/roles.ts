@@ -9,8 +9,13 @@ import {
   updateRole as _updateRole,
   getRoles as _getRoles,
   getUserRoles as _getUserRoles,
+  getRoleWithMembersById,
 } from '@/lib/data/db/iam/roles';
 import { UnauthorizedError } from '../ability/abilityHelper';
+import { Role } from './role-schema';
+import db from '@/lib/data/db';
+import { asyncForEach } from '../helpers/javascriptHelpers';
+import { addRoleMappings } from './db/iam/role-mappings';
 
 export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
   const { ability } = await getCurrentEnvironment(envitonmentId);
@@ -26,7 +31,11 @@ export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
   }
 }
 
-export async function addRole(environmentId: string, role: Parameters<typeof _addRole>[0]) {
+export async function addRole(
+  environmentId: string,
+  role: Parameters<typeof _addRole>[0],
+  withoutRedirect = false,
+) {
   const { activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   let newRoleId;
@@ -41,7 +50,7 @@ export async function addRole(environmentId: string, role: Parameters<typeof _ad
     else return userError('Error adding role');
   }
 
-  redirect(`/${environmentId}/iam/roles/${newRoleId}`, RedirectType.push);
+  if (!withoutRedirect) redirect(`/${environmentId}/iam/roles/${newRoleId}`, RedirectType.push);
 }
 
 export async function updateRole(
@@ -60,6 +69,51 @@ export async function updateRole(
     if (e instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
     else return userError('Error updating role');
+  }
+}
+
+export async function handleFolderRoleChanges(
+  environmentId: string,
+  parentRoleId: string,
+  toAdd: Parameters<typeof _addRole>[0][],
+  toUpdate: { roleId: string; permissions: Role['permissions'] }[],
+  toRemove: string[],
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    await db.$transaction(async (trx) => {
+      const parentRole = await getRoleWithMembersById(parentRoleId, ability, false, trx);
+      if (!parentRole) throw new Error('The role to update does not exist');
+
+      await asyncForEach(toRemove, async (id) => {
+        await deleteRole(id, ability, trx);
+      });
+
+      await asyncForEach(toUpdate, async ({ roleId, permissions }) => {
+        await _updateRole(roleId, { permissions }, ability, trx);
+      });
+
+      await asyncForEach(toAdd, async (input) => {
+        // TODO: handle @everyone and guest roles, folder roles set for the everyone role have to
+        // actually apply to everyone
+        const added = await _addRole({ ...input, expiration: parentRole.expiration }, ability, trx);
+
+        // TODO: add expiration from the parent role mapping
+        const roleMappings = parentRole.members.map(({ id }) => ({
+          environmentId,
+          roleId: added.id,
+          userId: id,
+        }));
+
+        await addRoleMappings(roleMappings, ability, trx);
+      });
+    });
+  } catch (e) {
+    if (e instanceof UnauthorizedError) {
+      return userError('Permissions denied', UserErrorType.PermissionError);
+    } else {
+      return userError('Error updating role');
+    }
   }
 }
 

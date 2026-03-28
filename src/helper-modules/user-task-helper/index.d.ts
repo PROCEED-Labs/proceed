@@ -224,6 +224,31 @@ export function getCorrectMilestoneState(
   }[]
 >;
 /**
+ * Function that returns all occurences of variables of the form "@global..." in placeholders
+ *
+ * @param {string | Buffer} html the html that contains placeholders that might reference global
+ * variables
+ * @returns {string[]} an array with all unique occurences of variable placholders
+ */
+export function getGlobalVariableReferences(html: string | Buffer): string[];
+/**
+ * Function that will create an object containing the values for global variables referenced in the
+ * given html
+ *
+ * @param {string | Buffer} html the html that contains placeholders that might reference global
+ * variables
+ * @param {(varPath: string) => Promise<any>} variableGetterFn a function that given a path to a
+ * specific global variable returns the value of that variable
+ * @returns {Promise<{ [key: string]: any }>} an object that maps the global variable paths in the html to
+ * values returned by the provided varaibleGetterFn
+ */
+export function getGlobalVariables(
+  html: string | Buffer,
+  variableGetterFn: (varPath: string) => Promise<any>,
+): Promise<{
+  [key: string]: any;
+}>;
+/**
  * Function that replaces the {{script}} placeholder in the html with the default script
  *
  * @param {string | Buffer} html the html that contains placeholders to replace with some data

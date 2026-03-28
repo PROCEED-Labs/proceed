@@ -1565,8 +1565,11 @@ export async function getVirtualUserData(parameter: VirtualUserParameter): Promi
   const userInfo = await getUserById(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
+    const { firstName, lastName } = userInfo;
+    const name = `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`;
+    const extendedInfo = { ...userInfo, name };
     subParameters = parameter.subParameters.map((param) => {
-      const infoValue = userInfo[param.name as keyof User];
+      const infoValue = extendedInfo[param.name as keyof User];
       return { ...param, ...(infoValue && { value: infoValue }) };
     });
   }

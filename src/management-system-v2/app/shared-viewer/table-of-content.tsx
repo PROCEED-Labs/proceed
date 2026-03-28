@@ -9,6 +9,7 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import styles from './table-of-content.module.scss';
 
 import { ActiveSettings } from './settings-modal';
+import { InstanceInfo } from '@/lib/engines/deployment';
 
 type MetaInformation = {
   name?: string;
@@ -38,6 +39,10 @@ export type ElementInfo = MetaInformation & {
     versionName?: string;
     versionDescription?: string;
     versionCreatedOn?: string;
+  };
+  instanceStatus?: {
+    token?: InstanceInfo['tokens'][number];
+    logEntries?: InstanceInfo['log'];
   };
 };
 

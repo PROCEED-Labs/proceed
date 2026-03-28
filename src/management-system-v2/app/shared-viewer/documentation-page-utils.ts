@@ -390,3 +390,13 @@ export async function getSVGWithInstanceColoring(
   }
   return new XMLSerializer().serializeToString(doc.documentElement);
 }
+
+export const markdownEditor: Promise<ToastEditorType> =
+  typeof window !== 'undefined'
+    ? import('@toast-ui/editor')
+        .then((mod) => mod.Editor)
+        .then((Editor) => {
+          const div = document.createElement('div');
+          return new Editor({ el: div });
+        })
+    : (Promise.resolve(null) as any);

@@ -12,15 +12,14 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
-  CheckOutlined,
 } from '@ant-design/icons';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
 import toolbarStyles from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/modeler-toolbar.module.scss';
 import styles from './process-deployment-view.module.scss';
 import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
-import { MdOutlineColorLens } from 'react-icons/md';
+import { MdOutlineColorLens, MdOutlineSync, MdOutlineSyncDisabled } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -34,11 +33,9 @@ import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
-
-// TODO: implement this function — should activate/deactivate timer start events for the process
-async function toggleProcessActivation(versionId: string, activate: boolean): Promise<void> {
-  // placeholder — wire up your real API call here
-}
+import { toBpmnObject, getStartEvents, getElementById } from '@proceed/bpmn-helper';
+import { useParams } from 'next/navigation';
+import { changeDeploymentActivation } from '@/lib/engines/server-actions';
 
 export default function ProcessDeploymentView({
   processId,
@@ -58,12 +55,14 @@ export default function ProcessDeploymentView({
   const [stoppingInstance, setStoppingInstance] = useState(false);
   const [togglingActivation, setTogglingActivation] = useState(false);
   const [isProcessActivated, setIsProcessActivated] = useState(false);
+  const [hasTimerStartEvents, setHasTimerStartEvents] = useState(false);
 
   const [startForm, setStartForm] = useState('');
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
-
+  const params = useParams();
+  const spaceId = params.environmentId as string;
   const {
     data: deploymentInfo,
     refetch,
@@ -82,13 +81,11 @@ export default function ProcessDeploymentView({
     instanceIsRunning,
     instanceIsPausing,
     instanceIsPaused,
-    hasTimerStartEvents,
   } = useMemo(() => {
     let selectedVersion, instances, selectedInstance, currentVersion;
     let instanceIsRunning = false;
     let instanceIsPausing = false;
     let instanceIsPaused = false;
-    let hasTimerStartEvents = false;
 
     const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
 
@@ -119,9 +116,6 @@ export default function ProcessDeploymentView({
       currentVersion = deploymentInfo.versions.find(
         (version) => version.versionId === currentVersionId,
       );
-
-      // TODO: detect timer start events in the current version's BPMN may be call a function here
-      // hasTimerStartEvents = isimerStartEventExists(currentVersion)
     }
 
     return {
@@ -132,9 +126,27 @@ export default function ProcessDeploymentView({
       instanceIsRunning,
       instanceIsPausing,
       instanceIsPaused,
-      hasTimerStartEvents,
     };
   }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
+
+  useEffect(() => {
+    if (!currentVersion?.bpmn) {
+      setHasTimerStartEvents(false);
+      return;
+    }
+    toBpmnObject(currentVersion.bpmn)
+      .then(async (bpmnObj) => {
+        const startEventIds = await getStartEvents(bpmnObj);
+        return startEventIds.some((id: string) => {
+          const el = getElementById(bpmnObj, id) as any;
+          return el?.eventDefinitions?.some(
+            (def: any) => def.$type === 'bpmn:TimerEventDefinition',
+          );
+        });
+      })
+      .then(setHasTimerStartEvents)
+      .catch(() => setHasTimerStartEvents(false));
+  }, [currentVersion?.bpmn]);
 
   const { variableDefinitions, variables } = useInstanceVariables({
     process: deploymentInfo,
@@ -264,7 +276,7 @@ export default function ProcessDeploymentView({
             <ToolbarGroup>
               <Tooltip title="Start new instance">
                 <Button
-                  icon={<PlusOutlined />}
+                  icon={<PlusOutlined style={{ color: '#52c41a' }} />}
                   loading={startingInstance}
                   onClick={async () => {
                     setStartingInstance(true);
@@ -306,20 +318,30 @@ export default function ProcessDeploymentView({
                 <Tooltip
                   title={
                     isProcessActivated
-                      ? 'Deactivate process (stop automatic timer-triggered instances)'
-                      : 'Activate process (allow timer start events to create instances)'
+                      ? 'Process is activated. So timer events create instances automatically. Click to deactivate.'
+                      : 'Process is deactivated. So timer events will not fire. Click to activate.'
                   }
                 >
                   <Button
-                    icon={<CheckOutlined />}
+                    type="text"
                     loading={togglingActivation}
-                    type={isProcessActivated ? 'primary' : 'default'}
+                    icon={
+                      isProcessActivated ? (
+                        <MdOutlineSync
+                          size={18}
+                          style={{ color: '#52c41a', animation: 'spin 2s linear infinite' }}
+                        />
+                      ) : (
+                        <MdOutlineSyncDisabled size={18} />
+                      )
+                    }
                     onClick={async () => {
                       setTogglingActivation(true);
                       const nextState = !isProcessActivated;
                       const versionId = getLatestDeployment(deploymentInfo).versionId;
                       await wrapServerCall({
-                        fn: () => toggleProcessActivation(versionId, nextState),
+                        fn: () =>
+                          changeDeploymentActivation(processId, spaceId, versionId, nextState),
                         onSuccess: async () => {
                           setIsProcessActivated(nextState);
                           await refetch();

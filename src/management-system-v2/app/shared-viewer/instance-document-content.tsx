@@ -268,10 +268,10 @@ const InstanceDocumentContent: React.FC<Props> = ({
             <div>
               Instance Started: {generateDateString(new Date(instance.globalStartTime), true)}
             </div>
-            <div>
-              Instance State:{' '}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>Instance State:</span>
               <Alert
-                style={{ display: 'inline-flex' }}
+                style={{ padding: '0 8px', fontSize: '12px' }}
                 type={statusToType(instance.instanceState[0])}
                 message={instance.instanceState[0]}
                 showIcon

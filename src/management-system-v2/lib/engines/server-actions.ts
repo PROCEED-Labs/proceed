@@ -2,16 +2,17 @@
 
 import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
-  DeployedProcessInfo,
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
   getDeployment as fetchDeployment,
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
+  changeDeploymentActivation as _changeDeploymentActivation,
+  DeployedProcessInfo,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
@@ -46,7 +47,6 @@ import {
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
-import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 
@@ -107,7 +107,51 @@ export async function deployProcess(
 
     if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
 
-    await _deployProcess(definitionId, versionId, spaceId, method, engines);
+    const processAlreadyDeployedInfo = await asyncMap(engines, async (engine) => {
+      let deployment;
+      try {
+        deployment = await fetchDeployment(engine, definitionId);
+        // ignore not found errors on engines that don't have a deployment of the process
+      } catch (err) {
+        deployment = undefined;
+      }
+      return [engine, deployment] as const;
+    });
+
+    function withDeployment(
+      info: (typeof processAlreadyDeployedInfo)[number],
+    ): info is readonly [Engine, DeployedProcessInfo] {
+      return !!info[1];
+    }
+    const enginesWithDeployment = processAlreadyDeployedInfo.filter(withDeployment);
+
+    // check if the version is already deployed to some engine since we don't
+    // need to redeploy it in that case
+    if (
+      !_forceEngine &&
+      enginesWithDeployment.some(([_, deployment]) =>
+        deployment.versions.some((version) => version.versionId === versionId),
+      )
+    ) {
+      return;
+    }
+
+    if (!_forceEngine && enginesWithDeployment.length) {
+      // check if an engine already has another version in which case that engine is selected
+      engines = enginesWithDeployment.map(([engine]) => engine);
+    }
+
+    const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
+
+    // deactivate the process on all engines that have a deployment but which were not target of the
+    // new deployment
+    await Promise.allSettled(
+      enginesWithDeployment.map(async ([engine]) => {
+        if (!deployedTo.some((dE) => dE.id === engine.id)) {
+          await _changeDeploymentActivation(engine, definitionId, undefined, false);
+        }
+      }),
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -125,6 +169,33 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     });
 
     await removeDeploymentFromMachines(engines, definitionId);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function changeDeploymentActivation(
+  definitionId: string,
+  spaceId: string,
+  version: string,
+  value: boolean,
+) {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((v) => v.versionId === version),
+      );
+    });
+
+    if (!engines.length)
+      throw new Error('There is no available engine with the requested process version.');
+
+    await _changeDeploymentActivation(engines[0], definitionId, version, value);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

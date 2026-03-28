@@ -7,9 +7,9 @@ import { addParentConfig } from '@/lib/data/db/machine-config'; //TODO refactori
 import { useRouter } from 'next/navigation';
 import { useEnvironment } from './auth-can';
 import { spaceURL } from '@/lib/utils';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
 import { useContext } from 'react';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
 
 type ConfigCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;

@@ -72,7 +72,7 @@ export function formDataToPermissions(values: ResourceFormEntries) {
           .map(([action]) => action as ResourceActionType),
       ),
     ]),
-  );
+  ) as Record<ResourceType, number>;
 }
 
 type PermissionCategory = {

@@ -3,7 +3,7 @@
 import { Form, Space, Button, Modal, Collapse, Flex } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
-import { FC, use, useEffect, useState } from 'react';
+import { FC, use, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ResourcePermissionInputs,
   formDataToPermissions,
@@ -307,8 +307,21 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
     setLoading(false);
   }
 
+  // this is needed to ensure that the form only resets to the values from the last save and not
+  // to the initial values from when the page was opened
+  const initialFormValues = useMemo(() => {
+    const initialGroups = groupFolders(role, options, folders);
+
+    return Object.fromEntries(
+      initialGroups.map((group, index) => [
+        index.toString(),
+        permissionsToFormData(options, group.permissions),
+      ]),
+    );
+  }, [role, options, folders]);
+
   return (
-    <Form form={form} onFinish={updateRoles}>
+    <Form form={form} onFinish={updateRoles} initialValues={initialFormValues}>
       {!!items.length && <Collapse items={items} accordion />}
       <Button
         style={{ marginTop: '10px' }}
@@ -335,11 +348,22 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
               newGroup = { folders: selected, permissions: newPermissions };
             }
 
+            const values = form.getFieldsValue();
+
+            // make sure to update the existing groups so the form is not overwritten with the
+            // initial values by the useEffect above
+            const updateGroup = (group: (typeof groups)[number], index: number) => {
+              const permissions = formDataToPermissions(values[index.toString()]);
+              return { ...group, permissions };
+            };
+
             // add a new group or update an existing group with different folders
             setGroups(
-              [...groups.slice(0, index), newGroup, ...groups.slice(index + 1)].filter(
-                truthyFilter,
-              ),
+              [
+                ...groups.slice(0, index).map(updateGroup),
+                newGroup,
+                ...groups.slice(index + 1).map(updateGroup),
+              ].filter(truthyFilter),
             );
 
             setInitialFolders(undefined);

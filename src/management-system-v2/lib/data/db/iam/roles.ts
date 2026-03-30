@@ -52,8 +52,8 @@ export async function getRolesWithMembers(environmentId?: string, ability?: Abil
 
   const filteredRoles = ability
     ? ability
-      .filter('view', 'Role', mappedRoles)
-      .map((role) => ({ ...role, members: ability.filter('view', 'User', role.members) }))
+        .filter('view', 'Role', mappedRoles)
+        .map((role) => ({ ...role, members: ability.filter('view', 'User', role.members) }))
     : mappedRoles;
 
   return filteredRoles;
@@ -115,8 +115,8 @@ export async function getRoleById<
 export async function getRoleWithMembersById<
   T extends undefined | true | false,
   ReturnType extends RoleWithMembers | RoleWithMembersAndChildren = T extends true
-  ? RoleWithMembersAndChildren
-  : RoleWithMembers,
+    ? RoleWithMembersAndChildren
+    : RoleWithMembers,
 >(
   roleId: string,
   ability?: Ability,

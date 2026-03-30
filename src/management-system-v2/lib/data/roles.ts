@@ -94,11 +94,13 @@ export async function handleFolderRoleChanges(
       });
 
       await asyncForEach(toAdd, async (input) => {
-        // TODO: handle @everyone and guest roles, folder roles set for the everyone role have to
-        // actually apply to everyone
-        const added = await _addRole({ ...input, expiration: parentRole.expiration }, ability, trx);
+        const added = await _addRole(
+          { ...input, expiration: parentRole.expiration },
+          ability,
+          trx,
+          true,
+        );
 
-        // TODO: add expiration from the parent role mapping
         const roleMappings = parentRole.members.map(({ id }) => ({
           environmentId,
           roleId: added.id,

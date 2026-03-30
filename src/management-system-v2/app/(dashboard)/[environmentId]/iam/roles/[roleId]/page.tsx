@@ -13,7 +13,6 @@ import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
 import { getFolderById, getFolders } from '@/lib/data/db/folders';
 import FolderPermissions from './folder-permissions';
-import { RoleWithChildren } from '@/lib/data/role-schema';
 
 const Page = async (props: { params: Promise<{ roleId: string; environmentId: string }> }) => {
   const params = await props.params;
@@ -70,7 +69,7 @@ const Page = async (props: { params: Promise<{ roleId: string; environmentId: st
     {
       key: 'folder-permissions',
       label: 'Folder Permissions',
-      children: <FolderPermissions role={role as unknown as RoleWithChildren} folders={folders} />,
+      children: <FolderPermissions role={role} folders={folders} />,
     },
   ];
 

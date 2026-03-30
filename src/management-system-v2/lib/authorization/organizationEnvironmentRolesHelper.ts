@@ -15,15 +15,29 @@ export async function getAppliedRolesForUser(
 
   const userRoles: Role[] = [];
 
-  const guestRole = environmentRoles.find((role: any) => role.name === '@guest') as Role;
-  userRoles.push(guestRole);
+  const guestRoles = environmentRoles.filter((role) => {
+    if (role.name === '@guest') return true;
+
+    const parentRole =
+      role.parentRoleId && environmentRoles.find((r) => r.id === role.parentRoleId);
+    if (parentRole && parentRole.default && parentRole.name === '@guest') return true;
+
+    return false;
+  });
+  userRoles.push(...guestRoles);
 
   if (userId === '') return userRoles;
 
-  const everyoneRole = environmentRoles.find(
-    (role: any) => role.default && role.name === '@everyone',
-  ) as Role;
-  userRoles.push(everyoneRole);
+  const everyoneRoles = environmentRoles.filter((role) => {
+    if (role.default && role.name === '@everyone') return true;
+
+    const parentRole =
+      role.parentRoleId && environmentRoles.find((r) => r.id === role.parentRoleId);
+    if (parentRole && parentRole.default && parentRole.name === '@everyone') return true;
+
+    return false;
+  });
+  userRoles.push(...everyoneRoles);
   const roleMappings = await getRoleMappingByUserId(userId, environmentId);
   const mappedRoles = await Promise.all(roleMappings.map((mapping) => getRoleById(mapping.roleId)));
   userRoles.push(...mappedRoles);

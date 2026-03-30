@@ -33,6 +33,10 @@ export type RoleWithChildren = Role & {
   children: RoleWithChildren[];
 };
 
-export type RoleWithMembers<BaseRole extends Role = Role> = BaseRole & {
+export type RoleWithMembers = Role & {
+  members: Pick<AuthenticatedUser, 'id' | 'email' | 'username' | 'firstName' | 'lastName'>[];
+};
+
+export type RoleWithMembersAndChildren = RoleWithChildren & {
   members: Pick<AuthenticatedUser, 'id' | 'email' | 'username' | 'firstName' | 'lastName'>[];
 };

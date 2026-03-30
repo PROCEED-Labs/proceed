@@ -7,11 +7,11 @@ import {
   RoleInputSchema,
   RoleWithChildren,
   RoleWithMembers,
+  RoleWithMembersAndChildren,
 } from '../../role-schema';
 import { rulesCacheDeleteAll } from '@/lib/authorization/authorization';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
-import { Return } from '@prisma/client/runtime/library';
 
 /** Returns all roles in form of an array */
 export async function getRoles(environmentId?: string, ability?: Ability) {
@@ -59,16 +59,11 @@ export async function getRolesWithMembers(environmentId?: string, ability?: Abil
   return filteredRoles;
 }
 
-/**
- * Returns all roles in form of an array
- *
- * @throws {UnauthorizedError}
- */
-export async function getRoleByName(environmentId: string, name: string, ability?: Ability) {
+export async function getAdminRole(environmentId: string, ability?: Ability) {
   const role = await db.role.findFirst({
     where: {
       environmentId: environmentId,
-      name: name,
+      name: '@admin',
     },
   });
 
@@ -117,12 +112,17 @@ export async function getRoleById<
  *
  * @throws {UnauthorizedError}
  */
-export async function getRoleWithMembersById(
+export async function getRoleWithMembersById<
+  T extends undefined | true | false,
+  ReturnType extends RoleWithMembers | RoleWithMembersAndChildren = T extends true
+  ? RoleWithMembersAndChildren
+  : RoleWithMembers,
+>(
   roleId: string,
   ability?: Ability,
-  withChildren?: boolean,
+  withChildren?: T,
   tx?: Prisma.TransactionClient,
-) {
+): Promise<ReturnType | null> {
   const dbMutator = tx || db;
 
   const role = await dbMutator.role.findUnique({
@@ -152,11 +152,11 @@ export async function getRoleWithMembersById(
   const mappedRole = {
     ...role,
     members: role.members.map((member) => member.user),
-  } as RoleWithMembers;
+  } as ReturnType;
 
   if (!ability) return mappedRole;
 
-  if (mappedRole && !ability.can('view', toCaslResource('Role', mappedRole)))
+  if (mappedRole && !ability.can('view', toCaslResource('Role', mappedRole as RoleWithMembers)))
     throw new UnauthorizedError();
 
   return ability
@@ -194,6 +194,7 @@ export async function addRole(
   roleRepresentationInput: RoleInput,
   ability?: Ability,
   tx?: Prisma.TransactionClient,
+  allowDuplicateName = false,
 ) {
   const dbMutator = tx ? tx : db;
 
@@ -211,16 +212,18 @@ export async function addRole(
   const { name, description, organizationRoleType, note, permissions, expiration, environmentId } =
     roleRepresentation;
 
-  // Check if role already exists in the database
-  const existingRole = await db.role.findFirst({
-    where: {
-      name: name,
-      environmentId: environmentId,
-    },
-  });
+  if (!allowDuplicateName) {
+    // Check if role with this name already exists in this space
+    const existingRole = await db.role.findFirst({
+      where: {
+        name: name,
+        environmentId: environmentId,
+      },
+    });
 
-  if (existingRole) {
-    throw new Error('Role already exists');
+    if (existingRole) {
+      throw new Error('Role already exists');
+    }
   }
 
   const createdOn = new Date().toISOString();

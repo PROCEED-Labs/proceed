@@ -36,7 +36,7 @@ export function switchChecked(
   return true;
 }
 
-export function switchDisabled(
+function switchDisabled(
   permissions: Role['permissions'] | undefined,
   resources: keyof Role['permissions'] | (keyof Role['permissions'])[],
   action: ResourceActionType,

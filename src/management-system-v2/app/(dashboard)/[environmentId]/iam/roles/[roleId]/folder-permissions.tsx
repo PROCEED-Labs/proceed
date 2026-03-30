@@ -3,7 +3,7 @@
 import { Form, Space, Button, Modal, Collapse, Flex } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
-import { FC, use, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, use, useEffect, useMemo, useState } from 'react';
 import {
   ResourcePermissionInputs,
   formDataToPermissions,
@@ -136,7 +136,7 @@ const basePermissionOptions: PermissionCategory[] = [
 ];
 
 const groupFolders = (role: RoleWithChildren, options: PermissionCategory[], folders: Folder[]) => {
-  const groups: Record<number, RoleWithChildren[]> = {};
+  const groups: Record<string, RoleWithChildren[]> = {};
 
   for (const r of role.children) {
     let groupId = 0;
@@ -167,7 +167,7 @@ const groupFolders = (role: RoleWithChildren, options: PermissionCategory[], fol
 
       return { ...folder, type: 'folder' as const };
     }),
-    permissions: { ...group[0].permissions },
+    permissions: permissionsToFormData(options, group[0].permissions),
   }));
 };
 
@@ -194,11 +194,9 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
   const [groups, setGroups] = useState(groupFolders(role, options, folders));
 
   useEffect(() => {
-    const values: Record<string, any> = {};
-
-    groups.forEach((group, index) => {
-      values[`${index}`] = permissionsToFormData(options, group.permissions);
-    });
+    const values = Object.fromEntries(
+      groups.map((group, index) => [index.toString(), group.permissions]),
+    );
 
     form.setFieldsValue(values);
   }, [groups, form]);
@@ -213,7 +211,7 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
   const [notSelectable, setNotSelectable] = useState<string[]>([]);
 
   const items = groups.map((g, index) => ({
-    key: `${index}`,
+    key: index.toString(),
     label: (
       <Flex justify="space-between">
         <div>{g.folders.map((f) => f.name || f.id).join(', ')}</div>
@@ -353,8 +351,7 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
             // make sure to update the existing groups so the form is not overwritten with the
             // initial values by the useEffect above
             const updateGroup = (group: (typeof groups)[number], index: number) => {
-              const permissions = formDataToPermissions(values[index.toString()]);
-              return { ...group, permissions };
+              return { ...group, permissions: values[index.toString()] };
             };
 
             // add a new group or update an existing group with different folders

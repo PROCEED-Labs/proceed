@@ -204,8 +204,8 @@ export const msConfigSchema = {
   },
   test: {},
 } satisfies {
-    [key in 'development' | 'production' | 'test' | 'all']?: Record<string, ZodType>;
-  };
+  [key in 'development' | 'production' | 'test' | 'all']?: Record<string, ZodType>;
+};
 
 // --------------------------------------------
 // You shouldn't need to modify anything below
@@ -232,8 +232,8 @@ export const msConfigConfigurableKeys = Object.keys(mergedMSConfigSchemaKeys).fi
 export type PrivateMSConfig = z.infer<typeof environmentSpecificMSConfigSchema>;
 export type PublicMSConfig = {
   [K in keyof PrivateMSConfig as K extends `PROCEED_PUBLIC_${string}`
-  ? K
-  : never]: PrivateMSConfig[K];
+    ? K
+    : never]: PrivateMSConfig[K];
 };
 
 export type EnvironmentOnlyMSConfig = Pick<

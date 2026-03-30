@@ -92,6 +92,32 @@ export function defaultUserParameterTemplate(
       origin: 'external',
     };
 
+    let name: Parameter = {
+      ...defaultParameter(
+        'name',
+        [
+          {
+            text: 'Name',
+            language: 'en',
+          },
+          {
+            text: 'Name',
+            language: 'de',
+          },
+        ],
+        [
+          {
+            text: 'Name of the user.',
+            language: 'en',
+          },
+          {
+            text: 'Name des Nutzers.',
+            language: 'de',
+          },
+        ],
+      ),
+    };
+
     let username: Parameter = {
       ...defaultParameter(
         'username',
@@ -229,7 +255,7 @@ export function defaultUserParameterTemplate(
 
     return {
       ...newUserInfo,
-      subParameters: [firstName, lastName, username, email, team, directManager, backOffice],
+      subParameters: [firstName, lastName, name, username, email, team, directManager, backOffice],
       changeableByUser: false,
     };
   }

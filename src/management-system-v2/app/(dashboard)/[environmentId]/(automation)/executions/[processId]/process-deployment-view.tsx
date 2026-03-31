@@ -318,8 +318,8 @@ export default function ProcessDeploymentView({
                 <Tooltip
                   title={
                     isProcessActivated
-                      ? 'Process is activated. So timer events create instances automatically. Click to deactivate.'
-                      : 'Process is deactivated. So timer events will not fire. Click to activate.'
+                      ? 'The process is active. Any automatically triggered Start Events, such as a Timer Start Events, automatically launch new process executions. Click to deactivate.'
+                      : 'The process is deactived. Any automatically triggered Start Events, such as a Timer Start Events, will not launch new process executions. Click to activate..'
                   }
                 >
                   <Button

@@ -460,4 +460,33 @@ module.exports = (path, management) => {
       response: '{}',
     };
   });
+
+  network.get(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
+    const { definitionId, version } = req.params;
+    const engine = management.getEngineWithDefinitionId(definitionId);
+
+    if (!engine) {
+      return {
+        statusCode: 404,
+        mimeType: 'text/plain',
+        response: 'No engine found for the given process.',
+      };
+    }
+
+    const process = engine._versionProcessMapping[version];
+
+    if (!process) {
+      return {
+        statusCode: 404,
+        mimeType: 'text/plain',
+        response: 'No deployed version found.',
+      };
+    }
+
+    return {
+      statusCode: 200,
+      mimeType: 'application/json',
+      response: JSON.stringify({ active: process.isDeployed() }),
+    };
+  });
 };

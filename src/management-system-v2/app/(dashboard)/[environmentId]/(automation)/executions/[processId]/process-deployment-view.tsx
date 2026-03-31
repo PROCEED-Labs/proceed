@@ -35,7 +35,10 @@ import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getStartEvents, getElementById } from '@proceed/bpmn-helper';
 import { useParams } from 'next/navigation';
-import { changeDeploymentActivation } from '@/lib/engines/server-actions';
+import {
+  changeDeploymentActivation,
+  getProcessActivationStatus,
+} from '@/lib/engines/server-actions';
 
 export default function ProcessDeploymentView({
   processId,
@@ -55,7 +58,9 @@ export default function ProcessDeploymentView({
   const [stoppingInstance, setStoppingInstance] = useState(false);
   const [togglingActivation, setTogglingActivation] = useState(false);
   const [isProcessActivated, setIsProcessActivated] = useState(false);
+  const [isActivationLoading, setIsActivationLoading] = useState(false);
   const [hasTimerStartEvents, setHasTimerStartEvents] = useState(false);
+  const [hasPlainStartEvents, setHasPlainStartEvents] = useState(false);
 
   const [startForm, setStartForm] = useState('');
 
@@ -63,6 +68,8 @@ export default function ProcessDeploymentView({
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
   const params = useParams();
   const spaceId = params.environmentId as string;
+  console.log(params);
+
   const {
     data: deploymentInfo,
     refetch,
@@ -132,21 +139,40 @@ export default function ProcessDeploymentView({
   useEffect(() => {
     if (!currentVersion?.bpmn) {
       setHasTimerStartEvents(false);
+      setHasPlainStartEvents(false);
       return;
     }
     toBpmnObject(currentVersion.bpmn)
       .then(async (bpmnObj) => {
         const startEventIds = await getStartEvents(bpmnObj);
-        return startEventIds.some((id: string) => {
+        let hasTimer = false;
+        let hasPlain = false;
+        startEventIds.forEach((id: string) => {
           const el = getElementById(bpmnObj, id) as any;
-          return el?.eventDefinitions?.some(
-            (def: any) => def.$type === 'bpmn:TimerEventDefinition',
-          );
+          const defs = el?.eventDefinitions;
+          if (!defs || defs.length === 0) {
+            hasPlain = true;
+          } else if (defs.some((def: any) => def.$type === 'bpmn:TimerEventDefinition')) {
+            hasTimer = true;
+          }
         });
+        setHasTimerStartEvents(hasTimer);
+        setHasPlainStartEvents(hasPlain);
       })
-      .then(setHasTimerStartEvents)
-      .catch(() => setHasTimerStartEvents(false));
+      .catch(() => {
+        setHasTimerStartEvents(false);
+        setHasPlainStartEvents(false);
+      });
   }, [currentVersion?.bpmn]);
+
+  useEffect(() => {
+    if (!currentVersion) return;
+    setIsActivationLoading(true);
+    getProcessActivationStatus(processId, spaceId, currentVersion.versionId)
+      .then(setIsProcessActivated)
+      .catch(() => setIsProcessActivated(true))
+      .finally(() => setIsActivationLoading(false));
+  }, [currentVersion?.versionId]);
 
   const { variableDefinitions, variables } = useInstanceVariables({
     process: deploymentInfo,
@@ -274,44 +300,46 @@ export default function ProcessDeploymentView({
 
             {/* New middle group: Start + Activate/Deactivate */}
             <ToolbarGroup>
-              <Tooltip title="Start new instance">
-                <Button
-                  icon={<PlusOutlined style={{ color: '#52c41a' }} />}
-                  loading={startingInstance}
-                  onClick={async () => {
-                    setStartingInstance(true);
-                    await wrapServerCall({
-                      fn: async () => {
-                        const latestDeployment = getLatestDeployment(deploymentInfo);
-                        const versionId = latestDeployment.versionId;
+              {hasPlainStartEvents && (
+                <Tooltip title="Start new instance">
+                  <Button
+                    icon={<PlusOutlined style={{ color: '#52c41a' }} />}
+                    loading={startingInstance}
+                    onClick={async () => {
+                      setStartingInstance(true);
+                      await wrapServerCall({
+                        fn: async () => {
+                          const latestDeployment = getLatestDeployment(deploymentInfo);
+                          const versionId = latestDeployment.versionId;
 
-                        let startForm = await getStartForm(versionId);
+                          let startForm = await getStartForm(versionId);
 
-                        if (typeof startForm !== 'string') return startForm;
+                          if (typeof startForm !== 'string') return startForm;
 
-                        if (startForm) {
-                          const mappedVariables = Object.fromEntries(
-                            variables
-                              .filter((variable) => variable.value !== undefined)
-                              .map((variable) => [variable.name, variable.value]),
-                          );
-                          startForm = inlineScript(startForm, '', '', variableDefinitions);
-                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
+                          if (startForm) {
+                            const mappedVariables = Object.fromEntries(
+                              variables
+                                .filter((variable) => variable.value !== undefined)
+                                .map((variable) => [variable.name, variable.value]),
+                            );
+                            startForm = inlineScript(startForm, '', '', variableDefinitions);
+                            startForm = inlineUserTaskData(startForm, mappedVariables, []);
 
-                          setStartForm(startForm);
-                        } else {
-                          return startInstance(versionId);
-                        }
-                      },
-                      onSuccess: async (instanceId) => {
-                        await refetch();
-                        setSelectedInstanceId(instanceId);
-                      },
-                    });
-                    setStartingInstance(false);
-                  }}
-                />
-              </Tooltip>
+                            setStartForm(startForm);
+                          } else {
+                            return startInstance(versionId);
+                          }
+                        },
+                        onSuccess: async (instanceId) => {
+                          await refetch();
+                          setSelectedInstanceId(instanceId);
+                        },
+                      });
+                      setStartingInstance(false);
+                    }}
+                  />
+                </Tooltip>
+              )}
 
               {/* Activate/Deactivate button which is only shown when timer start events exist */}
               {hasTimerStartEvents && (
@@ -324,7 +352,7 @@ export default function ProcessDeploymentView({
                 >
                   <Button
                     type="text"
-                    loading={togglingActivation}
+                    loading={togglingActivation || isActivationLoading}
                     icon={
                       isProcessActivated ? (
                         <MdOutlineSync

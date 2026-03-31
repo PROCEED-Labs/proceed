@@ -9,6 +9,7 @@ import {
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
   DeployedProcessInfo,
+  getDeploymentActivation,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -49,6 +50,7 @@ import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
+import { log } from 'console';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -199,6 +201,33 @@ export async function changeDeploymentActivation(
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
+  }
+}
+
+export async function getProcessActivationStatus(
+  definitionId: string,
+  spaceId: string,
+  version: string,
+): Promise<boolean> {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((v) => v.versionId === version),
+      );
+    });
+
+    if (!engines.length) return false;
+
+    const result = await getDeploymentActivation(engines[0], definitionId, version);
+
+    return result;
+  } catch (e) {
+    const message = getErrorMessage(e);
+    console.error(message);
+    return false;
   }
 }
 

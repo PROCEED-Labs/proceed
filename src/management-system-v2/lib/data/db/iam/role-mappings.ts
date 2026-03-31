@@ -8,6 +8,7 @@ import { getEnvironmentById } from './environments';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { UserFacingError } from '@/lib/user-error';
+import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 
 const RoleMappingInputSchema = z.object({
   roleId: z.string(),
@@ -134,7 +135,7 @@ export async function addRoleMappings(
       throw new UserFacingError('Cannot add role mapping to personal environment');
     }
 
-    const role = await getRoleById(roleId, undefined, tx);
+    const role = await getRoleById(roleId, undefined, tx, true);
     if (!role) throw new UserFacingError('Role not found');
 
     if (role.name === '@everyone' || role.name === '@guest') {
@@ -145,29 +146,33 @@ export async function addRoleMappings(
     if (!user) throw new Error('User not found');
     if (user.isGuest) throw new UserFacingError('Guests cannot have role mappings');
 
-    const existingRoleMapping = await tx.roleMember.findFirst({
-      where: { roleId, userId },
-    });
-    if (existingRoleMapping) throw new UserFacingError('Role mapping already exists');
+    // add the member  to the role and any child role related to folders
+    const roleIds = [role.id, ...role.children.map(({ id }) => id)];
+    await asyncForEach(roleIds, async (roleId) => {
+      const existingRoleMapping = await tx.roleMember.findFirst({
+        where: { roleId, userId },
+      });
+      if (existingRoleMapping) throw new UserFacingError('Role mapping already exists');
 
-    const id = v4();
-    const createdOn = new Date().toISOString();
+      const id = v4();
+      const createdOn = new Date().toISOString();
 
-    const newRoleMapping = {
-      id,
-      environmentId,
-      roleId,
-      userId,
-      createdOn,
-    };
+      const newRoleMapping = {
+        id,
+        environmentId,
+        roleId,
+        userId,
+        createdOn,
+      };
 
-    await tx.roleMember.create({
-      data: {
-        id: newRoleMapping.id,
-        roleId: newRoleMapping.roleId,
-        userId: newRoleMapping.userId,
-        createdOn: newRoleMapping.createdOn,
-      },
+      await tx.roleMember.create({
+        data: {
+          id: newRoleMapping.id,
+          roleId: newRoleMapping.roleId,
+          userId: newRoleMapping.userId,
+          createdOn: newRoleMapping.createdOn,
+        },
+      });
     });
   }
 }
@@ -186,25 +191,14 @@ export async function deleteRoleMapping(
     throw new UnauthorizedError();
   }
 
-  const [environment, user, roleMapping, role] = await Promise.all([
+  const [environment, user, role] = await Promise.all([
     getEnvironmentById(environmentId),
     getUserById(userId),
-    getRoleMappingByUserId(userId, environmentId, ability, roleId),
-    getRoleById(roleId),
+    getRoleById(roleId, undefined, undefined, true),
   ]);
   if (!environment) throw new Error("Environment doesn't exist");
 
   if (!user) throw new Error("User doesn't exist");
-
-  if (!roleMapping[0]) throw new Error("Role mapping doesn't exist");
-
-  // Check ability
-  if (
-    ability &&
-    !ability.can('delete', toCaslResource('RoleMapping', roleMapping), { environmentId })
-  ) {
-    throw new UnauthorizedError();
-  }
 
   if (role!.name === '@admin') {
     const memberIds = await db.roleMember.findMany({
@@ -219,7 +213,23 @@ export async function deleteRoleMapping(
     }
   }
 
-  await db.roleMember.delete({
-    where: { id: roleMapping[0].id },
+  const roleIds = [role.id, ...role.children.map(({ id }) => id)];
+
+  await asyncForEach(roleIds, async (roleId) => {
+    const roleMapping = await getRoleMappingByUserId(userId, environmentId, ability, roleId);
+
+    if (!roleMapping[0]) throw new Error("Role mapping doesn't exist");
+
+    // Check ability
+    if (
+      ability &&
+      !ability.can('delete', toCaslResource('RoleMapping', roleMapping), { environmentId })
+    ) {
+      throw new UnauthorizedError();
+    }
+
+    await db.roleMember.delete({
+      where: { id: roleMapping[0].id },
+    });
   });
 }

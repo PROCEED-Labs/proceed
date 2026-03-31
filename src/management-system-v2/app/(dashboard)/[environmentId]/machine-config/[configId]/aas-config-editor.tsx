@@ -1213,7 +1213,7 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
     const isFirst = currentIndex === 0;
     const isLast = currentIndex === siblings.length - 1;
     const dropdownId = `header-dropdown-${param.id}`;
-    const isChangeable = param.changeableByUser ?? true;
+    const isChangeable = param.origin === 'external' ? false : param.changeableByUser ?? true;
 
     return (
       <ActionDropdown

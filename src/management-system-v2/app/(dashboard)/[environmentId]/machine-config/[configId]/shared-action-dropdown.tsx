@@ -70,7 +70,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Edit',
-              disabled: isChangeable ? false : !record?.origin,
+              disabled: isChangeable ? false : !record?.origin || record.origin === 'external',
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onEdit);
@@ -88,6 +88,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({
                 </Tooltip>
               ),
               label: 'Add nested metadata/parameter',
+              disabled: record?.origin === 'external',
               onClick: (e) => {
                 e.domEvent.stopPropagation();
                 handleActionAndClose(onAddNested);

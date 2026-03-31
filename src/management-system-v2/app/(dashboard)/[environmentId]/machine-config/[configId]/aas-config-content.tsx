@@ -93,7 +93,7 @@ const AasContent: React.FC<MachineDataViewProps> = ({
       const isFirst = currentIndex === 0;
       const isLast = currentIndex === data.length - 1;
       const dropdownId = `dropdown-${record.id}`;
-      const isChangeable = record.changeableByUser ?? true;
+      const isChangeable = record.origin === 'external' ? false : record.changeableByUser ?? true;
 
       return (
         <ActionDropdown

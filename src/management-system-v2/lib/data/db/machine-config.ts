@@ -526,7 +526,7 @@ export async function addMachineConfigVersion(
   previousMachine: Parameter,
   currentMachine: Parameter,
   versionNo: Int,
-) { }
+) {}
 
 // TODO rework: versioning
 /**
@@ -2025,8 +2025,8 @@ export async function updateParameter(
     // make sure to remove backlinks from unlinked parameters
     let linkIds = parameter.transformation
       ? Object.values(parameter.transformation.linkedInputParameters).map(
-        ({ id }: { id: any }) => id,
-      )
+          ({ id }: { id: any }) => id,
+        )
       : [];
     const removedIds = linkIds.filter(
       (id) =>
@@ -2181,8 +2181,8 @@ export async function convertParameterType(
             inputParam.id === parameterId
               ? { data: { value: (newParameter as Parameter).value ?? updatedParameter.value } }
               : await db.configParameter.findUnique({
-                where: { id: inputParam.id },
-              });
+                  where: { id: inputParam.id },
+                });
 
           // convert to number if possible
           inputValues[key.substring(1)] = possiblyNumber(
@@ -2310,7 +2310,7 @@ export async function removeParameter(parameterId: string) {
   const parameterPath = findPathToParameter(parameter.id, fullConfig, [], 'config');
   if (
     parameterPath.slice(0, 2).toString() ==
-    ['identity-and-access-management', 'common-user-data'].toString() &&
+      ['identity-and-access-management', 'common-user-data'].toString() &&
     fullConfig.configType == 'organization'
   ) {
     await removeCommonUserDataPropagation(parameterPath.slice(2), fullConfig);
@@ -2404,7 +2404,7 @@ export async function removeConfigVersion(configId: string, versionNo: number) {
       const error = e as Error;
       throw userError(
         error.message ??
-        `There was an error removing the config versions: ${configId}-${versionNo}`,
+          `There was an error removing the config versions: ${configId}-${versionNo}`,
       );
     }
   } else {

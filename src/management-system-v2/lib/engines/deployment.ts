@@ -106,6 +106,17 @@ async function deployProcessToMachines(
     });
 
     await Promise.all(allMachineRequests);
+
+    // TODO: if we handle static deployment with machine mapping of process elements in the future
+    // we might need to make sure that we only activate the process in a way that start events that are not mapped to a machine are not triggered on that machine
+    // (maybe we need to split the process into multiple sections and deploy them seperately
+    await asyncForEach(machines, async (machine) => {
+      await asyncForEach(processesExportData, async (process) => {
+        await asyncForEach(Object.keys(process.versions), async (version) => {
+          await changeDeploymentActivation(machine, process.definitionId, version, true);
+        });
+      });
+    });
   } catch (error) {
     // TODO: don't remove the whole process when deploying a single version fails
     await asyncForEach(Object.values(processesExportData), async ({ definitionId }) => {
@@ -153,6 +164,8 @@ async function dynamicDeployment(
   }
 
   await deployProcessToMachines([preferredMachine], processesExportData);
+
+  return [preferredMachine];
 }
 
 async function staticDeployment(
@@ -198,6 +211,8 @@ async function staticDeployment(
   //   targetedMachines.push(forceMachine);
 
   await deployProcessToMachines(targetedMachines, processesExportData);
+
+  return targetedMachines;
 }
 
 export async function deployProcess(
@@ -230,9 +245,9 @@ export async function deployProcess(
   );
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, machines);
+    return await staticDeployment(definitionId, version, processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, machines);
+    return await dynamicDeployment(definitionId, version, processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };
@@ -339,6 +354,31 @@ export async function getDeployment(engine: Engine, definitionId: string) {
   });
 
   return deployment as DeployedProcessInfo;
+}
+
+export async function changeDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string | undefined,
+  value: boolean,
+) {
+  if (version) {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/versions/:version/active',
+      engine,
+      pathParams: { definitionId, version },
+      body: { active: value },
+    });
+  } else {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/active',
+      engine,
+      pathParams: { definitionId },
+      body: { active: value },
+    });
+  }
 }
 
 export async function getProcessImageFromMachine(

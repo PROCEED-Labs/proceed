@@ -88,6 +88,8 @@
     "/process/:definitionId/instance/:instanceID/instanceState": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId": {},
     "/process/:definitionId/instance/:instanceId/tokens/:tokenId/currentFlowNodeState": {},
+    "/process/:definitionId/active": {},
+    "/process/:definitionId/versions/:version/active": {},
     "/process/:definitionId/versions/:version/start-form": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/script-tasks/:fileName": {},

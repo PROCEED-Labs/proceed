@@ -319,7 +319,7 @@ export default function ProcessDeploymentView({
                   title={
                     isProcessActivated
                       ? 'The process is active. Any automatically triggered Start Events, such as a Timer Start Events, automatically launch new process executions. Click to deactivate.'
-                      : 'The process is deactived. Any automatically triggered Start Events, such as a Timer Start Events, will not launch new process executions. Click to activate..'
+                      : 'The process is deactived. Any automatically triggered Start Events, such as a Timer Start Events, will not launch new process executions. Click to activate.'
                   }
                 >
                   <Button

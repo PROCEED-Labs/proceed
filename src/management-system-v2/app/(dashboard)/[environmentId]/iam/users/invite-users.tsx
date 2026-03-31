@@ -14,9 +14,6 @@ import {
   Grid,
   FloatButton,
   Tag,
-  Divider,
-  Select,
-  Typography,
   Spin,
   InputRef,
   Dropdown,
@@ -32,6 +29,7 @@ import { queryUsers } from '@/lib/data/users';
 import { isUserErrorResponse } from '@/lib/user-error';
 import UserAvatar from '@/components/user-avatar';
 import { z } from 'zod';
+import { UserFormFields } from './organigram-fields';
 
 const emailSchema = z.string().email();
 
@@ -172,26 +170,36 @@ const AddUsersModal: FC<{
    * Roles Management
    * -----------------------------------------------------------------------------------------------*/
   const { roles } = useOrganizationRoles(environment.spaceId);
-  const [selectedRoles, setSelectedRoles] = useState<DefaultOptionType[]>([]);
 
   /* -------------------------------------------------------------------------------------------------
    * Submit Data
    * -----------------------------------------------------------------------------------------------*/
+  const [form] = Form.useForm();
+
   function closeModal() {
     close();
     setIsMailInvalid(false);
     setSearch('');
     setUsers([]);
+    form.resetFields();
   }
 
   const [submittingUsers, startTransition] = useTransition();
   const submitData = () => {
     startTransition(async () => {
       try {
-        const roleIds = selectedRoles.map((role) => role.value as string);
+        const values = await form.validateFields();
 
         await wrapServerCall({
-          fn: () => inviteUsersToEnvironment(environment.spaceId, users, roleIds),
+          fn: () =>
+            inviteUsersToEnvironment(
+              environment.spaceId,
+              users,
+              values.roles ?? [],
+              values.teamRoleId,
+              values.backOfficeRoleId,
+              values.directManagerId,
+            ),
           onSuccess: () => {
             app.message.success({ content: `User${users.length > 1 ? 's' : ''} invited` });
             router.refresh();
@@ -263,24 +271,10 @@ const AddUsersModal: FC<{
         ))}
       </div>
 
-      {roles && roles.length > 0 && users.length > 0 && (
-        <>
-          <Divider />
-
-          <Typography.Title style={{ marginBottom: 0 }}>Roles</Typography.Title>
-          <Typography.Text style={{ display: 'block', marginBottom: '0.5rem' }}>
-            You can select roles for the users you're inviting
-          </Typography.Text>
-
-          <Select
-            mode="multiple"
-            allowClear
-            style={{ width: '100%' }}
-            placeholder="Select roles"
-            onChange={(_, values) => setSelectedRoles(values as DefaultOptionType[])}
-            options={roles.map((role) => ({ label: role.name, value: role.id }))}
-          />
-        </>
+      {users.length > 0 && (
+        <Form form={form} layout="vertical">
+          <UserFormFields spaceId={spaceId} roles={roles ?? []} />
+        </Form>
       )}
     </Modal>
   );

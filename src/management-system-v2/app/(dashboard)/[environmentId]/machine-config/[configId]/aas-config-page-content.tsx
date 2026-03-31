@@ -211,13 +211,13 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editin
     const isLeafParameter = !element.subParameters || element.subParameters.length === 0;
     // check if parameter has changes
     const hasChanges = (element as any).hasChanges === true;
-    const isVirtualParameter =
+    const isMetaParameter =
       (element as any).valueTemplateSource && (element as any).valueTemplateSource !== 'none';
     const shouldStyleAsEmpty =
       effectiveType === 'content' &&
       (!element.value || element.value === '') &&
       isLeafParameter &&
-      !isVirtualParameter;
+      !isMetaParameter;
 
     // if parameter has a transformation (not none)
     const hasTransformation =

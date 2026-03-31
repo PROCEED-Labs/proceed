@@ -50,7 +50,6 @@ import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
-import { log } from 'console';
 
 export async function getCorrectTargetEngines(
   spaceId: string,

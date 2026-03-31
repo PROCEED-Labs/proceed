@@ -49,7 +49,6 @@ model User {
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
-  startedInstances        ProcessInstance[]        @relation("instanceInitiator")
 
   @@map("user")
 }
@@ -145,7 +144,7 @@ model ArtifactVersionReference {
 }
 
 model Space {
-  id                 String               @id @default(uuid())
+  id                 String         @id @default(uuid())
   name               String?
   isOrganization     Boolean
   isActive           Boolean?
@@ -153,7 +152,7 @@ model Space {
   contactPhoneNumber String?
   contactEmail       String?
   spaceLogo          String?
-  owner              User?                @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  owner              User?          @relation("spaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   ownerId            String?
   members            Membership[]
   folders            Folder[]
@@ -161,10 +160,9 @@ model Space {
   htmlForms          HtmlForm[]
   roles              Role[]
   engines            Engine[]
-  settings           SpaceSettings?       @relation("spaceSettings")
+  settings           SpaceSettings? @relation("spaceSettings")
   Config             Config[]
   mcpPairingCodes    McpPairingCode[]
-  instances          ProcessInstance[]    @relation("instanceInitiatorSpace")
 
   @@map("space")
 }
@@ -326,24 +324,11 @@ model HtmlForm {
   @@map("html-form")
 }
 
-model ProcessInstance {
-  id                String              @id
-  definitionId      String
-  initiator         User                @relation("instanceInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
-  initiatorId       String
-  initiatorSpace    Space               @relation("instanceInitiatorSpace", fields: [initiatorSpaceId], references: [id], onDelete: Cascade)
-  initiatorSpaceId  String
-  userTasks         UserTask[]          @relation("instance")
-
-  @@map("process-instance")
-}
-
 model UserTask {
-  id                String              @id
+  id                String    @id
   taskId            String
   name              String?
-  instance          ProcessInstance?     @relation("instance", fields: [instanceID], references: [id], onDelete: Cascade)
-  instanceID        String?
+  instanceID        String
   fileName          String
   html              String?
   state             String

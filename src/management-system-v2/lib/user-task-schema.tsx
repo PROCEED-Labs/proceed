@@ -4,7 +4,7 @@ export const UserTaskInputSchema = z.object({
   id: z.string(),
   taskId: z.string(),
   name: z.string().nullish(),
-  instanceID: z.string().optional(),
+  instanceID: z.string(),
   fileName: z.string(),
   html: z.string().nullish(),
   state: z.string(),

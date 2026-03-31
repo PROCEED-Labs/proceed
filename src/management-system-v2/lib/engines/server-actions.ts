@@ -1,12 +1,6 @@
 'use server';
 
-import {
-  UserErrorType,
-  UserFacingError,
-  getErrorMessage,
-  isUserErrorResponse,
-  userError,
-} from '../user-error';
+import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
@@ -52,11 +46,8 @@ import {
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
-import { getUsersInSpace } from '../data/db/iam/memberships';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
-import { getNestedOrgParameter, getNestedUserParameter } from '../data/db/machine-config';
-import { deleteInstances, getInstanceById } from '../data/instances';
 import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 
 export async function getCorrectTargetEngines(
@@ -134,8 +125,6 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     });
 
     await removeDeploymentFromMachines(engines, definitionId);
-
-    await deleteInstances(definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -412,11 +401,16 @@ export async function getTasklistEntryHTML(
     let globalVars: Record<string, any> = {};
 
     if (storedUserTask.instanceID) {
-      const instance = await getInstanceById(storedUserTask.instanceID);
+      if (!engine) throw new Error('Cannot retrieve the instance initiator information.');
+      const [definitionId] = storedUserTask.instanceID.split('-_');
+      const deployment = await fetchDeployment(engine, definitionId);
+      const instance = deployment.instances.find(
+        (i) => i.processInstanceId === storedUserTask.instanceID,
+      );
       if (!instance) throw new Error('Unknown instance');
-      if (isUserErrorResponse(instance)) throw instance;
+      if (!instance.processInitiator) throw new Error('Missing initiator information');
 
-      globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
+      globalVars = await getGlobalVariablesForHTML(spaceId, instance.processInitiator, html);
     }
 
     variableChanges = { ...variableChanges, ...globalVars };

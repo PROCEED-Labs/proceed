@@ -63,6 +63,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let lastName: Parameter = {
@@ -90,6 +91,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let name: Parameter = {
@@ -116,6 +118,8 @@ export function defaultUserParameterTemplate(
           },
         ],
       ),
+      origin: 'external',
+      changeableByUser: false,
     };
 
     let username: Parameter = {
@@ -143,6 +147,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let email: Parameter = {
@@ -170,6 +175,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let team: Parameter = {
@@ -197,6 +203,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let directManager: Parameter = {
@@ -224,6 +231,7 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     let backOffice: Parameter = {
@@ -251,11 +259,13 @@ export function defaultUserParameterTemplate(
         ],
       ),
       origin: 'external',
+      changeableByUser: false,
     };
 
     return {
       ...newUserInfo,
       subParameters: [firstName, lastName, name, username, email, team, directManager, backOffice],
+      origin: 'external',
       changeableByUser: false,
     };
   }

@@ -16,7 +16,13 @@ async function Deployment({ processId, spaceId }: { processId: string; spaceId: 
     );
   }
 
-  return <ProcessDeploymentView processId={processId} initialDeploymentInfo={deployment} />;
+  return (
+    <ProcessDeploymentView
+      processId={processId}
+      initialDeploymentInfo={deployment}
+      activeSpaceId={spaceId}
+    />
+  );
 }
 
 export default async function Page(props: {

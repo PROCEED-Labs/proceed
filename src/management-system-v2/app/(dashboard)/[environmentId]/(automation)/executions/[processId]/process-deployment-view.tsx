@@ -43,9 +43,11 @@ import {
 export default function ProcessDeploymentView({
   processId,
   initialDeploymentInfo,
+  activeSpaceId,
 }: {
   processId: string;
   initialDeploymentInfo: DeployedProcessInfo;
+  activeSpaceId: string;
 }) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
@@ -66,9 +68,6 @@ export default function ProcessDeploymentView({
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
-  const params = useParams();
-  const spaceId = params.environmentId as string;
-  console.log(params);
 
   const {
     data: deploymentInfo,
@@ -168,7 +167,7 @@ export default function ProcessDeploymentView({
   useEffect(() => {
     if (!currentVersion) return;
     setIsActivationLoading(true);
-    getProcessActivationStatus(processId, spaceId, currentVersion.versionId)
+    getProcessActivationStatus(processId, activeSpaceId, currentVersion.versionId)
       .then(setIsProcessActivated)
       .catch(() => setIsProcessActivated(true))
       .finally(() => setIsActivationLoading(false));
@@ -369,7 +368,12 @@ export default function ProcessDeploymentView({
                       const versionId = getLatestDeployment(deploymentInfo).versionId;
                       await wrapServerCall({
                         fn: () =>
-                          changeDeploymentActivation(processId, spaceId, versionId, nextState),
+                          changeDeploymentActivation(
+                            processId,
+                            activeSpaceId,
+                            versionId,
+                            nextState,
+                          ),
                         onSuccess: async () => {
                           setIsProcessActivated(nextState);
                           await refetch();

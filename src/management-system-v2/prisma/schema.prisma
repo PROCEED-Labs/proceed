@@ -86,8 +86,10 @@ model Process {
   inEditingBy               Json?
   processIds                String[]
   type                      String
-  folder                    Folder                     @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  folderId                  String
+  // if the folder is null the process has been removed from the space but is kept in storage for reference in audit trails
+  // TODO: when this is set the artifacts of the latest process version should be marked for removal since they are not needed anymore
+  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId                  String?
   sharedAs                  String
   shareTimestamp            BigInt
   allowIframeTimestamp      BigInt

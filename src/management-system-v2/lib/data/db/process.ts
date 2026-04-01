@@ -527,7 +527,12 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
     }),
   );
 
-  await tx.process.delete({ where: { id: processDefinitionsId } });
+  await tx.process.update({
+    where: { id: processDefinitionsId },
+    data: { folderId: null },
+  });
+
+  // await tx.process.delete({ where: { id: processDefinitionsId } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }

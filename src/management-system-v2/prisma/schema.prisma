@@ -49,6 +49,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
+  deployments             ProcessDeployment[]
+  instances               ProcessInstance[]
 
   @@map("user")
 }
@@ -212,6 +214,8 @@ model Version {
   createdOn                 DateTime                   @unique @updatedAt
   bpmnFilePath              String
   artifactVersionReferences ArtifactVersionReference[]
+  deployments               ProcessDeployment[]
+  instances                 ProcessInstance[]     
 
   @@map("version")
 }
@@ -333,7 +337,8 @@ model UserTask {
   id                String    @id
   taskId            String
   name              String?
-  instanceID        String
+  instanceID        String?
+  instance          ProcessInstance? @relation(fields: [instanceID], references: [id], onDelete: Cascade)
   fileName          String
   html              String?
   state             String
@@ -433,4 +438,42 @@ model UserOrganigram {
   backOfficeRole Role?       @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
 
   @@map("user_organigram")
+}
+
+model ProcessDeployment {
+  id            String     @id @default(uuid())
+  versionId     String      
+  version       Version    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  // These are not the "Engines" but the actual machines the process was deployed to
+  // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"
+  machineIds    String[]
+  deployerId    String
+  deployer      User?       @relation(fields: [deployerId], references: [id], onDelete: SetNull) 
+  deployTime    DateTime    @default(now())
+
+  // marks a deployment as deleted if the deployment could not be removed from the related engines at the time a user tried to delete it
+  // when the engine becomes available again the deployment should be removed from it and then the database entry should be removed
+  // TODO: create function that sets this to true when the linked process is deleted
+  deleted       Boolean     @default(false)
+
+  instances     ProcessInstance[]
+
+  @@map("process_deployment")
+}
+
+model ProcessInstance {
+  id              String            @id
+  deploymentId    String
+  deployment      ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  versionId       String       
+  version         Version           @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  initiatorId     String
+  initiator       User              @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  userTasks       UserTask[]
+  // These are not the "Engines" but the actual machines the process is running on
+  // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"
+  machineIds      String[]
+  state           Json
+
+  @@map("process_instance")
 }

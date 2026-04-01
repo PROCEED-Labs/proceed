@@ -1,6 +1,13 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, userError } from '../user-error';
+import {
+  UserErrorType,
+  UserFacingError,
+  getErrorMessage,
+  isUserError,
+  isUserErrorResponse,
+  userError,
+} from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
@@ -12,7 +19,7 @@ import {
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
@@ -49,6 +56,16 @@ import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper
 import { Variable } from '@proceed/bpmn-helper/src/getters';
 import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
+import {
+  addDeployment,
+  getDeployments as getStoredDeployments,
+  removeDeployments as _removeDeployments,
+  updateDeployment,
+  getProcessDeployments,
+} from '../data/deployment';
+import { getProcessVersionBpmn } from '../data/db/process';
+import { machine } from 'node:os';
+import { PUT } from '@/app/api/private/file-manager/route';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -90,6 +107,8 @@ export async function deployProcess(
     // TODO: manage permissions for deploying a process
 
     if (!enableUseDB) throw new Error('deployProcess only available with enableUseDB');
+
+    const { userId } = await getCurrentUser();
 
     let engines;
     if (_forceEngine && _forceEngine !== 'PROCEED') {
@@ -143,6 +162,13 @@ export async function deployProcess(
 
     const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
 
+    await addDeployment(spaceId, {
+      versionId,
+      machineIds: deployedTo.map((engine) => engine.id),
+      deployerId: userId,
+      deployTime: new Date(),
+    });
+
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
     await Promise.allSettled(
@@ -162,13 +188,55 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
     if (!enableUseDB) throw new Error('removeDeployment only available with enableUseDB');
 
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await fetchDeployments([engine]);
+    const { ability } = await getCurrentEnvironment(spaceId);
 
-      return deployments.some((deployment) => deployment.definitionId === definitionId);
+    if (!ability.can('manage', 'Execution'))
+      return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+    const deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
+
+    const removed: string[] = [];
+    const toRemove: { deploymentId: string; stillDeployedOn: string[] }[] = [];
+
+    const engines = await getCorrectTargetEngines(spaceId, false);
+
+    await asyncForEach(deployments, async (deployment) => {
+      const stillDeployedOn = (
+        await asyncMap(deployment.machineIds, async (machineId) => {
+          try {
+            // check if the engine is currently reachable if not we have to remove the deployment at
+            // a future time when it becomes reachable again
+            const machine = engines.find((engine) => engine.id === machineId);
+            if (!machine) return machineId;
+
+            // remove the deployment from the engine
+            // this will also affect other deployments of the same process but since this function
+            // is aimed at removing all deployments of the process, this should not be a problem
+            await removeDeploymentFromMachines([machine], deployment.processId);
+          } catch (err) {
+            // could not remove the deployment so we keep the machine as still having the
+            // deployment
+            return machineId;
+          }
+        })
+      ).filter(truthyFilter);
+
+      if (!stillDeployedOn.length) {
+        removed.push(deployment.id);
+      } else {
+        toRemove.push({ deploymentId: deployment.id, stillDeployedOn });
+      }
     });
 
-    await removeDeploymentFromMachines(engines, definitionId);
+    const removeResult = await _removeDeployments(spaceId, removed);
+    if (isUserErrorResponse(removeResult)) return removeResult;
+
+    await asyncForEach(toRemove, async ({ deploymentId, stillDeployedOn }) => {
+      await updateDeployment(spaceId, deploymentId, { deleted: true, machineIds: stillDeployedOn });
+    });
+
+    // await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -713,4 +781,63 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
     const message = getErrorMessage(err);
     return userError(message);
   }
+}
+
+export async function getDeployments(spaceId: string) {
+  const deployments = await getStoredDeployments(spaceId);
+  if (isUserErrorResponse(deployments)) return deployments;
+
+  const engines = await getCorrectTargetEngines(spaceId, false);
+
+  // check if there are deployments that were "removed" by the user but where the engine was not
+  // reachable at the time the user wanted to remove the deployment
+  const removed: string[] = [];
+  const machinesChanged: { deploymentId: string; stillDeployedOn: string[] }[] = [];
+  const stillDeployed = (
+    await asyncMap(deployments, async (deployment) => {
+      const stillDeployedOn = (
+        await asyncMap(deployment.machineIds, async (machineId) => {
+          try {
+            // check if the engine is currently reachable
+            // if not we assume that the state of the deployment being deployed on the engine has not changed
+            const machine = engines.find((engine) => engine.id === machineId);
+            if (!machine) return machineId;
+
+            if (deployment.deleted) {
+              // if the deployment is marked for deletion but seemingly not deleted on the engine we
+              // need to remove it from the engine
+              await removeDeploymentFromMachines([machine], deployment.processId);
+            } else {
+              // check if the deployment has been removed from the engine for some reason
+              const deployments = await fetchDeployments([machine], 'definitionId');
+              if (deployments.some((d) => d.definitionId === deployment.processId)) {
+                return machineId;
+              }
+            }
+          } catch (err) {
+            // could not remove the deployment so we keep the machine as still having the
+            // deployment
+            return machineId;
+          }
+        })
+      ).filter(truthyFilter);
+
+      if (!stillDeployedOn.length) {
+        removed.push(deployment.id);
+      } else if (stillDeployedOn.length !== deployment.machineIds.length) {
+        machinesChanged.push({ deploymentId: deployment.id, stillDeployedOn });
+      }
+
+      if (stillDeployedOn.length) {
+        return deployment;
+      }
+    })
+  ).filter(truthyFilter);
+
+  await _removeDeployments(spaceId, removed);
+  await asyncForEach(machinesChanged, async ({ deploymentId, stillDeployedOn }) => {
+    await updateDeployment(spaceId, deploymentId, { machineIds: stillDeployedOn });
+  });
+
+  return stillDeployed;
 }

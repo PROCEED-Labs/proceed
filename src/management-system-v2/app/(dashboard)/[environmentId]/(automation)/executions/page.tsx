@@ -7,24 +7,9 @@ import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engine
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getDbEngines } from '@/lib/data/db/engines';
-
-function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
-  deployments: T[],
-) {
-  for (const deployment of deployments) {
-    let latestDeploymentIdx = deployment.versions.length - 1;
-    for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].versionId > deployment.versions[latestDeploymentIdx].versionId)
-        latestDeploymentIdx = i;
-    }
-    const latestDeployment = deployment.versions[latestDeploymentIdx];
-
-    // @ts-ignore
-    deployment.name = latestDeployment.definitionName || latestDeployment.versionName;
-  }
-
-  return deployments as (T & { name: string })[];
-}
+import { getDeployments } from '@/lib/engines/server-actions';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { getProcess } from '@/lib/data/processes';
 
 async function Executions({ environmentId }: { environmentId: string }) {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
@@ -32,43 +17,72 @@ async function Executions({ environmentId }: { environmentId: string }) {
   // TODO: check ability
 
   // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
-    await Promise.all([
-      getUsersFavourites(),
-      (async () => {
-        const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
-        const folder = await getFolderById(rootFolder.id);
-        const folderContents = await getFolderContents(folder.id, ability);
-        return [folder, folderContents];
-      })(),
-      (async () => {
-        const engines = await getDbEngines(null, ability, 'dont-check');
-        return await getDeployedProcessesFromSavedEngines(engines);
-      })(),
-      (async () => {
-        const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
-        if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSavedEngines(spaceEngines);
-      })(),
-    ]);
+  let [favs, [folder, folderContents], deployments] = await Promise.all([
+    getUsersFavourites(),
+    (async () => {
+      const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+      const folder = await getFolderById(rootFolder.id);
+      const folderContents = await getFolderContents(folder.id, ability);
+      return [folder, folderContents];
+    })(),
+    (async () => {
+      const deployments = await getDeployments(activeEnvironment.spaceId);
+      if (isUserErrorResponse(deployments)) return [];
+
+      const groupedDeployments = Object.entries(
+        deployments
+          .filter((d) => !d.deleted)
+          .reduce(
+            (grouped, curr) => {
+              const { processId, version, instances } = curr;
+              const existingGroup = grouped[processId];
+              if (existingGroup) {
+                if (!existingGroup.versions.some((v) => v.id === curr.versionId)) {
+                  existingGroup.versions.push(version);
+                }
+                existingGroup.instances = [...existingGroup.instances, ...instances];
+              } else {
+                grouped[curr.processId] = {
+                  versions: [version],
+                  instances: instances,
+                };
+              }
+
+              return grouped;
+            },
+            {} as {
+              [processId: string]: {
+                versions: (typeof deployments)[number]['version'][];
+                instances: (typeof deployments)[number]['instances'];
+              };
+            },
+          ),
+      );
+
+      return asyncMap(groupedDeployments, async (group) => {
+        const processId = group[0];
+
+        const process = await getProcess(processId, activeEnvironment.spaceId);
+
+        if (isUserErrorResponse(process)) throw process;
+
+        return {
+          id: processId,
+          name: process.name,
+          ...group[1],
+        };
+      });
+    })(),
+  ]);
 
   folderContents = folderContents.filter((p) => p.type === 'folder' || p.versions.length);
-
-  const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
-    deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
-      const process = _process as any;
-      process.id = process.definitionId;
-      delete process.definitionId;
-      return process;
-    });
-  const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
 
   return (
     <DeploymentsView
       processes={folderContents}
       folder={folder}
       favourites={favs as string[]}
-      deployedProcesses={deployedProcesses}
+      deployedProcesses={deployments}
     />
   );
 }

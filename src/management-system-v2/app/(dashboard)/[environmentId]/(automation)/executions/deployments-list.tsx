@@ -12,8 +12,8 @@ import processListStyles from '@/components/process-icon-list.module.scss';
 type InputItem = {
   id: string;
   name: string;
-  versions: DeployedProcessInfo['versions'];
-  instances: DeployedProcessInfo['instances'];
+  versions: { id: string; name: string }[];
+  instances: { id: string }[];
 };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
@@ -65,11 +65,7 @@ const DeploymentsList = ({
       dataIndex: 'description',
       key: 'Versions',
       render: (_, { versions }) => (
-        <Tooltip
-          title={
-            versions.length > 1 && versions.map((v) => v.versionName || v.definitionName).join(', ')
-          }
-        >
+        <Tooltip title={versions.length > 1 && versions.map((v) => v.name).join(', ')}>
           <span>{versions.length}</span>
         </Tooltip>
       ),

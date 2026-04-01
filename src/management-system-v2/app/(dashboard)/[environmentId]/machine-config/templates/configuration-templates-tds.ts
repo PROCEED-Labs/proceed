@@ -69,217 +69,197 @@ export const defaultTdsConfigurationTemplate = (
 };
 
 function createTdsTemplateHeader(): Parameter {
-  let newHeader = {
-    ...defaultParameter(
-      'Header',
-      [
-        {
-          text: 'TDS Header',
-          language: 'en',
-        },
-        {
-          text: 'TDS Header',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Meta data for the whole TDS',
-          language: 'en',
-        },
-        {
-          text: 'Metadaten für das gesamte TDS',
-          language: 'de',
-        },
-      ],
-      'meta',
-    ),
-    // comment this out if display-bug in edit mode still persists:
-    structureVisible: true,
-  };
-
-  let newIdentifier: Parameter = {
-    ...defaultMetaParameter(
-      'TDSIdentifier',
-      [
-        {
-          text: 'TDS Identifier',
-          language: 'en',
-        },
-        {
-          text: 'TDS Kenner',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: '',
-          language: 'en',
-        },
-        {
-          text: '',
-          language: 'de',
-        },
-      ],
-      'none',
-      'shortName',
-      'xs:string',
-    ),
+  let newIdentifier = defaultMetaParameter({
+    name: 'TDSIdentifier',
+    displayName: [
+      {
+        text: 'TDS Identifier',
+        language: 'en',
+      },
+      {
+        text: 'TDS Kenner',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: '',
+        language: 'en',
+      },
+      {
+        text: '',
+        language: 'de',
+      },
+    ],
+    valueTemplateSource: 'shortName',
+    valueType: 'xs:string',
     structureVisible: true,
     usedAsInputParameterIn: [
       { id: '<uuid>', path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'TDSIdentifier'] },
     ],
-  };
-  let newName = {
-    ...defaultMetaParameter(
-      'Name',
-      [
-        {
-          text: 'Name',
-          language: 'en',
-        },
-        {
-          text: 'Name',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Long Descriptor of the Technology Data Set',
-          language: 'en',
-        },
-        {
-          text: 'Ausführlicher Bezeichner des Technologie-Datensatzes',
-          language: 'de',
-        },
-      ],
-      'none',
-      'name',
-      'xs:string',
-    ),
+  });
+  let newName = defaultMetaParameter({
+    name: 'Name',
+    displayName: [
+      {
+        text: 'Name',
+        language: 'en',
+      },
+      {
+        text: 'Name',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Long Descriptor of the Technology Data Set',
+        language: 'en',
+      },
+      {
+        text: 'Ausführlicher Bezeichner des Technologie-Datensatzes',
+        language: 'de',
+      },
+    ],
+    valueTemplateSource: 'name',
+    valueType: 'xs:string',
     structureVisible: true,
-  };
-  let newDescription = {
-    ...defaultMetaParameter(
-      'Description',
-      [
-        {
-          text: 'Description',
-          language: 'en',
-        },
-        {
-          text: 'Beschreibung',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Description of the Technology Data Set',
-          language: 'en',
-        },
-        {
-          text: 'Beschreibung des Technologiedatensatzes',
-          language: 'de',
-        },
-      ],
-      'none',
-      'description',
-      'xs:string',
-    ),
+  });
+  let newDescription = defaultMetaParameter({
+    name: 'Description',
+    displayName: [
+      {
+        text: 'Description',
+        language: 'en',
+      },
+      {
+        text: 'Beschreibung',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Description of the Technology Data Set',
+        language: 'en',
+      },
+      {
+        text: 'Beschreibung des Technologiedatensatzes',
+        language: 'de',
+      },
+    ],
+    valueTemplateSource: 'description',
+    valueType: 'xs:string',
     structureVisible: true,
-  };
-  let newVersion: Parameter = {
-    ...defaultParameter(
-      'VersionNumber',
-      [
-        {
-          text: 'Version Number',
-          language: 'en',
-        },
-        {
-          text: 'Versionsnummer',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'The version number indicates that the structure or content of any parameter of the Target or Reference Dataset has been changed since the last version.',
-          language: 'en',
-        },
-        {
-          text: 'Die Versionsnummer zeigt an, dass die Struktur oder der Inhalt eines Parameters des Ziel- oder Referenzdatensatzes seit der letzten Version geändert wurde.',
-          language: 'de',
-        },
-      ],
-      'none',
-      'latest',
-      'xs:integer',
-    ),
+  });
+  let newVersion = defaultParameter({
+    name: 'VersionNumber',
+    displayName: [
+      {
+        text: 'Version Number',
+        language: 'en',
+      },
+      {
+        text: 'Versionsnummer',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'The version number indicates that the structure or content of any parameter of the Target or Reference Dataset has been changed since the last version.',
+        language: 'en',
+      },
+      {
+        text: 'Die Versionsnummer zeigt an, dass die Struktur oder der Inhalt eines Parameters des Ziel- oder Referenzdatensatzes seit der letzten Version geändert wurde.',
+        language: 'de',
+      },
+    ],
+    value: 'latest',
+    valueType: 'xs:integer',
     usedAsInputParameterIn: [
-      { id: '<uuid>', path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'] },
+      {
+        id: '<uuid>',
+        path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'],
+      },
     ],
     changeableByUser: false,
     structureVisible: true,
-  };
-  let newAcknowledgeModeDefault = {
-    ...defaultParameter(
-      'AcknowledgeModeDefault',
-      [
-        {
-          text: 'Acknowledge Mode Default Value',
-          language: 'en',
-        },
-        {
-          text: 'Freifahrstatus Default-Wert',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Acknowledge mode for the technology data set',
-          language: 'en',
-        },
-        {
-          text: 'Freifahrstatus des Technologiedatensatzes',
-          language: 'de',
-        },
-      ],
-    ),
+  });
+  let newAcknowledgeModeDefault = defaultParameter({
+    name: 'AcknowledgeModeDefault',
+    displayName: [
+      {
+        text: 'Acknowledge Mode Default Value',
+        language: 'en',
+      },
+      {
+        text: 'Freifahrstatus Default-Wert',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Acknowledge mode for the technology data set',
+        language: 'en',
+      },
+      {
+        text: 'Freifahrstatus des Technologiedatensatzes',
+        language: 'de',
+      },
+    ],
     usedAsInputParameterIn: [
       { id: '<uuid>', path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'AcknowledgeMode'] },
     ],
     structureVisible: true,
-  };
-  let newCategory = {
-    ...defaultMetaParameter(
-      'Categories',
-      [
-        {
-          text: 'Categories',
-          language: 'en',
-        },
-        {
-          text: 'Kategorien',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Categories for describing the TDS.',
-          language: 'en',
-        },
-        {
-          text: 'Kategorien um das TDS zu beschreiben.',
-          language: 'de',
-        },
-      ],
-      'none',
-      'category',
-    ),
+  });
+  let newCategory = defaultMetaParameter({
+    name: 'Categories',
+    displayName: [
+      {
+        text: 'Categories',
+        language: 'en',
+      },
+      {
+        text: 'Kategorien',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Categories for describing the TDS.',
+        language: 'en',
+      },
+      {
+        text: 'Kategorien um das TDS zu beschreiben.',
+        language: 'de',
+      },
+    ],
+    valueTemplateSource: 'category',
     structureVisible: true,
-  };
-  return {
-    ...newHeader,
+  });
+  let newHeader = defaultParameter({
+    name: 'Header',
+    displayName: [
+      {
+        text: 'TDS Header',
+        language: 'en',
+      },
+      {
+        text: 'TDS Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Meta data for the whole TDS',
+        language: 'en',
+      },
+      {
+        text: 'Metadaten für das gesamte TDS',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
+    // comment this out if display-bug in edit mode still persists:
+    structureVisible: true,
     subParameters: [
       newIdentifier,
       newName,
@@ -288,13 +268,14 @@ function createTdsTemplateHeader(): Parameter {
       newAcknowledgeModeDefault,
       newCategory,
     ],
-  };
+  });
+  return newHeader;
 }
 
 function createTdsTemplateBody(): Parameter {
-  let newTDSBody = defaultParameter(
-    'Body',
-    [
+  let newTDSBody = defaultParameter({
+    name: 'Body',
+    displayName: [
       {
         text: 'TDS Body',
         language: 'en',
@@ -304,7 +285,7 @@ function createTdsTemplateBody(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Contains parameter data sets specific to components, processes, and production resources',
         language: 'en',
@@ -314,45 +295,21 @@ function createTdsTemplateBody(): Parameter {
         language: 'de',
       },
     ],
-    'content',
-  );
+    parameterType: 'content',
+    structureVisible: true,
+  });
 
-  return { ...newTDSBody, structureVisible: true };
+  return newTDSBody;
 }
 
 function createTdsTemplateTargetDataset(): Parameter {
-  let newTargetDataset = defaultParameter(
-    'TargetDataset',
-    [
-      {
-        text: 'Target Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Vorgabe-Datensatz',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Target Dataset for the TDS',
-        language: 'en',
-      },
-      {
-        text: 'Vorgabe-Datensatz für das TDS',
-        language: 'de',
-      },
-    ],
-    'content',
-  );
-
   let newTargetHeader: Parameter = createTdsTemplateTargetHeader();
 
   let newFeedbackHeader: Parameter = createTdsTemplateTargetFeedbackHeader();
 
-  let newProductDescription: Parameter = defaultParameter(
-    'ProductDescription',
-    [
+  let newProductDescription: Parameter = defaultParameter({
+    name: 'ProductDescription',
+    displayName: [
       {
         text: 'Product Description',
         language: 'en',
@@ -362,7 +319,7 @@ function createTdsTemplateTargetDataset(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Contains parameters about the properties of the product part',
         language: 'en',
@@ -372,11 +329,11 @@ function createTdsTemplateTargetDataset(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  let newProcessData: Parameter = defaultParameter(
-    'ProcessData',
-    [
+  let newProcessData: Parameter = defaultParameter({
+    name: 'ProcessData',
+    displayName: [
       {
         text: 'Process Data',
         language: 'en',
@@ -386,7 +343,7 @@ function createTdsTemplateTargetDataset(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Contains parameters about the production process of the product part',
         language: 'en',
@@ -396,43 +353,39 @@ function createTdsTemplateTargetDataset(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newTargetDataset,
+  return defaultParameter({
+    name: 'TargetDataset',
+    displayName: [
+      {
+        text: 'Target Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Vorgabe-Datensatz',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Target Dataset for the TDS',
+        language: 'en',
+      },
+      {
+        text: 'Vorgabe-Datensatz für das TDS',
+        language: 'de',
+      },
+    ],
+    parameterType: 'content',
     subParameters: [newTargetHeader, newFeedbackHeader, newProductDescription, newProcessData],
-  };
+  });
 }
 
 function createTdsTemplateTargetHeader(): Parameter {
-  let newTargetHeader = defaultParameter(
-    'Header',
-    [
-      {
-        text: 'Header',
-        language: 'en',
-      },
-      {
-        text: 'Header',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Header for the Target Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Header für die Vorgabedaten',
-        language: 'de',
-      },
-    ],
-    'meta',
-  );
-
-  let newReviewState = defaultParameter(
-    'ReviewState',
-    [
+  let newReviewState = defaultParameter({
+    name: 'ReviewState',
+    displayName: [
       {
         text: 'Review State',
         language: 'en',
@@ -442,7 +395,7 @@ function createTdsTemplateTargetHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Review state of the Target Dataset',
         language: 'en',
@@ -452,11 +405,11 @@ function createTdsTemplateTargetHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  let newTargetParameterSourceReference = defaultParameter(
-    'TargetParameterSourceReference',
-    [
+  let newTargetParameterSourceReference = defaultParameter({
+    name: 'TargetParameterSourceReference',
+    displayName: [
       {
         text: 'Source Reference',
         language: 'en',
@@ -466,7 +419,7 @@ function createTdsTemplateTargetHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'References the ID of the DataPicker mapping config',
         language: 'en',
@@ -476,43 +429,39 @@ function createTdsTemplateTargetHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newTargetHeader,
+  return defaultParameter({
+    name: 'Header',
+    displayName: [
+      {
+        text: 'Header',
+        language: 'en',
+      },
+      {
+        text: 'Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Header for the Target Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Header für die Vorgabedaten',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [newReviewState, newTargetParameterSourceReference],
-  };
+  });
 }
 
 function createTdsTemplateTargetFeedbackHeader(): Parameter {
-  let newFeedbackHeader = defaultParameter(
-    'FeedbackHeader',
-    [
-      {
-        text: 'Feedback Header',
-        language: 'en',
-      },
-      {
-        text: 'Feedback Header',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Feedback Header for the Target Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Feedback Header für die Vorgabedaten',
-        language: 'de',
-      },
-    ],
-    'meta',
-  );
-
-  let newFeedbackID = defaultParameter(
-    'FeedbackID',
-    [
+  let newFeedbackID = defaultParameter({
+    name: 'FeedbackID',
+    displayName: [
       {
         text: 'Feedback ID',
         language: 'en',
@@ -522,7 +471,7 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Feedback identifier for the Target Dataset, e.g. timestamp.',
         language: 'en',
@@ -532,10 +481,10 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
-  let newAuthenticationData = defaultParameter(
-    'AuthenticationData',
-    [
+  });
+  let newAuthenticationData = defaultParameter({
+    name: 'AuthenticationData',
+    displayName: [
       {
         text: 'Authentication',
         language: 'en',
@@ -545,7 +494,7 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Person who made changes',
         language: 'en',
@@ -555,10 +504,10 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
-  let newComment = defaultParameter(
-    'Comment',
-    [
+  });
+  let newComment = defaultParameter({
+    name: 'Comment',
+    displayName: [
       {
         text: 'Comment',
         language: 'en',
@@ -568,7 +517,7 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Indicates what was changed in the target dataset.',
         language: 'en',
@@ -578,43 +527,39 @@ function createTdsTemplateTargetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newFeedbackHeader,
+  return defaultParameter({
+    name: 'FeedbackHeader',
+    displayName: [
+      {
+        text: 'Feedback Header',
+        language: 'en',
+      },
+      {
+        text: 'Feedback Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Feedback Header for the Target Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Feedback Header für die Vorgabedaten',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [newFeedbackID, newAuthenticationData, newComment],
-  };
+  });
 }
 
 function createTdsTemplateReferenceDataset(): Parameter {
-  let newReferenceDataset = defaultParameter(
-    'ReferenceDataset',
-    [
-      {
-        text: 'Reference Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Referenz-Datensatz',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Reference Dataset for the TDS',
-        language: 'en',
-      },
-      {
-        text: 'Referenz-Datensatz für das TDS',
-        language: 'de',
-      },
-    ],
-    'content',
-  );
-
-  let newReferenceBody = defaultParameter(
-    'Body',
-    [
+  let newReferenceBody = defaultParameter({
+    name: 'Body',
+    displayName: [
       {
         text: 'Body',
         language: 'en',
@@ -624,7 +569,7 @@ function createTdsTemplateReferenceDataset(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Contains the generic production parameters for manufactoring a product part',
         language: 'en',
@@ -634,48 +579,44 @@ function createTdsTemplateReferenceDataset(): Parameter {
         language: 'de',
       },
     ],
-    'content',
-  );
+    parameterType: 'content',
+  });
 
-  return {
-    ...newReferenceDataset,
+  return defaultParameter({
+    name: 'ReferenceDataset',
+    displayName: [
+      {
+        text: 'Reference Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Referenz-Datensatz',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Reference Dataset for the TDS',
+        language: 'en',
+      },
+      {
+        text: 'Referenz-Datensatz für das TDS',
+        language: 'de',
+      },
+    ],
+    parameterType: 'content',
     subParameters: [
       createTdsTemplateReferenceHeader(),
       createTdsTemplateReferenceFeedbackHeader(),
       newReferenceBody,
     ],
-  };
+  });
 }
 
 function createTdsTemplateReferenceHeader(): Parameter {
-  let newTargetHeader = defaultParameter(
-    'Header',
-    [
-      {
-        text: 'Header',
-        language: 'en',
-      },
-      {
-        text: 'Header',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Header for the Reference Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Header für die Referenzdaten',
-        language: 'de',
-      },
-    ],
-    'meta',
-  );
-
-  let newReviewState = defaultParameter(
-    'ReviewState',
-    [
+  let newReviewState = defaultParameter({
+    name: 'ReviewState',
+    displayName: [
       {
         text: 'Review State',
         language: 'en',
@@ -685,7 +626,7 @@ function createTdsTemplateReferenceHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Review state of the Reference Dataset',
         language: 'en',
@@ -695,43 +636,39 @@ function createTdsTemplateReferenceHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newTargetHeader,
+  return defaultParameter({
+    name: 'Header',
+    displayName: [
+      {
+        text: 'Header',
+        language: 'en',
+      },
+      {
+        text: 'Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Header for the Reference Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Header für die Referenzdaten',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [newReviewState],
-  };
+  });
 }
 
 function createTdsTemplateReferenceFeedbackHeader(): Parameter {
-  let newFeedbackHeader = defaultParameter(
-    'FeedbackHeader',
-    [
-      {
-        text: 'Feedback Header',
-        language: 'en',
-      },
-      {
-        text: 'Feedback Header',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Feedback Header for the Reference Dataset',
-        language: 'en',
-      },
-      {
-        text: 'Feedback Header für die Referenzdaten',
-        language: 'de',
-      },
-    ],
-    'meta',
-  );
-
-  let newFeedbackID = defaultParameter(
-    'FeedbackID',
-    [
+  let newFeedbackID = defaultParameter({
+    name: 'FeedbackID',
+    displayName: [
       {
         text: 'Feedback ID',
         language: 'en',
@@ -741,7 +678,7 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Feedback identifier for the Reference Dataset, e.g. timestamp.',
         language: 'en',
@@ -751,11 +688,11 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  let newAuthenticationData = defaultParameter(
-    'AuthenticationData',
-    [
+  let newAuthenticationData = defaultParameter({
+    name: 'AuthenticationData',
+    displayName: [
       {
         text: 'Authentication',
         language: 'en',
@@ -765,7 +702,7 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Person who made changes',
         language: 'en',
@@ -775,11 +712,11 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  let newComment = defaultParameter(
-    'Comment',
-    [
+  let newComment = defaultParameter({
+    name: 'Comment',
+    displayName: [
       {
         text: 'Comment',
         language: 'en',
@@ -789,7 +726,7 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Indicates what was changed in the Reference dataset.',
         language: 'en',
@@ -799,42 +736,39 @@ function createTdsTemplateReferenceFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newFeedbackHeader,
+  return defaultParameter({
+    name: 'FeedbackHeader',
+    displayName: [
+      {
+        text: 'Feedback Header',
+        language: 'en',
+      },
+      {
+        text: 'Feedback Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Feedback Header for the Reference Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Feedback Header für die Referenzdaten',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [newFeedbackID, newAuthenticationData, newComment],
-  };
+  });
 }
 
 function createTdsTemplateMachineDatasets(shortName: string): Parameter {
-  let newMachineDatasets = defaultParameter(
-    'MachineDatasets',
-    [
-      {
-        text: 'Machine Datasets',
-        language: 'en',
-      },
-      {
-        text: 'Maschinen-Datensätze',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Contains specific Machine Datasets for multiple production machines',
-        language: 'en',
-      },
-      {
-        text: 'Enthält spezifische Maschinen-Datensätze für mehrere Produktionsmaschinen',
-        language: 'de',
-      },
-    ],
-  );
-
-  let newMachineBody = defaultParameter(
-    'Body',
-    [
+  let newMachineBody = defaultParameter({
+    name: 'Body',
+    displayName: [
       {
         text: 'Body',
         language: 'en',
@@ -844,7 +778,7 @@ function createTdsTemplateMachineDatasets(shortName: string): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Machine Dataset Body',
         language: 'en',
@@ -854,50 +788,68 @@ function createTdsTemplateMachineDatasets(shortName: string): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  let newMachine1Dataset: Parameter = {
-    ...defaultParameter(
-      'MachineDataset-1',
-      [
-        {
-          text: 'Machine 1 Parameterset',
-          language: 'en',
-        },
-        {
-          text: 'Maschine 1 Parametersatz',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Machine 1 Parameterset',
-          language: 'en',
-        },
-        {
-          text: 'Maschine 1 Parametersatz',
-          language: 'de',
-        },
-      ],
-    ),
+  let newMachine1Dataset = defaultParameter({
+    name: 'MachineDataset-1',
+    displayName: [
+      {
+        text: 'Machine 1 Parameterset',
+        language: 'en',
+      },
+      {
+        text: 'Maschine 1 Parametersatz',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Machine 1 Parameterset',
+        language: 'en',
+      },
+      {
+        text: 'Maschine 1 Parametersatz',
+        language: 'de',
+      },
+    ],
     subParameters: [
       createTdsTemplateMachineDatasetHeader(shortName),
       createTdsTemplateMachineDatasetFeedbackHeader(),
       newMachineBody,
     ],
-  };
+  });
 
-  return {
-    ...newMachineDatasets,
+  return defaultParameter({
+    name: 'MachineDatasets',
+    displayName: [
+      {
+        text: 'Machine Datasets',
+        language: 'en',
+      },
+      {
+        text: 'Maschinen-Datensätze',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Contains specific Machine Datasets for multiple production machines',
+        language: 'en',
+      },
+      {
+        text: 'Enthält spezifische Maschinen-Datensätze für mehrere Produktionsmaschinen',
+        language: 'de',
+      },
+    ],
     structureVisible: true,
     subParameters: [newMachine1Dataset],
-  };
+  });
 }
 
 export function createTdsTemplateMachineDatasetHeader(shortName: string): Parameter {
-  let newMachineDatasetHeader = defaultParameter(
-    'Header',
-    [
+  let newMachineDatasetHeader = defaultParameter({
+    name: 'Header',
+    displayName: [
       {
         text: 'Header',
         language: 'en',
@@ -907,7 +859,7 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Machine Dataset Header',
         language: 'en',
@@ -917,35 +869,32 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-    'meta',
-  );
+    parameterType: 'meta',
+  });
 
-  let newTDSIdentifier: Parameter = {
-    ...defaultParameter(
-      'TDSIdentifier',
-      [
-        {
-          text: 'TDS Identifier',
-          language: 'en',
-        },
-        {
-          text: 'TDS Kenner',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: '',
-          language: 'en',
-        },
-        {
-          text: '',
-          language: 'de',
-        },
-      ],
-      'none',
-      shortName,
-    ),
+  let newTDSIdentifier = defaultParameter({
+    name: 'TDSIdentifier',
+    displayName: [
+      {
+        text: 'TDS Identifier',
+        language: 'en',
+      },
+      {
+        text: 'TDS Kenner',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: '',
+        language: 'en',
+      },
+      {
+        text: '',
+        language: 'de',
+      },
+    ],
+    value: shortName,
     transformation: {
       transformationType: 'linked',
       linkedInputParameters: {
@@ -953,45 +902,42 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
       },
       action: '',
     },
-  };
+  });
 
-  let newStructureVersionNumber: Parameter = {
-    ...defaultParameter(
-      'StructureVersionNumber',
-      [
-        {
-          text: 'Structure Version',
-          language: 'en',
-        },
-        {
-          text: 'Struktur-Version',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'The structure version number shows a structual change in the Machine Dataset (e.g. to adapt the machine program). It is increased if a parameter was added or deleted in this Machine Dataset.',
-          language: 'en',
-        },
-        {
-          text: 'Die Struktur-Version zeigt eine strukturelle Veränderung im Maschinendatensatz an (z.B. um das Maschinenprogramm anzupassen). Sie wird erhöht, wenn ein Parameter in diesem Maschinendatensatz hinzugefügt oder gelöscht wurde.',
-          language: 'de',
-        },
-      ],
-      'none',
-      'latest',
-      'xs:integer',
-    ),
+  let newStructureVersionNumber = defaultParameter({
+    name: 'StructureVersionNumber',
+    displayName: [
+      {
+        text: 'Structure Version',
+        language: 'en',
+      },
+      {
+        text: 'Struktur-Version',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'The structure version number shows a structual change in the Machine Dataset (e.g. to adapt the machine program). It is increased if a parameter was added or deleted in this Machine Dataset.',
+        language: 'en',
+      },
+      {
+        text: 'Die Struktur-Version zeigt eine strukturelle Veränderung im Maschinendatensatz an (z.B. um das Maschinenprogramm anzupassen). Sie wird erhöht, wenn ein Parameter in diesem Maschinendatensatz hinzugefügt oder gelöscht wurde.',
+        language: 'de',
+      },
+    ],
+    value: 'latest',
+    valueType: 'xs:integer',
     usedAsInputParameterIn: [
       { id: '<uuid>', path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'] },
     ],
     changeableByUser: false,
-  };
+  });
 
   let newVersionNumber: Parameter = {
-    ...defaultParameter(
-      'VersionNumber',
-      [
+    ...defaultParameter({
+      name: 'VersionNumber',
+      displayName: [
         {
           text: 'Version Number',
           language: 'en',
@@ -1001,7 +947,7 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
           language: 'de',
         },
       ],
-      [
+      description: [
         {
           text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
           language: 'en',
@@ -1011,43 +957,42 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
           language: 'de',
         },
       ],
-      'none',
-      'latest',
-      'xs:integer',
-    ),
-    usedAsInputParameterIn: [
-      { id: '<uuid>', path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'] },
-    ],
-    changeableByUser: false,
+      value: 'latest',
+      valueType: 'xs:integer',
+      usedAsInputParameterIn: [
+        {
+          id: '<uuid>',
+          path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'],
+        },
+      ],
+      changeableByUser: false,
+    }),
   };
 
-  let newFullVersionNumber: Parameter = {
-    ...defaultParameter(
-      'FullVersionNumber',
-      [
-        {
-          text: 'Full Version Number',
-          language: 'en',
-        },
-        {
-          text: 'Full-Versionsnummer',
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'Complete, concatenated version number of the TDS',
-          language: 'en',
-        },
-        {
-          text: 'Komplette, zusammengesetzte Versionsnummer des TDS',
-          language: 'de',
-        },
-      ],
-      'none',
-      'latest.latest.latest',
-      'xs:string',
-    ),
+  let newFullVersionNumber = defaultParameter({
+    name: 'FullVersionNumber',
+    displayName: [
+      {
+        text: 'Full Version Number',
+        language: 'en',
+      },
+      {
+        text: 'Full-Versionsnummer',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Complete, concatenated version number of the TDS',
+        language: 'en',
+      },
+      {
+        text: 'Komplette, zusammengesetzte Versionsnummer des TDS',
+        language: 'de',
+      },
+    ],
+    value: 'latest.latest.latest',
+    valueType: 'xs:string',
     transformation: {
       transformationType: 'algorithm',
       linkedInputParameters: {
@@ -1064,11 +1009,11 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
       action: "$IN1 & '.' & $IN2 & '.' & $IN3",
     },
     changeableByUser: false,
-  };
+  });
 
-  let newVariantMachineIdentifier = defaultParameter(
-    'VariantMachineIdentifier',
-    [
+  let newVariantMachineIdentifier = defaultParameter({
+    name: 'VariantMachineIdentifier',
+    displayName: [
       {
         text: 'Variant (Machine Identifier)',
         language: 'en',
@@ -1078,7 +1023,7 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Variant (Machine Identifier)',
         language: 'en',
@@ -1088,12 +1033,12 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-  );
+  });
 
   let newAcknowledgeMode: Parameter = {
-    ...defaultParameter(
-      'AcknowledgeMode',
-      [
+    ...defaultParameter({
+      name: 'AcknowledgeMode',
+      displayName: [
         {
           text: 'Acknowledge Mode',
           language: 'en',
@@ -1103,7 +1048,7 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
           language: 'de',
         },
       ],
-      [
+      description: [
         {
           text: 'Acknowledge Mode of the Machine Dataset',
           language: 'en',
@@ -1113,19 +1058,19 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
           language: 'de',
         },
       ],
-    ),
-    transformation: {
-      transformationType: 'linked',
-      linkedInputParameters: {
-        $IN1: { id: '<uuid>', path: ['Header', 'AcknowledgeModeDefault'] },
+      transformation: {
+        transformationType: 'linked',
+        linkedInputParameters: {
+          $IN1: { id: '<uuid>', path: ['Header', 'AcknowledgeModeDefault'] },
+        },
+        action: '',
       },
-      action: '',
-    },
+    }),
   };
 
-  let newReviewState = defaultParameter(
-    'ReviewState',
-    [
+  let newReviewState = defaultParameter({
+    name: 'ReviewState',
+    displayName: [
       {
         text: 'Review State',
         language: 'en',
@@ -1135,7 +1080,7 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Review state of the Machine Dataset',
         language: 'en',
@@ -1145,13 +1090,34 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
         language: 'de',
       },
     ],
-  );
+  });
 
   newStructureVersionNumber.usedAsInputParameterIn[0].id = newFullVersionNumber.id;
   newVersionNumber.usedAsInputParameterIn[0].id = newFullVersionNumber.id;
 
-  return {
-    ...newMachineDatasetHeader,
+  return defaultParameter({
+    name: 'Header',
+    displayName: [
+      {
+        text: 'Header',
+        language: 'en',
+      },
+      {
+        text: 'Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Machine Dataset Header',
+        language: 'en',
+      },
+      {
+        text: 'Maschinen-Datensatz Header',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [
       newTDSIdentifier,
       newStructureVersionNumber,
@@ -1161,37 +1127,13 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
       newAcknowledgeMode,
       newReviewState,
     ],
-  };
+  });
 }
 
 function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
-  let newMachineDatasetFeedbackHeader = defaultParameter(
-    'FeedbackHeader',
-    [
-      {
-        text: 'Feedback Header',
-        language: 'en',
-      },
-      {
-        text: 'Feedback Header',
-        language: 'de',
-      },
-    ],
-    [
-      {
-        text: 'Machine Feedback Header',
-        language: 'en',
-      },
-      {
-        text: 'Maschinen Feedback Header',
-        language: 'de',
-      },
-    ],
-    'meta',
-  );
-  let newMachineFeedbackID = defaultParameter(
-    'MachineFeedbackID',
-    [
+  let newMachineFeedbackID = defaultParameter({
+    name: 'MachineFeedbackID',
+    displayName: [
       {
         text: 'Feedback ID',
         language: 'en',
@@ -1201,7 +1143,7 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Feedback identifier for the Machine Dataset, e.g. timestamp.',
         language: 'en',
@@ -1211,10 +1153,10 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
-  let newAuthenticationData = defaultParameter(
-    'AuthenticationData',
-    [
+  });
+  let newAuthenticationData = defaultParameter({
+    name: 'AuthenticationData',
+    displayName: [
       {
         text: 'Authentication',
         language: 'en',
@@ -1224,7 +1166,7 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Person who made changes',
         language: 'en',
@@ -1234,10 +1176,10 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
-  let newComment = defaultParameter(
-    'Comment',
-    [
+  });
+  let newComment = defaultParameter({
+    name: 'Comment',
+    displayName: [
       {
         text: 'Comment',
         language: 'en',
@@ -1247,7 +1189,7 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Indicates what was changed in the Machine dataset.',
         language: 'en',
@@ -1257,12 +1199,33 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
         language: 'de',
       },
     ],
-  );
+  });
 
-  return {
-    ...newMachineDatasetFeedbackHeader,
+  return defaultParameter({
+    name: 'FeedbackHeader',
+    displayName: [
+      {
+        text: 'Feedback Header',
+        language: 'en',
+      },
+      {
+        text: 'Feedback Header',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Machine Feedback Header',
+        language: 'en',
+      },
+      {
+        text: 'Maschinen Feedback Header',
+        language: 'de',
+      },
+    ],
+    parameterType: 'meta',
     subParameters: [newMachineFeedbackID, newAuthenticationData, newComment],
-  };
+  });
 }
 
 /**
@@ -1273,9 +1236,9 @@ function createTdsTemplateMachineDatasetFeedbackHeader(): Parameter {
  * @returns
  */
 export function defaultMachineDataSet(parentConfig: Config, name: string, displayName: string) {
-  let newMachineBody = defaultParameter(
-    'Body',
-    [
+  let newMachineBody = defaultParameter({
+    name: 'Body',
+    displayName: [
       {
         text: 'Body',
         language: 'en',
@@ -1285,7 +1248,7 @@ export function defaultMachineDataSet(parentConfig: Config, name: string, displa
         language: 'de',
       },
     ],
-    [
+    description: [
       {
         text: 'Machine Dataset Body',
         language: 'en',
@@ -1295,36 +1258,34 @@ export function defaultMachineDataSet(parentConfig: Config, name: string, displa
         language: 'de',
       },
     ],
-  );
-  let newMachineDataset: Parameter = {
-    ...defaultParameter(
-      name,
-      [
-        {
-          text: displayName,
-          language: 'en',
-        },
-        {
-          text: displayName,
-          language: 'de',
-        },
-      ],
-      [
-        {
-          text: 'new Machine Parameterset',
-          language: 'en',
-        },
-        {
-          text: 'neuer Maschinenparametersatz',
-          language: 'de',
-        },
-      ],
-    ),
+  });
+
+  return defaultParameter({
+    name,
+    displayName: [
+      {
+        text: displayName,
+        language: 'en',
+      },
+      {
+        text: displayName,
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'new Machine Parameterset',
+        language: 'en',
+      },
+      {
+        text: 'neuer Maschinenparametersatz',
+        language: 'de',
+      },
+    ],
     subParameters: [
       createTdsTemplateMachineDatasetHeader(parentConfig.shortName.value),
       createTdsTemplateMachineDatasetFeedbackHeader(),
       newMachineBody,
     ],
-  };
-  return newMachineDataset;
+  });
 }

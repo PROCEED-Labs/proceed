@@ -67,7 +67,7 @@ export async function POST(
         .parse(body);
     }
 
-    const newParam = { ...defaultParameter('new-param', [], []), ...body };
+    const newParam = { ...defaultParameter(body) };
 
     if (subParameterOf) {
       if (!(await validateParameterName(queryId, subParameterOf, 'parameter', body.name))) {

@@ -9,89 +9,47 @@ import {
   VirtualUserRolesParameter,
   VirtualOrganizationRolesParameter,
 } from '@/lib/data/machine-config-schema';
+import { WithRequired } from '@/lib/typescript-utils';
 import { v4 } from 'uuid';
 
 /**
  * Creates a parameter of type Parameter.
- * @param name Name and key for the parameter.
- * @param displayName Display name(s) for the parameter. : AasLocalizedText[]
- * @param description Description(s) for the parameter. : AasLocalizedText[]
- * @param parameterType (optional) 'meta' | 'content' | 'none'
- * @param value (optional) Value of the parameter.
- * @param valueType (optional) Type of the parameters value.
- * @param unitRef (optional) Reference to the unit for the parameters value.
+ * @param params A Partial of Type Parameter with the required field 'name'
  */
-export function defaultParameter(
-  name: string,
-  displayName: LocalizedText[],
-  description: LocalizedText[],
-  parameterType: Parameter['parameterType'] = 'none',
-  value?: string,
-  valueType?: string,
-  unitRef?: string,
-): Parameter {
-  // let newUnit = unit
-  //   ? {
-  //       displayName: [{ text: unit, language: '' }],
-  //       key: unit,
-  //       unitSymbol: unit,
-  //     }
-  //   : undefined;
-
+export function defaultParameter(params: WithRequired<Partial<Parameter>, 'name'>): Parameter {
   return {
     id: v4(),
-    // type: 'https://schema.org/' + (displayName?.[0]?.text ?? ''),
-    name,
-    parameterType,
-    structureVisible: true,
-    displayName,
-    description,
-    value,
-    valueType,
-    unitRef,
+    parameterType: 'none',
+    displayName: [],
+    description: [],
     subParameters: [],
+    structureVisible: true,
     usedAsInputParameterIn: [],
     changeableByUser: true,
     origin: null,
-    // unit: newUnit as AasUnit,
     hasChanges: false,
+    ...params,
   };
 }
 /**
  * Creates a parameter of type MetaParameter.
- * @param name Name and key for the parameter.
- * @param displayName Display name(s) for the parameter. : AasLocalizedText[]
- * @param description Description(s) for the parameter. : AasLocalizedText[]
- * @param parameterType (optional) 'meta' | 'content' | 'none'
- * @param valueTemplateSource Template source for the parameters value.
- * @param valueType (optional) Type of the parameters value.
- * @param unitRef (optional) Reference to the unit for the parameters value.
+ * @param params A Partial of Type MetaParameter with the required fields 'name' and 'valueTemplateSource'
  */
 export function defaultMetaParameter(
-  name: string,
-  displayName: LocalizedText[],
-  description: LocalizedText[],
-  parameterType: MetaParameter['parameterType'] = 'none',
-  valueTemplateSource: MetaParameter['valueTemplateSource'],
-  valueType?: string,
-  unitRef?: string,
+  params: WithRequired<Partial<MetaParameter>, 'name' | 'valueTemplateSource'>,
 ): MetaParameter {
   return {
     id: v4(),
-    // type: 'https://schema.org/' + (displayName?.[0]?.text ?? ''),
-    name,
-    parameterType,
-    structureVisible: true,
-    displayName,
-    description,
-    valueTemplateSource,
-    valueType,
-    unitRef,
+    parameterType: 'none',
+    displayName: [],
+    description: [],
     subParameters: [],
+    structureVisible: true,
     usedAsInputParameterIn: [],
     changeableByUser: true,
     origin: null,
     hasChanges: false,
+    ...params,
   };
 }
 

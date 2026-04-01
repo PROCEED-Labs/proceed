@@ -1042,9 +1042,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'StructureVersionNumber',
-                [
+              defaultParameter({
+                name: 'StructureVersionNumber',
+                displayName: [
                   {
                     text: 'Structure Version',
                     language: 'en',
@@ -1054,7 +1054,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The structure version number shows a structual change in the Machine Dataset (e.g. to adapt the machine program). It is increased if a parameter was added or deleted in this Machine Dataset.',
                     language: 'en',
@@ -1064,10 +1064,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1084,9 +1084,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'VersionNumber',
-                [
+              defaultParameter({
+                name: 'VersionNumber',
+                displayName: [
                   {
                     text: 'Version Number',
                     language: 'en',
@@ -1096,7 +1096,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
                     language: 'en',
@@ -1106,10 +1106,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1126,9 +1126,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'VersionNumber',
-                [
+              defaultParameter({
+                name: 'VersionNumber',
+                displayName: [
                   {
                     text: 'Version Number',
                     language: 'en',
@@ -1138,7 +1138,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
                     language: 'en',
@@ -1148,10 +1148,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1584,51 +1584,45 @@ export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): P
         ([key]) => !['isGuest', 'emailVerifiedOn', 'profileImage', 'favourites'].includes(key),
       )
       .map(([key, val]) => {
-        return {
-          ...defaultParameter(
-            key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
-            userInfoMap[key]?.displayName || [{ text: key, language: 'en' }],
-            userInfoMap[key]?.description || [
-              { text: `Record of the users ${key}`, language: 'en' },
-            ],
-            'none',
-            stringifyValue(val),
-          ),
+        return defaultParameter({
+          name: key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
+          displayName: userInfoMap[key]?.displayName || [{ text: key, language: 'en' }],
+          description: userInfoMap[key]?.description || [
+            { text: `Record of the users ${key}`, language: 'en' },
+          ],
+          value: stringifyValue(val),
           origin: 'external',
-        };
+        });
       });
 
     const { firstName, lastName } = userInfo;
     // prepending a parameter for the full name
     subParameters = [
-      {
-        ...defaultParameter(
-          'name',
-          [
-            {
-              text: 'Name',
-              language: 'en',
-            },
-            {
-              text: 'Name',
-              language: 'de',
-            },
-          ],
-          [
-            {
-              text: 'Name of the user.',
-              language: 'en',
-            },
-            {
-              text: 'Name des Nutzers.',
-              language: 'de',
-            },
-          ],
-          'none',
-          `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`,
-        ),
+      defaultParameter({
+        name: 'name',
+        displayName: [
+          {
+            text: 'Name',
+            language: 'en',
+          },
+          {
+            text: 'Name',
+            language: 'de',
+          },
+        ],
+        description: [
+          {
+            text: 'Name of the user.',
+            language: 'en',
+          },
+          {
+            text: 'Name des Nutzers.',
+            language: 'de',
+          },
+        ],
+        value: `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`,
         origin: 'external',
-      },
+      }),
       ...subParameters,
     ];
   }
@@ -1647,7 +1641,7 @@ export async function getVirtualUserRoles(
   }
   roleParameters = roles.map((role) => {
     return {
-      ...defaultParameter(role.id, [{ text: role.name, language: 'en' }], []),
+      ...defaultParameter({ name: role.id, displayName: [{ text: role.name, language: 'en' }] }),
       id: parameter.userId + role.name, // hardcoded ID for frontend consistency
       origin: 'external',
     };
@@ -1673,23 +1667,25 @@ export async function getVirtualOrganizationRoles(
       .map((e) => {
         if (!e.isGuest) {
           return {
-            ...defaultParameter(
-              e.id,
-              [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
-              [],
-            ),
+            ...defaultParameter({
+              name: e.id,
+              displayName: [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
+              origin: 'external',
+            }),
             id: roleUsers.role.name + e.id, // hardcoded ID for frontend consistency
-            origin: 'external' as const,
           };
         }
       })
       .filter(truthyFilter);
 
     return {
-      ...defaultParameter(roleUsers.role.id, [{ text: roleUsers.role.name, language: 'en' }], []),
-      origin: 'external' as const,
+      ...defaultParameter({
+        name: roleUsers.role.id,
+        displayName: [{ text: roleUsers.role.name, language: 'en' }],
+        origin: 'external',
+        subParameters,
+      }),
       id: roleUsers.role.name, // hardcoded ID for frontend consistency
-      subParameters,
     };
   });
   return { ...parameter, subParameters: roleParameters };

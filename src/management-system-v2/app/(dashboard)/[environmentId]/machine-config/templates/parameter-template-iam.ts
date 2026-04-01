@@ -2,23 +2,23 @@ import { VirtualOrganizationRolesParameter } from '@/lib/data/machine-config-sch
 import { defaultParameter } from '../helpers/configuration-helper';
 
 export function createOrgIamParameter(environmentId: string) {
-  const iamParameter = defaultParameter(
-    'identity-and-access-management',
-    [{ text: 'IAM', language: 'en' }],
-    [],
-  );
-  const commonUserDataParameter = defaultParameter(
-    'common-user-data',
-    [{ text: 'Common User Data', language: 'en' }],
-    [],
-  );
-  const userParameter = defaultParameter('user', [{ text: 'User', language: 'en' }], []);
+  const commonUserDataParameter = defaultParameter({
+    name: 'common-user-data',
+    displayName: [{ text: 'Common User Data', language: 'en' }],
+  });
+  const userParameter = defaultParameter({
+    name: 'user',
+    displayName: [{ text: 'User', language: 'en' }],
+  });
   const rolesParameter: VirtualOrganizationRolesParameter = {
-    ...defaultParameter('roles', [{ text: 'Roles', language: 'en' }], []),
+    ...defaultParameter({ name: 'roles', displayName: [{ text: 'Roles', language: 'en' }] }),
     environmentId,
     virtualType: 'org-roles',
   };
 
-  iamParameter.subParameters = [commonUserDataParameter, userParameter, rolesParameter];
-  return iamParameter;
+  return defaultParameter({
+    name: 'identity-and-access-management',
+    displayName: [{ text: 'IAM', language: 'en' }],
+    subParameters: [commonUserDataParameter, userParameter, rolesParameter],
+  });
 }

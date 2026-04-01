@@ -249,26 +249,27 @@ export const editParameter = async (
 
     if (shouldBeVirtual) {
       // converting regular to virtual
-      newParam = defaultMetaParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultMetaParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
     } else {
       // Converting virtual to regular
-      newParam = defaultParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.value,
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        value: valuesFromModal.value,
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
 
       // apply transformation for regular parameter
       if (transformationUpdate.transformation) {
@@ -501,25 +502,26 @@ export const useParameterActions = ({
       valuesFromModal.valueTemplateSource && valuesFromModal.valueTemplateSource !== 'none';
 
     if (shouldBeVirtual) {
-      newParameter = defaultMetaParameter(
-        valuesFromModal.name,
-        displayName,
-        description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
-        'xs:string',
-        valuesFromModal.unit,
-      );
+      newParameter = defaultMetaParameter({
+        name: valuesFromModal.name,
+        displayName: displayName,
+        description: description,
+        parameterType: parameterType as 'meta' | 'content' | 'none',
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     } else {
-      newParameter = defaultParameter(
-        valuesFromModal.name,
-        displayName,
-        description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.value,
-        'xs:string',
-        valuesFromModal.unit,
-      );
+      newParameter = defaultParameter({
+        name: valuesFromModal.name,
+        displayName: displayName,
+        description: description,
+        parameterType: parameterType as 'meta' | 'content' | 'none',
+        value: valuesFromModal.value,
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     }
 
     // apply advanced settings

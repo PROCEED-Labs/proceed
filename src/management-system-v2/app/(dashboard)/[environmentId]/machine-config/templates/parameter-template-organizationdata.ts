@@ -1,14 +1,14 @@
 import { defaultParameter } from '../helpers/configuration-helper';
 
 export function createOrgOrganizationDataParameter() {
-  const organizationParameter = defaultParameter(
-    'organization',
-    [{ text: 'Organization', language: 'en' }],
-    [],
-  );
-  const dataParameter = defaultParameter('data', [{ text: 'Data', language: 'en' }], []);
+  const dataParameter = defaultParameter({
+    name: 'data',
+    displayName: [{ text: 'Data', language: 'en' }],
+  });
 
-  dataParameter.subParameters = [];
-  organizationParameter.subParameters = [dataParameter];
-  return organizationParameter;
+  return defaultParameter({
+    name: 'organization',
+    displayName: [{ text: 'Organization', language: 'en' }],
+    subParameters: [dataParameter],
+  });
 }

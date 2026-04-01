@@ -61,9 +61,8 @@ import {
   userInfoMap,
 } from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
-import { User } from '../user-schema';
 import { getRoles, getUserRoles } from '../roles';
-import { getRoleMappings } from './iam/role-mappings';
+import { getRolesWithMembers } from './iam/roles';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -1588,8 +1587,10 @@ export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): P
         return {
           ...defaultParameter(
             key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
-            userInfoMap[key].displayName,
-            userInfoMap[key].description,
+            userInfoMap[key]?.displayName || [{ text: key, language: 'en' }],
+            userInfoMap[key]?.description || [
+              { text: `Record of the users ${key}`, language: 'en' },
+            ],
             'none',
             stringifyValue(val),
           ),
@@ -1646,7 +1647,7 @@ export async function getVirtualUserRoles(
   }
   roleParameters = roles.map((role) => {
     return {
-      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      ...defaultParameter(role.id, [{ text: role.name, language: 'en' }], []),
       id: parameter.userId + role.name, // hardcoded ID for frontend consistency
       origin: 'external',
     };
@@ -1658,43 +1659,36 @@ export async function getVirtualOrganizationRoles(
   parameter: VirtualOrganizationRolesParameter,
 ): Promise<Parameter> {
   let roles = await getRoles(parameter.environmentId);
-  // {role, userId} mappings
-  let roleMappings = (await getRoleMappings()).filter(
-    (e) => e.environmentId == parameter.environmentId,
-  );
 
-  // mapping to {role, userData} objects
-  let userRoles = await asyncMap(roleMappings, async (e) => ({
-    role: e.roleName,
-    user: await getUserById(e.userId),
+  // {role, members} mappings
+  let rolesWithMembers = await getRolesWithMembers(parameter.environmentId);
+  // mapping to {role, userData[]} objects
+  let roleUsersMapping = await asyncMap(rolesWithMembers, async (role) => ({
+    role: role,
+    users: await asyncMap(role.members, async (member) => await getUserById(member.id)),
   }));
 
-  let roleParameters: Parameter[] = [];
-  if ('error' in roles) {
-    throw new Error(`Cannot get roles for space ${parameter.environmentId}.`);
-  }
-  roleParameters = roles.map((role) => {
-    // creating subParameters for each user that has this role
-    let subParameters = userRoles
-      .filter((e) => e.role == role.name)
+  let roleParameters = roleUsersMapping.map((roleUsers) => {
+    let subParameters = roleUsers.users
       .map((e) => {
-        if (!e.user.isGuest) {
+        if (!e.isGuest) {
           return {
             ...defaultParameter(
-              e.user.id,
-              [{ text: e.user.lastName + ', ' + e.user.firstName, language: 'en' }],
+              e.id,
+              [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
               [],
             ),
-            id: role.name + e.user.id, // hardcoded ID for frontend consistency
+            id: roleUsers.role.name + e.id, // hardcoded ID for frontend consistency
             origin: 'external' as const,
           };
         }
       })
       .filter(truthyFilter);
+
     return {
-      ...defaultParameter(role.name, [{ text: role.name, language: 'en' }], []),
+      ...defaultParameter(roleUsers.role.id, [{ text: roleUsers.role.name, language: 'en' }], []),
       origin: 'external' as const,
-      id: role.name, // hardcoded ID for frontend consistency
+      id: roleUsers.role.name, // hardcoded ID for frontend consistency
       subParameters,
     };
   });

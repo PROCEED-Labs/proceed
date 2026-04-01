@@ -323,7 +323,7 @@ export function isVirtualOrganizationRolesParameter(
   );
 }
 
-function isNonNullObject(p: unknown): p is Object {
+function isNonNullObject(p: unknown): p is object {
   return typeof p === 'object' && p !== null;
 }
 

@@ -1,6 +1,6 @@
 'use server';
 
-import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
+import { UserFacingError, getErrorMessage, userError } from '../user-error';
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
@@ -12,7 +12,7 @@ import {
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';

@@ -399,7 +399,7 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
       return () => resizeObserver.disconnect();
     }, [resizeWithContainer]);
 
-    return <div className={className} style={{ height: '100%' }} ref={canvas}></div>;
+    return <div className={className} style={{ height: '100%', width: '100%' }} ref={canvas}></div>;
   },
 );
 

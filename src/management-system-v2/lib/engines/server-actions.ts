@@ -4,7 +4,6 @@ import {
   UserErrorType,
   UserFacingError,
   getErrorMessage,
-  isUserError,
   isUserErrorResponse,
   userError,
 } from '../user-error';
@@ -15,7 +14,6 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  DeployedProcessInfo,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -63,9 +61,6 @@ import {
   updateDeployment,
   getProcessDeployments,
 } from '../data/deployment';
-import { getProcessVersionBpmn } from '../data/db/process';
-import { machine } from 'node:os';
-import { PUT } from '@/app/api/private/file-manager/route';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -110,7 +105,7 @@ export async function deployProcess(
 
     const { userId } = await getCurrentUser();
 
-    let engines;
+    let engines: Engine[];
     if (_forceEngine && _forceEngine !== 'PROCEED') {
       // forcing a specific engine
       const { ability } = await getCurrentEnvironment(spaceId);
@@ -126,38 +121,28 @@ export async function deployProcess(
 
     if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
 
-    const processAlreadyDeployedInfo = await asyncMap(engines, async (engine) => {
-      let deployment;
-      try {
-        deployment = await fetchDeployment(engine, definitionId);
-        // ignore not found errors on engines that don't have a deployment of the process
-      } catch (err) {
-        deployment = undefined;
-      }
-      return [engine, deployment] as const;
-    });
+    const alreadyDeployed = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(alreadyDeployed)) return alreadyDeployed;
 
-    function withDeployment(
-      info: (typeof processAlreadyDeployedInfo)[number],
-    ): info is readonly [Engine, DeployedProcessInfo] {
-      return !!info[1];
-    }
-    const enginesWithDeployment = processAlreadyDeployedInfo.filter(withDeployment);
+    // find all currently available deployments
+    const processAlreadyDeployedInfo = alreadyDeployed
+      .map((deployment) => ({
+        ...deployment,
+        machines: deployment.machineIds
+          .map((id) => engines.find((e) => e.id === id))
+          .filter(truthyFilter),
+      }))
+      .filter((d) => !!d.machines.length);
 
-    // check if the version is already deployed to some engine since we don't
+    // check if the version is already deployed to some reachable engine since we don't
     // need to redeploy it in that case
-    if (
-      !_forceEngine &&
-      enginesWithDeployment.some(([_, deployment]) =>
-        deployment.versions.some((version) => version.versionId === versionId),
-      )
-    ) {
+    if (!_forceEngine && processAlreadyDeployedInfo.some((i) => i.versionId === versionId)) {
       return;
     }
 
-    if (!_forceEngine && enginesWithDeployment.length) {
+    if (!_forceEngine && processAlreadyDeployedInfo.length) {
       // check if an engine already has another version in which case that engine is selected
-      engines = enginesWithDeployment.map(([engine]) => engine);
+      engines = processAlreadyDeployedInfo.flatMap((i) => i.machines);
     }
 
     const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
@@ -172,11 +157,13 @@ export async function deployProcess(
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
     await Promise.allSettled(
-      enginesWithDeployment.map(async ([engine]) => {
-        if (!deployedTo.some((dE) => dE.id === engine.id)) {
-          await _changeDeploymentActivation(engine, definitionId, undefined, false);
-        }
-      }),
+      processAlreadyDeployedInfo
+        .flatMap((i) => i.machines)
+        .map(async (engine) => {
+          if (!deployedTo.some((dE) => dE.id === engine.id)) {
+            await _changeDeploymentActivation(engine, definitionId, undefined, false);
+          }
+        }),
     );
   } catch (e) {
     const message = getErrorMessage(e);
@@ -250,20 +237,21 @@ export async function changeDeploymentActivation(
   value: boolean,
 ) {
   try {
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await fetchDeployments([engine]);
+    const engines = await getCorrectTargetEngines(spaceId, false);
 
-      return deployments.some(
-        (deployment) =>
-          deployment.definitionId === definitionId &&
-          deployment.versions.some((v) => v.versionId === version),
-      );
-    });
+    const versionDeploymentsResult = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(versionDeploymentsResult)) return versionDeploymentsResult;
 
-    if (!engines.length)
-      throw new Error('There is no available engine with the requested process version.');
-
-    await _changeDeploymentActivation(engines[0], definitionId, version, value);
+    // TODO: what do we do if some engines are not reachable/if changing the activation fails?
+    await Promise.allSettled(
+      versionDeploymentsResult
+        .filter((d) => d.versionId === version)
+        .flatMap((d) => d.machineIds)
+        .map((machineId) => {
+          const engine = engines.find((e) => e.id === machineId);
+          if (engine) _changeDeploymentActivation(engine, definitionId, version, value);
+        }),
+    );
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -751,14 +739,6 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     const message = getErrorMessage(e);
     return userError(message);
   }
-}
-
-export async function getDeployment(spaceId: string, definitionId: string) {
-  const engines = await getCorrectTargetEngines(spaceId);
-
-  const deployments = await fetchDeployments(engines);
-
-  return deployments.find((d) => d.definitionId === definitionId) || null;
 }
 
 export async function getProcessImage(spaceId: string, definitionId: string, fileName: string) {

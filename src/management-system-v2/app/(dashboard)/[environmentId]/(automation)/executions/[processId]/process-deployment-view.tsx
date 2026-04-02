@@ -24,12 +24,11 @@ import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import useDeployment from '../deployment-hook';
+import useDeployment, { DeploymentInfo } from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
 import useTokens from './use-tokens';
-import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
@@ -39,7 +38,7 @@ export default function ProcessDeploymentView({
   initialDeploymentInfo,
 }: {
   processId: string;
-  initialDeploymentInfo: DeployedProcessInfo;
+  initialDeploymentInfo: DeploymentInfo;
 }) {
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
@@ -228,11 +227,11 @@ export default function ProcessDeploymentView({
                       },
                       ...(selectedVersion
                         ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
+                          {
+                            label: '<none>',
+                            key: '-2',
+                          },
+                        ]
                         : []),
                       ...deploymentInfo.versions.map((version) => ({
                         label: version.versionName || version.definitionName,

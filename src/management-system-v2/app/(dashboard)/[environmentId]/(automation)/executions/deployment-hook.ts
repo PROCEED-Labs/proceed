@@ -15,9 +15,10 @@ import { Engine } from '@/lib/engines/machines';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
 import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { truthyFilter } from '@/lib/typescript-utils';
+import { getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 const mergeInstance = (newInstance: InstanceInfo, oldInstance?: InstanceInfo) => {
   if (!oldInstance) return newInstance;
@@ -87,26 +88,56 @@ const mergeDeployment = (
   return hasChanges ? newDeployment : oldDeployment;
 };
 
-function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
+export type DeploymentInfo = {
+  definitionId: string;
+  versions: (DeployedProcessInfo['versions'][number] & { machines: string[] })[];
+  instances: DeployedProcessInfo['instances'];
+};
+
+function useDeployment(definitionId: string, initialData?: DeploymentInfo) {
   const space = useEnvironment();
   const { data: session } = useSession();
+
+  const expectedEngines = useMemo(() => {
+    const machineIds = initialData?.versions.flatMap((v) => v.machines) || [];
+    return machineIds.filter((id, index) => !machineIds.slice(0, index).includes(id));
+  }, [initialData]);
 
   const { data: engines } = useEngines(space, {
     key: [definitionId],
     fn: async (engine) => {
-      const deployments = await getDeployments([engine]);
-      return deployments.some((d) => d.definitionId === definitionId);
+      return expectedEngines.includes(engine.id);
     },
   });
 
   const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (engines?.length)
-      // TODO: in case of static deployment or different versions on different engines we will have
-      // to check if the engine can actually be used to start an instance
-      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-        processInitiator: session?.user.id,
-        spaceIdOfProcessInitiator: space.spaceId,
-      });
+    const versionDeployments = initialData?.versions.filter((v) => v.versionId === versionId);
+    // TODO: Deploy the version if it is not currently deployed
+    if (!versionDeployments?.length) return;
+
+    const targetEngines = versionDeployments
+      .flatMap((v) => v.machines.map((id) => engines?.find((e) => e.id === id)))
+      .filter(truthyFilter);
+
+    // TODO: Deploye the version if no available engine has it deployed
+    if (targetEngines.length) {
+      const result = await startInstanceOnMachine(
+        definitionId,
+        versionId,
+        targetEngines[0],
+        variables,
+        {
+          processInitiator: session?.user.id,
+          spaceIdOfProcessInitiator: space.spaceId,
+        },
+      );
+
+      if (isUserErrorResponse(result)) return result;
+
+      // TODO: create database entry for the instance
+
+      return result;
+    }
   };
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
@@ -182,6 +213,8 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   }
 
   const queryFn = useCallback(async () => {
+    // TODO: use the stored deployment data and instance data and update the instance data (maybe
+    // only if something changed in comparison to the stored state)
     if (engines?.length) {
       // TODO: this only handles situations where we have only a single engine
       // in the future we have to implement logic that merges data from multiple engines

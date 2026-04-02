@@ -35,7 +35,6 @@ const DeploymentsView = ({
     versions: { id: string; name: string }[];
     instances: { id: string }[];
   }[];
-  remove: () => void;
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const app = App.useApp();

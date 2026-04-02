@@ -1652,8 +1652,6 @@ export async function getVirtualUserRoles(
 export async function getVirtualOrganizationRoles(
   parameter: VirtualOrganizationRolesParameter,
 ): Promise<Parameter> {
-  let roles = await getRoles(parameter.environmentId);
-
   // {role, members} mappings
   let rolesWithMembers = await getRolesWithMembers(parameter.environmentId);
   // mapping to {role, userData[]} objects

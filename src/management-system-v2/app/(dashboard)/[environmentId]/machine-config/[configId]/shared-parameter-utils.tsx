@@ -494,7 +494,7 @@ export const useParameterActions = ({
     const displayName = valuesFromModal.displayName || [];
     const description = valuesFromModal.description || [];
     // get parameterType from advanced settings or default to 'none'
-    const parameterType = valuesFromModal.parameterType || 'none';
+    const parameterType = (valuesFromModal.parameterType || 'none') as 'meta' | 'content' | 'none';
 
     let newParameter: Parameter | MetaParameter;
 
@@ -504,9 +504,9 @@ export const useParameterActions = ({
     if (shouldBeVirtual) {
       newParameter = defaultMetaParameter({
         name: valuesFromModal.name,
-        displayName: displayName,
-        description: description,
-        parameterType: parameterType as 'meta' | 'content' | 'none',
+        displayName,
+        description,
+        parameterType,
         valueTemplateSource:
           valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
         valueType: 'xs:string',
@@ -515,9 +515,9 @@ export const useParameterActions = ({
     } else {
       newParameter = defaultParameter({
         name: valuesFromModal.name,
-        displayName: displayName,
-        description: description,
-        parameterType: parameterType as 'meta' | 'content' | 'none',
+        displayName,
+        description,
+        parameterType,
         value: valuesFromModal.value,
         valueType: 'xs:string',
         unitRef: valuesFromModal.unit,

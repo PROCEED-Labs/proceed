@@ -467,26 +467,24 @@ module.exports = (path, management) => {
 
     if (!engine) {
       return {
-        statusCode: 404,
-        mimeType: 'text/plain',
-        response: 'No engine found for the given process.',
+        statusCode: 200,
+        mimeType: 'application/json',
+        response: JSON.stringify({ active: false }),
       };
     }
 
-    const process = engine._versionProcessMapping[version];
-
-    if (!process) {
+    try {
+      return {
+        statusCode: 200,
+        mimeType: 'application/json',
+        response: JSON.stringify({ active: engine.isProcessVersionDeployed(version) }),
+      };
+    } catch (_) {
       return {
         statusCode: 404,
         mimeType: 'text/plain',
-        response: 'No deployed version found.',
+        response: 'The requested version is not found in this engine.',
       };
     }
-
-    return {
-      statusCode: 200,
-      mimeType: 'application/json',
-      response: JSON.stringify({ active: process.isDeployed() }),
-    };
   });
 };

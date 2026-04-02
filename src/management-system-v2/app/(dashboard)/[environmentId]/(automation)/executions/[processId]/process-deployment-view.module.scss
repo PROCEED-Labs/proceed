@@ -18,3 +18,9 @@
     transform: rotate(360deg);
   }
 }
+
+.SpinIcon {
+  animation: spin 2s linear infinite;
+  display: flex;
+  align-items: center;
+}

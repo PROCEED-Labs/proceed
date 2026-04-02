@@ -389,7 +389,7 @@ export async function getDeploymentActivation(
     engine,
     pathParams: { definitionId, version },
   });
-  return result.active ?? true;
+  return result.active;
 }
 
 export async function getProcessImageFromMachine(

@@ -207,7 +207,7 @@ export async function getProcessActivationStatus(
   definitionId: string,
   spaceId: string,
   version: string,
-): Promise<boolean> {
+) {
   try {
     const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
       const deployments = await fetchDeployments([engine]);
@@ -220,13 +220,10 @@ export async function getProcessActivationStatus(
 
     if (!engines.length) return false;
 
-    const result = await getDeploymentActivation(engines[0], definitionId, version);
-
-    return result;
+    return await getDeploymentActivation(engines[0], definitionId, version);
   } catch (e) {
     const message = getErrorMessage(e);
-    console.error(message);
-    return false;
+    return userError(message);
   }
 }
 

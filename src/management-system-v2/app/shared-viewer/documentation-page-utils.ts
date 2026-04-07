@@ -5,8 +5,16 @@ import { v4 } from 'uuid';
 import type ViewerType from 'bpmn-js/lib/Viewer';
 
 import { CustomAnnotationViewModule } from '@/lib/modeler-extensions/TextAnnotation';
+import {
+  getTokenColor,
+  getTokenPosition,
+} from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-tokens';
+import {
+  getTimeInfo,
+  getPlanDelays,
+} from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 
-import Canvas, { ElementRegistry } from 'diagram-js/lib/core/Canvas';
+import Canvas from 'diagram-js/lib/core/Canvas';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
 
 import {
@@ -27,9 +35,9 @@ import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/in
 import { generateNumberString } from '@/lib/utils';
 import {
   ColorOptions,
-  flowElementsStyling,
+  getExecutionColor,
+  progressToColor,
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
-import Overlays from 'diagram-js/lib/features/overlays/Overlays';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -239,147 +247,138 @@ export async function getElementSVG(
   return { svg, el, definitions, oldBpmn, nestedSubprocess, importedProcess, currentRootId };
 }
 
-/**
- * Returns an SVG of the BPMN with instance coloring markers applied.
- * Falls back to a plain SVG if coloring cannot be applied.
- */
 export async function getSVGWithInstanceColoring(
   bpmn: string,
   instance: InstanceInfo,
   coloring: ColorOptions,
 ): Promise<string> {
   const viewer = await getViewer(bpmn);
+
+  // Collect token positions
+  const elementRegistry = viewer.get<any>('elementRegistry');
+  const canvas = viewer.get<Canvas>('canvas');
+
+  const viewerRef = {
+    getElement: (id: string) => elementRegistry.get(id),
+    getAllElements: () => elementRegistry.getAll(),
+    getOverlays: () => viewer.get<any>('overlays'),
+    getCanvas: () => canvas,
+  } as any;
+
+  const tokenPositions = instance.tokens.map((token) => ({
+    token,
+    color: getTokenColor(token, instance),
+    position: getTokenPosition(token, viewerRef),
+  }));
+
   const svg = await getSVGFromBPMN(viewer);
   viewer.destroy();
 
-  if (coloring === 'noColors') return svg;
-
-  // Build a map of elementId, color directly from instance data
-  const colorMap: Record<string, string> = {};
-
-  if (coloring === 'executionColors') {
-    for (const logEntry of instance.log) {
-      switch (logEntry.executionState) {
-        case 'COMPLETED':
-          colorMap[logEntry.flowElementId] = logEntry.executionWasInterrupted ? 'yellow' : 'green';
-          break;
-        case 'ERROR-SEMANTIC':
-        case 'ERROR-TECHNICAL':
-        case 'ERROR-CONSTRAINT-UNFULFILLED':
-        case 'STOPPED':
-        case 'ABORTED':
-        case 'FAILED':
-        case 'TERMINATED':
-          colorMap[logEntry.flowElementId] = 'red';
-          break;
-        default:
-          colorMap[logEntry.flowElementId] = 'white';
-      }
-    }
-    // Active tokens show as green
-    for (const token of instance.tokens) {
-      if (!colorMap[token.currentFlowElementId]) {
-        colorMap[token.currentFlowElementId] = 'green';
-      }
-    }
-  } else if (coloring === 'timeColors') {
-    for (const token of instance.tokens) {
-      colorMap[token.currentFlowElementId] = 'orange'; // running = in progress
-    }
-    for (const logEntry of instance.log) {
-      if (logEntry.executionState === 'COMPLETED') {
-        colorMap[logEntry.flowElementId] = 'green';
-      }
-    }
-  } else {
-    // processColors — use execution state as fallback
-    for (const logEntry of instance.log) {
-      colorMap[logEntry.flowElementId] =
-        logEntry.executionState === 'COMPLETED' ? 'green' : 'orange';
-    }
-    for (const token of instance.tokens) {
-      if (!colorMap[token.currentFlowElementId]) {
-        colorMap[token.currentFlowElementId] = 'orange';
-      }
-    }
-  }
-
-  // Apply colors inline to the SVG DOM
-  console.log('colorMap:', colorMap);
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, 'image/svg+xml');
+  const svgRoot = doc.documentElement;
 
-  // test one lookup manually
-  const firstId = Object.keys(colorMap)[0];
-  console.log('first elementId to find:', firstId);
-  console.log('found element:', doc.querySelector(`[data-element-id="${firstId}"]`));
-  for (const [elementId, color] of Object.entries(colorMap)) {
-    const el = doc.querySelector(`[data-element-id="${elementId}"]`);
-    if (!el) continue;
-    const shape = el.querySelector(
-      '.djs-visual rect, .djs-visual circle, .djs-visual polygon, .djs-visual path',
-    );
-    if (!shape) continue;
-    // Override fill inside the existing style
-    const existingStyle = shape.getAttribute('style') || '';
-    const updatedStyle = existingStyle
-      .replace(/fill:[^;]+;?/g, '')
-      .replace(/fill-opacity:[^;]+;?/g, '')
-      .trimEnd();
-    shape.setAttribute('style', `${updatedStyle}; fill: ${color}; fill-opacity: 0.5;`);
-  }
-  // Draw tokens as circles directly in the SVG (overlays are HTML, not SVG)
-  for (const token of instance.tokens) {
-    const el = doc.querySelector(`[data-element-id="${token.currentFlowElementId}"]`);
-    if (!el) continue;
+  // Build elementId, color map
+  if (coloring !== 'processColors') {
+    const colorMap: Record<string, string> = {};
 
-    // Get the transform to find element position
-    const transform = el.getAttribute('transform') || '';
-    const match = transform.match(/matrix\([^)]*\s+([\d.]+)\s+([\d.]+)\)/);
-    if (!match) continue;
+    for (const logEntry of instance.log) {
+      const id = logEntry.flowElementId;
+      const token = instance.tokens.find((t) => t.currentFlowElementId === id);
 
-    const x = parseFloat(match[1]);
-    const y = parseFloat(match[2]);
-
-    // Determine token color same as instance view
-    let tokenColor = 'white';
-    if (instance.instanceState[0] === 'STOPPED') {
-      tokenColor = 'black';
-    } else {
-      switch (token.state) {
-        case 'RUNNING':
-          tokenColor = '#52c41a';
+      let color: string;
+      switch (coloring) {
+        case 'noColors':
+          color = 'white';
           break;
-        case 'PAUSED':
-        case 'DEPLOYMENT-WAITING':
-          tokenColor = '#faad14';
+        case 'executionColors':
+          color = getExecutionColor(logEntry.executionState, !!logEntry.executionWasInterrupted);
           break;
-        case 'ERROR-SEMANTIC':
-        case 'ERROR-TECHNICAL':
-        case 'ERROR-INTERRUPTED':
-        case 'ERROR-CONSTRAINT-UNFULFILLED':
-          tokenColor = '#ff4d4f';
+        case 'timeColors': {
+          const timeInfo = getTimeInfo({
+            element: { id, type: '', businessObject: {} } as any,
+            logInfo: logEntry,
+            token,
+            instance,
+          });
+          const planInfo = getPlanDelays({ elementMetaData: {}, ...timeInfo });
+          color = progressToColor(timeInfo, planInfo);
           break;
-        case 'ABORTED':
-        case 'FAILED':
-        case 'TERMINATED':
-          tokenColor = 'black';
-          break;
+        }
         default:
-          tokenColor = '#52c41a';
+          color = 'white';
       }
+
+      colorMap[id] = color;
     }
 
-    // Create the token circle in the SVG root
-    const svgRoot = doc.documentElement;
+    for (const [elementId, color] of Object.entries(colorMap)) {
+      const el = doc.querySelector(`[data-element-id="${elementId}"]`);
+      if (!el) continue;
+      const shape = el.querySelector(
+        '.djs-visual rect, .djs-visual circle, .djs-visual polygon, .djs-visual path',
+      );
+      if (!shape) continue;
+      const cleaned = (shape.getAttribute('style') || '')
+        .replace(/fill:[^;]+;?/g, '')
+        .replace(/fill-opacity:[^;]+;?/g, '')
+        .trimEnd();
+      shape.setAttribute('style', `${cleaned}; fill: ${color}; fill-opacity: 0.5;`);
+    }
+  }
+
+  // Draw tokens using positions
+  for (const { token, color, position } of tokenPositions) {
+    const targetEl = doc.querySelector(`[data-element-id="${position.targetElementId}"]`);
+    if (!targetEl) continue;
+
+    let cx: number;
+    let cy: number;
+
+    const isConnection = targetEl.classList.contains('djs-connection');
+
+    if (isConnection) {
+      // Sequence flows have no transform; coordinates are absolute in path d attribute
+      const path = targetEl.querySelector('.djs-visual path');
+      const d = path?.getAttribute('d') || '';
+      const pointMatches = [...d.matchAll(/[ML]([\d.]+),([\d.]+)/g)];
+      if (pointMatches.length < 2) continue;
+
+      const last = pointMatches[pointMatches.length - 1];
+      const secondLast = pointMatches[pointMatches.length - 2];
+      const lx = parseFloat(last[1]);
+      const ly = parseFloat(last[2]);
+      const slx = parseFloat(secondLast[1]);
+      const sly = parseFloat(secondLast[2]);
+
+      // Use top/right from getTokenPosition as offsets from the last waypoint
+      cx = lx - (position.right || 0) + 10;
+      cy = ly + (position.top || 0) + 10;
+    } else {
+      // Shape elements have matrix transform
+      const transform = targetEl.getAttribute('transform') || '';
+      const match =
+        transform.match(/matrix\([\d\s.]+\s+([\d.]+)\s+([\d.]+)\)/) ||
+        transform.match(/translate\(([\d.]+)[, ]+([\d.]+)\)/);
+      if (!match) continue;
+
+      const elX = parseFloat(match[1]);
+      const elY = parseFloat(match[2]);
+      const shape = targetEl.querySelector('.djs-visual rect, .djs-visual circle');
+      const elWidth = shape ? parseFloat(shape.getAttribute('width') || '0') : 0;
+
+      cx =
+        position.right !== undefined ? elX + elWidth - position.right : elX + (position.left || 0);
+      cy = elY + (position.top || 0);
+    }
+
     const tokenGroup = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
-    tokenGroup.setAttribute('transform', `translate(${x}, ${y})`);
 
     const circle = doc.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', '-10');
-    circle.setAttribute('cy', '-10');
+    circle.setAttribute('cx', String(cx));
+    circle.setAttribute('cy', String(cy));
     circle.setAttribute('r', '10');
-    circle.setAttribute('style', `fill: ${tokenColor}; stroke: black; stroke-width: 1px;`);
+    circle.setAttribute('style', `fill: ${color}; stroke: black; stroke-width: 1;`);
 
     const title = doc.createElementNS('http://www.w3.org/2000/svg', 'title');
     title.textContent = token.state;
@@ -388,7 +387,8 @@ export async function getSVGWithInstanceColoring(
     tokenGroup.appendChild(title);
     svgRoot.appendChild(tokenGroup);
   }
-  return new XMLSerializer().serializeToString(doc.documentElement);
+
+  return new XMLSerializer().serializeToString(svgRoot);
 }
 
 export const markdownEditor: Promise<ToastEditorType> =

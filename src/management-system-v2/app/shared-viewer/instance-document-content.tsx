@@ -122,7 +122,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
           </>
         )}
 
-        {/* ── Imported process version info ── */}
+        {/* process version info */}
         {settings.importedProcesses && importedProcess?.versionId && (
           <div className={styles.MetaInformation}>
             <Title level={3} id={`${node.id}_version_page`}>
@@ -242,7 +242,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
   return (
     <div className={styles.ProcessDocument}>
-      {/* Document header (logo + title page), same as ProcessDocument */}
+      {/* Document header (logo + title page) */}
       <div className={styles.Header}>
         <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="169.5pt" height="15pt" />
         <h3>www.proceed-labs.org</h3>

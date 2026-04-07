@@ -21,10 +21,8 @@ type UseProcessHierarchyOptions = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   availableImports: ImportsInfo;
   // If provided, used as the SVG for the root element instead of the plain export.
-  // This is how instance doc injects a colored SVG without forking the whole transform.
   getRootSvg?: (bpmn: string) => Promise<string>;
   // If provided, called after transforming each element to attach extra data.
-  // This is how instance doc attaches token + log entries per element.
   enrichElement?: (el: any, node: Omit<ElementInfo, 'instanceStatus'>) => ElementInfo;
 };
 
@@ -95,7 +93,7 @@ export function useProcessHierarchy({
         image,
       };
 
-      // Let callers attach extra data (e.g. instance token/log) without forking transform
+      // Let callers attach extra data without forking transform
       return enrichElement ? enrichElement(el, node) : node;
     }
 

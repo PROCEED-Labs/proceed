@@ -103,6 +103,26 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
                 getContainer={() => mainContent.current!}
                 targetOffset={100}
                 onChange={handleContentTableChange}
+                extraRootItems={[
+                  ...(activeSettings.showInstanceStatus
+                    ? [
+                        {
+                          key: 'instance_summary',
+                          href: '#instance_summary_page',
+                          title: 'Instance Summary',
+                        },
+                      ]
+                    : []),
+                  ...(activeSettings.showInstanceVariables
+                    ? [
+                        {
+                          key: 'instance_variables',
+                          href: '#instance_variables_page',
+                          title: 'Instance Variables',
+                        },
+                      ]
+                    : []),
+                ]}
               />
             </div>
           )}

@@ -50,12 +50,14 @@ type TableOfContentProps = Omit<AnchorProps, 'items'> & {
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
   linksDisabled?: boolean;
+  extraRootItems?: AnchorLinkItemProps[];
 };
 
 const TableOfContents: React.FC<TableOfContentProps> = ({
   settings,
   processHierarchy,
   linksDisabled = false,
+  extraRootItems = [],
   ...anchorProps
 }) => {
   // transform the document data into a table of contents
@@ -82,6 +84,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
       ({ milestones, meta, description } = importedProcess);
     }
 
+    // unshift builds in reverse — last unshift appears first in the list
     if (milestones) {
       children.unshift({
         key: `${hierarchyElement.id}_milestones`,
@@ -101,6 +104,16 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         key: `${hierarchyElement.id}_image`,
         href: linksDisabled ? '' : `#${hierarchyElement.id}_image_page`,
         title: 'Overview Image',
+      });
+    }
+    if (
+      hierarchyElement.instanceStatus?.token ||
+      hierarchyElement.instanceStatus?.logEntries?.length
+    ) {
+      children.unshift({
+        key: `${hierarchyElement.id}_instance_status`,
+        href: linksDisabled ? '' : `#${hierarchyElement.id}_instance_status_page`,
+        title: 'Instance Status',
       });
     }
     if (description) {
@@ -142,7 +155,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     // put the children of the root process in the root layer of the table of contents instead of nesting them
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
-    tableOfContents = [tableOfContents, ...directChildren];
+    tableOfContents = [tableOfContents, ...extraRootItems, ...directChildren];
   }
 
   return tableOfContents ? (

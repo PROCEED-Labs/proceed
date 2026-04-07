@@ -17,7 +17,8 @@ import { VersionInfo } from './process-document';
 import styles from './process-document.module.scss';
 import instanceStyles from './instance-documentation-page.module.scss';
 import { statusToType } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
-
+import { Grid } from 'antd';
+import TableOfContents from './table-of-content';
 const { Title, Text } = Typography;
 
 type Props = {
@@ -40,6 +41,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
   const shareToken = query.get('token');
   const { download: getImage } = useFileManager({ entityType: EntityType.PROCESS });
   const [pages, setPages] = useState<React.JSX.Element[]>([]);
+  const breakpoint = Grid.useBreakpoint();
 
   useEffect(() => {
     const buildPages = async () => {
@@ -280,6 +282,32 @@ const InstanceDocumentContent: React.FC<Props> = ({
           </div>
         </div>
 
+        {settings.tableOfContents && (
+          <div
+            className={cn(styles.TableOfContents, {
+              [styles.WebTableOfContents]: !breakpoint.lg,
+              [styles.TableOfContentPage]: settings.titlepage,
+            })}
+          >
+            <Title level={2}>Table Of Contents</Title>
+            <TableOfContents
+              affix={false}
+              getCurrentAnchor={() => ''}
+              settings={settings as any}
+              processHierarchy={processHierarchy}
+              linksDisabled
+              extraRootItems={[
+                ...(settings.showInstanceStatus
+                  ? [{ key: 'instance_summary', href: '', title: 'Instance Summary' }]
+                  : []),
+                ...(settings.showInstanceVariables
+                  ? [{ key: 'instance_variables', href: '', title: 'Instance Variables' }]
+                  : []),
+              ]}
+            />
+          </div>
+        )}
+
         {...pages}
       </div>
     </div>
@@ -312,7 +340,9 @@ function InstanceSummarySection({ instance }: { instance: InstanceInfo }) {
 
   return (
     <div className={styles.MetaInformation}>
-      <Title level={3}>Instance Summary</Title>
+      <Title level={3} id="instance_summary_page">
+        Instance Summary
+      </Title>
       <Table
         pagination={false}
         showHeader={false}
@@ -355,7 +385,9 @@ function InstanceVariablesSection({ instance }: { instance: InstanceInfo }) {
 
   return (
     <div className={styles.MetaInformation}>
-      <Title level={3}>Instance Variables</Title>
+      <Title level={3} id="instance_variables_page">
+        Instance Variables
+      </Title>
       <Table
         pagination={false}
         rowKey="name"

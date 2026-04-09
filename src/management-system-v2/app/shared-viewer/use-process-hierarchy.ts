@@ -73,9 +73,14 @@ export function useProcessHierarchy({
       }
 
       children.sort((a, b) => {
-        const aIsContainer = !!a.children?.length;
-        const bIsContainer = !!b.children?.length;
-        return !aIsContainer ? -1 : !bIsContainer ? 1 : 0;
+        const typeOrder = (node: ElementInfo) => {
+          const type = node.elementType || '';
+          if (type.includes('StartEvent')) return 0;
+          if (type.includes('EndEvent')) return 3;
+          if (node.children?.length) return 2;
+          return 1;
+        };
+        return typeOrder(a) - typeOrder(b);
       });
 
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
@@ -91,6 +96,7 @@ export function useProcessHierarchy({
         nestedSubprocess,
         children,
         image,
+        elementType: el.$type,
       };
 
       // Let callers attach extra data without forking transform

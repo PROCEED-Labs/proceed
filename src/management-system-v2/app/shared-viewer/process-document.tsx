@@ -19,6 +19,7 @@ import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { useFileManager } from '@/lib/useFileManager';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import { generateDateString } from '@/lib/utils';
+import ElementSections from './element-sections';
 
 export type VersionInfo = {
   id?: string;
@@ -110,112 +111,20 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
           <Title id={`${hierarchyElement.id}_page`} level={2}>
             {elementLabel}
           </Title>
-          {/* Hide the svg if the element is not a container (process, sub-process, pool,...) and the respective option is deselected */}
-          {(settings.showElementSVG || isContainer) && (
-            <div
-              className={styles.ElementCanvas}
-              dangerouslySetInnerHTML={{
-                __html: elementSvg,
-              }}
-            ></div>
-          )}
         </div>
-        {settings.importedProcesses && importedProcess && importedProcess.versionId && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_version_page`}>
-              Version Information
-            </Title>
-            {importedProcess.versionName && (
-              <p>
-                <b>Version:</b> {importedProcess.versionName}
-              </p>
-            )}
-            {importedProcess.versionDescription && (
-              <p>
-                <b>Version Description:</b> {importedProcess.versionDescription}
-              </p>
-            )}
-            <p>
-              <b>Creation Time:</b> {generateDateString(new Date(importedProcess.versionId), true)}
-            </p>
-          </div>
-        )}
-        {description && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_description_page`}>
-              General Description
-            </Title>
-            <div>
-              <div
-                className="toastui-editor-contents"
-                dangerouslySetInnerHTML={{ __html: description }}
-              ></div>
-            </div>
-          </div>
-        )}
-        {imageURL && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_image_page`}>
-              Overview Image
-            </Title>
-            <Image
-              alt="Elements overview image"
-              style={{
-                width: 'auto',
-                maxWidth: '80%',
-                height: '300px',
-                position: 'relative',
-                left: '50%',
-                transform: 'translate(-50%)',
-              }}
-              src={imageURL}
-              width={'100%'}
-            />
-          </div>
-        )}
-        {meta && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_meta_page`}>
-              Meta Data
-            </Title>
-            <Table
-              pagination={false}
-              rowKey="key"
-              columns={[
-                { title: 'Name', dataIndex: 'key', key: 'key' },
-                { title: 'Value', dataIndex: 'val', key: 'value' },
-              ]}
-              dataSource={Object.entries(meta).map(([key, val]) => ({ key, val }))}
-            />
-          </div>
-        )}
-        {milestones && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`${hierarchyElement.id}_milestone_page`}>
-              Milestones
-            </Title>
-            <Table
-              pagination={false}
-              rowKey="id"
-              columns={[
-                { title: 'ID', dataIndex: 'id', key: 'id' },
-                { title: 'Name', dataIndex: 'name', key: 'name' },
-                {
-                  title: 'Description',
-                  dataIndex: 'description',
-                  key: 'description',
-                  render: (value) => (
-                    <div
-                      className="toastui-editor-contents"
-                      dangerouslySetInnerHTML={{ __html: value }}
-                    ></div>
-                  ),
-                },
-              ]}
-              dataSource={milestones}
-            />
-          </div>
-        )}
+        <ElementSections
+          node={{
+            ...hierarchyElement,
+            svg: elementSvg,
+            description,
+            meta,
+            milestones,
+            importedProcess,
+          }}
+          settings={settings as Record<string, boolean>}
+          resolvedImageUrl={imageURL}
+          headingLevel={3}
+        />
       </div>,
     );
 

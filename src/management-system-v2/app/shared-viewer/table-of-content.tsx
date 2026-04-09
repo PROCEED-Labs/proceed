@@ -29,6 +29,7 @@ export type ElementInfo = MetaInformation & {
   // the visual representation of an element (and its children) as seen in its parent elements plane
   svg: string;
   id: string;
+  elementType?: string;
   children?: ElementInfo[];
   // marks the element as a subprocess and contains the visual representation of the plane of that subprocess and the contained children
   nestedSubprocess?: { planeSvg: string };
@@ -53,6 +54,24 @@ type TableOfContentProps = Omit<AnchorProps, 'items'> & {
   extraRootItems?: AnchorLinkItemProps[];
 };
 
+function getElementTypeLabel(node: ElementInfo): string {
+  const hasName = node.name && !node.name.startsWith('<');
+  const identifier = hasName ? node.name : node.id;
+  const type = node.elementType || '';
+
+  if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
+  if (type.includes('EndEvent')) return `End Event: ${identifier}`;
+  if (type.includes('UserTask')) return `User Task: ${identifier}`;
+  if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
+  if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
+  if (type.includes('Task')) return `Task: ${identifier}`;
+  if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
+  if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
+  if (type.includes('Gateway')) return `Gateway: ${identifier}`;
+  if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
+  if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
+  return String(identifier);
+}
 const TableOfContents: React.FC<TableOfContentProps> = ({
   settings,
   processHierarchy,
@@ -77,7 +96,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
 
     let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
-    let label = hierarchyElement.name || `<${hierarchyElement.id}>`;
+    let label = getElementTypeLabel(hierarchyElement);
 
     if (settings.importedProcesses && importedProcess) {
       label = importedProcess.name!;
@@ -106,21 +125,12 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         title: 'Overview Image',
       });
     }
-    if (
-      hierarchyElement.instanceStatus?.token ||
-      hierarchyElement.instanceStatus?.logEntries?.length
-    ) {
-      children.unshift({
-        key: `${hierarchyElement.id}_instance_status`,
-        href: linksDisabled ? '' : `#${hierarchyElement.id}_instance_status_page`,
-        title: 'Instance Status',
-      });
-    }
+
     if (description) {
       children.unshift({
         key: `${hierarchyElement.id}_description`,
         href: linksDisabled ? '' : `#${hierarchyElement.id}_description_page`,
-        title: 'General Description',
+        title: 'Description',
       });
     }
     if (settings.importedProcesses && importedProcess && importedProcess.versionId) {
@@ -152,10 +162,15 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     : undefined;
 
   if (tableOfContents) {
-    // put the children of the root process in the root layer of the table of contents instead of nesting them
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
-    tableOfContents = [tableOfContents, ...extraRootItems, ...directChildren];
+    // If extraRootItems are provided, they define the full top-level structure
+    // so skip the auto-generated root entry (Process Diagram)
+    if (extraRootItems.length > 0) {
+      tableOfContents = [...extraRootItems, ...directChildren];
+    } else {
+      tableOfContents = [tableOfContents, ...directChildren];
+    }
   }
 
   return tableOfContents ? (

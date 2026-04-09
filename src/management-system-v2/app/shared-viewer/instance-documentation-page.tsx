@@ -71,6 +71,40 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
   const activeSettings = Object.fromEntries(checkedSettings.map((k) => [k, true]));
   const shortInstanceId = instance.processInstanceId.slice(-8);
 
+  const extraRootItems = [
+    {
+      key: 'process_overview',
+      href: '#process_overview_page',
+      title: 'Process Overview',
+      children: [
+        { key: 'process_summary', href: '#process_summary_page', title: 'Summary' },
+        { key: 'process_diagram', href: '#process_diagram_page', title: 'Process Diagram' },
+      ],
+    },
+    {
+      key: 'execution_overview',
+      href: '#execution_overview_page',
+      title: 'Execution Overview',
+      children: [
+        { key: 'execution_summary', href: '#execution_summary_page', title: 'Summary' },
+        ...(activeSettings.showInstanceVariables
+          ? [
+              {
+                key: 'end_states_variables',
+                href: '#end_states_variables_page',
+                title: 'End States of Process Variables',
+              },
+            ]
+          : []),
+      ],
+    },
+    {
+      key: 'detailed_execution_log',
+      href: '#detailed_execution_log_page',
+      title: 'Detailed Execution Log',
+    },
+  ];
+
   return (
     <SharedViewerLayout
       processData={processData}
@@ -83,6 +117,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
       availableSettings={instanceSettings}
       activeSettings={activeSettings}
       title={`${processData.name} — Instance …${shortInstanceId}`}
+      extraRootItems={extraRootItems}
     >
       {!processHierarchy ? (
         <Spin tip="Loading instance data" size="large" style={{ top: '50px' }}>

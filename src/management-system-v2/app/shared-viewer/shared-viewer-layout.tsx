@@ -26,6 +26,7 @@ type SharedViewerLayoutProps = {
   activeSettings: Record<string, boolean>;
   title: React.ReactNode;
   children: React.ReactNode;
+  extraRootItems?: React.ComponentProps<typeof TableOfContents>['extraRootItems'];
 };
 
 const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
@@ -40,6 +41,7 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
   activeSettings,
   title,
   children,
+  extraRootItems,
 }) => {
   const router = useRouter();
   const breakpoint = Grid.useBreakpoint();
@@ -103,26 +105,7 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
                 getContainer={() => mainContent.current!}
                 targetOffset={100}
                 onChange={handleContentTableChange}
-                extraRootItems={[
-                  ...(activeSettings.showInstanceStatus
-                    ? [
-                        {
-                          key: 'instance_summary',
-                          href: '#instance_summary_page',
-                          title: 'Instance Summary',
-                        },
-                      ]
-                    : []),
-                  ...(activeSettings.showInstanceVariables
-                    ? [
-                        {
-                          key: 'instance_variables',
-                          href: '#instance_variables_page',
-                          title: 'Instance Variables',
-                        },
-                      ]
-                    : []),
-                ]}
+                extraRootItems={extraRootItems}
               />
             </div>
           )}

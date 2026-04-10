@@ -164,10 +164,9 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
   if (tableOfContents) {
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
-    // If extraRootItems are provided, they define the full top-level structure
-    // so skip the auto-generated root entry (Process Diagram)
     if (extraRootItems.length > 0) {
-      tableOfContents = [...extraRootItems, ...directChildren];
+      // extraRootItems defines the full structure
+      tableOfContents = [...extraRootItems];
     } else {
       tableOfContents = [tableOfContents, ...directChildren];
     }

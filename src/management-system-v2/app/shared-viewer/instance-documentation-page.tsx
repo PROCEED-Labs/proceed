@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Spin } from 'antd';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
@@ -12,6 +12,7 @@ import SharedViewerLayout from './shared-viewer-layout';
 import InstanceDocumentContent from './instance-document-content';
 import { useProcessHierarchy } from './use-process-hierarchy';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
+import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 const defaultInstanceSettingValues = instanceSettings.map(({ value }) => value);
 
@@ -71,39 +72,142 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
   const activeSettings = Object.fromEntries(checkedSettings.map((k) => [k, true]));
   const shortInstanceId = instance.processInstanceId.slice(-8);
 
-  const extraRootItems = [
-    {
-      key: 'process_overview',
-      href: '#process_overview_page',
-      title: 'Process Overview',
-      children: [
-        { key: 'process_summary', href: '#process_summary_page', title: 'Summary' },
-        { key: 'process_diagram', href: '#process_diagram_page', title: 'Process Diagram' },
-      ],
-    },
-    {
-      key: 'execution_overview',
-      href: '#execution_overview_page',
-      title: 'Execution Overview',
-      children: [
-        { key: 'execution_summary', href: '#execution_summary_page', title: 'Summary' },
-        ...(activeSettings.showInstanceVariables
-          ? [
-              {
-                key: 'end_states_variables',
-                href: '#end_states_variables_page',
-                title: 'End States of Process Variables',
-              },
-            ]
-          : []),
-      ],
-    },
-    {
-      key: 'detailed_execution_log',
-      href: '#detailed_execution_log_page',
-      title: 'Detailed Execution Log',
-    },
-  ];
+  function getElementTypeLabel(node: ElementInfo): string {
+    const hasName = node.name && !node.name.startsWith('<');
+    const identifier = hasName ? node.name : node.id;
+    const type = node.elementType || '';
+    if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
+    if (type.includes('EndEvent')) return `End Event: ${identifier}`;
+    if (type.includes('UserTask')) return `User Task: ${identifier}`;
+    if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
+    if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
+    if (type.includes('Task')) return `Task: ${identifier}`;
+    if (type.includes('Gateway')) return `Gateway: ${identifier}`;
+    if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
+    if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
+    return String(identifier);
+  }
+
+  function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
+    const hasLog = !!node.instanceStatus?.logEntries?.length;
+    const hasToken = !!node.instanceStatus?.token;
+    const children: AnchorLinkItemProps[] = [];
+
+    if (activeSettings.showElementSVG) {
+      children.push({
+        key: `${node.id}_diagram`,
+        href: `#${node.id}_diagram_page`,
+        title: 'Diagram Element',
+      });
+    }
+    if (node.description) {
+      children.push({
+        key: `${node.id}_description`,
+        href: `#${node.id}_description_page`,
+        title: 'Description',
+      });
+    }
+    if ((hasLog || hasToken) && activeSettings.showInstanceStatus) {
+      children.push({
+        key: `${node.id}_execution_log`,
+        href: `#${node.id}_execution_log_page`,
+        title: 'Execution Log',
+      });
+    }
+    if (activeSettings.showInstanceVariables) {
+      // Only add if variables actually changed for this element
+      const rawVariables = (instance.variables || {}) as Record<
+        string,
+        { value: unknown; log?: { changedTime: number; changedBy?: string }[] }
+      >;
+      const startTime =
+        node.instanceStatus?.logEntries?.[0]?.startTime ??
+        node.instanceStatus?.token?.currentFlowElementStartTime;
+      const endTime = node.instanceStatus?.logEntries?.at(-1)?.endTime;
+      const hasVariableChanges = Object.values(rawVariables).some((data) =>
+        data.log?.some((logEntry) => {
+          if (logEntry.changedBy) return logEntry.changedBy === node.id;
+          if (startTime === undefined) return false;
+          const effectiveEnd = endTime ?? Date.now();
+          return logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd;
+        }),
+      );
+      if (hasVariableChanges) {
+        children.push({
+          key: `${node.id}_variable_changes`,
+          href: `#${node.id}_variable_changes_page`,
+          title: 'Variable Changes',
+        });
+      }
+    }
+    return children;
+  }
+
+  function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
+    return nodes
+      .filter((node) => {
+        if (!activeSettings.hideEmpty) return true;
+        const hasLog = !!node.instanceStatus?.logEntries?.length;
+        const hasToken = !!node.instanceStatus?.token;
+        return hasToken || hasLog || !!node.description || !!node.image || !!node.meta;
+      })
+      .map((node) => ({
+        key: node.id,
+        href: `#${node.id}_page`,
+        title: getElementTypeLabel(node),
+        children: buildElementChildren(node),
+      }));
+  }
+  const sortedChildren = processHierarchy
+    ? [...(processHierarchy.children || [])].sort((a, b) => {
+        const order = (n: ElementInfo) => {
+          const t = n.elementType || '';
+          if (t.includes('StartEvent')) return 0;
+          if (t.includes('EndEvent')) return 3;
+          if (n.children?.length) return 2;
+          return 1;
+        };
+        return order(a) - order(b);
+      })
+    : [];
+
+  const extraRootItems = useMemo(
+    (): AnchorLinkItemProps[] => [
+      {
+        key: 'process_overview',
+        href: '#process_overview_page',
+        title: 'Process Overview',
+        children: [
+          { key: 'process_summary', href: '#process_summary_page', title: 'Summary' },
+          { key: 'process_diagram', href: '#process_diagram_page', title: 'Process Diagram' },
+        ],
+      },
+      {
+        key: 'execution_overview',
+        href: '#execution_overview_page',
+        title: 'Execution Overview',
+        children: [
+          { key: 'execution_summary', href: '#execution_summary_page', title: 'Summary' },
+          ...(activeSettings.showInstanceVariables
+            ? [
+                {
+                  key: 'end_states_variables',
+                  href: '#end_states_variables_page',
+                  title: 'End States of Process Variables',
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        key: 'detailed_execution_log',
+        href: '#detailed_execution_log_page',
+        title: 'Detailed Execution Log',
+        children: processHierarchy ? buildDetailedLogItems(sortedChildren) : [],
+      },
+    ],
+    [processHierarchy, activeSettings, instance],
+  );
 
   return (
     <SharedViewerLayout
@@ -130,6 +234,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
           versionInfo={versionInfo}
           instance={instance}
           settings={activeSettings}
+          extraRootItems={extraRootItems}
         />
       )}
     </SharedViewerLayout>

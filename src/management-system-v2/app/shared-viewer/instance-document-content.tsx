@@ -17,6 +17,7 @@ import { statusToType } from '../(dashboard)/[environmentId]/(automation)/execut
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import ElementSections from './element-sections';
+import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -28,6 +29,7 @@ type Props = {
   versionInfo: VersionInfo;
   instance: InstanceInfo;
   settings: Record<string, boolean>;
+  extraRootItems: AnchorLinkItemProps[];
 };
 
 // ─────────────────────────────────────────────
@@ -117,6 +119,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
   versionInfo,
   instance,
   settings,
+  extraRootItems,
 }) => {
   const environment = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
@@ -230,7 +233,9 @@ const InstanceDocumentContent: React.FC<Props> = ({
         {/* Execution Log */}
         {logRows.length > 0 && settings.showInstanceStatus && (
           <div className={styles.MetaInformation}>
-            <Title level={4}>Execution Log</Title>
+            <Title level={4} id={`${node.id}_execution_log_page`}>
+              Execution Log
+            </Title>
             <Table
               pagination={false}
               rowKey="key"
@@ -284,7 +289,9 @@ const InstanceDocumentContent: React.FC<Props> = ({
         {/* Variable Changes if happened */}
         {changedVariables.length > 0 && (
           <div className={styles.MetaInformation}>
-            <Title level={4}>Variable Changes</Title>
+            <Title level={4} id={`${node.id}_variable_changes_page`}>
+              Variable Changes
+            </Title>
             <Table
               pagination={false}
               rowKey="name"
@@ -380,39 +387,18 @@ const InstanceDocumentContent: React.FC<Props> = ({
               settings={settings as any}
               processHierarchy={processHierarchy}
               linksDisabled
-              extraRootItems={[
-                {
-                  key: 'process_overview',
+              extraRootItems={extraRootItems.map((item) => ({
+                ...item,
+                href: '',
+                children: item.children?.map((child) => ({
+                  ...child,
                   href: '',
-                  title: 'Process Overview',
-                  children: [
-                    { key: 'process_summary', href: '', title: 'Summary' },
-                    { key: 'process_diagram', href: '', title: 'Process Diagram' },
-                  ],
-                },
-                {
-                  key: 'execution_overview',
-                  href: '',
-                  title: 'Execution Overview',
-                  children: [
-                    { key: 'execution_summary', href: '', title: 'Summary' },
-                    ...(settings.showInstanceVariables
-                      ? [
-                          {
-                            key: 'end_states_variables',
-                            href: '',
-                            title: 'End States of Process Variables',
-                          },
-                        ]
-                      : []),
-                  ],
-                },
-                {
-                  key: 'detailed_execution_log',
-                  href: '',
-                  title: 'Detailed Execution Log',
-                },
-              ]}
+                  children: child.children?.map((grandchild) => ({
+                    ...grandchild,
+                    href: '',
+                  })),
+                })),
+              }))}
             />
           </div>
         )}

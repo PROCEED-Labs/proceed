@@ -97,7 +97,16 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
             {children}
           </div>
           {breakpoint.lg && (
-            <div className={styles.ContentTableCol} ref={contentTableRef}>
+            <div
+              className={styles.ContentTableCol}
+              ref={contentTableRef}
+              style={{
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 100px)',
+                position: 'sticky',
+                top: 0,
+              }}
+            >
               <TableOfContents
                 settings={activeSettings as any}
                 processHierarchy={processHierarchy}

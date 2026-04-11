@@ -14,6 +14,12 @@ import { ElementInfo } from './table-of-content';
 import { VersionInfo } from './process-document';
 import styles from './process-document.module.scss';
 import { statusToType } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import {
+  getElementTypeLabel,
+  sortInstanceChildren,
+  isInstanceElementEmpty,
+  getVariablesForElement,
+} from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import ElementSections from './element-sections';
@@ -33,85 +39,9 @@ type Props = {
 };
 
 // ─────────────────────────────────────────────
-// Helper: get variables changed by or during an element
-// ─────────────────────────────────────────────
-function getVariablesForElement(
-  instance: InstanceInfo,
-  elementId: string,
-  startTime?: number,
-  endTime?: number,
-): { name: string; value: string; changedTime: number }[] {
-  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
-  const result: { name: string; value: string; changedTime: number }[] = [];
-
-  for (const [name, data] of Object.entries(rawVariables)) {
-    if (!data.log?.length) continue;
-
-    for (const logEntry of data.log) {
-      const displayValue =
-        data.value === null || data.value === undefined
-          ? '—'
-          : typeof data.value === 'object'
-            ? JSON.stringify(data.value)
-            : String(data.value);
-
-      // If changedBy exists, attach directly to that activity only
-      if (logEntry.changedBy) {
-        if (logEntry.changedBy === elementId) {
-          result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
-        }
-        continue;
-      }
-
-      // if no changedBy then use time-based matching
-      if (startTime === undefined) continue;
-      const effectiveEnd = endTime ?? Date.now();
-      if (logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd) {
-        result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
-      }
-    }
-  }
-
-  return result;
-}
-
-// ─────────────────────────────────────────────
-// Helper: get element type label
-// Type: Name or Type: ID
-// ─────────────────────────────────────────────
-function getElementTypeLabel(node: ElementInfo): string {
-  const hasName = node.name && !node.name.startsWith('<');
-  const identifier = hasName ? node.name : node.id;
-  const type = node.elementType || '';
-
-  if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
-  if (type.includes('EndEvent')) return `End Event: ${identifier}`;
-  if (type.includes('UserTask')) return `User Task: ${identifier}`;
-  if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
-  if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
-  if (type.includes('Task')) return `Task: ${identifier}`;
-  if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
-  if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
-  if (type.includes('Gateway')) return `Gateway: ${identifier}`;
-  if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
-  if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
-  return String(identifier);
-}
-
-// ─────────────────────────────────────────────
 // Helper: sort children
 // start events first, end events last
 // ─────────────────────────────────────────────
-function sortChildren(children: ElementInfo[]): ElementInfo[] {
-  const order = (node: ElementInfo) => {
-    const type = node.elementType || '';
-    if (type.includes('StartEvent')) return 0;
-    if (type.includes('EndEvent')) return 3;
-    if (node.children?.length) return 2;
-    return 1;
-  };
-  return [...children].sort((a, b) => order(a) - order(b));
-}
 
 const InstanceDocumentContent: React.FC<Props> = ({
   processData,
@@ -131,7 +61,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
   useEffect(() => {
     const buildPages = async () => {
       const result: React.JSX.Element[] = [];
-      const sorted = sortChildren(processHierarchy.children || []);
+      const sorted = sortInstanceChildren(processHierarchy.children || []);
       for (const child of sorted) {
         await renderDetailedElement(child, result);
       }
@@ -150,16 +80,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     const hasToken = !!token;
 
     // Skip if nothing to show
-    if (
-      settings.hideEmpty &&
-      !hasToken &&
-      !hasLog &&
-      !node.description &&
-      !node.image &&
-      !node.meta
-    ) {
-      return;
-    }
+    if (settings.hideEmpty && isInstanceElementEmpty(node)) return;
 
     // Get timing for variable matching
     const startTime = logEntries?.[0]?.startTime ?? token?.currentFlowElementStartTime;
@@ -314,7 +235,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
     // Recurse into subprocess children
     if ((settings.nestedSubprocesses || !node.nestedSubprocess) && node.children?.length) {
-      for (const child of sortChildren(node.children)) {
+      for (const child of sortInstanceChildren(node.children)) {
         await renderDetailedElement(child, pages);
       }
     }

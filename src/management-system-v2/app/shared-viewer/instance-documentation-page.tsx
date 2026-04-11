@@ -6,7 +6,14 @@ import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
 import { InstanceInfo } from '@/lib/engines/deployment';
 import { instanceSettings, SettingsOption } from './settings-modal';
-import { ImportsInfo, getSVGWithInstanceColoring } from './documentation-page-utils';
+import {
+  ImportsInfo,
+  getSVGWithInstanceColoring,
+  getElementTypeLabel,
+  sortInstanceChildren,
+  isInstanceElementEmpty,
+  hasVariableChangesForElement,
+} from './documentation-page-utils';
 import { ElementInfo } from './table-of-content';
 import SharedViewerLayout from './shared-viewer-layout';
 import InstanceDocumentContent from './instance-document-content';
@@ -72,22 +79,6 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
   const activeSettings = Object.fromEntries(checkedSettings.map((k) => [k, true]));
   const shortInstanceId = instance.processInstanceId.slice(-8);
 
-  function getElementTypeLabel(node: ElementInfo): string {
-    const hasName = node.name && !node.name.startsWith('<');
-    const identifier = hasName ? node.name : node.id;
-    const type = node.elementType || '';
-    if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
-    if (type.includes('EndEvent')) return `End Event: ${identifier}`;
-    if (type.includes('UserTask')) return `User Task: ${identifier}`;
-    if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
-    if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
-    if (type.includes('Task')) return `Task: ${identifier}`;
-    if (type.includes('Gateway')) return `Gateway: ${identifier}`;
-    if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
-    if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
-    return String(identifier);
-  }
-
   function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
     const hasLog = !!node.instanceStatus?.logEntries?.length;
     const hasToken = !!node.instanceStatus?.token;
@@ -116,23 +107,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
     }
     if (activeSettings.showInstanceVariables) {
       // Only add if variables actually changed for this element
-      const rawVariables = (instance.variables || {}) as Record<
-        string,
-        { value: unknown; log?: { changedTime: number; changedBy?: string }[] }
-      >;
-      const startTime =
-        node.instanceStatus?.logEntries?.[0]?.startTime ??
-        node.instanceStatus?.token?.currentFlowElementStartTime;
-      const endTime = node.instanceStatus?.logEntries?.at(-1)?.endTime;
-      const hasVariableChanges = Object.values(rawVariables).some((data) =>
-        data.log?.some((logEntry) => {
-          if (logEntry.changedBy) return logEntry.changedBy === node.id;
-          if (startTime === undefined) return false;
-          const effectiveEnd = endTime ?? Date.now();
-          return logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd;
-        }),
-      );
-      if (hasVariableChanges) {
+      if (hasVariableChangesForElement(instance, node)) {
         children.push({
           key: `${node.id}_variable_changes`,
           href: `#${node.id}_variable_changes_page`,
@@ -145,12 +120,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
 
   function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
     return nodes
-      .filter((node) => {
-        if (!activeSettings.hideEmpty) return true;
-        const hasLog = !!node.instanceStatus?.logEntries?.length;
-        const hasToken = !!node.instanceStatus?.token;
-        return hasToken || hasLog || !!node.description || !!node.image || !!node.meta;
-      })
+      .filter((node) => !activeSettings.hideEmpty || !isInstanceElementEmpty(node))
       .map((node) => ({
         key: node.id,
         href: `#${node.id}_page`,
@@ -159,16 +129,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
       }));
   }
   const sortedChildren = processHierarchy
-    ? [...(processHierarchy.children || [])].sort((a, b) => {
-        const order = (n: ElementInfo) => {
-          const t = n.elementType || '';
-          if (t.includes('StartEvent')) return 0;
-          if (t.includes('EndEvent')) return 3;
-          if (n.children?.length) return 2;
-          return 1;
-        };
-        return order(a) - order(b);
-      })
+    ? sortInstanceChildren(processHierarchy.children || [])
     : [];
 
   const extraRootItems = useMemo(

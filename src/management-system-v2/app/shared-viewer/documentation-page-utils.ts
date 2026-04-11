@@ -38,6 +38,7 @@ import {
   getExecutionColor,
   progressToColor,
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
+import { ElementInfo } from './table-of-content';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -400,3 +401,109 @@ export const markdownEditor: Promise<ToastEditorType> =
           return new Editor({ el: div });
         })
     : (Promise.resolve(null) as any);
+
+/*
+ *Instance documentation helpers
+ */
+
+// get element Type: Name or Type: ID label
+export function getElementTypeLabel(node: ElementInfo): string {
+  const hasName = node.name && !node.name.startsWith('<');
+  const identifier = hasName ? node.name : node.id;
+  const type = node.elementType || '';
+
+  if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
+  if (type.includes('EndEvent')) return `End Event: ${identifier}`;
+  if (type.includes('UserTask')) return `User Task: ${identifier}`;
+  if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
+  if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
+  if (type.includes('Task')) return `Task: ${identifier}`;
+  if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
+  if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
+  if (type.includes('Gateway')) return `Gateway: ${identifier}`;
+  if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
+  if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
+  return String(identifier);
+}
+
+// sort children: start events first, end events last
+export function sortInstanceChildren(children: ElementInfo[]): ElementInfo[] {
+  const order = (node: ElementInfo) => {
+    const type = node.elementType || '';
+    if (type.includes('StartEvent')) return 0;
+    if (type.includes('EndEvent')) return 3;
+    if (node.children?.length) return 2;
+    return 1;
+  };
+  return [...children].sort((a, b) => order(a) - order(b));
+}
+
+// check for empty event
+export function isInstanceElementEmpty(node: ElementInfo): boolean {
+  return (
+    !node.instanceStatus?.logEntries?.length &&
+    !node.instanceStatus?.token &&
+    !node.description &&
+    !node.image &&
+    !node.meta
+  );
+}
+
+// Calculate variable changes for each individial event or element based on time
+export function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo): boolean {
+  type VariableEntry = { value: unknown; log?: { changedTime: number; changedBy?: string }[] };
+  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
+  const startTime =
+    node.instanceStatus?.logEntries?.[0]?.startTime ??
+    node.instanceStatus?.token?.currentFlowElementStartTime;
+  const endTime = node.instanceStatus?.logEntries?.at(-1)?.endTime;
+
+  return Object.values(rawVariables).some((data) =>
+    data.log?.some((logEntry) => {
+      if (logEntry.changedBy) return logEntry.changedBy === node.id;
+      if (startTime === undefined) return false;
+      const effectiveEnd = endTime ?? Date.now();
+      return logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd;
+    }),
+  );
+}
+
+// get variables changed by or during an element
+export function getVariablesForElement(
+  instance: InstanceInfo,
+  elementId: string,
+  startTime?: number,
+  endTime?: number,
+): { name: string; value: string; changedTime: number }[] {
+  type VariableEntry = { value: unknown; log?: { changedTime: number; changedBy?: string }[] };
+  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
+  const result: { name: string; value: string; changedTime: number }[] = [];
+
+  for (const [name, data] of Object.entries(rawVariables)) {
+    if (!data.log?.length) continue;
+
+    for (const logEntry of data.log) {
+      const displayValue =
+        data.value === null || data.value === undefined
+          ? '—'
+          : typeof data.value === 'object'
+            ? JSON.stringify(data.value)
+            : String(data.value);
+
+      if (logEntry.changedBy) {
+        if (logEntry.changedBy === elementId) {
+          result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
+        }
+        continue;
+      }
+
+      if (startTime === undefined) continue;
+      const effectiveEnd = endTime ?? Date.now();
+      if (logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd) {
+        result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
+      }
+    }
+  }
+
+  return result;
+}

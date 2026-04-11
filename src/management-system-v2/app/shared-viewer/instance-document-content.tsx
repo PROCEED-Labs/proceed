@@ -16,7 +16,6 @@ import styles from './process-document.module.scss';
 import { statusToType } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import {
   getElementTypeLabel,
-  sortInstanceChildren,
   isInstanceElementEmpty,
   getVariablesForElement,
 } from './documentation-page-utils';
@@ -61,7 +60,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
   useEffect(() => {
     const buildPages = async () => {
       const result: React.JSX.Element[] = [];
-      const sorted = sortInstanceChildren(processHierarchy.children || []);
+      const sorted = processHierarchy.children || [];
       for (const child of sorted) {
         await renderDetailedElement(child, result);
       }
@@ -235,7 +234,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
     // Recurse into subprocess children
     if ((settings.nestedSubprocesses || !node.nestedSubprocess) && node.children?.length) {
-      for (const child of sortInstanceChildren(node.children)) {
+      for (const child of node.children) {
         await renderDetailedElement(child, pages);
       }
     }
@@ -375,25 +374,51 @@ const InstanceDocumentContent: React.FC<Props> = ({
                 { dataIndex: 'label', key: 'label', render: (v) => <Text strong>{v}</Text> },
                 { dataIndex: 'value', key: 'value' },
               ]}
-              dataSource={[
-                { label: 'Instance ID', value: instance.processInstanceId },
-                { label: 'Process Version', value: instance.processVersion },
-                {
-                  label: 'Started',
-                  value: generateDateString(new Date(instance.globalStartTime), true),
-                },
-                {
-                  label: 'Overall State',
-                  value: (
-                    <Alert
-                      style={{ display: 'inline-flex' }}
-                      type={statusToType(instance.instanceState[0])}
-                      message={instance.instanceState[0]}
-                      showIcon
-                    />
-                  ),
-                },
-              ]}
+              dataSource={(() => {
+                const activeStates = [
+                  'RUNNING',
+                  'READY',
+                  'PAUSED',
+                  'PAUSING',
+                  'DEPLOYMENT-WAITING',
+                  'WAITING',
+                ];
+                const isTerminal = !instance.instanceState.some((s) => activeStates.includes(s));
+
+                // Derive end time from the last log entry that has an endTime
+                const endTime = isTerminal
+                  ? instance.log.reduce<number | undefined>((latest, entry) => {
+                      if (!entry.endTime) return latest;
+                      return latest === undefined || entry.endTime > latest
+                        ? entry.endTime
+                        : latest;
+                    }, undefined)
+                  : undefined;
+
+                return [
+                  { label: 'Instance ID', value: instance.processInstanceId },
+                  { label: 'Process Version', value: instance.processVersion },
+                  {
+                    label: 'Started',
+                    value: generateDateString(new Date(instance.globalStartTime), true),
+                  },
+                  {
+                    label: 'Ended',
+                    value: endTime ? generateDateString(new Date(endTime), true) : '—',
+                  },
+                  {
+                    label: 'Overall State',
+                    value: (
+                      <Alert
+                        style={{ display: 'inline-flex' }}
+                        type={statusToType(instance.instanceState[0])}
+                        message={instance.instanceState[0]}
+                        showIcon
+                      />
+                    ),
+                  },
+                ];
+              })()}
             />
           </div>
 

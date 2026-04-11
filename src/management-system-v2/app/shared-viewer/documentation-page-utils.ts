@@ -402,10 +402,6 @@ export const markdownEditor: Promise<ToastEditorType> =
         })
     : (Promise.resolve(null) as any);
 
-/*
- *Instance documentation helpers
- */
-
 // get element Type: Name or Type: ID label
 export function getElementTypeLabel(node: ElementInfo): string {
   const hasName = node.name && !node.name.startsWith('<');
@@ -426,16 +422,68 @@ export function getElementTypeLabel(node: ElementInfo): string {
   return String(identifier);
 }
 
-// sort children: start events first, end events last
-export function sortInstanceChildren(children: ElementInfo[]): ElementInfo[] {
-  const order = (node: ElementInfo) => {
-    const type = node.elementType || '';
-    if (type.includes('StartEvent')) return 0;
-    if (type.includes('EndEvent')) return 3;
-    if (node.children?.length) return 2;
-    return 1;
-  };
-  return [...children].sort((a, b) => order(a) - order(b));
+/**
+ * Sorts BPMN child elements in process flow order using Kahn's topological sort.
+ * Follows sequence flows to produce the same order as the actual process execution.
+ * Disconnected elements (no incoming/outgoing flows) are appended at the end (if any)
+ * in their original order.
+ */
+export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInfo[] {
+  if (children.length === 0) return children;
+
+  // Extract sequence flows connecting elements only in this scope
+  const flowElements: any[] = el.flowElements ?? el.processRef?.flowElements ?? [];
+  const sequenceFlows = flowElements.filter((e: any) => e.$type === 'bpmn:SequenceFlow');
+
+  const childIds = new Set(children.map((n) => n.id));
+  const childMap = new Map(children.map((n) => [n.id, n]));
+
+  // Helper to extract id from either a reference object or a plain string
+  const resolveId = (ref: any): string | undefined =>
+    ref ? (typeof ref === 'string' ? ref : ref.id) : undefined;
+
+  // Build outgoing adjacency list and incoming degree count
+  // scoped to only the children of this element
+  const outgoing = new Map<string, string[]>(children.map((n) => [n.id, []]));
+  const incomingCount = new Map<string, number>(children.map((n) => [n.id, 0]));
+
+  for (const flow of sequenceFlows) {
+    const sourceId = resolveId(flow.sourceRef);
+    const targetId = resolveId(flow.targetRef);
+    if (!sourceId || !targetId) continue;
+    if (!childIds.has(sourceId) || !childIds.has(targetId)) continue;
+
+    outgoing.get(sourceId)!.push(targetId);
+    incomingCount.set(targetId, (incomingCount.get(targetId) ?? 0) + 1);
+  }
+
+  // Kahn's algorithm: process nodes with no remaining incoming edges first
+  const sorted: ElementInfo[] = [];
+  const queue = children.filter((n) => incomingCount.get(n.id) === 0);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    sorted.push(current);
+
+    for (const targetId of outgoing.get(current.id) ?? []) {
+      const remaining = (incomingCount.get(targetId) ?? 0) - 1;
+      incomingCount.set(targetId, remaining);
+      if (remaining === 0) {
+        const target = childMap.get(targetId);
+        if (target) queue.push(target);
+      }
+    }
+  }
+
+  // Append any elements not reachable via sequence flows (disconnected elements)
+  if (sorted.length < children.length) {
+    const sortedIds = new Set(sorted.map((n) => n.id));
+    children.forEach((n) => {
+      if (!sortedIds.has(n.id)) sorted.push(n);
+    });
+  }
+
+  return sorted;
 }
 
 // check for empty event

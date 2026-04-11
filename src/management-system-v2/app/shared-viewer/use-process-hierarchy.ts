@@ -15,6 +15,7 @@ import {
   getElementSVG,
   markdownEditor,
   ImportsInfo,
+  sortChildrenByFlow,
 } from './documentation-page-utils';
 
 type UseProcessHierarchyOptions = {
@@ -72,17 +73,7 @@ export function useProcessHierarchy({
         children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
       }
 
-      children.sort((a, b) => {
-        const typeOrder = (node: ElementInfo) => {
-          const type = node.elementType || '';
-          if (type.includes('StartEvent')) return 0;
-          if (type.includes('EndEvent')) return 3;
-          if (node.children?.length) return 2;
-          return 1;
-        };
-        return typeOrder(a) - typeOrder(b);
-      });
-
+      children.splice(0, children.length, ...sortChildrenByFlow(el, children));
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
 
       const node: ElementInfo = {

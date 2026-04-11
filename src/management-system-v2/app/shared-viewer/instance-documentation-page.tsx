@@ -10,7 +10,6 @@ import {
   ImportsInfo,
   getSVGWithInstanceColoring,
   getElementTypeLabel,
-  sortInstanceChildren,
   isInstanceElementEmpty,
   hasVariableChangesForElement,
 } from './documentation-page-utils';
@@ -128,9 +127,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
         children: buildElementChildren(node),
       }));
   }
-  const sortedChildren = processHierarchy
-    ? sortInstanceChildren(processHierarchy.children || [])
-    : [];
+  const sortedChildren = processHierarchy?.children || [];
 
   const extraRootItems = useMemo(
     (): AnchorLinkItemProps[] => [

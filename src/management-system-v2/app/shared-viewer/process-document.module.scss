@@ -4,8 +4,22 @@
   max-width: 1200px;
   background-color: white;
 
+  overflow: hidden;
   margin: 0 auto;
 
+  @media print {
+    table {
+      width: 100%;
+      max-width: 100%;
+      table-layout: fixed;
+      word-break: break-word;
+    }
+    td,
+    th {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+  }
   @media print {
     // needed so that the table header workaround below actually works
     display: table;
@@ -42,6 +56,7 @@
     @media print {
       padding: 0 40pt 0 40pt;
       box-sizing: border-box;
+      display: block;
     }
 
     .Title {
@@ -96,30 +111,19 @@
     .ElementPage {
       margin-top: 7dvh;
 
+      .ElementPage {
+        margin-top: 1dvh;
+      }
       .ElementOverview {
         break-inside: avoid;
-
-        .ElementCanvas {
-          display: flex;
-          justify-content: center;
-
-          @media print {
-            max-height: 95%;
-            width: 100%;
-          }
-
-          svg {
-            max-width: 100%;
-            height: 100%;
-          }
-        }
       }
 
       .MetaInformation {
-        margin-top: 50px;
+        margin-top: 20px;
 
         // prevent the header from being put at the end of a page with the content starting on the next page
-        h3 {
+        h3,
+        h4 {
           break-after: avoid;
         }
 
@@ -134,12 +138,66 @@
     .ContainerPage {
       // start a new page for elements that contain other new elements and start with the container element at the top of the page
       break-before: always;
+      page-break-before: always;
 
       @media print {
         margin-top: 0;
+        display: block;
       }
     }
 
+    .ElementPage.HeadingOnlyPage {
+      margin-top: 9dvh;
+      margin-bottom: 0;
+      @media print {
+        margin-top: 0;
+      }
+      :global(h1.ant-typography),
+      :global(h2.ant-typography) {
+        margin-bottom: 0 !important;
+      }
+      & + .ElementPage {
+        margin-top: 1dvh;
+      }
+    }
+    // Print-specific heading styles
+    @media print {
+      :global(h1.ant-typography) {
+        page-break-before: always;
+        break-before: always;
+        margin-top: 24pt;
+        margin-bottom: 6pt;
+      }
+
+      // First H1 should not have a page break before it
+      :global(h1.ant-typography:first-of-type) {
+        page-break-before: avoid;
+        break-before: avoid;
+      }
+
+      :global(h2.ant-typography) {
+        margin-top: 18pt;
+        margin-bottom: 4pt;
+        break-after: avoid;
+      }
+
+      :global(h3.ant-typography) {
+        margin-top: 12pt;
+        margin-bottom: 3pt;
+        break-after: avoid;
+      }
+
+      :global(h4.ant-typography) {
+        margin-top: 8pt;
+        margin-bottom: 2pt;
+        break-after: avoid;
+      }
+
+      p {
+        margin-top: 2pt;
+        margin-bottom: 2pt;
+      }
+    }
     :nth-child(1 of .ContainerPage) {
       // the first page containing the main process diagram might follow directly after the table of contents based on the settings selected by the user
       break-before: auto;

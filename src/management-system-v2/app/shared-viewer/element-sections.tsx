@@ -10,6 +10,8 @@ type ElementSectionsProps = {
   settings: Record<string, boolean>;
   resolvedImageUrl?: string | false;
   headingLevel?: 3 | 4;
+  diagramHeading?: string;
+  descriptionHeading?: string;
 };
 
 /**
@@ -21,6 +23,8 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
   settings,
   resolvedImageUrl,
   headingLevel = 3,
+  diagramHeading = 'Diagram Element',
+  descriptionHeading = 'Description',
 }) => {
   const { description, meta, milestones, importedProcess } = node;
 
@@ -36,7 +40,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {(settings.showElementSVG || !!node.children?.length) && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_diagram_page`}>
-            Diagram Element
+            {diagramHeading}
           </Title>
           <div
             className={styles.ElementCanvas}
@@ -69,7 +73,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {effectiveDescription && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_description_page`}>
-            Description
+            {descriptionHeading}
           </Title>
           <div
             className="toastui-editor-contents"

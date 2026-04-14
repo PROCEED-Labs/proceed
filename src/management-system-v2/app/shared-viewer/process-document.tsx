@@ -20,6 +20,8 @@ import { useFileManager } from '@/lib/useFileManager';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import { generateDateString } from '@/lib/utils';
 import ElementSections from './element-sections';
+import ProcessDetailsTable from '@/components/doc-process-details-table';
+import { isProcessElementEmpty } from './documentation-page-utils';
 
 export type VersionInfo = {
   id?: string;
@@ -57,18 +59,14 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   /**
    * Transforms the hierarchical information about a process' elements into markup
    */
-  async function getContent(hierarchyElement: ElementInfo, currentPages: React.JSX.Element[]) {
+  async function getContent(
+    hierarchyElement: ElementInfo,
+    currentPages: React.JSX.Element[],
+    isRoot = false,
+    isFirstChild = false,
+  ) {
     // hide the element if there is no information and the respective option is selected
-    if (
-      settings.hideEmpty &&
-      !hierarchyElement.description &&
-      !hierarchyElement.meta &&
-      !hierarchyElement.milestones &&
-      !hierarchyElement.image &&
-      !hierarchyElement.children?.length
-    ) {
-      return;
-    }
+    if (settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
 
     const isContainer = !!hierarchyElement.children?.length;
 
@@ -102,29 +100,56 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
           processData.id
         }/images/${image}?shareToken=${shareToken}`);
 
+    if (!isRoot && isFirstChild) {
+      currentPages.push(
+        <div
+          key="process_element_details_section"
+          className={cn(styles.ElementPage, styles.ContainerPage, styles.HeadingOnlyPage)}
+        >
+          <Title id="process_element_details_page" level={2}>
+            Process Element Details
+          </Title>
+        </div>,
+      );
+    }
+
     currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
         className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
       >
         <div className={styles.ElementOverview}>
-          <Title id={`${hierarchyElement.id}_page`} level={2}>
-            {elementLabel}
+          <Title id={`${hierarchyElement.id}_page`} level={isRoot ? 2 : 3}>
+            {isRoot ? 'Process Overview' : elementLabel}
           </Title>
         </div>
+        {isRoot && description && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`${hierarchyElement.id}_description_page`}>
+              Summary
+            </Title>
+            <div
+              className="toastui-editor-contents"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
+          </div>
+        )}
         <ElementSections
           node={{
             ...hierarchyElement,
             svg: elementSvg,
-            description,
+            description: isRoot ? undefined : description,
             meta,
             milestones,
             importedProcess,
           }}
           settings={settings as Record<string, boolean>}
           resolvedImageUrl={imageURL}
-          headingLevel={3}
+          headingLevel={isRoot ? 3 : 4}
+          diagramHeading={isRoot ? 'Process Diagram' : 'Diagram Element'}
+          descriptionHeading={isRoot ? 'Summary' : 'Description'}
         />
+        {isRoot && <ProcessDetailsTable processData={processData} versionInfo={version} />}
       </div>,
     );
 
@@ -135,8 +160,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
       (settings.importedProcesses || !hierarchyElement.importedProcess)
     ) {
       if (hierarchyElement.children) {
-        for (const child of hierarchyElement.children) {
-          await getContent(child, currentPages);
+        for (let i = 0; i < hierarchyElement.children.length; i++) {
+          await getContent(hierarchyElement.children[i], currentPages, false, i === 0);
         }
       }
     }
@@ -146,7 +171,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   useEffect(() => {
     const updateProcessPages = async () => {
       const newProcessPages: React.JSX.Element[] = [];
-      processHierarchy && (await getContent(processHierarchy, newProcessPages));
+      processHierarchy && (await getContent(processHierarchy, newProcessPages, true, false));
       setProcessPages(newProcessPages);
     };
 
@@ -176,26 +201,33 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
                 <Title>{processData.name}</Title>
                 <div className={styles.TitleInfos}>
-                  <div>Owner: {processData.creatorId?.split('|').pop()}</div>
+                  <div style={{ fontSize: '14px' }}>Process Id: {processData.userDefinedId}</div>
+                  <div style={{ fontSize: '14px' }}>
+                    Owner: {processData.creatorId?.split('|').pop()}
+                  </div>
                   {version.id ? (
                     <>
-                      <div>Version: {version.name || version.id}</div>
+                      <div style={{ fontSize: '14px' }}>Version: {version.name || version.id}</div>
                       {version.description ? (
-                        <div>Version Description: {version.description}</div>
+                        <div style={{ fontSize: '14px' }}>
+                          Version Description: {version.description}
+                        </div>
                       ) : null}
                     </>
                   ) : (
-                    <div>Version: Latest</div>
+                    <div style={{ fontSize: '14px' }}>Version: Latest</div>
                   )}
                   {version.id ? (
-                    <div>
-                      Creation Time: {''}
+                    <div style={{ fontSize: '14px' }}>
+                      Version Created On:{' '}
                       {version.versionCreatedOn
                         ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
                         : 'Unknown'}
                     </div>
                   ) : (
-                    <div>Last Edit: {generateDateString(processData.lastEditedOn, true)}</div>
+                    <div style={{ fontSize: '14px' }}>
+                      Last Edit: {generateDateString(processData.lastEditedOn, true)}
+                    </div>
                   )}
                 </div>
               </div>
@@ -213,6 +245,33 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                     settings={settings}
                     processHierarchy={processHierarchy}
                     linksDisabled
+                    extraRootItems={[
+                      {
+                        key: 'process_overview',
+                        href: '',
+                        title: 'Process Overview',
+                        children: [
+                          ...(processHierarchy.description
+                            ? [{ key: 'summary', href: '', title: 'Summary' }]
+                            : []),
+                          { key: 'process_diagram', href: '', title: 'Process Diagram' },
+                          { key: 'process_details', href: '', title: 'Process Details' },
+                        ],
+                      },
+                      {
+                        key: 'process_element_details',
+                        href: '',
+                        title: 'Process Element Details',
+                        children: (processHierarchy.children || [])
+                          .filter((child) => !settings.hideEmpty || !isProcessElementEmpty(child))
+                          .map((child) => ({
+                            key: child.id,
+                            href: '',
+                            title:
+                              child.name && !child.name.startsWith('<') ? child.name : child.id,
+                          })),
+                      },
+                    ]}
                   />
                 </div>
               ) : null}

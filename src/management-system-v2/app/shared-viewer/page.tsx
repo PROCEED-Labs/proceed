@@ -24,6 +24,8 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getDeployment } from '@/lib/engines/server-actions';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import InstanceDocumentationPage from './instance-documentation-page';
+import { Metadata } from 'next';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 interface PageProps {
   searchParams: Promise<{
@@ -127,6 +129,38 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const { token, version } = searchParams;
+
+  if (typeof token !== 'string') return {};
+
+  try {
+    const key = env.SHARING_ENCRYPTION_SECRET;
+    const { processId } = jwt.verify(token, key!) as TokenPayload;
+    const versionId = version as string | undefined;
+    const versionLabel = versionId ?? 'Latest';
+
+    // Get current user's spaceId to fetch process
+    const { session, userId } = await getCurrentUser();
+    if (!session) return { title: `PROCEED - Version: ${versionLabel}` };
+
+    const { activeEnvironment } = await getCurrentEnvironment(session.user.id);
+    const { spaceId } = activeEnvironment;
+
+    const processMetaData = await getProcess(processId as string, spaceId);
+    if (!processMetaData || 'error' in processMetaData) {
+      return { title: `PROCEED - Version: ${versionLabel}` };
+    }
+
+    return {
+      title: `PROCEED - ${processMetaData.name} - Version: ${versionLabel}`,
+    };
+  } catch {
+    return {};
+  }
+}
+
 const SharedViewer = async (props: PageProps) => {
   const searchParams = await props.searchParams;
   const { token, version, settings, instance: instanceId, coloring } = searchParams;
@@ -180,6 +214,24 @@ const SharedViewer = async (props: PageProps) => {
     return <ErrorMessage message="Invalid Token" />;
   }
 
+  // Save original creatorId for API calls before replacing with display name
+  const originalCreatorId = processData?.creatorId;
+
+  // Replace creatorId with display name for use in documents
+  try {
+    if (processData?.creatorId) {
+      const owner = await getUserById(processData.creatorId);
+      if (owner?.isGuest) {
+        processData.creatorId = 'Guest User';
+      } else if (owner) {
+        const fullName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
+        processData.creatorId = fullName || owner.username || processData.creatorId;
+      }
+    }
+  } catch {
+    // keep original creatorId if lookup fails
+  }
+
   let availableImports: ImportsInfo = {};
   if (!iframeMode) {
     try {
@@ -206,7 +258,7 @@ const SharedViewer = async (props: PageProps) => {
     try {
       const deployment = await getDeployment(
         // I am not completely sure about these paramteres
-        processData.creatorId ?? '',
+        originalCreatorId ?? '',
         processData.id,
       );
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);

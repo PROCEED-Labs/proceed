@@ -555,3 +555,43 @@ export function getVariablesForElement(
 
   return result;
 }
+
+/**
+ * Returns true if a process element has no displayable content.
+ */
+export function isProcessElementEmpty(node: ElementInfo): boolean {
+  return (
+    !node.description && !node.meta && !node.milestones && !node.image && !node.children?.length
+  );
+}
+
+/**
+ * Makes an SVG string responsive by replacing fixed width/height with
+ * max-width constraint, preserving the viewBox for correct scaling.
+ * @param svg: the raw SVG string
+ * @param fullWidth: if true (root diagram) stretch to full container width,
+ *                   if false (individual element) use natural size up to max
+ */
+export function makeSvgResponsive(svg: string, fullWidth = false): string {
+  // Extract original width value to use as max-width for element SVGs
+  const widthMatch = svg.match(/<svg[^>]*\swidth="([^"]*)"/);
+  const originalWidth = widthMatch ? widthMatch[1] : undefined;
+
+  const stripped = svg
+    .replace(/(<svg[^>]*)\swidth="[^"]*"/g, '$1')
+    .replace(/(<svg[^>]*)\sheight="[^"]*"/g, '$1');
+
+  if (fullWidth) {
+    return stripped.replace(
+      /<svg/,
+      '<svg width="80%" height="auto" preserveAspectRatio="xMidYMid meet" style="max-height:200mm"',
+    );
+  } else {
+    // For individual elements use natural size
+    const maxWidth = originalWidth ? `min(100%, ${originalWidth}px)` : '100%';
+    return stripped.replace(
+      /<svg/,
+      `<svg width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style="max-width:${maxWidth};max-height:150mm"`,
+    );
+  }
+}

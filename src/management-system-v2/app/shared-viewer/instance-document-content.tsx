@@ -23,6 +23,7 @@ import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import ElementSections from './element-sections';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
+import ProcessDetailsTable from '@/components/doc-process-details-table';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -151,60 +152,100 @@ const InstanceDocumentContent: React.FC<Props> = ({
         />
 
         {/* Execution Log */}
-        {logRows.length > 0 && settings.showInstanceStatus && (
-          <div className={styles.MetaInformation}>
-            <Title level={4} id={`${node.id}_execution_log_page`}>
-              Execution Log
-            </Title>
-            <Table
-              pagination={false}
-              rowKey="key"
-              columns={[
-                {
-                  title: 'State',
-                  dataIndex: 'executionState',
-                  key: 'executionState',
-                  render: (state: string) => (
-                    <Alert
-                      style={{ display: 'inline-flex' }}
-                      type={statusToType(state)}
-                      message={state}
-                      showIcon
-                    />
-                  ),
-                },
-                {
-                  title: 'Started',
-                  dataIndex: 'startTime',
-                  key: 'startTime',
-                  render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
-                },
-                {
-                  title: 'Ended',
-                  dataIndex: 'endTime',
-                  key: 'endTime',
-                  render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
-                },
-                {
-                  title: 'Duration',
-                  key: 'duration',
-                  render: (_: any, row: (typeof logRows)[number]) => {
-                    const duration =
-                      row.endTime && row.startTime ? row.endTime - row.startTime : undefined;
-                    return generateDurationString(duration);
+        {settings.showInstanceStatus &&
+          (logRows.length > 0 ? (
+            <div className={styles.MetaInformation}>
+              <Title level={4} id={`${node.id}_execution_log_page`}>
+                Execution Log
+              </Title>
+              <Table
+                pagination={false}
+                rowKey="key"
+                columns={[
+                  {
+                    title: 'State',
+                    dataIndex: 'executionState',
+                    key: 'executionState',
+                    render: (state: string) => (
+                      <Alert
+                        style={{ display: 'inline-flex' }}
+                        type={statusToType(state)}
+                        message={state}
+                        showIcon
+                      />
+                    ),
                   },
-                },
-                {
-                  title: 'Machine',
-                  dataIndex: 'machine',
-                  key: 'machine',
-                  render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
-                },
-              ]}
-              dataSource={logRows}
-            />
-          </div>
-        )}
+                  {
+                    title: 'Started',
+                    dataIndex: 'startTime',
+                    key: 'startTime',
+                    render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
+                  },
+                  {
+                    title: 'Ended',
+                    dataIndex: 'endTime',
+                    key: 'endTime',
+                    render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
+                  },
+                  {
+                    title: 'Duration',
+                    key: 'duration',
+                    render: (_: any, row: (typeof logRows)[number]) => {
+                      const duration =
+                        row.endTime && row.startTime ? row.endTime - row.startTime : undefined;
+                      return generateDurationString(duration);
+                    },
+                  },
+                  {
+                    title: 'Machine',
+                    dataIndex: 'machine',
+                    key: 'machine',
+                    render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
+                  },
+                ]}
+                dataSource={logRows}
+              />
+            </div>
+          ) : (
+            <div className={styles.MetaInformation}>
+              <Title level={4} id={`${node.id}_execution_log_page`}>
+                Execution Log
+              </Title>
+              <Table
+                pagination={false}
+                rowKey="key"
+                columns={[
+                  {
+                    title: 'State',
+                    dataIndex: 'executionState',
+                    key: 'executionState',
+                    render: (state: string) => (
+                      <Alert
+                        style={{ display: 'inline-flex' }}
+                        type={statusToType(state)}
+                        message={state}
+                        showIcon
+                      />
+                    ),
+                  },
+                  { title: 'Started', dataIndex: 'startTime', key: 'startTime' },
+                  { title: 'Ended', dataIndex: 'endTime', key: 'endTime' },
+                  { title: 'Duration', dataIndex: 'duration', key: 'duration' },
+                  { title: 'Machine', dataIndex: 'machine', key: 'machine' },
+                ]}
+                dataSource={[
+                  {
+                    key: 'not-started',
+                    executionState: 'Not yet started',
+                    startTime: '—',
+                    endTime: '—',
+                    duration: '—',
+                    machine: '—',
+                  },
+                ]}
+              />
+            </div>
+          ))}
 
         {/* Variable Changes if happened */}
         {changedVariables.length > 0 && (
@@ -265,7 +306,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                   </div>
                 )}
                 <div style={{ fontSize: '14px' }}>
-                  Creation Time:{' '}
+                  Version Created On:{' '}
                   {versionInfo.versionCreatedOn
                     ? generateDateString(fromCustomUTCString(versionInfo.versionCreatedOn), true)
                     : 'Unknown'}
@@ -274,16 +315,15 @@ const InstanceDocumentContent: React.FC<Props> = ({
             ) : (
               <div style={{ fontSize: '14px' }}>Version: Latest</div>
             )}
-            <div style={{ fontSize: '14px' }}>
-              Instance: …{instance.processInstanceId.slice(-8)}
-            </div>
+            <div style={{ fontSize: '14px' }}>Process ID: {processData.userDefinedId}</div>
+            <div style={{ fontSize: '14px' }}>Execution ID: {instance.processInstanceId}</div>
             <div style={{ fontSize: '14px' }}>
               Started: {generateDateString(new Date(instance.globalStartTime), true)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
               <span>State:</span>
               <Alert
-                style={{ padding: '0 8px', fontSize: '12px' }}
+                style={{ padding: '0 4px', fontSize: '7.5px' }}
                 type={statusToType(instance.instanceState[0])}
                 message={instance.instanceState[0]}
                 showIcon
@@ -329,7 +369,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
             Process Overview
           </Title>
 
-          {/* Summary — process description same as process doc */}
+          {/* Summary: process description */}
           {processHierarchy.description && (
             <div className={styles.MetaInformation}>
               <Title level={3} id="process_summary_page">
@@ -353,9 +393,10 @@ const InstanceDocumentContent: React.FC<Props> = ({
               dangerouslySetInnerHTML={{ __html: processHierarchy.svg }}
             />
           </div>
+          <ProcessDetailsTable processData={processData} versionInfo={versionInfo} />
         </div>
 
-        {/* ── Execution Overview ── */}
+        {/* Execution Overview */}
         <div className={cn(styles.ElementPage, styles.ContainerPage)}>
           <Title id="execution_overview_page" level={2}>
             Execution Overview
@@ -396,8 +437,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                   : undefined;
 
                 return [
-                  { label: 'Instance ID', value: instance.processInstanceId },
-                  { label: 'Process Version', value: instance.processVersion },
+                  { label: 'Execution Id', value: instance.processInstanceId },
                   {
                     label: 'Started',
                     value: generateDateString(new Date(instance.globalStartTime), true),
@@ -410,7 +450,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                     label: 'Overall State',
                     value: (
                       <Alert
-                        style={{ display: 'inline-flex' }}
+                        style={{ display: 'inline-flex', fontSize: '14px' }}
                         type={statusToType(instance.instanceState[0])}
                         message={instance.instanceState[0]}
                         showIcon
@@ -430,8 +470,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
               </Title>
               <Paragraph>
                 The following table lists the final states of the process variables for the executed
-                process. To view the complete history of changes to the variables throughout the
-                process, please refer to the detailed list of process elements below.
+                process.
               </Paragraph>
               <FinalVariablesTable instance={instance} />
               <Paragraph style={{ marginTop: '1rem', fontStyle: 'italic' }}>

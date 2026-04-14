@@ -16,6 +16,7 @@ import {
   markdownEditor,
   ImportsInfo,
   sortChildrenByFlow,
+  makeSvgResponsive,
 } from './documentation-page-utils';
 
 type UseProcessHierarchyOptions = {
@@ -77,7 +78,7 @@ export function useProcessHierarchy({
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
 
       const node: ElementInfo = {
-        svg,
+        svg: makeSvgResponsive(svg, isRoot),
         id: el.id,
         name,
         description,

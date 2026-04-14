@@ -138,6 +138,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
         children: [
           { key: 'process_summary', href: '#process_summary_page', title: 'Summary' },
           { key: 'process_diagram', href: '#process_diagram_page', title: 'Process Diagram' },
+          { key: 'process_details', href: '#process_details_page', title: 'Process Details' },
         ],
       },
       {

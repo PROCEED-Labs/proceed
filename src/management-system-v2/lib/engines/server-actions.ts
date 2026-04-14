@@ -340,8 +340,9 @@ export async function getGlobalVariablesForHTML(
     } else if (segments[0] === '@worker' || !segments[0].startsWith('@')) {
       ({ userId } = await getCurrentUser());
     } else if (segments[0] !== '@organization') {
-      console.error(`Invalid selector for global data access in user task html. (${segments[0]})`);
-      return;
+      throw new UserFacingError(
+        `Invalid selector for global data access in user task html. (${segments[0]})`,
+      );
     }
 
     if (segments[0].startsWith('@')) segments = segments.slice(1);
@@ -349,14 +350,10 @@ export async function getGlobalVariablesForHTML(
     const result = await getDataObject(spaceId, segments.join('.'), userId);
 
     if (isErrorResponse(result)) {
-      console.error(
-        'Ecountered error while trying to get global variable for user task rendering:',
-        await result.data.text(),
-      );
-      return;
+      throw new UserFacingError(await result.data.text());
     }
 
-    return result.data.value;
+    return result.data?.value;
   });
 }
 

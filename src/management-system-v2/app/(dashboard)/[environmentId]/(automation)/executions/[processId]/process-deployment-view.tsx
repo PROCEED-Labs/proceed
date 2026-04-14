@@ -37,7 +37,11 @@ import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
 import {
   changeDeploymentActivation,
   getProcessActivationStatus,
+  getGlobalVariablesForHTML,
 } from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
+import { useSession } from 'next-auth/react';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 export default function ProcessDeploymentView({
   processId,
@@ -49,6 +53,7 @@ export default function ProcessDeploymentView({
   activeSpaceId: string;
 }) {
   const app = App.useApp();
+  const { data: session } = useSession();
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');
@@ -170,21 +175,30 @@ export default function ProcessDeploymentView({
 
   useEffect(() => {
     if (!currentVersion) return;
+    let cancelled = false;
 
     async function fetchActivationStatus() {
       setIsActivationLoading(true);
       await wrapServerCall({
         fn: () => getProcessActivationStatus(processId, activeSpaceId, currentVersion!.versionId),
-        onSuccess: (active) => setIsProcessActivated(active as boolean),
+        onSuccess: (active) => {
+          if (!cancelled) setIsProcessActivated(active as boolean);
+        },
         onError: (error) => {
-          app.message.error(error.message);
-          setIsProcessActivated(false);
+          if (!cancelled) {
+            app.message.error(error.message);
+            setIsProcessActivated(false);
+          }
         },
       });
-      setIsActivationLoading(false);
+      if (!cancelled) setIsActivationLoading(false);
     }
 
     fetchActivationStatus();
+
+    return () => {
+      cancelled = true;
+    };
   }, [currentVersion?.versionId]);
 
   const { variableDefinitions, variables } = useInstanceVariables({
@@ -335,8 +349,22 @@ export default function ProcessDeploymentView({
                                 .filter((variable) => variable.value !== undefined)
                                 .map((variable) => [variable.name, variable.value]),
                             );
+
+                            if (!session)
+                              throw new Error('Unknown user tries to start an instance!');
+
+                            const globalVars = await getGlobalVariablesForHTML(
+                              activeSpaceId,
+                              session.user.id,
+                              startForm,
+                            );
+
                             startForm = inlineScript(startForm, '', '', variableDefinitions);
-                            startForm = inlineUserTaskData(startForm, mappedVariables, []);
+                            startForm = inlineUserTaskData(
+                              startForm,
+                              { ...mappedVariables, ...globalVars },
+                              [],
+                            );
 
                             setStartForm(startForm);
                           } else {
@@ -359,8 +387,8 @@ export default function ProcessDeploymentView({
                 <Tooltip
                   title={
                     isProcessActivated
-                      ? 'The process is active. Any automatically triggered Start Events, such as a Timer Start Events, automatically launch new process executions. Click to deactivate.'
-                      : 'The process is deactived. Any automatically triggered Start Events, such as a Timer Start Events, will not launch new process executions. Click to activate.'
+                      ? 'The process is active. Any automatically triggered Start Events, such as Timer Start Events, automatically launch new process executions. Click to deactivate.'
+                      : 'The process is deactivated. Any automatically triggered Start Events, such as Timer Start Events, will not launch new process executions. Click to activate.'
                   }
                 >
                   <Button

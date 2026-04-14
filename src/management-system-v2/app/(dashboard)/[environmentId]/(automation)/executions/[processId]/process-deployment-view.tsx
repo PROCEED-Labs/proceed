@@ -54,6 +54,7 @@ export default function ProcessDeploymentView({
 }) {
   const app = App.useApp();
   const { data: session } = useSession();
+
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
   const [selectedColoring, setSelectedColoring] = useState<ColorOptions>('processColors');

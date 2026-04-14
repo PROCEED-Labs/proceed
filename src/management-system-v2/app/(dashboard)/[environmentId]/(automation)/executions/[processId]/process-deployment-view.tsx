@@ -33,6 +33,10 @@ import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
+import { getGlobalVariablesForHTML } from '@/lib/engines/server-actions';
+import { useEnvironment } from '@/components/auth-can';
+import { useSession } from 'next-auth/react';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenInstanceDocumentation } from '../../../processes/processes-helper';
@@ -58,6 +62,9 @@ export default function ProcessDeploymentView({
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+
+  const { spaceId } = useEnvironment();
+  const { data: session } = useSession();
 
   const {
     data: deploymentInfo,
@@ -202,8 +209,21 @@ export default function ProcessDeploymentView({
                               .filter((variable) => variable.value !== undefined)
                               .map((variable) => [variable.name, variable.value]),
                           );
+
+                          if (!session) throw new Error('Unknown user tries to start an instance!');
+
+                          const globalVars = await getGlobalVariablesForHTML(
+                            spaceId,
+                            session.user.id,
+                            startForm,
+                          );
+
                           startForm = inlineScript(startForm, '', '', variableDefinitions);
-                          startForm = inlineUserTaskData(startForm, mappedVariables, []);
+                          startForm = inlineUserTaskData(
+                            startForm,
+                            { ...mappedVariables, ...globalVars },
+                            [],
+                          );
 
                           setStartForm(startForm);
                         } else {

@@ -32,10 +32,10 @@ export const settings = [
       'Add the content of processes that are imported as the internal logic of a call-activity in the process.',
   },
   {
-    label: 'Exclude Empty Elements',
+    label: 'Include Empty Elements',
     value: 'hideEmpty',
     tooltip:
-      'Will exclude sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
+      'Will include sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
   },
 ] as const;
 

@@ -88,7 +88,7 @@ const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
                 href: '#process_element_details_page',
                 title: 'Process Element Details',
                 children: (processHierarchy.children || [])
-                  .filter((child) => !activeSettings.hideEmpty || !isProcessElementEmpty(child))
+                  .filter((child) => activeSettings.hideEmpty || !isProcessElementEmpty(child))
                   .map((child) => ({
                     key: child.id,
                     href: `#${child.id}_page`,

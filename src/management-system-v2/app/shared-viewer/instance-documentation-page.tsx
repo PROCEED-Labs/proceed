@@ -119,7 +119,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
 
   function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
     return nodes
-      .filter((node) => !activeSettings.hideEmpty || !isInstanceElementEmpty(node))
+      .filter((node) => activeSettings.hideEmpty || !isInstanceElementEmpty(node))
       .map((node) => ({
         key: node.id,
         href: `#${node.id}_page`,

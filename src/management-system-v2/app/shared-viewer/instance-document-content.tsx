@@ -79,7 +79,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     const hasToken = !!token;
 
     // Skip if nothing to show
-    if (settings.hideEmpty && isInstanceElementEmpty(node)) return;
+    if (!settings.hideEmpty && isInstanceElementEmpty(node)) return;
 
     // Get timing for variable matching
     const startTime = logEntries?.[0]?.startTime ?? token?.currentFlowElementStartTime;

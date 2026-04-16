@@ -66,7 +66,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
     isFirstChild = false,
   ) {
     // hide the element if there is no information and the respective option is selected
-    if (settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
+    if (!settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
 
     const isContainer = !!hierarchyElement.children?.length;
 
@@ -263,7 +263,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                         href: '',
                         title: 'Process Element Details',
                         children: (processHierarchy.children || [])
-                          .filter((child) => !settings.hideEmpty || !isProcessElementEmpty(child))
+                          .filter((child) => settings.hideEmpty || !isProcessElementEmpty(child))
                           .map((child) => ({
                             key: child.id,
                             href: '',

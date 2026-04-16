@@ -359,14 +359,6 @@ export default function ProcessDeploymentView({
             )}
 
             <Space style={{ alignItems: 'start' }}>
-              <ToolbarGroup>
-                <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
-                  <Button
-                    icon={<InfoCircleOutlined />}
-                    onClick={() => setInfoPanelOpen((prev) => !prev)}
-                  />
-                </Tooltip>
-              </ToolbarGroup>
 
               <ToolbarGroup>
                 {selectedInstance && (

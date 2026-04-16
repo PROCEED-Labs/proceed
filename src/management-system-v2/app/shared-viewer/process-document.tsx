@@ -199,12 +199,12 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
             </div>
             <div className={styles.Main}>
               <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
-                <Title>{processData.name}</Title>
+                <div className={styles.TitleHeader}>
+                  <div className={styles.TitleProcessId}>{processData.userDefinedId}</div>
+                  <Title style={{ marginTop: 0 }}>{processData.name}</Title>
+                </div>
                 <div className={styles.TitleInfos}>
-                  <div style={{ fontSize: '14px' }}>Process Id: {processData.userDefinedId}</div>
-                  <div style={{ fontSize: '14px' }}>
-                    Owner: {processData.creatorId?.split('|').pop()}
-                  </div>
+                  <div style={{ fontSize: '14px' }}>Owner: {(processData as any).ownerName}</div>
                   {version.id ? (
                     <>
                       <div style={{ fontSize: '14px' }}>Version: {version.name || version.id}</div>

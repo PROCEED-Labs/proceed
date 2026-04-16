@@ -573,25 +573,21 @@ export function isProcessElementEmpty(node: ElementInfo): boolean {
  *                   if false (individual element) use natural size up to max
  */
 export function makeSvgResponsive(svg: string, fullWidth = false): string {
-  // Extract original width value to use as max-width for element SVGs
   const widthMatch = svg.match(/<svg[^>]*\swidth="([^"]*)"/);
+  const heightMatch = svg.match(/<svg[^>]*\sheight="([^"]*)"/);
   const originalWidth = widthMatch ? widthMatch[1] : undefined;
+  const originalHeight = heightMatch ? heightMatch[1] : undefined;
 
   const stripped = svg
     .replace(/(<svg[^>]*)\swidth="[^"]*"/g, '$1')
     .replace(/(<svg[^>]*)\sheight="[^"]*"/g, '$1');
 
-  if (fullWidth) {
-    return stripped.replace(
-      /<svg/,
-      '<svg width="80%" height="auto" preserveAspectRatio="xMidYMid meet" style="max-height:200mm"',
-    );
-  } else {
-    // For individual elements use natural size
-    const maxWidth = originalWidth ? `min(100%, ${originalWidth}px)` : '100%';
-    return stripped.replace(
-      /<svg/,
-      `<svg width="100%" height="auto" preserveAspectRatio="xMidYMid meet" style="max-width:${maxWidth};max-height:150mm"`,
-    );
-  }
+  const naturalWidth = originalWidth ? `${originalWidth}px` : '100%';
+  const naturalHeight = originalHeight ? `${originalHeight}px` : 'auto';
+  const maxHeight = fullWidth ? '200mm' : '150mm';
+
+  return stripped.replace(
+    /<svg/,
+    `<svg overflow="visible" preserveAspectRatio="xMidYMid meet" class="${fullWidth ? 'bpmn-root-svg' : 'bpmn-element-svg'}" style="display:block;width:${naturalWidth};height:${naturalHeight};max-width:100%;max-height:${maxHeight}"`,
+  );
 }

@@ -161,6 +161,24 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 }
 
+async function resolveUserDisplayName(userId: string | undefined) {
+  if (!userId) return null;
+
+  try {
+    const user = await getUserById(userId);
+
+    if (!user) return userId;
+
+    if (user.isGuest) return 'Guest User';
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
+    return fullName || user.username || userId;
+  } catch {
+    return userId;
+  }
+}
+
 const SharedViewer = async (props: PageProps) => {
   const searchParams = await props.searchParams;
   const { token, version, settings, instance: instanceId, coloring } = searchParams;
@@ -214,24 +232,6 @@ const SharedViewer = async (props: PageProps) => {
     return <ErrorMessage message="Invalid Token" />;
   }
 
-  // Save original creatorId for API calls before replacing with display name
-  const originalCreatorId = processData?.creatorId;
-
-  // Replace creatorId with display name for use in documents
-  try {
-    if (processData?.creatorId) {
-      const owner = await getUserById(processData.creatorId);
-      if (owner?.isGuest) {
-        processData.creatorId = 'Guest User';
-      } else if (owner) {
-        const fullName = `${owner.firstName || ''} ${owner.lastName || ''}`.trim();
-        processData.creatorId = fullName || owner.username || processData.creatorId;
-      }
-    }
-  } catch {
-    // keep original creatorId if lookup fails
-  }
-
   let availableImports: ImportsInfo = {};
   if (!iframeMode) {
     try {
@@ -258,7 +258,7 @@ const SharedViewer = async (props: PageProps) => {
     try {
       const deployment = await getDeployment(
         // I am not completely sure about these paramteres
-        originalCreatorId ?? '',
+        processData?.creatorId ?? '',
         processData.id,
       );
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
@@ -266,11 +266,24 @@ const SharedViewer = async (props: PageProps) => {
       console.error('Failed to fetch instance data:', err);
     }
   }
+
+  const ownerName = (await resolveUserDisplayName(processData?.creatorId)) ?? '—';
+
+  const processInitiatorName =
+    (await resolveUserDisplayName(instanceData?.processInitiator)) ?? '-';
+
+  // Inject both ownerName and processInitiatorName into processData
+  const enrichedProcessData = {
+    ...processData,
+    ownerName,
+    processInitiatorName,
+  };
+
   return (
     <>
       <div style={{ height: '100vh' }}>
         {iframeMode ? (
-          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: processData.bpmn }} />
+          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: enrichedProcessData.bpmn }} />
         ) : (
           <div className={styles.ProcessOverview}>
             <Layout
@@ -284,7 +297,7 @@ const SharedViewer = async (props: PageProps) => {
                 <InstanceDocumentationPage
                   isOwner={isOwner}
                   userWorkspaces={userEnvironments}
-                  processData={processData as any}
+                  processData={enrichedProcessData as any}
                   defaultSettings={defaultSettings}
                   availableImports={availableImports}
                   instance={instanceData}
@@ -294,7 +307,7 @@ const SharedViewer = async (props: PageProps) => {
                 <BPMNSharedViewer
                   isOwner={isOwner}
                   userWorkspaces={userEnvironments}
-                  processData={processData as any}
+                  processData={enrichedProcessData as any}
                   defaultSettings={defaultSettings}
                   availableImports={availableImports}
                 />

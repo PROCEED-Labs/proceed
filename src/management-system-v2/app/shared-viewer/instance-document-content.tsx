@@ -1,5 +1,4 @@
 'use client';
-//////////////////////
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Alert, Grid, Image, Table, Typography } from 'antd';
@@ -292,9 +291,14 @@ const InstanceDocumentContent: React.FC<Props> = ({
       <div className={styles.Main}>
         {/* Front Page */}
         <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
-          <Title>{processData.name}</Title>
+          <div className={styles.TitleHeader}>
+            <div className={styles.TitleProcessId}>{processData.userDefinedId}</div>
+            <Title style={{ marginTop: 0 }}>{processData.name}</Title>
+          </div>
           <div className={styles.TitleInfos}>
-            <div style={{ fontSize: '14px' }}>Owner: {processData.creatorId?.split('|').pop()}</div>
+            <div style={{ fontSize: '14px' }}>
+              Initiated By: {(processData as any).processInitiatorName}
+            </div>
             {versionInfo.id ? (
               <>
                 <div style={{ fontSize: '14px' }}>
@@ -315,7 +319,6 @@ const InstanceDocumentContent: React.FC<Props> = ({
             ) : (
               <div style={{ fontSize: '14px' }}>Version: Latest</div>
             )}
-            <div style={{ fontSize: '14px' }}>Process ID: {processData.userDefinedId}</div>
             <div style={{ fontSize: '14px' }}>Execution ID: {instance.processInstanceId}</div>
             <div style={{ fontSize: '14px' }}>
               Started: {generateDateString(new Date(instance.globalStartTime), true)}

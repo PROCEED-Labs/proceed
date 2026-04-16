@@ -12,20 +12,21 @@ type ProcessDetailsTableProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   versionInfo: VersionInfo;
   headingLevel?: 3 | 4;
-  ownerName?: string;
 };
 
 const ProcessDetailsTable: React.FC<ProcessDetailsTableProps> = ({
   processData,
   versionInfo,
   headingLevel = 3,
-  ownerName,
 }) => {
   const rows = [
     { label: 'Process Name', value: processData.name },
     { label: 'Process ID', value: processData.userDefinedId },
     { label: 'Process UUID', value: processData.id },
-    { label: 'Owner', value: ownerName || processData.creatorId?.split('|').pop() || '—' },
+    {
+      label: (processData as any).processInitiatorName ? 'Process Initiator' : 'Owner',
+      value: (processData as any).processInitiatorName ?? (processData as any).ownerName,
+    },
     { label: 'Process Version', value: versionInfo.name || 'Latest' },
     { label: 'Process Version Description', value: versionInfo.description || '—' },
     { label: 'Process Version Id', value: versionInfo.id || '—' },

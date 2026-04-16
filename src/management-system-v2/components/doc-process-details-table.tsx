@@ -29,7 +29,7 @@ const ProcessDetailsTable: React.FC<ProcessDetailsTableProps> = ({
     },
     { label: 'Process Version', value: versionInfo.name || 'Latest' },
     { label: 'Process Version Description', value: versionInfo.description || '—' },
-    { label: 'Process Version Id', value: versionInfo.id || '—' },
+    { label: 'Process Version ID', value: versionInfo.id || '—' },
     {
       label: 'Version Created On',
       value: versionInfo.versionCreatedOn

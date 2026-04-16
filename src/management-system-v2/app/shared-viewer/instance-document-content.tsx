@@ -20,13 +20,13 @@ import {
 } from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
-import ElementSections from './element-sections';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 import ProcessDetailsTable from '@/components/doc-process-details-table';
+import ElementSections from '@/components/doc-element-sections';
+import ExecutionLogTable from './instance-doc-tables/execution-log-table';
+import FinalVariablesTable from './instance-doc-tables/final-variables-table';
 
 const { Title, Text, Paragraph } = Typography;
-
-type VariableEntry = { value: unknown; log?: { changedTime: number; changedBy?: string }[] };
 
 type Props = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -36,11 +36,6 @@ type Props = {
   settings: Record<string, boolean>;
   extraRootItems: AnchorLinkItemProps[];
 };
-
-// ─────────────────────────────────────────────
-// Helper: sort children
-// start events first, end events last
-// ─────────────────────────────────────────────
 
 const InstanceDocumentContent: React.FC<Props> = ({
   processData,
@@ -151,100 +146,14 @@ const InstanceDocumentContent: React.FC<Props> = ({
         />
 
         {/* Execution Log */}
-        {settings.showInstanceStatus &&
-          (logRows.length > 0 ? (
-            <div className={styles.MetaInformation}>
-              <Title level={4} id={`${node.id}_execution_log_page`}>
-                Execution Log
-              </Title>
-              <Table
-                pagination={false}
-                rowKey="key"
-                columns={[
-                  {
-                    title: 'State',
-                    dataIndex: 'executionState',
-                    key: 'executionState',
-                    render: (state: string) => (
-                      <Alert
-                        style={{ display: 'inline-flex' }}
-                        type={statusToType(state)}
-                        message={state}
-                        showIcon
-                      />
-                    ),
-                  },
-                  {
-                    title: 'Started',
-                    dataIndex: 'startTime',
-                    key: 'startTime',
-                    render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
-                  },
-                  {
-                    title: 'Ended',
-                    dataIndex: 'endTime',
-                    key: 'endTime',
-                    render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
-                  },
-                  {
-                    title: 'Duration',
-                    key: 'duration',
-                    render: (_: any, row: (typeof logRows)[number]) => {
-                      const duration =
-                        row.endTime && row.startTime ? row.endTime - row.startTime : undefined;
-                      return generateDurationString(duration);
-                    },
-                  },
-                  {
-                    title: 'Machine',
-                    dataIndex: 'machine',
-                    key: 'machine',
-                    render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
-                  },
-                ]}
-                dataSource={logRows}
-              />
-            </div>
-          ) : (
-            <div className={styles.MetaInformation}>
-              <Title level={4} id={`${node.id}_execution_log_page`}>
-                Execution Log
-              </Title>
-              <Table
-                pagination={false}
-                rowKey="key"
-                columns={[
-                  {
-                    title: 'State',
-                    dataIndex: 'executionState',
-                    key: 'executionState',
-                    render: (state: string) => (
-                      <Alert
-                        style={{ display: 'inline-flex' }}
-                        type={statusToType(state)}
-                        message={state}
-                        showIcon
-                      />
-                    ),
-                  },
-                  { title: 'Started', dataIndex: 'startTime', key: 'startTime' },
-                  { title: 'Ended', dataIndex: 'endTime', key: 'endTime' },
-                  { title: 'Duration', dataIndex: 'duration', key: 'duration' },
-                  { title: 'Machine', dataIndex: 'machine', key: 'machine' },
-                ]}
-                dataSource={[
-                  {
-                    key: 'not-started',
-                    executionState: 'Not yet started',
-                    startTime: '—',
-                    endTime: '—',
-                    duration: '—',
-                    machine: '—',
-                  },
-                ]}
-              />
-            </div>
-          ))}
+        {settings.showInstanceStatus && (
+          <div className={styles.MetaInformation}>
+            <Title level={4} id={`${node.id}_execution_log_page`}>
+              Execution Log
+            </Title>
+            <ExecutionLogTable rows={logRows} />
+          </div>
+        )}
 
         {/* Variable Changes if happened */}
         {changedVariables.length > 0 && (
@@ -495,43 +404,5 @@ const InstanceDocumentContent: React.FC<Props> = ({
     </div>
   );
 };
-
-// ─────────────────────────────────────────────
-// Final variable states table
-// ─────────────────────────────────────────────
-function FinalVariablesTable({ instance }: { instance: InstanceInfo }) {
-  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
-
-  const rows = Object.entries(rawVariables).map(([name, data]) => ({
-    name,
-    value:
-      data.value === null || data.value === undefined
-        ? '—'
-        : typeof data.value === 'object'
-          ? JSON.stringify(data.value)
-          : String(data.value),
-    lastChanged: data.log?.at(-1)?.changedTime,
-  }));
-
-  if (!rows.length) return null;
-
-  return (
-    <Table
-      pagination={false}
-      rowKey="name"
-      columns={[
-        { title: 'Variable', dataIndex: 'name', key: 'name' },
-        { title: 'Final Value', dataIndex: 'value', key: 'value' },
-        {
-          title: 'Last Changed',
-          dataIndex: 'lastChanged',
-          key: 'lastChanged',
-          render: (t?: number) => (t ? generateDateString(new Date(t), true) : '—'),
-        },
-      ]}
-      dataSource={rows}
-    />
-  );
-}
 
 export default InstanceDocumentContent;

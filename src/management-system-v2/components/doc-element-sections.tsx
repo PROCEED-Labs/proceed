@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image, Table, Typography } from 'antd';
-import { ElementInfo } from './table-of-content';
-import styles from './process-document.module.scss';
+import styles from '@/app/shared-viewer/process-document.module.scss';
+import { ElementInfo } from '@/app/shared-viewer/table-of-content';
 
 const { Title } = Typography;
 

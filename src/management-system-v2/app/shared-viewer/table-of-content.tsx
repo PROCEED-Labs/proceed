@@ -10,6 +10,7 @@ import styles from './table-of-content.module.scss';
 
 import { ActiveSettings } from './settings-modal';
 import { InstanceInfo } from '@/lib/engines/deployment';
+import { getElementTypeLabel } from './documentation-page-utils';
 
 type MetaInformation = {
   name?: string;
@@ -54,24 +55,6 @@ type TableOfContentProps = Omit<AnchorProps, 'items'> & {
   extraRootItems?: AnchorLinkItemProps[];
 };
 
-function getElementTypeLabel(node: ElementInfo): string {
-  const hasName = node.name && !node.name.startsWith('<');
-  const identifier = hasName ? node.name : node.id;
-  const type = node.elementType || '';
-
-  if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
-  if (type.includes('EndEvent')) return `End Event: ${identifier}`;
-  if (type.includes('UserTask')) return `User Task: ${identifier}`;
-  if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
-  if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
-  if (type.includes('Task')) return `Task: ${identifier}`;
-  if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
-  if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
-  if (type.includes('Gateway')) return `Gateway: ${identifier}`;
-  if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
-  if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
-  return String(identifier);
-}
 const TableOfContents: React.FC<TableOfContentProps> = ({
   settings,
   processHierarchy,

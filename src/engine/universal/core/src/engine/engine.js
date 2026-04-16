@@ -245,14 +245,19 @@ class Engine {
   /**
    * Returns whether the given process version is currently deployed in the NeoBPMN Engine
    *
+   * @param {string} definitionId the id of the process definition
    * @param {string} versionId the version of the process to check
-   * @returns {boolean} true if the version is deployed, false if it is known but not deployed
-   * @throws {Error} if the version has not found in this engine
+   * @returns {boolean} true if the version is deployed, false if it is known but not active
+   * @throws {Error} if the version has never been deployed to this engine
    */
-  isProcessVersionDeployed(versionId) {
-    const process = this._versionProcessMapping[versionId];
-    if (!process) throw new Error(`Version ${versionId} is not deployed on this engine.`);
-    return process.isDeployed();
+  async isProcessVersionDeployed(definitionId, versionId) {
+    try {
+      await distribution.db.getProcessVersion(definitionId, versionId);
+    } catch {
+      throw new Error(`Version ${versionId} has never been deployed to this engine.`);
+    }
+
+    return this._versionProcessMapping[versionId]?.isDeployed() ?? false;
   }
 
   /**

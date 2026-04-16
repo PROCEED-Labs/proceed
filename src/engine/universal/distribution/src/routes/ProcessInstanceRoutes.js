@@ -477,7 +477,9 @@ module.exports = (path, management) => {
       return {
         statusCode: 200,
         mimeType: 'application/json',
-        response: JSON.stringify({ active: engine.isProcessVersionDeployed(version) }),
+        response: JSON.stringify({
+          active: await engine.isProcessVersionDeployed(definitionId, version),
+        }),
       };
     } catch (_) {
       return {

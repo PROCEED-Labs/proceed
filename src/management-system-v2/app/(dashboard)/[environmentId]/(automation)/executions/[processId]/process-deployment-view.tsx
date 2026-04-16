@@ -40,18 +40,18 @@ import {
   getGlobalVariablesForHTML,
 } from '@/lib/engines/server-actions';
 import { useSession } from 'next-auth/react';
+import { useEnvironment } from '@/components/auth-can';
 
 export default function ProcessDeploymentView({
   processId,
   initialDeploymentInfo,
-  activeSpaceId,
 }: {
   processId: string;
   initialDeploymentInfo: DeployedProcessInfo;
-  activeSpaceId: string;
 }) {
   const app = App.useApp();
   const { data: session } = useSession();
+  const { spaceId } = useEnvironment();
 
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
   const [selectedInstanceId, setSelectedInstanceId] = useSearchParamState('instance');
@@ -179,7 +179,7 @@ export default function ProcessDeploymentView({
     async function fetchActivationStatus() {
       setIsActivationLoading(true);
       await wrapServerCall({
-        fn: () => getProcessActivationStatus(processId, activeSpaceId, currentVersion!.versionId),
+        fn: () => getProcessActivationStatus(processId, spaceId, currentVersion!.versionId),
         onSuccess: (active) => {
           if (!cancelled) setIsProcessActivated(active as boolean);
         },
@@ -353,7 +353,7 @@ export default function ProcessDeploymentView({
                               throw new Error('Unknown user tries to start an instance!');
 
                             const globalVars = await getGlobalVariablesForHTML(
-                              activeSpaceId,
+                              spaceId,
                               session.user.id,
                               startForm,
                             );
@@ -408,12 +408,7 @@ export default function ProcessDeploymentView({
                       const versionId = getLatestDeployment(deploymentInfo).versionId;
                       await wrapServerCall({
                         fn: () =>
-                          changeDeploymentActivation(
-                            processId,
-                            activeSpaceId,
-                            versionId,
-                            nextState,
-                          ),
+                          changeDeploymentActivation(processId, spaceId, versionId, nextState),
                         onSuccess: async () => {
                           setIsProcessActivated(nextState);
                           await refetch();

@@ -58,7 +58,6 @@ import {
   addDeployment,
   addInstance as storeInstanceData,
   updateInstance as updateStoredInstance,
-  removeInstance as removeStoredInstance,
   getDeployments as getStoredDeployments,
   removeDeployments as _removeDeployments,
   updateDeployment,
@@ -790,7 +789,8 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
 
   if (!engines) engines = await getCorrectTargetEngines(spaceId, false);
 
-  let reachableEngines = await AsyncArray.from(engines || []).filter(async (engine) => {
+  // check which engines are actually reachable at the moment
+  let reachableEngines = await asyncFilter(engines || [], async (engine) => {
     try {
       await engineRequest({ engine, method: 'get', endpoint: '/status/' });
       return true;
@@ -799,102 +799,90 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
     }
   });
 
-  // check if there are deployments that were "removed" by the user but where the engine was not
-  // reachable at the time the user wanted to remove the deployment
-  const removed: string[] = [];
-  const machinesChanged: { deploymentId: string; stillDeployedOn: string[] }[] = [];
-  let stillDeployed = (
-    await asyncMap(deployments, async (deployment) => {
-      const stillDeployedOn = (
-        await asyncMap(deployment.machineIds, async (machineId) => {
-          try {
-            // check if the engine is currently reachable
-            // if not we assume that the state of the deployment being deployed on the engine has not changed
-            const machine = reachableEngines.find((engine) => engine.id === machineId);
-            if (!machine) return machineId;
+  const updatedDeployments = await asyncMap(deployments, async (deployment) => {
+    let { machineIds } = deployment;
 
-            if (deployment.deleted) {
-              // if the deployment is marked for deletion but seemingly not deleted on the engine we
-              // need to remove it from the engine
+    // update the list of machines on which we expect the deployment to exist
+    const machines = await AsyncArray.from(machineIds)
+      // if a machine is reachable we fetch the newest information otherwise we assume that nothing
+      // changed until we can reach the machine again
+      .map((id) => reachableEngines.find((e) => e.id === id) || id)
+      .filter(async (machine) => {
+        if (typeof machine !== 'string') {
+          if (deployment.deleted) {
+            try {
+              // remove the deployment from the machine and remove the machine from the
+              // machine list
               await removeDeploymentFromMachines([machine], deployment.processId);
-            } else {
-              // check if the deployment has been removed from the engine for some reason
+              return false;
+            } catch (err) { }
+          } else {
+            try {
+              // remove the machine from the machine list if the deployment has been removed for
+              // some reason
               const deployments = await fetchDeployments([machine], 'definitionId');
-              if (deployments.some((d) => d.definitionId === deployment.processId)) {
-                return machineId;
+              if (!deployments.some((d) => d.definitionId === deployment.processId)) {
+                return false;
               }
-            }
-          } catch (err) {
-            // could not remove the deployment so we keep the machine as still having the
-            // deployment
-            return machineId;
+            } catch (err) { }
           }
-        })
-      ).filter(truthyFilter);
+        }
+        return true;
+      });
 
-      if (!stillDeployedOn.length) {
-        removed.push(deployment.id);
-      } else if (stillDeployedOn.length !== deployment.machineIds.length) {
-        machinesChanged.push({ deploymentId: deployment.id, stillDeployedOn });
+    // TODO: handle that instances can be forwaded automatically which might change the list of
+    // machines the deployment can be found on
+    const fetchedInstances = await asyncMap(machines, async (machine) => {
+      if (typeof machine !== 'string') {
+        try {
+          // try to get the newest information for all instances of the deployment
+          const updatedInstances = await fetchDeployment(
+            machine,
+            deployment.processId,
+            'instances',
+          );
+
+          return updatedInstances.instances
+            .filter(({ processVersion }) => processVersion === deployment.versionId)
+            .map((instance) => ({ instance, machine }));
+        } catch (err) { }
       }
 
-      if (stillDeployedOn.length) {
-        return { ...deployment, machineIds: stillDeployedOn };
-      }
-    })
-  ).filter(truthyFilter);
+      return [];
+    }).flatten();
 
-  // TODO: maybe don't delete the deployment but set it to { deleted: true } to keep the execution
-  // trail
-  await _removeDeployments(spaceId, removed);
-  await asyncForEach(machinesChanged, async ({ deploymentId, stillDeployedOn }) => {
-    await updateDeployment(spaceId, deploymentId, { machineIds: stillDeployedOn });
-  });
-
-  stillDeployed = await asyncMap(stillDeployed, async (d) => {
-    // if the instances are still available on the machines that are removed they will be readded
-    // below
     let knownInstances = Object.fromEntries(
-      d.instances.map((i) => {
+      deployment.instances.map((i) => {
         const filteredMachines = i.machineIds.filter(
           (id) => !reachableEngines.some((e) => e.id === id),
         );
 
-        return [i.id, { ...i, machineIds: filteredMachines }];
+        return [i.id, { data: { ...i, machineIds: filteredMachines }, changed: false }];
       }),
     );
 
-    const fetchedInstances = await AsyncArray.from(reachableEngines)
-      .map(async (engine) => {
-        try {
-          const updatedInstances = await fetchDeployment(engine, d.processId, 'instances');
-
-          return updatedInstances.instances
-            .filter(({ processVersion }) => processVersion === d.versionId)
-            .map((instance) => ({ instance, engine }));
-        } catch (err) {
-          return [];
-        }
-      })
-      .flatten();
-
+    // update/extend the known instance information
     const updatedInstancesMap = fetchedInstances.reduce((map, curr) => {
       const id = curr.instance.processInstanceId;
       if (id in map) {
         const known = map[id];
-        if (!known.machineIds.includes(curr.engine.id)) {
-          known.machineIds.push(curr.engine.id);
+        if (!known.data.machineIds.includes(curr.machine.id)) {
+          known.data.machineIds.push(curr.machine.id);
           // TODO: merge the instance state
-          known.state = curr.instance;
+          known.data.state = curr.instance;
+          known.changed = true;
         }
       } else {
         map[id] = {
-          id,
-          versionId: curr.instance.processVersion,
-          deploymentId: d.id,
-          machineIds: [curr.engine.id],
-          state: curr.instance,
-          initiatorId: null,
+          data: {
+            id,
+            versionId: curr.instance.processVersion,
+            deploymentId: deployment.id,
+            machineIds: [curr.machine.id],
+            state: curr.instance,
+            initiatorId: null,
+          },
+          changed: true,
         };
       }
 
@@ -903,21 +891,40 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
 
     const updatedInstances = Object.values(updatedInstancesMap);
 
+    // push instance changes to the database
     asyncForEach(updatedInstances, async (instance) => {
-      if (!instance.machineIds.length) {
-        // don't delete but set to interrupted or something similar
-        await removeStoredInstance(spaceId, instance.id);
-      } else if (!knownInstances[instance.id]) {
-        await storeInstanceData(spaceId, instance as any);
-      } else {
-        await updateStoredInstance(spaceId, instance.id, {
-          state: instance.state as any,
-        });
+      if (instance.changed) {
+        if (!knownInstances[instance.data.id]) {
+          await storeInstanceData(spaceId, instance as any);
+        } else {
+          await updateStoredInstance(spaceId, instance.data.id, {
+            state: instance.data.state as any,
+          });
+        }
       }
     });
 
-    return { ...d, instances: updatedInstances };
+    return {
+      ...deployment,
+      deleted: !machines.length || deployment.deleted,
+      instances: updatedInstances.map((u) => u.data),
+      machineIds: machines.map((m) => (typeof m === 'string' ? m : m.id)),
+    };
+  }).forEach(async (uD) => {
+    const storedDeployment = deployments.find((sD) => sD.id === uD.id)!;
+
+    // updated deleted status and machine information for deployments with changes
+    if (
+      (uD.deleted && !storedDeployment.deleted) ||
+      uD.machineIds.length !== storedDeployment.machineIds.length ||
+      !uD.machineIds.every((id, index) => id === storedDeployment.machineIds[index])
+    ) {
+      await updateDeployment(spaceId, uD.id, {
+        deleted: uD.deleted,
+        machineIds: uD.machineIds,
+      });
+    }
   });
 
-  return stillDeployed;
+  return updatedDeployments;
 }

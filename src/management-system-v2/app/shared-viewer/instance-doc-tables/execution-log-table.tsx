@@ -32,14 +32,14 @@ const columns = [
     dataIndex: 'startTime',
     key: 'startTime',
     render: (t?: number | string) =>
-      typeof t === 'number' ? generateDateString(new Date(t), true) : (t ?? '—'),
+      typeof t === 'number' ? generateDateString(new Date(t), true) : t ?? '—',
   },
   {
     title: 'Ended',
     dataIndex: 'endTime',
     key: 'endTime',
     render: (t?: number | string) =>
-      typeof t === 'number' ? generateDateString(new Date(t), true) : (t ?? '—'),
+      typeof t === 'number' ? generateDateString(new Date(t), true) : t ?? '—',
   },
   {
     title: 'Duration',

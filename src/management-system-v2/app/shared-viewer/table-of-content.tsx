@@ -86,7 +86,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
       ({ milestones, meta, description } = importedProcess);
     }
 
-    // unshift builds in reverse — last unshift appears first in the list
+    // unshift builds in reverse: last unshift appears first in the list
     if (milestones) {
       children.unshift({
         key: `${hierarchyElement.id}_milestones`,
@@ -145,6 +145,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     : undefined;
 
   if (tableOfContents) {
+    // put the children of the root process in the root layer of the table of contents instead of nesting them
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
     if (extraRootItems.length > 0) {

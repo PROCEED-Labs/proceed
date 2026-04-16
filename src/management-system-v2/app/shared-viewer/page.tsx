@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
-import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/db/process';
+import {
+  getProcesses,
+  getProcessVersionBpmn,
+  getProcessBpmn,
+  getProcessNameById,
+} from '@/lib/data/db/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
@@ -141,20 +146,11 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     const versionId = version as string | undefined;
     const versionLabel = versionId ?? 'Latest';
 
-    // Get current user's spaceId to fetch process
-    const { session, userId } = await getCurrentUser();
-    if (!session) return { title: `PROCEED - Version: ${versionLabel}` };
-
-    const { activeEnvironment } = await getCurrentEnvironment(session.user.id);
-    const { spaceId } = activeEnvironment;
-
-    const processMetaData = await getProcess(processId as string, spaceId);
-    if (!processMetaData || 'error' in processMetaData) {
-      return { title: `PROCEED - Version: ${versionLabel}` };
-    }
+    const processName = await getProcessNameById(processId as string);
+    if (!processName) return { title: `PROCEED - Version: ${versionLabel}` };
 
     return {
-      title: `PROCEED - ${processMetaData.name} - Version: ${versionLabel}`,
+      title: `PROCEED - ${processName} - Version: ${versionLabel}`,
     };
   } catch {
     return {};

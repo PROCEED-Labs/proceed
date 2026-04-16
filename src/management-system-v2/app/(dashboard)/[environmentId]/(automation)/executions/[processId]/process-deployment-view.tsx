@@ -359,7 +359,6 @@ export default function ProcessDeploymentView({
             )}
 
             <Space style={{ alignItems: 'start' }}>
-
               <ToolbarGroup>
                 {selectedInstance && (
                   <Tooltip title="View Instance Documentation">

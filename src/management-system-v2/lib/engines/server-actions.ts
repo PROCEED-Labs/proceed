@@ -866,11 +866,15 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
 
     const fetchedInstances = await AsyncArray.from(reachableEngines)
       .map(async (engine) => {
-        const updatedInstances = await fetchDeployment(engine, d.processId, 'instances');
+        try {
+          const updatedInstances = await fetchDeployment(engine, d.processId, 'instances');
 
-        return updatedInstances.instances
-          .filter(({ processVersion }) => processVersion === d.versionId)
-          .map((instance) => ({ instance, engine }));
+          return updatedInstances.instances
+            .filter(({ processVersion }) => processVersion === d.versionId)
+            .map((instance) => ({ instance, engine }));
+        } catch (err) {
+          return [];
+        }
       })
       .flatten();
 

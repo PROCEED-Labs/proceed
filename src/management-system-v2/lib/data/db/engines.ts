@@ -2,7 +2,7 @@ import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
-import { SystemAdmin } from '@prisma/client';
+import { Prisma, SystemAdmin } from '@prisma/client';
 
 export async function getDbEngines(
   environmentId: string | null,
@@ -54,12 +54,14 @@ export async function getDbEngineByAddress(
   spaceId: string | null,
   ability?: Ability,
   systemAdmin?: SystemAdmin | 'dont-check',
+  tx?: Prisma.TransactionClient,
 ) {
+  const dbMutator = tx || db;
   // engines without an environmentId are PROCEED engines
   if (spaceId === null && systemAdmin !== 'dont-check' && !systemAdmin)
     throw new UnauthorizedError();
 
-  const engine = await db.engine.findFirst({
+  const engine = await dbMutator.engine.findFirst({
     where: {
       environmentId: spaceId,
       address,

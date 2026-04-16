@@ -8,7 +8,6 @@ import {
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
 import {
-  getAllElements,
   getDefinitionsVersionInformation,
   generateBpmnId,
   toBpmnObject,
@@ -17,7 +16,7 @@ import {
   getProcessDocumentation,
   getElementsByTagName,
 } from '@proceed/bpmn-helper';
-import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';

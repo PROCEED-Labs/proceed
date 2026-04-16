@@ -20,7 +20,7 @@ import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
-import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
+import { asyncFilter, asyncMap, asyncForEach, AsyncArray } from '../helpers/javascriptHelpers';
 
 import db from '@/lib/data/db';
 
@@ -56,11 +56,15 @@ import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 import {
   addDeployment,
+  addInstance as storeInstanceData,
+  updateInstance as updateStoredInstance,
+  removeInstance as removeStoredInstance,
   getDeployments as getStoredDeployments,
   removeDeployments as _removeDeployments,
   updateDeployment,
   getProcessDeployments,
 } from '../data/deployment';
+import { engineRequest } from './endpoints';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -96,7 +100,7 @@ export async function deployProcess(
   versionId: string,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
-  _forceEngine?: SpaceEngine | 'PROCEED',
+  _forceEngine?: Engine | Engine[] | 'PROCEED',
 ) {
   try {
     // TODO: manage permissions for deploying a process
@@ -109,12 +113,29 @@ export async function deployProcess(
     if (_forceEngine && _forceEngine !== 'PROCEED') {
       // forcing a specific engine
       const { ability } = await getCurrentEnvironment(spaceId);
-      const address =
-        _forceEngine.type === 'http' ? _forceEngine.address : _forceEngine.brokerAddress;
-      const spaceEngine = await getDbEngineByAddress(address, spaceId, ability);
-      if (!spaceEngine) throw new Error('No matching space engine found');
-      engines = await savedEnginesToEngines([spaceEngine]);
-      if (engines.length === 0) throw new Error("Engine couldn't be reached");
+
+      async function resolveEngines(engines: Engine[]) {
+        const addresses = engines.map((engine) =>
+          engine.type === 'http' ? engine.address : engine.brokerAddress,
+        );
+        const spaceEngines = await db.$transaction(async () => {
+          return await asyncMap(addresses, async (address) =>
+            getDbEngineByAddress(address, spaceId, ability),
+          );
+        });
+        if (spaceEngines.some((spaceEngine) => !spaceEngine)) {
+          throw new Error('No matching space engine found');
+        }
+        return savedEnginesToEngines(spaceEngines as NonNullable<(typeof spaceEngines)[number]>[]);
+      }
+
+      if (Array.isArray(_forceEngine)) {
+        engines = await resolveEngines(_forceEngine);
+        if (engines.length === 0) throw new Error('Could not reach any engine.');
+      } else {
+        engines = await resolveEngines([_forceEngine]);
+        if (engines.length === 0) throw new Error("Engine couldn't be reached");
+      }
     } else {
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
     }
@@ -136,11 +157,11 @@ export async function deployProcess(
 
     // check if the version is already deployed to some reachable engine since we don't
     // need to redeploy it in that case
-    if (!_forceEngine && processAlreadyDeployedInfo.some((i) => i.versionId === versionId)) {
+    if (processAlreadyDeployedInfo.some((i) => i.versionId === versionId)) {
       return;
     }
 
-    if (!_forceEngine && processAlreadyDeployedInfo.length) {
+    if (processAlreadyDeployedInfo.length) {
       // check if an engine already has another version in which case that engine is selected
       engines = processAlreadyDeployedInfo.flatMap((i) => i.machines);
     }
@@ -763,24 +784,33 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
   }
 }
 
-export async function getDeployments(spaceId: string) {
+export async function getDeployments(spaceId: string, engines?: Engine[]) {
   const deployments = await getStoredDeployments(spaceId);
   if (isUserErrorResponse(deployments)) return deployments;
 
-  const engines = await getCorrectTargetEngines(spaceId, false);
+  if (!engines) engines = await getCorrectTargetEngines(spaceId, false);
+
+  let reachableEngines = await AsyncArray.from(engines || []).filter(async (engine) => {
+    try {
+      await engineRequest({ engine, method: 'get', endpoint: '/status/' });
+      return true;
+    } catch (err) {
+      return false;
+    }
+  });
 
   // check if there are deployments that were "removed" by the user but where the engine was not
   // reachable at the time the user wanted to remove the deployment
   const removed: string[] = [];
   const machinesChanged: { deploymentId: string; stillDeployedOn: string[] }[] = [];
-  const stillDeployed = (
+  let stillDeployed = (
     await asyncMap(deployments, async (deployment) => {
       const stillDeployedOn = (
         await asyncMap(deployment.machineIds, async (machineId) => {
           try {
             // check if the engine is currently reachable
             // if not we assume that the state of the deployment being deployed on the engine has not changed
-            const machine = engines.find((engine) => engine.id === machineId);
+            const machine = reachableEngines.find((engine) => engine.id === machineId);
             if (!machine) return machineId;
 
             if (deployment.deleted) {
@@ -809,14 +839,80 @@ export async function getDeployments(spaceId: string) {
       }
 
       if (stillDeployedOn.length) {
-        return deployment;
+        return { ...deployment, machineIds: stillDeployedOn };
       }
     })
   ).filter(truthyFilter);
 
+  // TODO: maybe don't delete the deployment but set it to { deleted: true } to keep the execution
+  // trail
   await _removeDeployments(spaceId, removed);
   await asyncForEach(machinesChanged, async ({ deploymentId, stillDeployedOn }) => {
     await updateDeployment(spaceId, deploymentId, { machineIds: stillDeployedOn });
+  });
+
+  stillDeployed = await asyncMap(stillDeployed, async (d) => {
+    // if the instances are still available on the machines that are removed they will be readded
+    // below
+    let knownInstances = Object.fromEntries(
+      d.instances.map((i) => {
+        const filteredMachines = i.machineIds.filter(
+          (id) => !reachableEngines.some((e) => e.id === id),
+        );
+
+        return [i.id, { ...i, machineIds: filteredMachines }];
+      }),
+    );
+
+    const fetchedInstances = await AsyncArray.from(reachableEngines)
+      .map(async (engine) => {
+        const updatedInstances = await fetchDeployment(engine, d.processId, 'instances');
+
+        return updatedInstances.instances
+          .filter(({ processVersion }) => processVersion === d.versionId)
+          .map((instance) => ({ instance, engine }));
+      })
+      .flatten();
+
+    const updatedInstancesMap = fetchedInstances.reduce((map, curr) => {
+      const id = curr.instance.processInstanceId;
+      if (id in map) {
+        const known = map[id];
+        if (!known.machineIds.includes(curr.engine.id)) {
+          known.machineIds.push(curr.engine.id);
+          // TODO: merge the instance state
+          known.state = curr.instance;
+        }
+      } else {
+        map[id] = {
+          id,
+          versionId: curr.instance.processVersion,
+          deploymentId: d.id,
+          machineIds: [curr.engine.id],
+          state: curr.instance,
+          initiatorId: null,
+        };
+      }
+
+      return map;
+    }, knownInstances);
+
+    const updatedInstances = Object.values(updatedInstancesMap);
+
+    asyncForEach(updatedInstances, async (instance) => {
+      if (!instance.machineIds.length) {
+        // don't delete but set to interrupted or something similar
+        await removeStoredInstance(spaceId, instance.id);
+      } else if (!knownInstances[instance.id]) {
+        await storeInstanceData(spaceId, instance as any);
+      } else {
+        await updateStoredInstance(spaceId, instance.id, {
+          state: instance.state as any,
+        });
+      }
+    });
+
+    return { ...d, instances: updatedInstances };
   });
 
   return stillDeployed;

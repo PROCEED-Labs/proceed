@@ -464,11 +464,11 @@ model ProcessDeployment {
 model ProcessInstance {
   id              String            @id
   deploymentId    String
-  deployment      ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: SetNull)
+  deployment      ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   versionId       String       
   version         Version           @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  initiatorId     String
-  initiator       User              @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  initiatorId     String?
+  initiator       User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
   userTasks       UserTask[]
   // These are not the "Engines" but the actual machines the process is running on
   // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"

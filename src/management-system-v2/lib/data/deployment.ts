@@ -1,5 +1,8 @@
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+'use server';
+
+import { getCurrentEnvironment } from '@/components/auth';
 import {
+  getDeployment as _getDeployment,
   getDeployments as _getDeployments,
   getProcessDeployments as _getProcessDeployments,
   addProcessDeployment as _addProcessDeployment,
@@ -7,7 +10,17 @@ import {
   updateProcessDeployment,
 } from './db/deployment';
 import { UserErrorType, userError } from '../user-error';
-import { DeploymentInput } from '../deployments-schema';
+import { DeploymentInput, InstanceInput } from '../deployments-schema';
+import { addProcessInstance, updateProcessInstance, removeProcessInstance } from './db/instances';
+
+export async function getDeployment(spaceId: string, deploymentId: string) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  return _getDeployment(deploymentId);
+}
 
 export async function getDeployments(spaceId: string) {
   const { ability } = await getCurrentEnvironment(spaceId);
@@ -59,8 +72,33 @@ export async function removeDeployments(spaceId: string, deploymentIds: string[]
   await _removeDeployments(deploymentIds);
 }
 
-// export async function getProcessDeployments(spaceId: string) {
-//   const { userId } = await getCurrentUser();
-//
-//   // const
-// }
+export async function addInstance(spaceId: string, instance: InstanceInput) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('create', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  return addProcessInstance(instance);
+}
+
+export async function updateInstance(
+  spaceId: string,
+  instanceId: string,
+  input: Partial<InstanceInput>,
+) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('create', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  return updateProcessInstance(instanceId, input);
+}
+
+export async function removeInstance(spaceId: string, instanceId: string) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('delete', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  return removeProcessInstance(instanceId);
+}

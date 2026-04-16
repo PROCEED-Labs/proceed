@@ -1,5 +1,22 @@
 import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '@/lib/deployments-schema';
+import { UserFacingError } from '@/lib/user-error';
+
+export async function getDeployment(deploymentId: string) {
+  const deployment = await db.processDeployment.findUnique({
+    where: { id: deploymentId },
+    include: { version: true, instances: true },
+  });
+
+  if (!deployment) throw new UserFacingError('Deployment could not be found.');
+
+  // TODO: check if the user can access this deployment
+
+  return {
+    ...deployment,
+    processId: deployment.version.processId,
+  };
+}
 
 export async function getDeployments(environmentId: string) {
   const deployments = await db.processDeployment.findMany({
@@ -14,6 +31,8 @@ export async function getDeployments(environmentId: string) {
     processId: d.version.processId,
   }));
 }
+
+export type StoredDeployment = Awaited<ReturnType<typeof getDeployments>>[number];
 
 export async function getProcessDeployments(processId: string) {
   const deployments = await db.processDeployment.findMany({

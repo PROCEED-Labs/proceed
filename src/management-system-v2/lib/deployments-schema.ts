@@ -15,12 +15,12 @@ export type Deployment = z.output<typeof DeploymentInputSchema> & {
 };
 
 export const InstanceInputSchema = z.object({
+  id: z.string(),
   deploymentId: z.string(),
   versionId: z.string(),
-  initiatorId: z.string(),
+  initiatorId: z.string().optional(),
   machineIds: z.string().array(),
-  state: z.object({}).nullish().default(null),
-  deleted: z.boolean().default(false),
+  state: z.object({}).passthrough(),
 });
 
 export type InstanceInput = z.input<typeof InstanceInputSchema>;

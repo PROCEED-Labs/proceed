@@ -342,12 +342,15 @@ export async function getDeployments(engines: Engine[], entries?: string) {
   return deployments as DeployedProcessInfo[];
 }
 
-export async function getDeployment(engine: Engine, definitionId: string) {
+export async function getDeployment(engine: Engine, definitionId: string, entries?: string) {
   const deployment = await engineRequest({
     method: 'get',
     endpoint: '/process/:definitionId',
     engine,
     pathParams: { definitionId },
+    queryParams: {
+      entries,
+    },
   });
 
   return deployment as DeployedProcessInfo;

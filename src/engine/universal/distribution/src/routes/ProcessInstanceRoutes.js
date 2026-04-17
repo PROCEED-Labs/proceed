@@ -463,30 +463,25 @@ module.exports = (path, management) => {
 
   network.get(`${path}/:definitionId/versions/:version/active`, { cors: true }, async (req) => {
     const { definitionId, version } = req.params;
-    const engine = management.getEngineWithDefinitionId(definitionId);
-
-    if (!engine) {
-      return {
-        statusCode: 200,
-        mimeType: 'application/json',
-        response: JSON.stringify({ active: false }),
-      };
-    }
 
     try {
-      return {
-        statusCode: 200,
-        mimeType: 'application/json',
-        response: JSON.stringify({
-          active: await engine.isProcessVersionDeployed(definitionId, version),
-        }),
-      };
-    } catch (_) {
+      await db.getProcessVersion(definitionId, version);
+    } catch {
       return {
         statusCode: 404,
         mimeType: 'text/plain',
         response: 'The requested version is not found in this engine.',
       };
     }
+
+    const engine = management.getEngineWithDefinitionId(definitionId);
+
+    return {
+      statusCode: 200,
+      mimeType: 'application/json',
+      response: JSON.stringify({
+        active: engine ? await engine.isProcessVersionDeployed(version) : false,
+      }),
+    };
   });
 };

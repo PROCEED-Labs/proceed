@@ -28,7 +28,6 @@ import {
   activateUserTask,
   completeTasklistEntryOnMachine,
   getTaskListFromMachine,
-  getUserTaskFileFromMachine,
   setTasklistEntryVariableValuesOnMachine,
   setTasklistEntryMilestoneValuesOnMachine,
   addOwnerToTaskListEntryOnMachine,
@@ -56,14 +55,15 @@ import Ability from '../ability/abilityHelper';
 import { getUserById } from '../data/db/iam/users';
 import {
   addDeployment,
+  getInstance as getStoredInstance,
   addInstance as storeInstanceData,
   updateInstance as updateStoredInstance,
   getDeployments as getStoredDeployments,
-  removeDeployments as _removeDeployments,
   updateDeployment,
   getProcessDeployments,
 } from '../data/deployment';
 import { engineRequest } from './endpoints';
+import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -203,47 +203,32 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     const deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 
-    const removed: string[] = [];
-    const toRemove: { deploymentId: string; stillDeployedOn: string[] }[] = [];
-
     const engines = await getCorrectTargetEngines(spaceId, false);
 
     await asyncForEach(deployments, async (deployment) => {
-      const stillDeployedOn = (
-        await asyncMap(deployment.machineIds, async (machineId) => {
-          try {
-            // check if the engine is currently reachable if not we have to remove the deployment at
-            // a future time when it becomes reachable again
-            const machine = engines.find((engine) => engine.id === machineId);
-            if (!machine) return machineId;
+      const stillDeployedOn = await asyncMap(deployment.machineIds, async (machineId) => {
+        try {
+          // check if the engine is currently reachable if not we have to remove the deployment at
+          // a future time when it becomes reachable again
+          const machine = engines.find((engine) => engine.id === machineId);
+          if (!machine) return machineId;
 
-            // remove the deployment from the engine
-            // this will also affect other deployments of the same process but since this function
-            // is aimed at removing all deployments of the process, this should not be a problem
-            await removeDeploymentFromMachines([machine], deployment.processId);
-          } catch (err) {
-            // could not remove the deployment so we keep the machine as still having the
-            // deployment
-            return machineId;
-          }
-        })
-      ).filter(truthyFilter);
+          // remove the deployment from the engine
+          // this will also affect other deployments of the same process but since this function
+          // is aimed at removing all deployments of the process, this should not be a problem
+          await removeDeploymentFromMachines([machine], deployment.processId);
+        } catch (err) {
+          // could not remove the deployment so we keep the machine as still having the
+          // deployment
+          return machineId;
+        }
+      }).nonNullable();
 
-      if (!stillDeployedOn.length) {
-        removed.push(deployment.id);
-      } else {
-        toRemove.push({ deploymentId: deployment.id, stillDeployedOn });
-      }
+      await updateDeployment(spaceId, deployment.id, {
+        deleted: !stillDeployedOn.length || deployment.deleted,
+        machineIds: stillDeployedOn,
+      });
     });
-
-    const removeResult = await _removeDeployments(spaceId, removed);
-    if (isUserErrorResponse(removeResult)) return removeResult;
-
-    await asyncForEach(toRemove, async ({ deploymentId, stillDeployedOn }) => {
-      await updateDeployment(spaceId, deploymentId, { deleted: true, machineIds: stillDeployedOn });
-    });
-
-    // await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -278,6 +263,15 @@ export async function changeDeploymentActivation(
   }
 }
 
+async function isReachable(engine: Engine) {
+  try {
+    await engineRequest({ engine, method: 'get', endpoint: '/status/' });
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
 export async function getAvailableTaskListEntries(spaceId: string, engines: Engine[]) {
   try {
     if (!enableUseDB)
@@ -285,14 +279,32 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
 
     let stored = await getUserTasks();
 
-    if ('error' in stored) {
-      throw stored.error;
-    }
+    if (isUserErrorResponse(stored)) return stored;
+
+    const deployments = await getStoredDeployments(spaceId, true);
+
+    if (isUserErrorResponse(deployments)) return deployments;
 
     const removedTasks = [] as string[];
+    const newTasks: UserTask[] = [];
+    const changedTasks: UserTask[] = [];
 
-    const fetched = (
-      await asyncMap(engines, async (engine) => {
+    const fetched = await asyncMap(deployments, (d) => {
+      return d.machineIds;
+    })
+      .flatten()
+      .deduplicate((id) => id)
+      .map(async (id) => {
+        const engine = engines.find((e) => e.id === id);
+
+        if (engine && !(await isReachable(engine))) {
+          return;
+        }
+
+        return engine;
+      })
+      .nonNullable()
+      .map(async (engine) => {
         try {
           const taskList = await getTaskListFromMachine(engine);
 
@@ -301,48 +313,40 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
           const removedFromMachine = Object.fromEntries(
             (stored as UserTask[])
               .filter((task) => task.machineId === engine.id)
-              .map((task) => [task.id, task]),
+              .map((task) => [task.id, true]),
           );
           taskList.forEach(
             (task) => delete removedFromMachine[`${task.id}|${task.instanceID}|${task.startTime}`],
           );
           removedTasks.push(...Object.keys(removedFromMachine));
 
-          return taskList.map((task) => ({
-            ...task,
-            machineId: engine.id,
-            potentialOwners: task.performers,
-          }));
+          return taskList.map(
+            (task) =>
+              ({
+                ...task,
+                id: `${task.id}|${task.instanceID}|${task.startTime}`,
+                taskId: task.id,
+                fileName: task.attrs['proceed:fileName'],
+                milestones: undefined,
+                machineId: engine.id,
+                potentialOwners: task.performers,
+              }) satisfies UserTask,
+          );
         } catch (e) {
           return null;
         }
       })
-    )
-      .filter(truthyFilter)
-      .flat()
-      .map(
-        (task) =>
-          ({
-            ...task,
-            id: `${task.id}|${task.instanceID}|${task.startTime}`,
-            taskId: task.id,
-            fileName: task.attrs['proceed:fileName'],
-            milestones: undefined,
-          }) as UserTask,
-      );
-
-    const newTasks: UserTask[] = [];
-    const changedTasks: UserTask[] = [];
-
-    fetched.forEach((task) => {
-      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
-      if (alreadyStored) {
-        // TODO: maybe check if the task actually changed
-        changedTasks.push(task);
-      } else {
-        newTasks.push(task);
-      }
-    });
+      .nonNullable()
+      .flatten()
+      .forEach((task) => {
+        const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
+        if (alreadyStored) {
+          // TODO: maybe check if the task actually changed
+          changedTasks.push(task);
+        } else {
+          newTasks.push(task);
+        }
+      });
 
     if (newTasks.length) await addUserTasks(newTasks);
     await asyncForEach(changedTasks, async (task) => {
@@ -435,32 +439,42 @@ export async function getTasklistEntryHTML(
 
       if (!userTask) throw new Error('Could not fetch user task data!');
 
-      const deployment = await fetchDeployment(engine, definitionId);
-      const instance = deployment.instances.find((i) => i.processInstanceId === instanceId);
+      const deployments = await getDeployments(spaceId, [engine]);
+
+      if (isUserErrorResponse(deployments)) return deployments;
+
+      const instance = deployments
+        .filter((d) => d.processId === definitionId)
+        .flatMap((d) => d.instances)
+        .find((i) => i.id === instanceId);
 
       if (!instance)
         throw new Error(
           'Could not get instance information for the instance that started the user task',
         );
 
-      const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
+      const bpmn = await getProcessBPMN(definitionId, spaceId, instance.versionId);
 
-      initialVariables = getCorrectVariableState(userTask, instance);
-      milestones = await getCorrectMilestoneState(version.bpmn, userTask, instance);
+      if (isUserErrorResponse(bpmn)) return bpmn;
+
+      initialVariables = getCorrectVariableState(userTask, instance.state);
+      milestones = await getCorrectMilestoneState(bpmn, userTask, instance.state);
       variableChanges = initialVariables;
 
-      html = await getUserTaskFileFromMachine(engine, definitionId, filename);
+      const htmlForm = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
 
-      html = html.replace(/\/resources\/process[^"]*/g, (match) => {
+      if (isUserErrorResponse(htmlForm)) return htmlForm;
+
+      html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
         const path = match.split('/');
         return `/api/private/${spaceId}/engine/resources/process/${definitionId}/images/${path.pop()}`;
       });
 
-      const processIds = await getProcessIds(version.bpmn);
+      const processIds = await getProcessIds(bpmn);
       let variableDefinitions: undefined | Variable[];
       if (processIds.length) {
         const [processId] = processIds;
-        variableDefinitions = await getVariablesFromElementById(version.bpmn, processId);
+        variableDefinitions = await getVariablesFromElementById(bpmn, processId);
       }
 
       html = inlineScript(html, instanceId, taskId, variableDefinitions);
@@ -666,14 +680,18 @@ export async function updateVariables(
   try {
     if (!enableUseDB) throw new Error('updateVariables only available with enableUseDB');
 
+    const instance = await getStoredInstance(spaceId, instanceId);
+
+    if (isUserErrorResponse(instance)) return instance;
+
+    if (!instance) return userError('Could not find the instance to change.');
+
     // find the engine the instance is running on
     const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
-
-      return deployments.some((deployment) =>
-        deployment.instances.some((i) => i.processInstanceId === instanceId),
-      );
+      return instance.machineIds.includes(engine.id);
     });
+
+    if (!engines.length) return userError('Could not reach the engines the instance is running on');
 
     await asyncForEach(
       engines,
@@ -790,14 +808,7 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
   if (!engines) engines = await getCorrectTargetEngines(spaceId, false);
 
   // check which engines are actually reachable at the moment
-  let reachableEngines = await asyncFilter(engines || [], async (engine) => {
-    try {
-      await engineRequest({ engine, method: 'get', endpoint: '/status/' });
-      return true;
-    } catch (err) {
-      return false;
-    }
-  });
+  let reachableEngines = await asyncFilter(engines || [], isReachable);
 
   const updatedDeployments = await asyncMap(deployments, async (deployment) => {
     let { machineIds } = deployment;
@@ -815,16 +826,15 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
               // machine list
               await removeDeploymentFromMachines([machine], deployment.processId);
               return false;
-            } catch (err) { }
+            } catch (err) {}
           } else {
             try {
+              await fetchDeployment(machine, deployment.processId, 'definitionId');
+            } catch (err) {
               // remove the machine from the machine list if the deployment has been removed for
               // some reason
-              const deployments = await fetchDeployments([machine], 'definitionId');
-              if (!deployments.some((d) => d.definitionId === deployment.processId)) {
-                return false;
-              }
-            } catch (err) { }
+              return false;
+            }
           }
         }
         return true;
@@ -845,7 +855,7 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
           return updatedInstances.instances
             .filter(({ processVersion }) => processVersion === deployment.versionId)
             .map((instance) => ({ instance, machine }));
-        } catch (err) { }
+        } catch (err) {}
       }
 
       return [];

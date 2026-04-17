@@ -1,6 +1,7 @@
 import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '@/lib/deployments-schema';
 import { UserFacingError } from '@/lib/user-error';
+import { InstanceInfo } from '@proceed/user-task-helper';
 
 export async function getDeployment(deploymentId: string) {
   const deployment = await db.processDeployment.findUnique({
@@ -18,16 +19,19 @@ export async function getDeployment(deploymentId: string) {
   };
 }
 
-export async function getDeployments(environmentId: string) {
+export async function getDeployments(environmentId: string, skipAbilityCheck = false) {
   const deployments = await db.processDeployment.findMany({
     where: { version: { process: { environmentId } } },
     include: { version: true, instances: true },
   });
 
-  // TODO: check on a per deployment level if the user can access that deployment
+  if (!skipAbilityCheck) {
+    // TODO: check on a per deployment level if the user can access that deployment
+  }
 
   return deployments.map((d) => ({
     ...d,
+    instances: d.instances as ((typeof d.instances)[number] & { state: InstanceInfo })[],
     processId: d.version.processId,
   }));
 }
@@ -42,6 +46,7 @@ export async function getProcessDeployments(processId: string) {
 
   return deployments.map((d) => ({
     ...d,
+    instances: d.instances as ((typeof d.instances)[number] & { state: InstanceInfo })[],
     processId: d.version.processId,
   }));
 }

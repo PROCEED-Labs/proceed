@@ -151,7 +151,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
           wrapServerCall({
             fn: async () => {
               setSubmitting(true);
-              await updateVariables(spaceId, processId, instance!.processInstanceId, {
+              return await updateVariables(spaceId, processId, instance!.processInstanceId, {
                 [variableToEdit!.name]: value,
               });
             },
@@ -161,8 +161,12 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
               setSubmitting(false);
               handleClose();
             },
-            onError: () => {
-              message.error('Could not apply changes');
+            onError: (err) => {
+              if ('type' in err) {
+                message.error(err.message);
+              } else {
+                message.error('Could not apply changes');
+              }
               setSubmitting(false);
             },
           });

@@ -11,7 +11,12 @@ import {
 } from './db/deployment';
 import { UserErrorType, userError } from '../user-error';
 import { DeploymentInput, InstanceInput } from '../deployments-schema';
-import { addProcessInstance, updateProcessInstance, removeProcessInstance } from './db/instances';
+import {
+  addProcessInstance,
+  updateProcessInstance,
+  removeProcessInstance,
+  getProcessInstance,
+} from './db/instances';
 
 export async function getDeployment(spaceId: string, deploymentId: string) {
   const { ability } = await getCurrentEnvironment(spaceId);
@@ -22,11 +27,12 @@ export async function getDeployment(spaceId: string, deploymentId: string) {
   return _getDeployment(deploymentId);
 }
 
-export async function getDeployments(spaceId: string) {
+export async function getDeployments(spaceId: string, skipAbilityCheck = false) {
   const { ability } = await getCurrentEnvironment(spaceId);
 
-  if (!ability.can('view', 'Execution'))
+  if (!skipAbilityCheck && !ability.can('view', 'Execution')) {
     return userError('Invalid Permissions', UserErrorType.PermissionError);
+  }
 
   return _getDeployments(spaceId);
 }
@@ -70,6 +76,15 @@ export async function removeDeployments(spaceId: string, deploymentIds: string[]
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   await _removeDeployments(deploymentIds);
+}
+
+export async function getInstance(spaceId: string, instanceId: string) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  return getProcessInstance(instanceId);
 }
 
 export async function addInstance(spaceId: string, instance: InstanceInput) {

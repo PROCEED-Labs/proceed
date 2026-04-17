@@ -731,16 +731,16 @@ export type FolderContentWithScriptTasks = {
   folderId: string;
   content: (
     | {
-      type: 'process';
-      id: string;
-      name: string;
-      scriptTasks: Array<{ fileName: string; taskName: string }>;
-    }
+        type: 'process';
+        id: string;
+        name: string;
+        scriptTasks: Array<{ fileName: string; taskName: string }>;
+      }
     | {
-      type: 'folder';
-      id: string;
-      name: string;
-    }
+        type: 'folder';
+        id: string;
+        name: string;
+      }
   )[];
 };
 /*

@@ -106,8 +106,7 @@ function useUserTasks(
 
     if (machine === undefined) return;
 
-    const res = await completeTasklistEntry(taskId, variables, machine);
-    return res;
+    return completeTasklistEntry(taskId, variables, machine);
   }
 
   async function setMilestoneValues(taskId: string, milestones: Record<string, any>) {

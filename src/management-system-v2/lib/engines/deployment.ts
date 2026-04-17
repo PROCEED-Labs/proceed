@@ -288,8 +288,23 @@ export type InstanceInfo = {
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
   }[];
-  variables: {};
+  variables: Record<
+    string,
+    {
+      value: any;
+      log: {
+        changedTime: number;
+        changedBy: string;
+        oldValue?: any;
+      }[];
+    }
+  >;
   log: {
     flowElementId: string;
     tokenId: string;
@@ -309,6 +324,11 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
   }[];
   adaptationLog: any[];
   processVersion: string;

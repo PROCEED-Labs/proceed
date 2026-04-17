@@ -12,7 +12,7 @@ import {
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
-import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
 import { getDbEngines, getDbEngineByAddress } from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach } from '../helpers/javascriptHelpers';
@@ -740,8 +740,8 @@ export async function getAvailableSpaceEngines(spaceId: string) {
   }
 }
 
-export async function getDeployment(spaceId: string, definitionId: string) {
-  const engines = await getCorrectTargetEngines(spaceId);
+export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
+  const engines = await getCorrectTargetEngines(spaceId, undefined, undefined, ability);
 
   const deployments = await fetchDeployments(engines);
 

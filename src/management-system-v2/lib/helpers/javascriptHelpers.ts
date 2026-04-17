@@ -42,10 +42,47 @@ export class AsyncArray<Type> {
     );
   }
 
+  /**
+   * Recursively flattens the array
+   **/
   flatten() {
     return new AsyncArray(
       this._promise.then(async (array) => {
         return array.flat();
+      }),
+    );
+  }
+
+  /**
+   * Removes all occurences of falsy values from the array
+   **/
+  nonNullable() {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        return array.filter(truthyFilter);
+      }) as Promise<NonNullable<Type>[]>,
+    );
+  }
+
+  /**
+   * Removes duplicate elements from the array
+   *
+   * @param hash function that maps entries to strings or numbers that are the same for equal
+   * entries
+   **/
+  deduplicate<T extends string | number>(hash: (a: Type) => T) {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        const existing = {} as { [Type in T]: true };
+
+        return array.reduce((set, curr) => {
+          const hashed = hash(curr);
+          if (existing[hashed]) return set;
+          else {
+            existing[hashed] = true;
+            return [...set, curr];
+          }
+        }, [] as Type[]);
       }),
     );
   }

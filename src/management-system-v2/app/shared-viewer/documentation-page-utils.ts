@@ -613,7 +613,11 @@ export function buildProcessTocItems(
         ...(hierarchy.description
           ? [{ key: 'summary', href: href(`#${hierarchy.id}_description_page`), title: 'Summary' }]
           : []),
-        { key: 'process_diagram', href: href(`#${hierarchy.id}_diagram_page`), title: 'Process Diagram' },
+        {
+          key: 'process_diagram',
+          href: href(`#${hierarchy.id}_diagram_page`),
+          title: 'Process Diagram',
+        },
         { key: 'process_details', href: href('#process_details_page'), title: 'Process Details' },
       ],
     },
@@ -650,16 +654,32 @@ export function buildInstanceTocItems(
     const children: AnchorLinkItemProps[] = [];
 
     if (settings.showElementSVG) {
-      children.push({ key: `${node.id}_diagram`, href: href(`#${node.id}_diagram_page`), title: 'Diagram Element' });
+      children.push({
+        key: `${node.id}_diagram`,
+        href: href(`#${node.id}_diagram_page`),
+        title: 'Diagram Element',
+      });
     }
     if (node.description) {
-      children.push({ key: `${node.id}_description`, href: href(`#${node.id}_description_page`), title: 'Description' });
+      children.push({
+        key: `${node.id}_description`,
+        href: href(`#${node.id}_description_page`),
+        title: 'Description',
+      });
     }
     if ((hasLog || hasToken) && settings.showInstanceStatus) {
-      children.push({ key: `${node.id}_execution_log`, href: href(`#${node.id}_execution_log_page`), title: 'Execution Log' });
+      children.push({
+        key: `${node.id}_execution_log`,
+        href: href(`#${node.id}_execution_log_page`),
+        title: 'Execution Log',
+      });
     }
     if (settings.showInstanceVariables && hasVariableChangesForElement(instance, node)) {
-      children.push({ key: `${node.id}_variable_changes`, href: href(`#${node.id}_variable_changes_page`), title: 'Variable Changes' });
+      children.push({
+        key: `${node.id}_variable_changes`,
+        href: href(`#${node.id}_variable_changes_page`),
+        title: 'Variable Changes',
+      });
     }
     return children;
   }
@@ -693,7 +713,13 @@ export function buildInstanceTocItems(
       children: [
         { key: 'execution_summary', href: href('#execution_summary_page'), title: 'Summary' },
         ...(settings.showInstanceVariables
-          ? [{ key: 'end_states_variables', href: href('#end_states_variables_page'), title: 'End States of Process Variables' }]
+          ? [
+              {
+                key: 'end_states_variables',
+                href: href('#end_states_variables_page'),
+                title: 'End States of Process Variables',
+              },
+            ]
           : []),
       ],
     },

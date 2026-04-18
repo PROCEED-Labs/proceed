@@ -49,7 +49,7 @@ const columns = [
         typeof row.endTime === 'number' && typeof row.startTime === 'number'
           ? row.endTime - row.startTime
           : undefined;
-      return generateDurationString(duration);
+      return duration !== undefined ? generateDurationString(duration) : '—';
     },
   },
   {

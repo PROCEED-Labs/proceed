@@ -147,10 +147,10 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
     const versionLabel = versionId ?? 'Latest';
 
     const processName = await getProcessNameById(processId as string);
-    if (!processName) return { title: `PROCEED - Version: ${versionLabel}` };
+    if (!processName) return { title: `PROCEED - Version ${versionLabel}` };
 
     return {
-      title: `PROCEED - ${processName} - Version: ${versionLabel}`,
+      title: `PROCEED - ${processName} - Version ${versionLabel}`,
     };
   } catch {
     return {};
@@ -263,10 +263,10 @@ const SharedViewer = async (props: PageProps) => {
     }
   }
 
-  const ownerName = (await resolveUserDisplayName(processData?.creatorId)) ?? '—';
+  const ownerName = (await resolveUserDisplayName(processData?.creatorId));
 
   const processInitiatorName =
-    (await resolveUserDisplayName(instanceData?.processInitiator)) ?? '-';
+    (await resolveUserDisplayName(instanceData?.processInitiator));
 
   // Inject both ownerName and processInitiatorName into processData
   const enrichedProcessData = {

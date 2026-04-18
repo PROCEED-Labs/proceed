@@ -21,7 +21,7 @@ import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import { generateDateString } from '@/lib/utils';
 import ElementSections from '@/components/doc-element-sections';
 import ProcessDetailsTable from '@/components/doc-process-details-table';
-import { isProcessElementEmpty } from './documentation-page-utils';
+import { getElementTypeLabel, isProcessElementEmpty } from './documentation-page-utils';
 
 export type VersionInfo = {
   id?: string;
@@ -61,7 +61,7 @@ async function getContent(
 
   // show the element as it is visible in its parent
   let elementSvg = hierarchyElement.svg;
-  let elementLabel = hierarchyElement.name || `<${hierarchyElement.id}>`;
+  let elementLabel = getElementTypeLabel(hierarchyElement);
   let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
   if (settings.nestedSubprocesses && hierarchyElement.nestedSubprocess) {
@@ -288,8 +288,7 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                           .map((child) => ({
                             key: child.id,
                             href: '',
-                            title:
-                              child.name && !child.name.startsWith('<') ? child.name : child.id,
+                            title: getElementTypeLabel(child),
                           })),
                       },
                     ]}

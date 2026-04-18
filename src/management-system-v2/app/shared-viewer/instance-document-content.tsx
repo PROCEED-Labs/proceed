@@ -324,7 +324,12 @@ const InstanceDocumentContent: React.FC<Props> = ({
               showHeader={false}
               rowKey="label"
               columns={[
-                { dataIndex: 'label', key: 'label', render: (v) => <Text strong>{v}</Text> },
+                {
+                  dataIndex: 'label',
+                  key: 'label',
+                  width: 200,
+                  render: (v) => <Text strong>{v}</Text>,
+                },
                 { dataIndex: 'value', key: 'value' },
               ]}
               dataSource={(() => {

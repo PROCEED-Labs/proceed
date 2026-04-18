@@ -8,7 +8,11 @@ import { settingsOptions, settings, SettingsOption } from './settings-modal';
 import ProcessDocument from './process-document';
 import SharedViewerLayout from './shared-viewer-layout';
 import { useProcessHierarchy } from './use-process-hierarchy';
-import { ImportsInfo, isProcessElementEmpty } from './documentation-page-utils';
+import {
+  getElementTypeLabel,
+  ImportsInfo,
+  isProcessElementEmpty,
+} from './documentation-page-utils';
 
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -92,7 +96,7 @@ const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
                   .map((child) => ({
                     key: child.id,
                     href: `#${child.id}_page`,
-                    title: child.name && !child.name.startsWith('<') ? child.name : child.id,
+                    title: getElementTypeLabel(child),
                   })),
               },
             ]

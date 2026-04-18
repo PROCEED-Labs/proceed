@@ -50,7 +50,7 @@ const ProcessDetailsTable: React.FC<ProcessDetailsTableProps> = ({
         showHeader={false}
         rowKey="label"
         columns={[
-          { dataIndex: 'label', key: 'label', render: (v) => <Text strong>{v}</Text> },
+          { dataIndex: 'label', key: 'label', width: 220, render: (v) => <Text strong>{v}</Text> },
           { dataIndex: 'value', key: 'value' },
         ]}
         dataSource={rows}

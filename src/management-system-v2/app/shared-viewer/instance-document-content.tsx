@@ -17,6 +17,7 @@ import {
   getElementTypeLabel,
   isInstanceElementEmpty,
   getVariablesForElement,
+  buildInstanceTocItems,
 } from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
@@ -259,18 +260,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
               settings={settings as any}
               processHierarchy={processHierarchy}
               linksDisabled
-              extraRootItems={extraRootItems.map((item) => ({
-                ...item,
-                href: '',
-                children: item.children?.map((child) => ({
-                  ...child,
-                  href: '',
-                  children: child.children?.map((grandchild) => ({
-                    ...grandchild,
-                    href: '',
-                  })),
-                })),
-              }))}
+              extraRootItems={buildInstanceTocItems(processHierarchy, settings, instance, true)}
             />
           </div>
         )}

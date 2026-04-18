@@ -12,6 +12,7 @@ import {
   getElementTypeLabel,
   isInstanceElementEmpty,
   hasVariableChangesForElement,
+  buildInstanceTocItems,
 } from './documentation-page-utils';
 import { ElementInfo } from './table-of-content';
 import SharedViewerLayout from './shared-viewer-layout';
@@ -127,44 +128,10 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
         children: buildElementChildren(node),
       }));
   }
-  const sortedChildren = processHierarchy?.children || [];
 
   const extraRootItems = useMemo(
-    (): AnchorLinkItemProps[] => [
-      {
-        key: 'process_overview',
-        href: '#process_overview_page',
-        title: 'Process Overview',
-        children: [
-          { key: 'process_summary', href: '#process_summary_page', title: 'Summary' },
-          { key: 'process_diagram', href: '#process_diagram_page', title: 'Process Diagram' },
-          { key: 'process_details', href: '#process_details_page', title: 'Process Details' },
-        ],
-      },
-      {
-        key: 'execution_overview',
-        href: '#execution_overview_page',
-        title: 'Execution Overview',
-        children: [
-          { key: 'execution_summary', href: '#execution_summary_page', title: 'Summary' },
-          ...(activeSettings.showInstanceVariables
-            ? [
-                {
-                  key: 'end_states_variables',
-                  href: '#end_states_variables_page',
-                  title: 'End States of Process Variables',
-                },
-              ]
-            : []),
-        ],
-      },
-      {
-        key: 'detailed_execution_log',
-        href: '#detailed_execution_log_page',
-        title: 'Detailed Execution Log',
-        children: processHierarchy ? buildDetailedLogItems(sortedChildren) : [],
-      },
-    ],
+    (): AnchorLinkItemProps[] =>
+      processHierarchy ? buildInstanceTocItems(processHierarchy, activeSettings, instance) : [],
     [processHierarchy, activeSettings, instance],
   );
 

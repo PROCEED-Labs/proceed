@@ -39,6 +39,7 @@ import {
   progressToColor,
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import { ElementInfo } from './table-of-content';
+import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -590,4 +591,117 @@ export function makeSvgResponsive(svg: string, fullWidth = false): string {
     /<svg/,
     `<svg overflow="visible" preserveAspectRatio="xMidYMid meet" class="${fullWidth ? 'bpmn-root-svg' : 'bpmn-element-svg'}" style="display:block;width:${naturalWidth};height:${naturalHeight};max-width:100%;max-height:${maxHeight}"`,
   );
+}
+
+/**
+ * Builds TOC items for the process documentation page.
+ * Used in both the sidebar TOC and the printed TOC.
+ */
+export function buildProcessTocItems(
+  hierarchy: ElementInfo,
+  settings: Record<string, boolean>,
+  linksDisabled = false,
+): AnchorLinkItemProps[] {
+  const href = (id: string) => (linksDisabled ? '' : id);
+
+  return [
+    {
+      key: 'process_overview',
+      href: href(`#${hierarchy.id}_page`),
+      title: 'Process Overview',
+      children: [
+        ...(hierarchy.description
+          ? [{ key: 'summary', href: href(`#${hierarchy.id}_description_page`), title: 'Summary' }]
+          : []),
+        { key: 'process_diagram', href: href(`#${hierarchy.id}_diagram_page`), title: 'Process Diagram' },
+        { key: 'process_details', href: href('#process_details_page'), title: 'Process Details' },
+      ],
+    },
+    {
+      key: 'process_element_details',
+      href: href('#process_element_details_page'),
+      title: 'Process Element Details',
+      children: (hierarchy.children || [])
+        .filter((child) => settings.hideEmpty || !isProcessElementEmpty(child))
+        .map((child) => ({
+          key: child.id,
+          href: href(`#${child.id}_page`),
+          title: getElementTypeLabel(child),
+        })),
+    },
+  ];
+}
+
+/**
+ * Builds TOC items for the instance documentation page.
+ * Used in both the sidebar TOC and the printed TOC.
+ */
+export function buildInstanceTocItems(
+  hierarchy: ElementInfo,
+  settings: Record<string, boolean>,
+  instance: InstanceInfo,
+  linksDisabled = false,
+): AnchorLinkItemProps[] {
+  const href = (id: string) => (linksDisabled ? '' : id);
+
+  function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
+    const hasLog = !!node.instanceStatus?.logEntries?.length;
+    const hasToken = !!node.instanceStatus?.token;
+    const children: AnchorLinkItemProps[] = [];
+
+    if (settings.showElementSVG) {
+      children.push({ key: `${node.id}_diagram`, href: href(`#${node.id}_diagram_page`), title: 'Diagram Element' });
+    }
+    if (node.description) {
+      children.push({ key: `${node.id}_description`, href: href(`#${node.id}_description_page`), title: 'Description' });
+    }
+    if ((hasLog || hasToken) && settings.showInstanceStatus) {
+      children.push({ key: `${node.id}_execution_log`, href: href(`#${node.id}_execution_log_page`), title: 'Execution Log' });
+    }
+    if (settings.showInstanceVariables && hasVariableChangesForElement(instance, node)) {
+      children.push({ key: `${node.id}_variable_changes`, href: href(`#${node.id}_variable_changes_page`), title: 'Variable Changes' });
+    }
+    return children;
+  }
+
+  function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
+    return nodes
+      .filter((node) => settings.hideEmpty || !isInstanceElementEmpty(node))
+      .map((node) => ({
+        key: node.id,
+        href: href(`#${node.id}_page`),
+        title: getElementTypeLabel(node),
+        children: buildElementChildren(node),
+      }));
+  }
+
+  return [
+    {
+      key: 'process_overview',
+      href: href('#process_overview_page'),
+      title: 'Process Overview',
+      children: [
+        { key: 'process_summary', href: href('#process_summary_page'), title: 'Summary' },
+        { key: 'process_diagram', href: href('#process_diagram_page'), title: 'Process Diagram' },
+        { key: 'process_details', href: href('#process_details_page'), title: 'Process Details' },
+      ],
+    },
+    {
+      key: 'execution_overview',
+      href: href('#execution_overview_page'),
+      title: 'Execution Overview',
+      children: [
+        { key: 'execution_summary', href: href('#execution_summary_page'), title: 'Summary' },
+        ...(settings.showInstanceVariables
+          ? [{ key: 'end_states_variables', href: href('#end_states_variables_page'), title: 'End States of Process Variables' }]
+          : []),
+      ],
+    },
+    {
+      key: 'detailed_execution_log',
+      href: href('#detailed_execution_log_page'),
+      title: 'Detailed Execution Log',
+      children: buildDetailedLogItems(hierarchy.children || []),
+    },
+  ];
 }

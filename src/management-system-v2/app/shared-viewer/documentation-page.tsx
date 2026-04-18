@@ -9,6 +9,7 @@ import ProcessDocument from './process-document';
 import SharedViewerLayout from './shared-viewer-layout';
 import { useProcessHierarchy } from './use-process-hierarchy';
 import {
+  buildProcessTocItems,
   getElementTypeLabel,
   ImportsInfo,
   isProcessElementEmpty,
@@ -59,48 +60,7 @@ const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
       activeSettings={activeSettings}
       title={processData.name}
       extraRootItems={
-        processHierarchy
-          ? [
-              {
-                key: 'process_overview',
-                href: `#${processHierarchy.id}_page`,
-                title: 'Process Overview',
-                children: [
-                  ...(processHierarchy.description
-                    ? [
-                        {
-                          key: 'summary',
-                          href: `#${processHierarchy.id}_description_page`,
-                          title: 'Summary',
-                        },
-                      ]
-                    : []),
-                  {
-                    key: 'process_diagram',
-                    href: `#${processHierarchy.id}_diagram_page`,
-                    title: 'Process Diagram',
-                  },
-                  {
-                    key: 'process_details',
-                    href: '#process_details_page',
-                    title: 'Process Details',
-                  },
-                ],
-              },
-              {
-                key: 'process_element_details',
-                href: '#process_element_details_page',
-                title: 'Process Element Details',
-                children: (processHierarchy.children || [])
-                  .filter((child) => activeSettings.hideEmpty || !isProcessElementEmpty(child))
-                  .map((child) => ({
-                    key: child.id,
-                    href: `#${child.id}_page`,
-                    title: getElementTypeLabel(child),
-                  })),
-              },
-            ]
-          : undefined
+        processHierarchy ? buildProcessTocItems(processHierarchy, activeSettings) : undefined
       }
     >
       {!processHierarchy ? (

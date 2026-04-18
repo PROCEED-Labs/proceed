@@ -21,7 +21,11 @@ import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
 import { generateDateString } from '@/lib/utils';
 import ElementSections from '@/components/doc-element-sections';
 import ProcessDetailsTable from '@/components/doc-process-details-table';
-import { getElementTypeLabel, isProcessElementEmpty } from './documentation-page-utils';
+import {
+  buildProcessTocItems,
+  getElementTypeLabel,
+  isProcessElementEmpty,
+} from './documentation-page-utils';
 
 export type VersionInfo = {
   id?: string;
@@ -200,108 +204,80 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   }, [processHierarchy, settings]);
 
   return (
-    <>
-      <div className={styles.ProcessDocument}>
-        {!processHierarchy ? (
-          <Spin tip="Loading process data" size="large" style={{ top: '50px' }}>
-            <div></div>
-          </Spin>
-        ) : (
-          <>
-            {/* TODO: the header that is repeating on each page seems to break the links in the final pdf (i think it is not correctly considered when calculating the position of the link target) */}
-            <div className={styles.Header}>
-              <Image
-                src="/proceed-labs-logo.svg"
-                alt="Proceed Logo"
-                width="169,5pt"
-                height="15pt"
-              />
-              <h3>www.proceed-labs.org</h3>
-            </div>
-            <div className={styles.Main}>
-              <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
-                <div className={styles.TitleHeader}>
-                  <div className={styles.TitleProcessId}>{processData.userDefinedId}</div>
-                  <Title style={{ marginTop: 0 }}>{processData.name}</Title>
-                </div>
-                <div className={styles.TitleInfos}>
-                  <div style={{ fontSize: '14px' }}>Owner: {(processData as any).ownerName}</div>
-                  {version.id ? (
-                    <>
-                      <div style={{ fontSize: '14px' }}>Version: {version.name || version.id}</div>
-                      {version.description ? (
-                        <div style={{ fontSize: '14px' }}>
-                          Version Description: {version.description}
-                        </div>
-                      ) : null}
-                    </>
-                  ) : (
-                    <div style={{ fontSize: '14px' }}>Version: Latest</div>
-                  )}
-                  {version.id ? (
-                    <div style={{ fontSize: '14px' }}>
-                      Version Created On:{' '}
-                      {version.versionCreatedOn
-                        ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
-                        : 'Unknown'}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '14px' }}>
-                      Last Edit: {generateDateString(processData.lastEditedOn, true)}
-                    </div>
-                  )}
-                </div>
+    <div className={styles.ProcessDocument}>
+      {!processHierarchy ? (
+        <Spin tip="Loading process data" size="large" style={{ top: '50px' }}>
+          <div></div>
+        </Spin>
+      ) : (
+        <>
+          {/* TODO: the header that is repeating on each page seems to break the links in the final pdf (i think it is not correctly considered when calculating the position of the link target) */}
+          <div className={styles.Header}>
+            <Image src="/proceed-labs-logo.svg" alt="Proceed Logo" width="169,5pt" height="15pt" />
+            <h3>www.proceed-labs.org</h3>
+          </div>
+          <div className={styles.Main}>
+            <div className={cn(styles.Title, { [styles.TitlePage]: settings.titlepage })}>
+              <div className={styles.TitleHeader}>
+                <div className={styles.TitleProcessId}>{processData.userDefinedId}</div>
+                <Title style={{ marginTop: 0 }}>{processData.name}</Title>
               </div>
-              {settings.tableOfContents ? (
-                <div
-                  className={cn(styles.TableOfContents, {
-                    [styles.WebTableOfContents]: !breakpoint.lg,
-                    [styles.TableOfContentPage]: settings.titlepage,
-                  })}
-                >
-                  <Title level={2}>Table Of Contents</Title>
-                  <TableOfContents
-                    affix={false}
-                    getCurrentAnchor={() => ''}
-                    settings={settings}
-                    processHierarchy={processHierarchy}
-                    linksDisabled
-                    extraRootItems={[
-                      {
-                        key: 'process_overview',
-                        href: '',
-                        title: 'Process Overview',
-                        children: [
-                          ...(processHierarchy.description
-                            ? [{ key: 'summary', href: '', title: 'Summary' }]
-                            : []),
-                          { key: 'process_diagram', href: '', title: 'Process Diagram' },
-                          { key: 'process_details', href: '', title: 'Process Details' },
-                        ],
-                      },
-                      {
-                        key: 'process_element_details',
-                        href: '',
-                        title: 'Process Element Details',
-                        children: (processHierarchy.children || [])
-                          .filter((child) => settings.hideEmpty || !isProcessElementEmpty(child))
-                          .map((child) => ({
-                            key: child.id,
-                            href: '',
-                            title: getElementTypeLabel(child),
-                          })),
-                      },
-                    ]}
-                  />
-                </div>
-              ) : null}
-
-              {...processPages}
+              <div className={styles.TitleInfos}>
+                <div style={{ fontSize: '14px' }}>Owner: {(processData as any).ownerName}</div>
+                {version.id ? (
+                  <>
+                    <div style={{ fontSize: '14px' }}>Version: {version.name || version.id}</div>
+                    {version.description ? (
+                      <div style={{ fontSize: '14px' }}>
+                        Version Description: {version.description}
+                      </div>
+                    ) : null}
+                  </>
+                ) : (
+                  <div style={{ fontSize: '14px' }}>Version: Latest</div>
+                )}
+                {version.id ? (
+                  <div style={{ fontSize: '14px' }}>
+                    Version Created On:{' '}
+                    {version.versionCreatedOn
+                      ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
+                      : 'Unknown'}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '14px' }}>
+                    Last Edit: {generateDateString(processData.lastEditedOn, true)}
+                  </div>
+                )}
+              </div>
             </div>
-          </>
-        )}
-      </div>
-    </>
+            {settings.tableOfContents ? (
+              <div
+                className={cn(styles.TableOfContents, {
+                  [styles.WebTableOfContents]: !breakpoint.lg,
+                  [styles.TableOfContentPage]: settings.titlepage,
+                })}
+              >
+                <Title level={2}>Table Of Contents</Title>
+                <TableOfContents
+                  affix={false}
+                  getCurrentAnchor={() => ''}
+                  settings={settings}
+                  processHierarchy={processHierarchy}
+                  linksDisabled
+                  extraRootItems={buildProcessTocItems(
+                    processHierarchy,
+                    settings as Record<string, boolean>,
+                    true,
+                  )}
+                />
+              </div>
+            ) : null}
+
+            {...processPages}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

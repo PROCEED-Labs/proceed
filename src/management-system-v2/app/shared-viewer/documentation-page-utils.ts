@@ -424,10 +424,21 @@ export function getElementTypeLabel(node: ElementInfo): string {
 }
 
 /**
- * Sorts BPMN child elements in process flow order using Kahn's topological sort.
- * Follows sequence flows to produce the same order as the actual process execution.
- * Disconnected elements (no incoming/outgoing flows) are appended at the end (if any)
- * in their original order.
+ * Sorts BPMN child elements in process flow order using Kahn's topological sort
+ * with cycle detection via DFS to handle loops in the process.
+ *
+ * Algorithm:
+ * 1. Separates pure EndEvents (bpmn:EndEvent) as these always go last
+ * 2. Runs DFS on remaining elements to detect backedges (cycles)
+ * 3. Runs Kahn's topological sort ignoring back-edges to break cycles
+ * 4. Appends any disconnected elements in their original XML order
+ * 5. Appends EndEvents at the very end
+ *
+ * BoundaryEvents are treated as normal flow elements (not moved to end)
+ *
+ * @param el - the parent bpmn-js element whose flowElements contain the sequence flows
+ * @param children - the already-transformed ElementInfo children to sort
+ * @returns sorted copy of children in process flow order
  */
 export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInfo[] {
   if (children.length === 0) return children;
@@ -443,24 +454,62 @@ export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInf
   const resolveId = (ref: any): string | undefined =>
     ref ? (typeof ref === 'string' ? ref : ref.id) : undefined;
 
-  // Build outgoing adjacency list and incoming degree count
-  // scoped to only the children of this element
-  const outgoing = new Map<string, string[]>(children.map((n) => [n.id, []]));
-  const incomingCount = new Map<string, number>(children.map((n) => [n.id, 0]));
+  // Only EndEvents go last
+  const endEvents = children.filter((n) => n.elementType === 'bpmn:EndEvent');
+  const nonEndChildren = children.filter((n) => n.elementType !== 'bpmn:EndEvent');
+
+  // Build adjacency list for cycle detection
+  const adjacency = new Map<string, string[]>(nonEndChildren.map((n) => [n.id, []]));
 
   for (const flow of sequenceFlows) {
     const sourceId = resolveId(flow.sourceRef);
     const targetId = resolveId(flow.targetRef);
     if (!sourceId || !targetId) continue;
-    if (!childIds.has(sourceId) || !childIds.has(targetId)) continue;
+    if (!adjacency.has(sourceId) || !adjacency.has(targetId)) continue;
+    adjacency.get(sourceId)!.push(targetId);
+  }
+
+  // Detect backedges using DFS to break cycles
+  const visited = new Set<string>();
+  const inStack = new Set<string>();
+  const backEdges = new Set<string>(); // "sourceId -> targetId"
+
+  function dfs(nodeId: string) {
+    visited.add(nodeId);
+    inStack.add(nodeId);
+    for (const neighbor of adjacency.get(nodeId) ?? []) {
+      if (!visited.has(neighbor)) {
+        dfs(neighbor);
+      } else if (inStack.has(neighbor)) {
+        // This is a backedge (part of a cycle)
+        backEdges.add(`${nodeId}->${neighbor}`);
+      }
+    }
+    inStack.delete(nodeId);
+  }
+
+  nonEndChildren.forEach((n) => {
+    if (!visited.has(n.id)) dfs(n.id);
+  });
+
+  // Build outgoing and incomingCount ignoring backedges
+  const outgoing = new Map<string, string[]>(nonEndChildren.map((n) => [n.id, []]));
+  const incomingCount = new Map<string, number>(nonEndChildren.map((n) => [n.id, 0]));
+
+  for (const flow of sequenceFlows) {
+    const sourceId = resolveId(flow.sourceRef);
+    const targetId = resolveId(flow.targetRef);
+    if (!sourceId || !targetId) continue;
+    if (!outgoing.has(sourceId) || !outgoing.has(targetId)) continue;
+    if (backEdges.has(`${sourceId}->${targetId}`)) continue; // skip backedges
 
     outgoing.get(sourceId)!.push(targetId);
     incomingCount.set(targetId, (incomingCount.get(targetId) ?? 0) + 1);
   }
 
-  // Kahn's algorithm: process nodes with no remaining incoming edges first
+  // Kahn's algorithm without cycles
   const sorted: ElementInfo[] = [];
-  const queue = children.filter((n) => incomingCount.get(n.id) === 0);
+  const queue = nonEndChildren.filter((n) => incomingCount.get(n.id) === 0);
 
   while (queue.length > 0) {
     const current = queue.shift()!;
@@ -476,13 +525,16 @@ export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInf
     }
   }
 
-  // Append any elements not reachable via sequence flows (disconnected elements)
-  if (sorted.length < children.length) {
+  // Append any remaining disconnected elements in original order
+  if (sorted.length < nonEndChildren.length) {
     const sortedIds = new Set(sorted.map((n) => n.id));
-    children.forEach((n) => {
+    nonEndChildren.forEach((n) => {
       if (!sortedIds.has(n.id)) sorted.push(n);
     });
   }
+
+  // End events always last
+  sorted.push(...endEvents);
 
   return sorted;
 }

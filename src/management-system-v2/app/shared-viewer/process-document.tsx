@@ -65,9 +65,10 @@ async function getContent(
 ): Promise<void> {
   const { settings, processData, version, getImage, environment, shareToken } = params;
 
-
   if (!settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
+
   const isContainer = !!hierarchyElement.children?.length;
+
   // show the element as it is visible in its parent
   let elementSvg = hierarchyElement.svg;
   let elementLabel = getElementTypeLabel(hierarchyElement);
@@ -95,7 +96,7 @@ async function getContent(
   );
 
   if (isRoot) {
-    // ── Root: Process Overview ──
+    // Root: Process Overview
     currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
@@ -134,7 +135,7 @@ async function getContent(
       </div>,
     );
 
-    // ── Process Element Details heading ──
+    // Process Element Details heading
     currentPages.push(
       <div
         key="process_element_details_section"
@@ -146,7 +147,7 @@ async function getContent(
       </div>,
     );
 
-    // ── Recurse children — skip event-triggered subprocesses from main list ──
+    // Recurse children and skip event-triggered subprocesses from main list
     if (
       (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
       (settings.importedProcesses || !hierarchyElement.importedProcess) &&
@@ -164,9 +165,9 @@ async function getContent(
       }
     }
 
-    // ── Append subprocess sections at the very end ──
+    // Append subprocess sections at the very end
   } else if (isExcludedFromMainList(hierarchyElement)) {
-    // ── Expanded/event-triggered subprocess: goes to subprocessPages ──
+    // Expanded/event-triggered subprocess: goes to subprocessPages
     const subLabel = getSubprocessLabel(hierarchyElement);
 
     subprocessPages.push(
@@ -265,7 +266,7 @@ async function getContent(
       }
     }
   } else {
-    // ── Normal child element ──
+    // Normal child element
     currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}

@@ -89,6 +89,7 @@ export function useProcessHierarchy({
         children,
         image,
         elementType: el.$type,
+        isEventTriggeredSubprocess: el.triggeredByEvent === true,
       };
 
       // Let callers attach extra data without forking transform

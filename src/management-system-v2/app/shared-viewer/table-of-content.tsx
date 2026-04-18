@@ -34,6 +34,7 @@ export type ElementInfo = MetaInformation & {
   children?: ElementInfo[];
   // marks the element as a subprocess and contains the visual representation of the plane of that subprocess and the contained children
   nestedSubprocess?: { planeSvg: string };
+  isEventTriggeredSubprocess?: boolean;
   // information about the imported process that is used by the call-activity that this object represents; can overwrite the information of the call-activity based on the selected settings
   importedProcess?: MetaInformation & {
     planeSvg: string;

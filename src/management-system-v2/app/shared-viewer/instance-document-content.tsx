@@ -5,7 +5,7 @@ import { Alert, Grid, Image, Table, Typography } from 'antd';
 import cn from 'classnames';
 import { getProcess } from '@/lib/data/db/process';
 import { InstanceInfo } from '@/lib/engines/deployment';
-import { generateDateString, generateDurationString } from '@/lib/utils';
+import { generateDateString } from '@/lib/utils';
 import { useEnvironment } from '@/components/auth-can';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
@@ -18,6 +18,9 @@ import {
   isInstanceElementEmpty,
   getVariablesForElement,
   buildInstanceTocItems,
+  getSubprocessLabel,
+  resolveElementImageUrl,
+  separateChildren,
 } from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
@@ -55,16 +58,98 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
   useEffect(() => {
     const buildPages = async () => {
-      const result: React.JSX.Element[] = [];
+      const mainPages: React.JSX.Element[] = [];
+      const subPages: React.JSX.Element[] = [];
       const sorted = processHierarchy.children || [];
-      for (const child of sorted) {
-        await renderDetailedElement(child, result);
+
+      const { mainChildren, subprocessChildren } = separateChildren(sorted);
+
+      // Render main elements + collapsed subprocesses in main log
+      for (const child of mainChildren) {
+        await renderDetailedElement(child, mainPages);
       }
-      setDetailedPages(result);
+      // Collapsed subprocesses also appear in main log
+      for (const child of subprocessChildren) {
+        if (child.nestedSubprocess) {
+          await renderDetailedElement(child, mainPages);
+        }
+      }
+
+      // All subprocess sections at the end
+      for (const child of subprocessChildren) {
+        await renderSubprocessSection(child, subPages);
+      }
+
+      setDetailedPages([...mainPages, ...subPages]);
     };
     buildPages();
   }, [processHierarchy, settings, instance]);
 
+  async function renderSubprocessSection(node: ElementInfo, pages: React.JSX.Element[]) {
+    const subLabel = getSubprocessLabel(node);
+
+    const resolvedImageUrl = await resolveElementImageUrl(
+      node.image,
+      processData.id,
+      environment.spaceId,
+      shareToken,
+      getImage,
+    );
+
+    pages.push(
+      <div
+        key={`subprocess_${node.id}_section`}
+        className={cn(styles.ElementPage, styles.ContainerPage)}
+      >
+        <Title id={`subprocess_${node.id}_page`} level={2}>
+          {subLabel}
+        </Title>
+
+        {/* Summary */}
+        {node.description && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${node.id}_description_page`}>
+              Summary
+            </Title>
+            <div
+              className="toastui-editor-contents"
+              dangerouslySetInnerHTML={{ __html: node.description }}
+            />
+          </div>
+        )}
+
+        {/* Full subprocess diagram */}
+        <div className={styles.MetaInformation}>
+          <Title level={3} id={`subprocess_${node.id}_diagram_page`}>
+            Process Diagram
+          </Title>
+          <div
+            className={styles.ElementCanvas}
+            style={{ display: 'flex', justifyContent: 'center' }}
+            dangerouslySetInnerHTML={{
+              __html: node.nestedSubprocess?.planeSvg || node.svg,
+            }}
+          />
+        </div>
+
+        {/* Element Details heading */}
+        {node.children?.length ? (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${node.id}_elements_page`}>
+              {`${subLabel} — Element Details`}
+            </Title>
+          </div>
+        ) : null}
+      </div>,
+    );
+
+    // Render each child element with full execution log
+    if (node.children?.length) {
+      for (const child of node.children) {
+        await renderDetailedElement(child, pages);
+      }
+    }
+  }
   /**
    * Renders one BPMN element as a Detailed Execution Log entry.
    * Recurses into subprocess children.
@@ -84,18 +169,13 @@ const InstanceDocumentContent: React.FC<Props> = ({
       ? getVariablesForElement(instance, node.id, startTime, endTime)
       : [];
 
-    const { fileUrl: imageUrl } = await getImage({
-      entityId: processData.id,
-      filePath: node.image,
+    const resolvedImageUrl = await resolveElementImageUrl(
+      node.image,
+      processData.id,
+      environment.spaceId,
       shareToken,
-    }).catch(() => ({ fileUrl: undefined }));
-
-    const resolvedImageUrl =
-      node.image &&
-      (imageUrl ??
-        `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
-          processData.id
-        }/images/${node.image}?shareToken=${shareToken}`);
+      getImage,
+    );
 
     const label = getElementTypeLabel(node);
     /**
@@ -181,13 +261,6 @@ const InstanceDocumentContent: React.FC<Props> = ({
         )}
       </div>,
     );
-
-    // Recurse into subprocess children
-    if ((settings.nestedSubprocesses || !node.nestedSubprocess) && node.children?.length) {
-      for (const child of node.children) {
-        await renderDetailedElement(child, pages);
-      }
-    }
   }
 
   return (
@@ -393,7 +466,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
           <Title id="detailed_execution_log_page" level={2}>
             Detailed Execution Log
           </Title>
-          {...detailedPages}
+          {detailedPages}
         </div>
       </div>
     </div>

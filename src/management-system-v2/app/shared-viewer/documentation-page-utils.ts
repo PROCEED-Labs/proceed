@@ -50,7 +50,7 @@ export function getTitle(el: any) {
   } else if (isType(el, 'bpmn:Participant')) {
     return 'Pool: ' + name;
   } else if (isType(el, 'bpmn:SubProcess')) {
-    return 'Subprocess: ' + name;
+    return name;
   } else if (isType(el, 'bpmn:CallActivity')) {
     return 'Call Activity: ' + name;
   }
@@ -613,6 +613,8 @@ export function getVariablesForElement(
  * Returns true if a process element has no displayable content.
  */
 export function isProcessElementEmpty(node: ElementInfo): boolean {
+  // Collapsed subprocesses always have content (their expanded plane)
+  if (isCollapsedSubprocess(node)) return false;
   return (
     !node.description && !node.meta && !node.milestones && !node.image && !node.children?.length
   );
@@ -656,6 +658,60 @@ export function buildProcessTocItems(
 ): AnchorLinkItemProps[] {
   const href = (id: string) => (linksDisabled ? '' : id);
 
+  const allChildren = hierarchy.children || [];
+
+  // Main list: exclude event-triggered and expanded subprocesses
+  // Keep collapsed subprocesses (nestedSubprocess) in main list
+  const mainChildren = allChildren.filter(
+    (child) =>
+      !isExcludedFromMainList(child) && (settings.hideEmpty || !isProcessElementEmpty(child)),
+  );
+
+  // Subprocess sections: expanded subprocesses and event-triggered subprocesses
+  // Maintain same order as page rendering: expanded subprocesses first, then event-triggered
+  const subprocessChildren = [
+    ...allChildren.filter(
+      (child) => isSubprocessWithOwnSection(child) && !isEventTriggeredSubprocess(child),
+    ),
+    ...allChildren.filter((child) => isEventTriggeredSubprocess(child)),
+  ];
+
+  const subprocessSections: AnchorLinkItemProps[] = subprocessChildren.map((sub) => ({
+    key: `subprocess_${sub.id}`,
+    href: href(`#subprocess_${sub.id}_page`),
+    title: getSubprocessLabel(sub),
+    children: [
+      ...(sub.description
+        ? [
+            {
+              key: `subprocess_${sub.id}_summary`,
+              href: href(`#subprocess_${sub.id}_description_page`),
+              title: 'Summary',
+            },
+          ]
+        : []),
+      {
+        key: `subprocess_${sub.id}_diagram`,
+        href: href(`#subprocess_${sub.id}_diagram_page`),
+        title: 'Process Diagram',
+      },
+      ...(sub.children?.length
+        ? [
+            {
+              key: `subprocess_${sub.id}_elements`,
+              href: href(`#subprocess_${sub.id}_elements_page`),
+              title: 'Element Details',
+              children: (sub.children || []).map((child) => ({
+                key: child.id,
+                href: href(`#${child.id}_page`),
+                title: getElementTypeLabel(child),
+              })),
+            },
+          ]
+        : []),
+    ],
+  }));
+
   return [
     {
       key: 'process_overview',
@@ -677,14 +733,13 @@ export function buildProcessTocItems(
       key: 'process_element_details',
       href: href('#process_element_details_page'),
       title: 'Process Element Details',
-      children: (hierarchy.children || [])
-        .filter((child) => settings.hideEmpty || !isProcessElementEmpty(child))
-        .map((child) => ({
-          key: child.id,
-          href: href(`#${child.id}_page`),
-          title: getElementTypeLabel(child),
-        })),
+      children: mainChildren.map((child) => ({
+        key: child.id,
+        href: href(`#${child.id}_page`),
+        title: getElementTypeLabel(child),
+      })),
     },
+    ...subprocessSections,
   ];
 }
 
@@ -737,13 +792,63 @@ export function buildInstanceTocItems(
   }
 
   function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
-    return nodes
+    const result: AnchorLinkItemProps[] = [];
+
+    nodes
       .filter((node) => settings.hideEmpty || !isInstanceElementEmpty(node))
-      .map((node) => ({
-        key: node.id,
-        href: href(`#${node.id}_page`),
-        title: getElementTypeLabel(node),
-        children: buildElementChildren(node),
+      .filter((node) => !isExcludedFromMainList(node))
+      .forEach((node) => {
+        result.push({
+          key: node.id,
+          href: href(`#${node.id}_page`),
+          title: getElementTypeLabel(node),
+          children: buildElementChildren(node),
+        });
+      });
+
+    return result;
+  }
+
+  function buildSubprocessTocItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
+    return nodes
+      .filter((node) => isSubprocessWithOwnSection(node))
+      .map((sub) => ({
+        key: `subprocess_${sub.id}`,
+        href: href(`#subprocess_${sub.id}_page`),
+        title: getSubprocessLabel(sub),
+        children: [
+          ...(sub.description
+            ? [
+                {
+                  key: `subprocess_${sub.id}_summary`,
+                  href: href(`#subprocess_${sub.id}_description_page`),
+                  title: 'Summary',
+                },
+              ]
+            : []),
+          {
+            key: `subprocess_${sub.id}_diagram`,
+            href: href(`#subprocess_${sub.id}_diagram_page`),
+            title: 'Process Diagram',
+          },
+          ...(sub.children?.length
+            ? [
+                {
+                  key: `subprocess_${sub.id}_elements`,
+                  href: href(`#subprocess_${sub.id}_elements_page`),
+                  title: 'Element Details',
+                  children: (sub.children || [])
+                    .filter((child) => settings.hideEmpty || !isInstanceElementEmpty(child))
+                    .map((child) => ({
+                      key: child.id,
+                      href: href(`#${child.id}_page`),
+                      title: getElementTypeLabel(child),
+                      children: buildElementChildren(child),
+                    })),
+                },
+              ]
+            : []),
+        ],
       }));
   }
 
@@ -781,5 +886,102 @@ export function buildInstanceTocItems(
       title: 'Detailed Execution Log',
       children: buildDetailedLogItems(hierarchy.children || []),
     },
+    ...buildSubprocessTocItems(hierarchy.children || []),
   ];
+}
+/**
+ * Returns true if the element is an expanded subprocess (has children to show separately)
+ */
+export function isExpandedSubprocess(node: ElementInfo): boolean {
+  return (
+    (node.elementType === 'bpmn:SubProcess' ||
+      node.elementType === 'bpmn:AdHocSubProcess' ||
+      node.elementType === 'bpmn:Transaction') &&
+    !!node.children?.length &&
+    !node.nestedSubprocess // not collapsed
+  );
+}
+
+/**
+ * Returns true if the element is a collapsed subprocess (has its own plane)
+ */
+export function isCollapsedSubprocess(node: ElementInfo): boolean {
+  return !!node.nestedSubprocess;
+}
+
+/**
+ * Returns true if the element is an event-triggered subprocess
+ */
+export function isEventTriggeredSubprocess(node: ElementInfo): boolean {
+  return !!node.isEventTriggeredSubprocess;
+}
+
+/**
+ * Returns true if the element should be excluded from the main Process Element Details list
+ * (expanded subprocesses and event-triggered subprocesses get their own sections)
+ */
+export function isSubprocessWithOwnSection(node: ElementInfo): boolean {
+  return (
+    isExpandedSubprocess(node) || isEventTriggeredSubprocess(node) || isCollapsedSubprocess(node)
+  );
+}
+
+export function isExcludedFromMainList(node: ElementInfo): boolean {
+  // Expanded subprocesses and event-triggered subprocesses are fully excluded from main list
+  // Collapsed subprocesses stay in main list (showing collapsed view) and also get their own section
+  return isExpandedSubprocess(node) || isEventTriggeredSubprocess(node);
+}
+
+/**
+ * Returns a display label for a subprocess section heading
+ */
+export function getSubprocessLabel(node: ElementInfo): string {
+  const name = node.name && !node.name.startsWith('<') ? node.name : node.id;
+  if (node.isEventTriggeredSubprocess) return `Event-Triggered Subprocess: ${name}`;
+  return `Subprocess: ${name}`;
+}
+
+/**
+ * Resolves the image url for a process element.
+ * Falls back to the direct API path if the file manager url is unavailable.
+ */
+export async function resolveElementImageUrl(
+  image: string | undefined,
+  processId: string,
+  spaceId: string,
+  shareToken: string | null,
+  getImage: (params: {
+    entityId: string;
+    filePath: string;
+    shareToken?: string | null;
+  }) => Promise<{ fileUrl?: string }>,
+): Promise<string | false> {
+  if (!image) return false;
+  const { fileUrl } = await getImage({ entityId: processId, filePath: image, shareToken }).catch(
+    () => ({ fileUrl: undefined }),
+  );
+  return (
+    fileUrl ??
+    `/api/private/${spaceId || 'unauthenticated'}/processes/${processId}/images/${image}?shareToken=${shareToken}`
+  );
+}
+
+/**
+ * Separates children into main elements and subprocess sections.
+ * Main elements exclude subprocesses that get their own section.
+ */
+export function separateChildren(children: ElementInfo[]): {
+  mainChildren: ElementInfo[];
+  subprocessChildren: ElementInfo[];
+} {
+  return {
+    mainChildren: children.filter((child) => !isExcludedFromMainList(child)),
+    // Expanded/collapsed subprocesses first, event-triggered last
+    subprocessChildren: [
+      ...children.filter(
+        (child) => isSubprocessWithOwnSection(child) && !isEventTriggeredSubprocess(child),
+      ),
+      ...children.filter((child) => isEventTriggeredSubprocess(child)),
+    ],
+  };
 }

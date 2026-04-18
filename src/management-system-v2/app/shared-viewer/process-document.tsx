@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { getProcess } from '@/lib/data/db/process';
 
-import { Typography, Table, Grid, Image, Spin } from 'antd';
+import { Typography, Grid, Image, Spin } from 'antd';
 
 const { Title } = Typography;
 
@@ -24,7 +24,12 @@ import ProcessDetailsTable from '@/components/doc-process-details-table';
 import {
   buildProcessTocItems,
   getElementTypeLabel,
+  getSubprocessLabel,
+  isCollapsedSubprocess,
+  isExcludedFromMainList,
   isProcessElementEmpty,
+  resolveElementImageUrl,
+  separateChildren,
 } from './documentation-page-utils';
 
 export type VersionInfo = {
@@ -53,23 +58,26 @@ type GetContentParams = {
 async function getContent(
   hierarchyElement: ElementInfo,
   currentPages: React.JSX.Element[],
+  subprocessPages: React.JSX.Element[],
   params: GetContentParams,
   isRoot = false,
   isFirstChild = false,
 ): Promise<void> {
   const { settings, processData, version, getImage, environment, shareToken } = params;
 
+
   if (!settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
-
   const isContainer = !!hierarchyElement.children?.length;
-
   // show the element as it is visible in its parent
   let elementSvg = hierarchyElement.svg;
   let elementLabel = getElementTypeLabel(hierarchyElement);
   let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
-  if (settings.nestedSubprocesses && hierarchyElement.nestedSubprocess) {
-    // show the sub-process plane with the sub-process' children if the respective option is selected
+  if (
+    settings.nestedSubprocesses &&
+    hierarchyElement.nestedSubprocess &&
+    !isCollapsedSubprocess(hierarchyElement)
+  ) {
     elementSvg = hierarchyElement.nestedSubprocess?.planeSvg;
   } else if (settings.importedProcesses && importedProcess) {
     // show the root plane, label and meta information of the imported process if the respective option is selected
@@ -78,23 +86,55 @@ async function getContent(
     ({ milestones, meta, description } = importedProcess);
   }
 
-  const { fileUrl: newImageUrl } = await getImage({
-    entityId: processData.id,
-    filePath: image,
+  const imageURL = await resolveElementImageUrl(
+    image,
+    processData.id,
+    environment.spaceId,
     shareToken,
-  }).catch(() => {
-    console.log('Failed to get image');
-    return { fileUrl: undefined };
-  });
+    getImage,
+  );
 
-  const imageURL =
-    image &&
-    (newImageUrl ??
-      `/api/private/${environment.spaceId || 'unauthenticated'}/processes/${
-        processData.id
-      }/images/${image}?shareToken=${shareToken}`);
+  if (isRoot) {
+    // ── Root: Process Overview ──
+    currentPages.push(
+      <div
+        key={`element_${hierarchyElement.id}_page`}
+        className={cn(styles.ElementPage, styles.ContainerPage)}
+      >
+        <Title id={`${hierarchyElement.id}_page`} level={2}>
+          Process Overview
+        </Title>
+        {description && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`${hierarchyElement.id}_description_page`}>
+              Summary
+            </Title>
+            <div
+              className="toastui-editor-contents"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
+          </div>
+        )}
+        <ElementSections
+          node={{
+            ...hierarchyElement,
+            svg: elementSvg,
+            description: undefined,
+            meta,
+            milestones,
+            importedProcess,
+          }}
+          settings={settings as Record<string, boolean>}
+          resolvedImageUrl={imageURL}
+          headingLevel={3}
+          diagramHeading="Process Diagram"
+          descriptionHeading="Summary"
+        />
+        <ProcessDetailsTable processData={processData} versionInfo={version} />
+      </div>,
+    );
 
-  if (!isRoot && isFirstChild) {
+    // ── Process Element Details heading ──
     currentPages.push(
       <div
         key="process_element_details_section"
@@ -105,55 +145,222 @@ async function getContent(
         </Title>
       </div>,
     );
-  }
 
-  currentPages.push(
-    <div
-      key={`element_${hierarchyElement.id}_page`}
-      className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
-    >
-      <div className={styles.ElementOverview}>
-        <Title id={`${hierarchyElement.id}_page`} level={isRoot ? 2 : 3}>
-          {isRoot ? 'Process Overview' : elementLabel}
+    // ── Recurse children — skip event-triggered subprocesses from main list ──
+    if (
+      (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
+      (settings.importedProcesses || !hierarchyElement.importedProcess) &&
+      hierarchyElement.children
+    ) {
+      const { mainChildren, subprocessChildren } = separateChildren(hierarchyElement.children);
+      // Render normal elements into main pages
+      for (let i = 0; i < mainChildren.length; i++) {
+        await getContent(mainChildren[i], currentPages, subprocessPages, params, false, false);
+      }
+
+      // Render subprocesses into subprocess pages
+      for (const sub of subprocessChildren) {
+        await getContent(sub, currentPages, subprocessPages, params, false, false);
+      }
+    }
+
+    // ── Append subprocess sections at the very end ──
+  } else if (isExcludedFromMainList(hierarchyElement)) {
+    // ── Expanded/event-triggered subprocess: goes to subprocessPages ──
+    const subLabel = getSubprocessLabel(hierarchyElement);
+
+    subprocessPages.push(
+      <div
+        key={`subprocess_${hierarchyElement.id}_section`}
+        className={cn(styles.ElementPage, styles.ContainerPage)}
+      >
+        <Title id={`subprocess_${hierarchyElement.id}_page`} level={2}>
+          {subLabel}
         </Title>
-      </div>
-      {isRoot && description && (
+
+        {/* Summary */}
+        {description && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${hierarchyElement.id}_description_page`}>
+              Summary
+            </Title>
+            <div
+              className="toastui-editor-contents"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
+          </div>
+        )}
+
+        {/* Full subprocess diagram */}
         <div className={styles.MetaInformation}>
-          <Title level={3} id={`${hierarchyElement.id}_description_page`}>
-            Summary
+          <Title level={3} id={`subprocess_${hierarchyElement.id}_diagram_page`}>
+            Process Diagram
           </Title>
           <div
-            className="toastui-editor-contents"
-            dangerouslySetInnerHTML={{ __html: description }}
+            className={styles.ElementCanvas}
+            style={{ display: 'flex', justifyContent: 'center' }}
+            dangerouslySetInnerHTML={{
+              __html: hierarchyElement.nestedSubprocess?.planeSvg || elementSvg,
+            }}
           />
         </div>
-      )}
-      <ElementSections
-        node={{
-          ...hierarchyElement,
-          svg: elementSvg,
-          description: isRoot ? undefined : description,
-          meta,
-          milestones,
-          importedProcess,
-        }}
-        settings={settings as Record<string, boolean>}
-        resolvedImageUrl={imageURL}
-        headingLevel={isRoot ? 3 : 4}
-        diagramHeading={isRoot ? 'Process Diagram' : 'Diagram Element'}
-        descriptionHeading={isRoot ? 'Summary' : 'Description'}
-      />
-      {isRoot && <ProcessDetailsTable processData={processData} versionInfo={version} />}
-    </div>,
-  );
 
-  if (
-    (settings.nestedSubprocesses || !hierarchyElement.nestedSubprocess) &&
-    (settings.importedProcesses || !hierarchyElement.importedProcess)
-  ) {
+        {/* Meta Data and Milestones if any */}
+        {(meta || milestones) && (
+          <ElementSections
+            node={{
+              ...hierarchyElement,
+              svg: elementSvg,
+              description: undefined,
+              meta,
+              milestones,
+              importedProcess,
+            }}
+            settings={settings as Record<string, boolean>}
+            resolvedImageUrl={imageURL}
+            headingLevel={3}
+            diagramHeading="Process Diagram"
+            descriptionHeading="Summary"
+          />
+        )}
+
+        {/* Element Details heading */}
+        {hierarchyElement.children?.length ? (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${hierarchyElement.id}_elements_page`}>
+              {`${subLabel} — Element Details`}
+            </Title>
+          </div>
+        ) : null}
+      </div>,
+    );
+
+    // Render each child of the subprocess into subprocessPages
     if (hierarchyElement.children) {
-      for (let i = 0; i < hierarchyElement.children.length; i++) {
-        await getContent(hierarchyElement.children[i], currentPages, params, false, i === 0);
+      for (const child of hierarchyElement.children) {
+        if (!settings.hideEmpty && isProcessElementEmpty(child)) continue;
+        const childImageURL = await resolveElementImageUrl(
+          child.image,
+          processData.id,
+          environment.spaceId,
+          shareToken,
+          getImage,
+        );
+
+        subprocessPages.push(
+          <div key={`element_${child.id}_page`} className={styles.ElementPage}>
+            <Title id={`${child.id}_page`} level={3}>
+              {getElementTypeLabel(child)}
+            </Title>
+            <ElementSections
+              node={child}
+              settings={settings as Record<string, boolean>}
+              resolvedImageUrl={childImageURL}
+              headingLevel={4}
+              diagramHeading="Diagram Element"
+              descriptionHeading="Description"
+            />
+          </div>,
+        );
+      }
+    }
+  } else {
+    // ── Normal child element ──
+    currentPages.push(
+      <div
+        key={`element_${hierarchyElement.id}_page`}
+        className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
+      >
+        <Title id={`${hierarchyElement.id}_page`} level={3}>
+          {elementLabel}
+        </Title>
+        <ElementSections
+          node={{
+            ...hierarchyElement,
+            svg: elementSvg,
+            description,
+            meta,
+            milestones,
+            importedProcess,
+          }}
+          settings={settings as Record<string, boolean>}
+          resolvedImageUrl={imageURL}
+          headingLevel={4}
+          diagramHeading="Diagram Element"
+          descriptionHeading="Description"
+        />
+      </div>,
+    );
+  }
+  // Collapsed subprocesses also get their own section in addition to appearing in main list
+  if (isCollapsedSubprocess(hierarchyElement) && !isRoot) {
+    const subLabel = getSubprocessLabel(hierarchyElement);
+    subprocessPages.push(
+      <div
+        key={`subprocess_${hierarchyElement.id}_section`}
+        className={cn(styles.ElementPage, styles.ContainerPage)}
+      >
+        <Title id={`subprocess_${hierarchyElement.id}_page`} level={2}>
+          {subLabel}
+        </Title>
+        {description && (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${hierarchyElement.id}_description_page`}>
+              Summary
+            </Title>
+            <div
+              className="toastui-editor-contents"
+              dangerouslySetInnerHTML={{ __html: description }}
+            />
+          </div>
+        )}
+        <div className={styles.MetaInformation}>
+          <Title level={3} id={`subprocess_${hierarchyElement.id}_diagram_page`}>
+            Process Diagram
+          </Title>
+          <div
+            className={styles.ElementCanvas}
+            style={{ display: 'flex', justifyContent: 'center' }}
+            dangerouslySetInnerHTML={{
+              __html: hierarchyElement.nestedSubprocess?.planeSvg || elementSvg,
+            }}
+          />
+        </div>
+        {hierarchyElement.children?.length ? (
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${hierarchyElement.id}_elements_page`}>
+              {`${subLabel} — Element Details`}
+            </Title>
+          </div>
+        ) : null}
+      </div>,
+    );
+
+    if (hierarchyElement.children) {
+      for (const child of hierarchyElement.children) {
+        if (!settings.hideEmpty && isProcessElementEmpty(child)) continue;
+        const childImageURL = await resolveElementImageUrl(
+          child.image,
+          processData.id,
+          environment.spaceId,
+          shareToken,
+          getImage,
+        );
+        subprocessPages.push(
+          <div key={`element_${child.id}_page`} className={styles.ElementPage}>
+            <Title id={`${child.id}_page`} level={3}>
+              {getElementTypeLabel(child)}
+            </Title>
+            <ElementSections
+              node={child}
+              settings={settings as Record<string, boolean>}
+              resolvedImageUrl={childImageURL}
+              headingLevel={4}
+              diagramHeading="Diagram Element"
+              descriptionHeading="Description"
+            />
+          </div>,
+        );
       }
     }
   }
@@ -184,20 +391,23 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
 
   const { download: getImage } = useFileManager({ entityType: EntityType.PROCESS });
   const [processPages, setProcessPages] = useState<React.JSX.Element[]>([]);
-
+  const [subprocessPages, setSubprocessPages] = useState<React.JSX.Element[]>([]);
   // transform the document data into the respective pages of the document
   useEffect(() => {
     const updateProcessPages = async () => {
       const newProcessPages: React.JSX.Element[] = [];
+      const newSubprocessPages: React.JSX.Element[] = [];
       processHierarchy &&
         (await getContent(
           processHierarchy,
           newProcessPages,
+          newSubprocessPages,
           { settings, processData, version, getImage, environment, shareToken },
           true,
           false,
         ));
       setProcessPages(newProcessPages);
+      setSubprocessPages(newSubprocessPages);
     };
 
     updateProcessPages();
@@ -272,8 +482,8 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
                 />
               </div>
             ) : null}
-
-            {...processPages}
+            {processPages}
+            {subprocessPages}
           </div>
         </>
       )}

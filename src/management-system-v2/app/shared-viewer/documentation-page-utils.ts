@@ -639,11 +639,10 @@ export function makeSvgResponsive(svg: string, fullWidth = false): string {
 
   const naturalWidth = originalWidth ? `${originalWidth}px` : '100%';
   const naturalHeight = originalHeight ? `${originalHeight}px` : 'auto';
-  const maxHeight = fullWidth ? '200mm' : '150mm';
 
   return stripped.replace(
     /<svg/,
-    `<svg overflow="visible" preserveAspectRatio="xMidYMid meet" class="${fullWidth ? 'bpmn-root-svg' : 'bpmn-element-svg'}" style="display:block;width:${naturalWidth};height:${naturalHeight};max-width:100%;max-height:${maxHeight}"`,
+    `<svg overflow="visible" preserveAspectRatio="xMidYMid meet" class="${fullWidth ? 'bpmn-root-svg' : 'bpmn-element-svg'}" style="display:block;width:${naturalWidth};height:${naturalHeight};max-width:100%"`,
   );
 }
 

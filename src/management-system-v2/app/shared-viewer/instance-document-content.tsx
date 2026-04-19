@@ -88,14 +88,6 @@ const InstanceDocumentContent: React.FC<Props> = ({
   async function renderSubprocessSection(node: ElementInfo, pages: React.JSX.Element[]) {
     const subLabel = getSubprocessLabel(node);
 
-    const resolvedImageUrl = await resolveElementImageUrl(
-      node.image,
-      processData.id,
-      environment.spaceId,
-      shareToken,
-      getImage,
-    );
-
     pages.push(
       <div
         key={`subprocess_${node.id}_section`}
@@ -146,7 +138,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     // Render each child element with full execution log
     if (node.children?.length) {
       for (const child of node.children) {
-        await renderDetailedElement(child, pages);
+        await renderDetailedElement(child, pages, true);
       }
     }
   }
@@ -154,7 +146,11 @@ const InstanceDocumentContent: React.FC<Props> = ({
    * Renders one BPMN element as a Detailed Execution Log entry.
    * Recurses into subprocess children.
    */
-  async function renderDetailedElement(node: ElementInfo, pages: React.JSX.Element[]) {
+  async function renderDetailedElement(
+    node: ElementInfo,
+    pages: React.JSX.Element[],
+    isInsideSubprocess = false,
+  ) {
     const { token, logEntries } = node.instanceStatus || {};
     const hasLog = !!logEntries?.length;
     const hasToken = !!token;
@@ -212,9 +208,12 @@ const InstanceDocumentContent: React.FC<Props> = ({
     }
 
     pages.push(
-      <div key={`element_${node.id}_page`} className={styles.ElementPage}>
+      <div
+        key={`element_${node.id}_page`}
+        className={cn(styles.ElementPage, isInsideSubprocess ? styles.SubprocessChild : undefined)}
+      >
         {/* Element heading: level 3 as child of Detailed Execution Log (level 2) */}
-        <Title id={`${node.id}_page`} level={3}>
+        <Title id={`${node.id}_page`} level={isInsideSubprocess ? 4 : 3}>
           {label}
         </Title>
 
@@ -223,13 +222,13 @@ const InstanceDocumentContent: React.FC<Props> = ({
           node={node}
           settings={settings}
           resolvedImageUrl={resolvedImageUrl}
-          headingLevel={4}
+          headingLevel={isInsideSubprocess ? 5 : 4}
         />
 
         {/* Execution Log */}
         {settings.showInstanceStatus && (
           <div className={styles.MetaInformation}>
-            <Title level={4} id={`${node.id}_execution_log_page`}>
+            <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_execution_log_page`}>
               Execution Log
             </Title>
             <ExecutionLogTable rows={logRows} />
@@ -239,7 +238,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
         {/* Variable Changes if happened */}
         {changedVariables.length > 0 && (
           <div className={styles.MetaInformation}>
-            <Title level={4} id={`${node.id}_variable_changes_page`}>
+            <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_variable_changes_page`}>
               Variable Changes
             </Title>
             <Table

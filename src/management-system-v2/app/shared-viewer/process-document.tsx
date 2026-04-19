@@ -154,14 +154,17 @@ async function getContent(
       hierarchyElement.children
     ) {
       const { mainChildren, subprocessChildren } = separateChildren(hierarchyElement.children);
-      // Render normal elements into main pages
+      // Render normal elements into main pages (includes collapsed subprocesses)
       for (let i = 0; i < mainChildren.length; i++) {
         await getContent(mainChildren[i], currentPages, subprocessPages, params, false, false);
       }
 
-      // Render subprocesses into subprocess pages
+      // Render only expanded and event-triggered subprocesses into subprocess pages
+      // Collapsed subprocesses handle their own section inside the else branch
       for (const sub of subprocessChildren) {
-        await getContent(sub, currentPages, subprocessPages, params, false, false);
+        if (!sub.nestedSubprocess) {
+          await getContent(sub, currentPages, subprocessPages, params, false, false);
+        }
       }
     }
 
@@ -249,15 +252,18 @@ async function getContent(
         );
 
         subprocessPages.push(
-          <div key={`element_${child.id}_page`} className={styles.ElementPage}>
-            <Title id={`${child.id}_page`} level={3}>
+          <div
+            key={`element_${child.id}_page`}
+            className={cn(styles.ElementPage, styles.SubprocessChild)}
+          >
+            <Title id={`${child.id}_page`} level={4}>
               {getElementTypeLabel(child)}
             </Title>
             <ElementSections
               node={child}
               settings={settings as Record<string, boolean>}
               resolvedImageUrl={childImageURL}
-              headingLevel={4}
+              headingLevel={5}
               diagramHeading="Diagram Element"
               descriptionHeading="Description"
             />
@@ -270,7 +276,9 @@ async function getContent(
     currentPages.push(
       <div
         key={`element_${hierarchyElement.id}_page`}
-        className={cn(styles.ElementPage, { [styles.ContainerPage]: isContainer })}
+        className={cn(styles.ElementPage, {
+          [styles.ContainerPage]: isContainer && !isCollapsedSubprocess(hierarchyElement),
+        })}
       >
         <Title id={`${hierarchyElement.id}_page`} level={3}>
           {elementLabel}
@@ -348,15 +356,19 @@ async function getContent(
           getImage,
         );
         subprocessPages.push(
-          <div key={`element_${child.id}_page`} className={styles.ElementPage}>
-            <Title id={`${child.id}_page`} level={3}>
+          <div
+            key={`element_${child.id}_page`}
+            className={cn(styles.ElementPage, styles.SubprocessChild)}
+          >
+            {' '}
+            <Title id={`${child.id}_page`} level={4}>
               {getElementTypeLabel(child)}
             </Title>
             <ElementSections
               node={child}
               settings={settings as Record<string, boolean>}
               resolvedImageUrl={childImageURL}
-              headingLevel={4}
+              headingLevel={5}
               diagramHeading="Diagram Element"
               descriptionHeading="Description"
             />

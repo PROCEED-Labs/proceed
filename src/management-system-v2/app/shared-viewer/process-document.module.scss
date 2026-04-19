@@ -48,6 +48,11 @@
   }
 
   .Main {
+    @media print {
+      :global(.bpmn-root-svg) {
+        max-height: fit-content;
+      }
+    }
     @media screen {
       width: 95%;
       margin: auto;
@@ -122,11 +127,8 @@
     }
 
     .ElementPage {
-      margin-top: 7dvh;
+      margin-top: 2.7dvh;
 
-      .ElementPage {
-        margin-top: 1dvh;
-      }
       .ElementOverview {
         break-inside: avoid;
       }
@@ -154,32 +156,16 @@
       page-break-before: always;
 
       @media print {
-        margin-top: 0;
         display: block;
       }
     }
 
-    .ElementPage.HeadingOnlyPage {
-      margin-top: 9dvh;
-      margin-bottom: 0;
-      @media print {
-        margin-top: 0;
-      }
-      :global(h1.ant-typography),
-      :global(h2.ant-typography) {
-        margin-bottom: 0 !important;
-      }
-      & + .ElementPage {
-        margin-top: 1dvh;
-      }
-    }
-    // Print-specific heading styles
+    // Print-specific styles
     @media print {
+      // Page breaks for H1 sections
       :global(h1.ant-typography) {
         page-break-before: always;
         break-before: always;
-        margin-top: 24pt;
-        margin-bottom: 6pt;
       }
 
       // First H1 should not have a page break before it
@@ -187,22 +173,11 @@
         page-break-before: avoid;
         break-before: avoid;
       }
-
-      :global(h2.ant-typography) {
-        margin-top: 18pt;
-        margin-bottom: 2pt;
-        break-after: avoid;
-      }
-
-      :global(h3.ant-typography) {
-        margin-top: 25pt;
-        margin-bottom: 3pt;
-        break-after: avoid;
-      }
-
-      :global(h4.ant-typography) {
-        margin-top: 8pt;
-        margin-bottom: 2pt;
+      // Prevent headings from being orphaned at page bottom
+      :global(h2.ant-typography),
+      :global(h3.ant-typography),
+      :global(h4.ant-typography),
+      :global(h5.ant-typography) {
         break-after: avoid;
       }
 
@@ -214,6 +189,12 @@
     :nth-child(1 of .ContainerPage) {
       // the first page containing the main process diagram might follow directly after the table of contents based on the settings selected by the user
       break-before: auto;
+    }
+  }
+  .ElementPage.SubprocessChild {
+    margin-top: 2dvh;
+    @media print {
+      margin-top: 20pt;
     }
   }
 }

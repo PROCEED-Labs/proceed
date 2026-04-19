@@ -9,7 +9,7 @@ type ElementSectionsProps = {
   node: ElementInfo;
   settings: Record<string, boolean>;
   resolvedImageUrl?: string | false;
-  headingLevel?: 3 | 4;
+  headingLevel?: 3 | 4 | 5;
   diagramHeading?: string;
   descriptionHeading?: string;
 };

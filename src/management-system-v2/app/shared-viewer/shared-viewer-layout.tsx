@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { Button, Grid, Space, Tooltip, Typography } from 'antd';
 import { PrinterOutlined } from '@ant-design/icons';
 import Content from '@/components/content';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
 import { ElementInfo } from './table-of-content';
@@ -47,6 +47,19 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
   const breakpoint = Grid.useBreakpoint();
   const mainContent = useRef<HTMLDivElement>(null);
   const contentTableRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+
+  // Extract spaceId from token for navigation
+  const activeSpaceId = (() => {
+    try {
+      const token = searchParams.get('token');
+      if (!token) return null;
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.spaceId || null;
+    } catch {
+      return null;
+    }
+  })();
 
   const handleContentTableChange = (currentActiveLink: string) => {
     if (!contentTableRef.current) return;
@@ -66,7 +79,10 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
       <Content
         headerLeft={
           <Space>
-            <Button size="large" onClick={() => router.push('/')}>
+            <Button
+              size="large"
+              onClick={() => router.push(activeSpaceId ? `/${activeSpaceId}/start` : '/')}
+            >
               Go to PROCEED
             </Button>
             {!isOwner && (

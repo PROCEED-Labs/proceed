@@ -1,6 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
+import {
+  getProcess,
+  getProcessWithBpmnForAuthenticatedUser,
+  getSharedProcessWithBpmn,
+} from '@/lib/data/processes';
 import {
   getProcesses,
   getProcessVersionBpmn,
@@ -57,18 +61,41 @@ const getProcessInfo = async (
 ) => {
   const { session, userId } = await getCurrentUser();
 
-  let spaceId;
+  let spaceId = '';
   let isOwner = false;
   let processData;
 
   // check if there is a session (=> the user is already logged in)
   if (session) {
+    // Check active environment first
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(spaceId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
+
+    // If not found in active environment, check all other environments
+    if (!isOwner) {
+      const personalEnv = await getEnvironmentById(userId);
+      const orgEnvIds = await getUserOrganizationEnvironments(userId);
+      const allEnvIds = [personalEnv?.id, ...orgEnvIds].filter(
+        (id): id is string => !!id && id !== spaceId,
+      );
+
+      for (const envId of allEnvIds) {
+        try {
+          const envProcesses = await getProcesses(envId, ability);
+          if (envProcesses.some((process) => process.id === definitionId)) {
+            isOwner = true;
+            spaceId = envId;
+            break;
+          }
+        } catch {
+          // env not accessible, skip
+        }
+      }
+    }
   }
 
   if (isOwner) {
@@ -82,6 +109,13 @@ const getProcessInfo = async (
 
       processData = { ...processMetaData, bpmn };
     }
+  } else if (session) {
+    // any authenticated user can view documentation
+    const res = await getProcessWithBpmnForAuthenticatedUser(definitionId, versionId);
+    if ('error' in res) {
+      return <ErrorMessage message={res.error.message as string} />;
+    }
+    processData = res;
   } else {
     // the user has no regular access to the process so get the process data from the sharing api
     const res = await getSharedProcessWithBpmn(definitionId, versionId);
@@ -101,7 +135,11 @@ const getProcessInfo = async (
     }
   }
 
-  return { isOwner, processData } as { isOwner: boolean; processData: Process };
+  return { isOwner, processData, spaceId } as {
+    isOwner: boolean;
+    processData: Process;
+    spaceId?: string;
+  };
 };
 
 /**
@@ -183,26 +221,39 @@ const SharedViewer = async (props: PageProps) => {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+  const personalEnv = await getEnvironmentById(userId);
+  const userEnvironments: Environment[] = personalEnv ? [personalEnv] : [];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
 
-  const orgEnvironments = await asyncMap(
-    userOrgEnvs,
-    async (environmentId) => (await getEnvironmentById(environmentId))!,
-  );
+  const orgEnvironments = (
+    await asyncMap(userOrgEnvs, async (environmentId) => await getEnvironmentById(environmentId))
+  ).filter((e): e is Environment => e !== null);
 
   userEnvironments.push(...orgEnvironments);
 
   let isOwner = false;
+  let activeSpaceId = userId || '';
+  let activeIsOrg = false;
 
   const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
   try {
-    const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
+    const {
+      processId,
+      embeddedMode,
+      timestamp,
+      spaceId: tokenSpaceId,
+    } = jwt.verify(token, key!) as TokenPayload;
 
     const versionId = version as string | undefined;
+
+    // Use spaceId from token if available to go back to the correct space
+    if (tokenSpaceId) {
+      activeSpaceId = tokenSpaceId;
+      activeIsOrg = userEnvironments.find((e) => e.id === tokenSpaceId)?.isOrganization ?? false;
+    }
 
     const processInfo = await getProcessInfo(
       processId as string,
@@ -218,6 +269,13 @@ const SharedViewer = async (props: PageProps) => {
     }
 
     ({ isOwner, processData } = processInfo);
+
+    // If token do not have spaceId, fall back to where process was found
+    if (!tokenSpaceId && processInfo.spaceId) {
+      activeSpaceId = processInfo.spaceId;
+      activeIsOrg =
+        userEnvironments.find((e) => e.id === processInfo.spaceId)?.isOrganization ?? false;
+    }
 
     if (!processData) {
       return <ErrorMessage message="Process no longer exists!" />;
@@ -286,7 +344,7 @@ const SharedViewer = async (props: PageProps) => {
               loggedIn={!!userId}
               layoutMenuItems={[]}
               userEnvironments={userEnvironments}
-              activeSpace={{ spaceId: userId || '', isOrganization: false }}
+              activeSpace={{ spaceId: activeSpaceId, isOrganization: activeIsOrg }}
             >
               {instanceData ? (
                 <InstanceDocumentationPage

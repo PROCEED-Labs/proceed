@@ -15,6 +15,7 @@ export interface TokenPayload {
   processId: string | string[];
   embeddedMode?: boolean;
   timestamp: number;
+  spaceId?: string; // used for navigation (to remain in same space)
 }
 
 export interface ProcessGuestAccessRights {

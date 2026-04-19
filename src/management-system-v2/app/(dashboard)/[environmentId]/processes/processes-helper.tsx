@@ -4,6 +4,7 @@ import { ColorOptions } from '../(automation)/executions/[processId]/instance-co
 
 async function openDocumentationUrl(
   processId: string,
+  spaceId: string,
   versionId?: string | null,
   instanceId?: string,
   coloring?: ColorOptions,
@@ -11,7 +12,7 @@ async function openDocumentationUrl(
   // the timestamp does not matter here since it is overridden by the user being an owner of the process
   try {
     const url = await generateSharedViewerUrl(
-      { processId, timestamp: 0 },
+      { processId, timestamp: 0, spaceId },
       versionId || undefined,
       undefined,
       instanceId,
@@ -32,15 +33,20 @@ async function openDocumentationUrl(
   }
 }
 
-export function handleOpenDocumentation(processId: string, versionId?: string | null) {
-  return openDocumentationUrl(processId, versionId);
+export function handleOpenDocumentation(
+  processId: string,
+  spaceId: string,
+  versionId?: string | null,
+) {
+  return openDocumentationUrl(processId, spaceId, versionId);
 }
 
 export function handleOpenInstanceDocumentation(
   processId: string,
+  spaceId: string,
   instanceId: string,
   coloring: ColorOptions,
   versionId?: string | null,
 ) {
-  return openDocumentationUrl(processId, versionId, instanceId, coloring);
+  return openDocumentationUrl(processId, spaceId, versionId, instanceId, coloring);
 }

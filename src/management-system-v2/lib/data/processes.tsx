@@ -906,7 +906,6 @@ export async function checkIfProcessExistsByName(
 
 /**
  * Fetches process with BPMN for any authenticated user regardless of sharing status.
- * Only use when caller has already verified the user is authenticated.
  */
 export const getProcessWithBpmnForAuthenticatedUser = async (
   definitionId: string,

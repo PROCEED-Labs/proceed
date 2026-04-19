@@ -368,6 +368,7 @@ export default function ProcessDeploymentView({
                       onClick={() =>
                         handleOpenInstanceDocumentation(
                           processId,
+                          spaceId,
                           selectedInstance.processInstanceId,
                           selectedColoring,
                           selectedInstance.processVersion,

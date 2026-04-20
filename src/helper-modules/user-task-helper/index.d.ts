@@ -68,8 +68,9 @@ export type VariableInfo = {
   value: any;
   log: {
     changedTime: number;
-    changedBy: string;
+    changedBy?: string;
     oldValue?: any;
+    newValue: any;
   }[];
 };
 /**
@@ -164,7 +165,7 @@ export type InstanceInfo = {
  * @typedef VariableInfo
  * @type {object}
  * @property {any} value - the value of the variable
- * @property {{ changedTime: number, changedBy: string, oldValue?: any }[]} log
+ * @property {{ changedTime: number, changedBy?: string, oldValue?: any, newValue: any }[]} log
  */
 /**
  * An object containing information about already executed flow nodes

@@ -37,7 +37,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @typedef VariableInfo
  * @type {object}
  * @property {any} value - the value of the variable
- * @property {{ changedTime: number, changedBy: string, oldValue?: any }[]} log
+ * @property {{ changedTime: number, changedBy?: string, oldValue?: any, newValue: any }[]} log
  */
 
 /**

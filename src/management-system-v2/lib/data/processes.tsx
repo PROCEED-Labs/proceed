@@ -8,6 +8,7 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -68,6 +69,7 @@ import { createFolder, getFolder, getFolderContents } from './folders';
 import Ability from '../ability/abilityHelper';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { setRemovedOnProcessDeployments } from './db/deployment';
+import { isDummyFolderProcess } from '../process-export/export-preparation';
 
 // Import necessary functions from processModule
 
@@ -281,6 +283,12 @@ export const addProcesses = async (
       value.folderId = folder.id;
     }
 
+    if (isDummyFolderProcess(value)) {
+      // if the process represents a placeholder for importing empty folders then skip adding the
+      // process after the folder structure was created
+      continue;
+    }
+
     // bpmn prop gets deleted in addProcess()
     const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
@@ -400,6 +408,9 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
   if ('error' in importedProcesses) {
     return importedProcesses;
   }
+
+  // filter out dummy processes that were included in the import to generate empty folders
+  processData = processData.filter((p) => !isDummyFolderProcess(p));
 
   for (let idx = 0; idx < importedProcesses.length; idx++) {
     const process = importedProcesses[idx];

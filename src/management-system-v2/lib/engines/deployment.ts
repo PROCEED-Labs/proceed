@@ -313,6 +313,9 @@ export type InstanceInfo = {
   adaptationLog: any[];
   processVersion: string;
   userTasks: any[];
+  managementSystemLocation?: string;
+  processInitiator?: string;
+  spaceIdOfProcessInitiator?: string;
 };
 export type DeployedProcessInfo = {
   definitionId: string;
@@ -379,6 +382,20 @@ export async function changeDeploymentActivation(
       body: { active: value },
     });
   }
+}
+
+export async function getDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string,
+): Promise<boolean> {
+  const result = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId/versions/:version/active',
+    engine,
+    pathParams: { definitionId, version },
+  });
+  return result.active;
 }
 
 export async function getProcessImageFromMachine(

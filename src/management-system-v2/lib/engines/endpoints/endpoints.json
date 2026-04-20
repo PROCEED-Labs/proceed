@@ -42,6 +42,7 @@
     "/process/:definitionId/instance": {},
     "/process/:definitionId/instance/:instanceID": {},
     "/process/:definitionId/versions/:version/start-form": {},
+    "/process/:definitionId/versions/:version/active": {},
     "/process/:definitionId/user-tasks/:fileName": {},
     "/process/:definitionId/user-tasks": {},
     "/process/:definitionId/script-tasks/:fileName": {},

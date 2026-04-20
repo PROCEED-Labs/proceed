@@ -14,6 +14,8 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
+  DeployedProcessInfo,
+  getDeploymentActivation,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -38,6 +40,7 @@ import {
   getCorrectVariableState,
   getCorrectMilestoneState,
   inlineScript,
+  getGlobalVariables,
 } from '@proceed/user-task-helper';
 import { ExtendedTaskListEntry, UserTask } from '../user-task-schema';
 
@@ -64,6 +67,7 @@ import {
 } from '../data/deployment';
 import { engineRequest } from './endpoints';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
+import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -263,6 +267,30 @@ export async function changeDeploymentActivation(
   }
 }
 
+export async function getProcessActivationStatus(
+  definitionId: string,
+  spaceId: string,
+  version: string,
+) {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((v) => v.versionId === version),
+      );
+    });
+
+    if (!engines.length) return false;
+
+    return await getDeploymentActivation(engines[0], definitionId, version);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
 async function isReachable(engine: Engine) {
   try {
     await engineRequest({ engine, method: 'get', endpoint: '/status/' });
@@ -379,9 +407,11 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
           username?: string | null;
           firstName?: string | null;
           lastName?: string | null;
-        }[] = await asyncMap(task.actualOwner, async (owner) => {
-          return getUserById(owner, undefined, tx) || owner;
-        });
+        }[] = (
+          await asyncMap(task.actualOwner, async (owner) => {
+            return getUserById(owner, undefined, tx) || owner;
+          })
+        ).filter(truthyFilter);
 
         return users.map((user) =>
           typeof user === 'string'
@@ -399,6 +429,38 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+
+export async function getGlobalVariablesForHTML(
+  spaceId: string,
+  initiatorId: string,
+  html: string,
+) {
+  return await getGlobalVariables(html, async (varPath) => {
+    let segments = varPath.split('.');
+
+    let userId: string | undefined;
+
+    if (segments[0] === '@process-initiator') {
+      userId = initiatorId;
+    } else if (segments[0] === '@worker' || !segments[0].startsWith('@')) {
+      ({ userId } = await getCurrentUser());
+    } else if (segments[0] !== '@organization') {
+      throw new UserFacingError(
+        `Invalid selector for global data access in user task html. (${segments[0]})`,
+      );
+    }
+
+    if (segments[0].startsWith('@')) segments = segments.slice(1);
+
+    const result = await getDataObject(spaceId, segments.join('.'), userId);
+
+    if (isErrorResponse(result)) {
+      throw new UserFacingError(await result.data.text());
+    }
+
+    return result.data?.value;
+  });
 }
 
 export async function getTasklistEntryHTML(
@@ -428,6 +490,7 @@ export async function getTasklistEntryHTML(
 
     if (engine && (!html || !milestones || !initialVariables)) {
       const [taskId, instanceId, startTimeString] = userTaskId.split('|');
+
       const [definitionId] = instanceId.split('-_');
 
       const startTime = parseInt(startTimeString);
@@ -519,6 +582,23 @@ export async function getTasklistEntryHTML(
 
     if (!html) throw new Error('Failed to get the html for the user task');
     if (!milestones) throw new Error('Failed to get the milestones for the user task');
+
+    let globalVars: Record<string, any> = {};
+
+    if (storedUserTask.instanceID) {
+      if (!engine) throw new Error('Cannot retrieve the instance initiator information.');
+      const [definitionId] = storedUserTask.instanceID.split('-_');
+      const deployment = await fetchDeployment(engine, definitionId);
+      const instance = deployment.instances.find(
+        (i) => i.processInstanceId === storedUserTask.instanceID,
+      );
+      if (!instance) throw new Error('Unknown instance');
+      if (!instance.processInitiator) throw new Error('Missing initiator information');
+
+      globalVars = await getGlobalVariablesForHTML(spaceId, instance.processInitiator, html);
+    }
+
+    variableChanges = { ...variableChanges, ...globalVars };
 
     return inlineUserTaskData(html, mapResourceUrls(variableChanges), milestones);
   } catch (e) {

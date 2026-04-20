@@ -282,14 +282,19 @@ export type InstanceInfo = {
     currentFlowNodeState: string;
     currentFlowElementStartTime: number;
     previousFlowElementId: string;
-    intermediateVariablesState?: { [key: string]: any };
+    variablesIntermediateState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];
-  variables: {};
+  variables: {
+    [key: string]: {
+      value: any;
+      log: { changedTime: number; changedBy?: string; oldValue?: any; newValue: any }[];
+    };
+  };
   log: {
     flowElementId: string;
     tokenId: string;
@@ -309,6 +314,7 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];
   processVersion: string;

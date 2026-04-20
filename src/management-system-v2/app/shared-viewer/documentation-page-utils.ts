@@ -868,7 +868,9 @@ export function buildInstanceTocItems(
       title: 'Execution Overview',
       children: [
         { key: 'execution_summary', href: href('#execution_summary_page'), title: 'Summary' },
-        ...(settings.showInstanceVariables
+        ...(settings.showInstanceVariables &&
+        instance.variables &&
+        Object.keys(instance.variables).length > 0
           ? [
               {
                 key: 'end_states_variables',

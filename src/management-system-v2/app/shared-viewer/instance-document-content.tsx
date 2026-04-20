@@ -442,22 +442,24 @@ const InstanceDocumentContent: React.FC<Props> = ({
           </div>
 
           {/* End States of Process Variables */}
-          {settings.showInstanceVariables && (
-            <div className={styles.MetaInformation}>
-              <Title level={3} id="end_states_variables_page">
-                End States of Process Variables
-              </Title>
-              <Paragraph>
-                The following table lists the final states of the process variables for the executed
-                process.
-              </Paragraph>
-              <FinalVariablesTable instance={instance} />
-              <Paragraph style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-                To view the complete history of changes to the variables throughout the process,
-                please refer to the detailed list of process elements below.
-              </Paragraph>
-            </div>
-          )}
+          {settings.showInstanceVariables &&
+            instance.variables &&
+            Object.keys(instance.variables).length > 0 && (
+              <div className={styles.MetaInformation}>
+                <Title level={3} id="end_states_variables_page">
+                  End States of Process Variables
+                </Title>
+                <Paragraph>
+                  The following table lists the final states of the process variables for the
+                  executed process.
+                </Paragraph>
+                <FinalVariablesTable instance={instance} />
+                <Paragraph style={{ marginTop: '1rem', fontStyle: 'italic' }}>
+                  To view the complete history of changes to the variables throughout the process,
+                  please refer to the detailed list of process elements below.
+                </Paragraph>
+              </div>
+            )}
         </div>
 
         {/* Detailed Execution Log */}

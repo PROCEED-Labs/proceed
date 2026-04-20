@@ -9,6 +9,7 @@ import {
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
   DeployedProcessInfo,
+  getDeploymentActivation,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -198,6 +199,30 @@ export async function changeDeploymentActivation(
       throw new Error('There is no available engine with the requested process version.');
 
     await _changeDeploymentActivation(engines[0], definitionId, version, value);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function getProcessActivationStatus(
+  definitionId: string,
+  spaceId: string,
+  version: string,
+) {
+  try {
+    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
+      const deployments = await fetchDeployments([engine]);
+      return deployments.some(
+        (deployment) =>
+          deployment.definitionId === definitionId &&
+          deployment.versions.some((v) => v.versionId === version),
+      );
+    });
+
+    if (!engines.length) return false;
+
+    return await getDeploymentActivation(engines[0], definitionId, version);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

@@ -28,7 +28,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @property {string} state - the state the token is in
  * @property {string} currentFlowElementId - the flow element the token resides on
  * @property {number} currentFlowElementStartTime - the time the current execution of the current flow element started
- * @property {{ [key: string]: any }} [intermediateVariablesState] - the values of variables changed during the tokens execution that are not yet committed to the instance
+ * @property {{ [key: string]: any }} [variablesIntermediateState] - the values of variables changed during the tokens execution that are not yet committed to the instance
  */
 
 /**
@@ -100,7 +100,7 @@ function getCorrectVariableState(userTask, instance) {
   );
 
   if (userTaskToken) {
-    Object.entries(userTaskToken.intermediateVariablesState).forEach(([key, value]) => {
+    Object.entries(userTaskToken.variablesIntermediateState).forEach(([key, value]) => {
       variables[key] = value;
     });
   }

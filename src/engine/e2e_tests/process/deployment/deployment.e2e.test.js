@@ -714,7 +714,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 2,
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
             {
               tokenId: expect.any(String),
@@ -728,7 +728,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -964,7 +964,7 @@ describe('Test deploying a process', () => {
             machineHops: 0,
             deciderStorageRounds: expect.any(Number),
             deciderStorageTime: expect.any(Number),
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
           });
           expect(token.deciderStorageRounds).toBeGreaterThan(0); // decider is re-evaluating due to unfulfilled constraints
           expect(token.deciderStorageTime).toBeGreaterThan(0); // decider is re-evaluating due to unfulfilled constraints
@@ -1042,7 +1042,7 @@ describe('Test deploying a process', () => {
             machineHops: 0,
             deciderStorageRounds: expect.any(Number),
             deciderStorageTime: expect.any(Number),
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
           });
           expect(token.deciderStorageRounds).toBeGreaterThan(0); // decider is re-evaluating due to unfulfilled constraints
           expect(token.deciderStorageTime).toBeGreaterThan(0); // decider is re-evaluating due to unfulfilled constraints
@@ -1332,7 +1332,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: {},
+              variablesIntermediateState: {},
             },
             {
               tokenId: expect.any(String),
@@ -1345,7 +1345,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
 
@@ -1460,7 +1460,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
             {
               tokenId: expect.any(String),
@@ -1473,7 +1473,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
 
@@ -1602,7 +1602,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
             {
               tokenId: expect.any(String),
@@ -1615,7 +1615,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: expect.any(Number),
               deciderStorageTime: expect.any(Number),
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
 
@@ -1740,7 +1740,7 @@ describe('Test deploying a process', () => {
                 machineHops: 0,
                 deciderStorageRounds: expect.any(Number),
                 deciderStorageTime: expect.any(Number),
-                intermediateVariablesState: {},
+                variablesIntermediateState: {},
               },
             ]);
 
@@ -1795,7 +1795,7 @@ describe('Test deploying a process', () => {
                 machineHops: 0,
                 deciderStorageRounds: expect.any(Number),
                 deciderStorageTime: expect.any(Number),
-                intermediateVariablesState: {},
+                variablesIntermediateState: {},
               },
             ]);
 
@@ -1828,7 +1828,7 @@ describe('Test deploying a process', () => {
                 machineHops: 0,
                 deciderStorageRounds: expect.any(Number),
                 deciderStorageTime: expect.any(Number),
-                intermediateVariablesState: null,
+                variablesIntermediateState: null,
               },
             ]);
 
@@ -1839,6 +1839,7 @@ describe('Test deploying a process', () => {
                   {
                     changedTime: expect.any(Number),
                     changedBy: 'Activity_1w6hbak',
+                    newValue: 42,
                   },
                 ],
               },
@@ -1856,6 +1857,14 @@ describe('Test deploying a process', () => {
                 ip: expect.any(String),
                 name: 'machine1',
                 port: 33020,
+              },
+              variableChanges: {
+                test: [
+                  {
+                    changedTime: expect.any(Number),
+                    newValue: 42,
+                  },
+                ],
               },
             });
 
@@ -1888,7 +1897,7 @@ describe('Test deploying a process', () => {
                 machineHops: 0,
                 deciderStorageRounds: expect.any(Number),
                 deciderStorageTime: expect.any(Number),
-                intermediateVariablesState: null,
+                variablesIntermediateState: null,
               },
             ]);
 
@@ -1936,7 +1945,7 @@ describe('Test deploying a process', () => {
                 machineHops: 0,
                 deciderStorageRounds: expect.any(Number),
                 deciderStorageTime: expect.any(Number),
-                intermediateVariablesState: null,
+                variablesIntermediateState: null,
               },
             ]);
 
@@ -2032,7 +2041,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: expect.any(Number),
                   deciderStorageTime: expect.any(Number),
-                  intermediateVariablesState: {},
+                  variablesIntermediateState: {},
                   milestones: {},
                   priority: 1,
                   actualOwner: [],
@@ -2111,7 +2120,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: expect.any(Number),
                   deciderStorageTime: expect.any(Number),
-                  intermediateVariablesState: {},
+                  variablesIntermediateState: {},
                   milestones: {},
                   priority: 1,
                   performers: {
@@ -2375,11 +2384,13 @@ describe('Test deploying a process', () => {
                       changedTime: expect.any(Number),
                       changedBy: 'Activity_1xguu75',
                       oldValue: undefined,
+                      newValue: 'some-value',
                     },
                     {
                       changedTime: expect.any(Number),
                       changedBy: 'manual',
                       oldValue: 'some-value',
+                      newValue: 'some-other-value',
                     },
                   ],
                 },
@@ -2390,6 +2401,7 @@ describe('Test deploying a process', () => {
                       changedTime: expect.any(Number),
                       changedBy: 'manual',
                       oldValue: undefined,
+                      newValue: 'a-value',
                     },
                   ],
                 },
@@ -2524,7 +2536,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: {},
+                  variablesIntermediateState: {},
                   milestones: {},
                   priority: 1,
                   performers: {
@@ -2676,7 +2688,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -2857,7 +2869,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -2982,7 +2994,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -3069,7 +3081,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                   nextMachine: {
                     id: 'machineId2',
                     ip: expect.any(String),
@@ -3144,7 +3156,7 @@ describe('Test deploying a process', () => {
                   machineHops: 1,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -3265,7 +3277,7 @@ describe('Test deploying a process', () => {
                   machineHops: 2,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.variables).toEqual({
@@ -3274,11 +3286,13 @@ describe('Test deploying a process', () => {
                     {
                       changedBy: 'Activity_1q040zy',
                       changedTime: expect.any(Number),
+                      newValue: 5,
                     },
                     {
                       changedBy: 'Activity_018ajzu', // changed on machine 2
                       changedTime: expect.any(Number),
                       oldValue: 5,
+                      newValue: 50,
                     },
                   ],
                   value: 50,
@@ -3288,11 +3302,13 @@ describe('Test deploying a process', () => {
                     {
                       changedBy: 'Activity_1q040zy',
                       changedTime: expect.any(Number),
+                      newValue: 10,
                     },
                     {
                       changedBy: 'Activity_1okjejr',
                       changedTime: expect.any(Number),
                       oldValue: 10,
+                      newValue: 100,
                     },
                   ],
                   value: 100,
@@ -3325,6 +3341,10 @@ describe('Test deploying a process', () => {
                     port: 33020,
                   },
                   progress: { value: 100, manual: false },
+                  variableChanges: {
+                    a: [{ changedTime: expect.any(Number), newValue: 5 }],
+                    b: [{ changedTime: expect.any(Number), newValue: 10 }],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -3352,6 +3372,9 @@ describe('Test deploying a process', () => {
                     port: 33020,
                   },
                   progress: { value: 100, manual: false },
+                  variableChanges: {
+                    b: [{ changedTime: expect.any(Number), oldValue: 10, newValue: 100 }],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -3386,6 +3409,9 @@ describe('Test deploying a process', () => {
                   startTime: expect.any(Number),
                   endTime: expect.any(Number),
                   progress: { value: 100, manual: false },
+                  variableChanges: {
+                    a: [{ changedTime: expect.any(Number), oldValue: 5, newValue: 50 }],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -3435,7 +3461,7 @@ describe('Test deploying a process', () => {
                   machineHops: 1,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                   nextMachine: {
                     id: 'machineId1',
                     ip: expect.any(String),
@@ -3450,11 +3476,13 @@ describe('Test deploying a process', () => {
                     {
                       changedBy: 'Activity_1q040zy',
                       changedTime: expect.any(Number),
+                      newValue: 5,
                     },
                     {
                       changedBy: 'Activity_018ajzu',
                       changedTime: expect.any(Number),
                       oldValue: 5,
+                      newValue: 50,
                     },
                   ],
                   value: 50,
@@ -3464,6 +3492,7 @@ describe('Test deploying a process', () => {
                     {
                       changedBy: 'Activity_1q040zy',
                       changedTime: expect.any(Number),
+                      newValue: 10,
                     },
                   ],
                   value: 10,
@@ -3496,6 +3525,10 @@ describe('Test deploying a process', () => {
                     port: 33020,
                   },
                   progress: { value: 100, manual: false },
+                  variableChanges: {
+                    a: [{ changedTime: expect.any(Number), newValue: 5 }],
+                    b: [{ changedTime: expect.any(Number), newValue: 10 }],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -3523,6 +3556,9 @@ describe('Test deploying a process', () => {
                   startTime: expect.any(Number),
                   endTime: expect.any(Number),
                   progress: { value: 100, manual: false },
+                  variableChanges: {
+                    a: [{ changedTime: expect.any(Number), oldValue: 5, newValue: 50 }],
+                  },
                 },
                 {
                   tokenId: expect.any(String),
@@ -3603,7 +3639,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                   nextMachine: {
                     id: 'machineId2',
                     ip: expect.any(String),
@@ -3623,7 +3659,7 @@ describe('Test deploying a process', () => {
                   machineHops: 0,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -3719,7 +3755,7 @@ describe('Test deploying a process', () => {
                   machineHops: 1,
                   deciderStorageRounds: 0,
                   deciderStorageTime: 0,
-                  intermediateVariablesState: null,
+                  variablesIntermediateState: null,
                 },
               ]);
               expect(instanceInfo.log).toEqual([
@@ -3834,7 +3870,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: expect.any(Object),
+              variablesIntermediateState: expect.any(Object),
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -3910,7 +3946,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -4019,7 +4055,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: {},
+              variablesIntermediateState: {},
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -4096,7 +4132,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: null,
+              variablesIntermediateState: null,
             },
           ]);
           expect(instanceInfo.log).toEqual([
@@ -4204,7 +4240,7 @@ describe('Test deploying a process', () => {
               machineHops: 0,
               deciderStorageRounds: 0,
               deciderStorageTime: 0,
-              intermediateVariablesState: {},
+              variablesIntermediateState: {},
             },
           ]);
           expect(instanceInfo.log).toEqual([

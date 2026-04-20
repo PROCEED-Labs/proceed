@@ -470,7 +470,7 @@ class Engine {
 
     const token = this.getToken(instanceID, userTask.tokenId);
     // remember the changes made by this user task invocation
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
     userTask.milestones = { ...token.milestones };
     userTask.actualOwner = [...token.actualOwner];
 
@@ -1020,7 +1020,7 @@ class Engine {
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
   }
 
   setFlowNodeState(instanceId, tokenId, state, variables) {

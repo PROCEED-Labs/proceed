@@ -739,6 +739,11 @@ export async function addParameter(
     const parentConfigResult = await db.config.findUnique({ where: { id: parentId } });
     const parentConfig = parentConfigResult?.data as unknown as StoredConfig;
     if (!parentConfig) throw new Error(`There is no parent configuration with the id ${parentId}.`);
+    if (await checkSiblingNames(parentConfig.content, parameter.name)) {
+      throw new Error(
+        `The name ${parameter.name} already exists among the direct child parameters of the config with the id ${parentId}.`,
+      );
+    }
     parentConfig.content.push(parameter.id);
     await parametersToStorage(parentConfig.id, parentType, [parameter]);
     await storeAllCachedData();
@@ -750,6 +755,11 @@ export async function addParameter(
     const parentParameterResult = await db.configParameter.findUnique({ where: { id: parentId } });
     const parentParameter = parentParameterResult?.data as unknown as StoredParameter;
     if (!parentParameter) throw new Error(`There is no parameter with the id ${parentId}.`);
+    if (await checkSiblingNames(parentParameter.subParameters, parameter.name)) {
+      throw new Error(
+        `The name ${parameter.name} already exists among the children of the parameter with the id ${parentId}.`,
+      );
+    }
     parentParameter.subParameters.push(parameter.id);
     await parametersToStorage(parentParameter.id, parentType, [parameter]);
     await storeAllCachedData();
@@ -4944,4 +4954,15 @@ export async function syncSpaceConfigs() {
 
 export async function getUser(userId: string) {
   return await getUserById(userId);
+}
+
+async function checkSiblingNames(siblings: string[], name: string) {
+  for (const id of siblings) {
+    let childParameterResult = await db.configParameter.findUnique({
+      where: { id: id },
+    });
+    const childParameter = childParameterResult?.data as StoredParameter;
+    if (childParameter.name == name) return true;
+  }
+  return false;
 }

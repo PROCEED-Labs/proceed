@@ -934,40 +934,38 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
     changeableByUser: false,
   });
 
-  let newVersionNumber: Parameter = {
-    ...defaultParameter({
-      name: 'VersionNumber',
-      displayName: [
-        {
-          text: 'Version Number',
-          language: 'en',
-        },
-        {
-          text: 'Versionsnummer',
-          language: 'de',
-        },
-      ],
-      description: [
-        {
-          text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
-          language: 'en',
-        },
-        {
-          text: 'Die Maschinenversionsnummer zeigt Optimierungsänderungen im Maschinendatensatz durch Rückmeldungen des Maschinenbedieners an. Sie wird erhöht, wenn sich der Wert eines Parameters durch Feedback geändert hat. Sie wird auf 0 zurückgesetzt, wenn die Änderung aus dem Target Dataset, dem Referenz Dataset oder aus einer Strukturänderung im Maschinendatensatz stammt.',
-          language: 'de',
-        },
-      ],
-      value: 'latest',
-      valueType: 'xs:integer',
-      usedAsInputParameterIn: [
-        {
-          id: '<uuid>',
-          path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'],
-        },
-      ],
-      changeableByUser: false,
-    }),
-  };
+  let newVersionNumber: Parameter = defaultParameter({
+    name: 'VersionNumber',
+    displayName: [
+      {
+        text: 'Version Number',
+        language: 'en',
+      },
+      {
+        text: 'Versionsnummer',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
+        language: 'en',
+      },
+      {
+        text: 'Die Maschinenversionsnummer zeigt Optimierungsänderungen im Maschinendatensatz durch Rückmeldungen des Maschinenbedieners an. Sie wird erhöht, wenn sich der Wert eines Parameters durch Feedback geändert hat. Sie wird auf 0 zurückgesetzt, wenn die Änderung aus dem Target Dataset, dem Referenz Dataset oder aus einer Strukturänderung im Maschinendatensatz stammt.',
+        language: 'de',
+      },
+    ],
+    value: 'latest',
+    valueType: 'xs:integer',
+    usedAsInputParameterIn: [
+      {
+        id: '<uuid>',
+        path: ['Body', 'MachineDatasets', 'MachineDataset-1', 'FullVersionNumber'],
+      },
+    ],
+    changeableByUser: false,
+  });
 
   let newFullVersionNumber = defaultParameter({
     name: 'FullVersionNumber',
@@ -1035,38 +1033,36 @@ export function createTdsTemplateMachineDatasetHeader(shortName: string): Parame
     ],
   });
 
-  let newAcknowledgeMode: Parameter = {
-    ...defaultParameter({
-      name: 'AcknowledgeMode',
-      displayName: [
-        {
-          text: 'Acknowledge Mode',
-          language: 'en',
-        },
-        {
-          text: 'Freifahr-Status',
-          language: 'de',
-        },
-      ],
-      description: [
-        {
-          text: 'Acknowledge Mode of the Machine Dataset',
-          language: 'en',
-        },
-        {
-          text: 'Freifahr-Status des Maschinen-Datensets',
-          language: 'de',
-        },
-      ],
-      transformation: {
-        transformationType: 'linked',
-        linkedInputParameters: {
-          $IN1: { id: '<uuid>', path: ['Header', 'AcknowledgeModeDefault'] },
-        },
-        action: '',
+  let newAcknowledgeMode: Parameter = defaultParameter({
+    name: 'AcknowledgeMode',
+    displayName: [
+      {
+        text: 'Acknowledge Mode',
+        language: 'en',
       },
-    }),
-  };
+      {
+        text: 'Freifahr-Status',
+        language: 'de',
+      },
+    ],
+    description: [
+      {
+        text: 'Acknowledge Mode of the Machine Dataset',
+        language: 'en',
+      },
+      {
+        text: 'Freifahr-Status des Maschinen-Datensets',
+        language: 'de',
+      },
+    ],
+    transformation: {
+      transformationType: 'linked',
+      linkedInputParameters: {
+        $IN1: { id: '<uuid>', path: ['Header', 'AcknowledgeModeDefault'] },
+      },
+      action: '',
+    },
+  });
 
   let newReviewState = defaultParameter({
     name: 'ReviewState',

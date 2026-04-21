@@ -169,12 +169,10 @@ export function defaultUserParameterTemplate(
     virtualType: 'user-roles',
   };
 
-  return {
-    ...defaultParameter({
-      name: membership.userId,
-      displayName: [{ text: `${lastName}, ${firstName}`, language: 'en' }],
-      subParameters: [dataParameter, rolesParameter, createTemplateUserInfo(membership.userId)],
-    }),
+  return defaultParameter({
+    name: membership.userId,
+    displayName: [{ text: `${lastName}, ${firstName}`, language: 'en' }],
+    subParameters: [dataParameter, rolesParameter, createTemplateUserInfo(membership.userId)],
     id: membership.id,
-  };
+  });
 }

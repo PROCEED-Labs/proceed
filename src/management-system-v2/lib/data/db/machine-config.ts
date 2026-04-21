@@ -1650,11 +1650,12 @@ export async function getVirtualUserRoles(
     );
   }
   roleParameters = roles.map((role) => {
-    return {
-      ...defaultParameter({ name: role.id, displayName: [{ text: role.name, language: 'en' }] }),
+    return defaultParameter({
+      name: role.id,
+      displayName: [{ text: role.name, language: 'en' }],
       id: parameter.userId + role.name, // hardcoded ID for frontend consistency
       origin: 'external',
-    };
+    });
   });
   return { ...parameter, subParameters: roleParameters };
 }
@@ -1674,27 +1675,23 @@ export async function getVirtualOrganizationRoles(
     let subParameters = roleUsers.users
       .map((e) => {
         if (!e.isGuest) {
-          return {
-            ...defaultParameter({
-              name: e.id,
-              displayName: [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
-              origin: 'external',
-            }),
+          return defaultParameter({
+            name: e.id,
+            displayName: [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
+            origin: 'external',
             id: roleUsers.role.name + e.id, // hardcoded ID for frontend consistency
-          };
+          });
         }
       })
       .filter(truthyFilter);
 
-    return {
-      ...defaultParameter({
-        name: roleUsers.role.id,
-        displayName: [{ text: roleUsers.role.name, language: 'en' }],
-        origin: 'external',
-        subParameters,
-      }),
+    return defaultParameter({
+      name: roleUsers.role.id,
+      displayName: [{ text: roleUsers.role.name, language: 'en' }],
+      origin: 'external',
+      subParameters,
       id: roleUsers.role.name, // hardcoded ID for frontend consistency
-    };
+    });
   });
   return { ...parameter, subParameters: roleParameters };
 }

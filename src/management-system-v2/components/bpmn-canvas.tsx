@@ -272,67 +272,70 @@ const BPMNCanvas = forwardRef<BPMNCanvasRef, BPMNCanvasProps>(
     useEffect(() => {
       // Store handlers so we can remove them later.
       const _onLoaded = () => onLoaded?.();
-      const commandStackChanged = () => {
+      const _onCommandStackChanged = () => {
         if (!loadingXML.current) onChange?.();
       };
-      const selectionChanged = (event: {
+      const _onSelectionChanged = (event: {
         oldSelection: ElementLike[];
         newSelection: ElementLike[];
       }) => {
         onSelectionChange?.(event.oldSelection, event.newSelection);
       };
-      const zoom = (zoomLevel: number) => onZoom?.(zoomLevel);
+      const _onShapeAdded = (event: { element: Element }) => {
+        if (!loadingXML.current) onShapeAdded?.(event.element);
+      };
+      const _onShapeRemove = (event: { element: Element }) => {
+        if (!loadingXML.current) onShapeRemove?.(event.element);
+      };
+      const _onRevert = (event: { command: string; context: { element: Element; id: string } }) => {
+        if (event.command === 'id.updateClaim') {
+          onShapeRemoveUndo?.(event.context.element);
+        }
+      };
+      const _onRedo = (event: { context: { shape: Shape } }) => {
+        if (event.context.shape.businessObject) {
+          onShapeRemoveUndo?.(event.context.shape.businessObject);
+        }
+      };
+      const _onZoom = ({ viewbox }: { viewbox: { scale: number } }) => {
+        onZoom?.(viewbox.scale);
+      };
 
       if (type === 'modeler') {
-        modeler.current!.on('commandStack.changed', commandStackChanged);
+        modeler.current!.on('commandStack.changed', _onCommandStackChanged);
 
-        modeler.current!.on('shape.remove', (event: { element: Element }) => {
-          if (!loadingXML.current) onShapeRemove?.(event.element);
-        });
+        // Handle shape added (for paste event)
+        modeler.current!.on('shape.added', _onShapeAdded);
+        modeler.current!.on('shape.remove', _onShapeRemove);
 
         // Undo fires commandStack.revert
-        modeler.current!.on(
-          'commandStack.revert',
-          (event: { command: string; context: { element: Element; id: string } }) => {
-            if (event.command === 'id.updateClaim') {
-              onShapeRemoveUndo?.(event.context.element);
-            }
-          },
-        );
+        modeler.current!.on('commandStack.revert', _onRevert);
 
         // Redo recreates the deleted shape
-        modeler.current!.on(
-          'commandStack.shape.create.executed',
-          (event: { context: { shape: Shape } }) => {
-            if (event.context.shape.businessObject) {
-              onShapeRemoveUndo?.(event.context.shape.businessObject);
-            }
-          },
-        );
+        modeler.current!.on('commandStack.shape.create.executed', _onRedo);
       }
 
-      // Handle shape added (for paste event)
-      modeler.current!.on('shape.added', (event: { element: Element }) => {
-        if (!loadingXML.current) onShapeAdded?.(event.element);
-      });
       modeler.current!.on('import.done', _onLoaded);
       modeler.current!.on<{ oldSelection: ElementLike[]; newSelection: ElementLike[] }>(
         'selection.changed',
-        selectionChanged,
+        _onSelectionChanged,
       );
-      modeler.current!.on<{
-        viewbox: { x: number; y: number; width: number; height: number; scale: number };
-      }>('canvas.viewbox.changed', ({ viewbox }) => {
-        zoom(viewbox.scale);
-      });
+      modeler.current!.on('canvas.viewbox.changed', _onZoom);
 
       return () => {
-        modeler.current!.off('import.done', _onLoaded);
-        modeler.current!.off('commandStack.changed', commandStackChanged);
-        modeler.current!.off('selection.changed', selectionChanged);
         if (type === 'modeler') {
-          modeler.current!.off('shape.added');
+          modeler.current!.off('commandStack.changed', _onCommandStackChanged);
+
+          modeler.current!.off('shape.added', _onShapeAdded);
+          modeler.current!.off('shape.remove', _onShapeRemove);
+
+          modeler.current!.off('commandStack.revert', _onRevert);
+          modeler.current!.off('commandStack.shape.create.executed', _onRedo);
         }
+
+        modeler.current!.off('import.done', _onLoaded);
+        modeler.current!.off('selection.changed', _onSelectionChanged);
+        modeler.current!.off('canvas.viewbox.changed', _onZoom);
       };
     }, [type, onLoaded, onChange, onSelectionChange, onZoom, onShapeAdded]);
 

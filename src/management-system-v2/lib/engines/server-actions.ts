@@ -61,6 +61,7 @@ import {
   getInstance as getStoredInstance,
   addInstance as storeInstanceData,
   updateInstance as updateStoredInstance,
+  getDeployment as getStoredDeployment,
   getDeployments as getStoredDeployments,
   updateDeployment,
   getProcessDeployments,
@@ -313,6 +314,8 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
 
     if (isUserErrorResponse(deployments)) return deployments;
 
+    const knownInstances = deployments.flatMap((d) => d.instances).map((i) => i.id);
+
     const removedTasks = [] as string[];
     const newTasks: UserTask[] = [];
     const changedTasks: UserTask[] = [];
@@ -334,7 +337,9 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
       .nonNullable()
       .map(async (engine) => {
         try {
-          const taskList = await getTaskListFromMachine(engine);
+          let taskList = await getTaskListFromMachine(engine);
+
+          taskList = taskList.filter((t) => knownInstances.includes(t.instanceID));
 
           // check if we have stored user tasks for this machine which have been removed from the
           // machine

@@ -134,16 +134,16 @@ export async function deployProcess(
 
       if (Array.isArray(_forceEngine)) {
         engines = await resolveEngines(_forceEngine);
-        if (engines.length === 0) throw new Error('Could not reach any engine.');
+        if (!engines.length) throw new Error('Could not reach any engine.');
       } else {
         engines = await resolveEngines([_forceEngine]);
-        if (engines.length === 0) throw new Error("Engine couldn't be reached");
+        if (!engines.length) throw new Error("Engine couldn't be reached");
       }
     } else {
       engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
     }
 
-    if (engines.length === 0) throw new UserFacingError('No fitting engine found.');
+    if (!engines.length) throw new UserFacingError('No fitting engine found.');
 
     const alreadyDeployed = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(alreadyDeployed)) return alreadyDeployed;

@@ -134,7 +134,8 @@ describe('ProceedEngine', () => {
       {
         tokenId: expect.any(String),
         state: 'ENDED',
-        intermediateVariablesState: null,
+        variablesIntermediateState: null,
+        variablesDirectChangesInProcessInstanceScope: undefined,
         localStartTime: expect.any(Number),
         localExecutionTime: expect.any(Number),
         currentFlowElementId: 'EndEvent_02e1jkg',
@@ -256,7 +257,7 @@ describe('ProceedEngine', () => {
     expect(System.http.request).toHaveBeenCalledWith('https://example.org/123', { method: 'GET' });
   });
 
-  it('updates intermediateVariablesState on a userTask', async () => {
+  it('updates variablesIntermediateState on a userTask', async () => {
     distribution.db.getProcessVersion.mockResolvedValueOnce(userTaskBPMN);
     const userTaskID = 'Task_1y4wd2q';
 
@@ -276,7 +277,7 @@ describe('ProceedEngine', () => {
     await sleep(50);
 
     const instanceInformation = engine.getInstanceInformation(instanceID);
-    expect(instanceInformation.tokens[0].intermediateVariablesState).toStrictEqual({ a: 2 });
+    expect(instanceInformation.tokens[0].variablesIntermediateState).toStrictEqual({ a: 2 });
     expect(instanceInformation.variables).toStrictEqual({});
 
     await engine.stopInstance(engine.instanceIDs[0]);
@@ -308,6 +309,7 @@ describe('ProceedEngine', () => {
           {
             changedBy: 'Task_1y4wd2q',
             changedTime: expect.any(Number),
+            newValue: 2,
           },
         ],
       },

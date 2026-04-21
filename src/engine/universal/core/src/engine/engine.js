@@ -243,6 +243,16 @@ class Engine {
   }
 
   /**
+   * Returns whether the given process version is currently deployed in the NeoBPMN Engine
+   *
+   * @param {string} versionId the version of the process to check
+   * @returns {boolean} true if the version is deployed, false if it is known but not active
+   */
+  async isProcessVersionDeployed(versionId) {
+    return this._versionProcessMapping[versionId]?.isDeployed() ?? false;
+  }
+
+  /**
    * Starts the execution of a BPMN process version. This can involve the creation of
    * multiple instances of the process, if the process contains such events.
    * When encountering User Tasks in the ongoing execution, they are added to
@@ -460,7 +470,7 @@ class Engine {
 
     const token = this.getToken(instanceID, userTask.tokenId);
     // remember the changes made by this user task invocation
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
     userTask.milestones = { ...token.milestones };
     userTask.actualOwner = [...token.actualOwner];
 
@@ -1010,7 +1020,7 @@ class Engine {
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
   }
 
   setFlowNodeState(instanceId, tokenId, state, variables) {

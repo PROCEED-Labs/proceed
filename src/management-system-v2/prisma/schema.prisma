@@ -110,15 +110,16 @@ model Process {
 }
 
 model Artifact {
-  id                String                     @id @default(uuid())
-  filePath          String                     @unique
-  fileName          String                     @unique
-  deletable         Boolean?                   @default(false)
-  deletedOn         DateTime?
-  artifactType      String // html-forms, script, image, etc.
-  processReferences ArtifactProcessReference[] // Relation to track references
-  versionReferences ArtifactVersionReference[]
-  refCounter        Int                        @default(0)
+  id                 String                      @id @default(uuid())
+  filePath           String                      @unique
+  fileName           String                      @unique
+  deletable          Boolean?                    @default(false)
+  deletedOn          DateTime?
+  artifactType       String // html-forms, script, image, etc.
+  processReferences  ArtifactProcessReference[] // Relation to track references
+  versionReferences  ArtifactVersionReference[]
+  instanceReferences ArtifactInstanceReference[]
+  refCounter         Int                         @default(0)
 
   @@map("artifact")
 }
@@ -145,6 +146,20 @@ model ArtifactVersionReference {
 
   @@unique([artifactId, versionId])
   @@map("artifact_version_reference")
+}
+
+model ArtifactInstanceReference {
+  id           String           @id @default(uuid())
+  artifact     Artifact         @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId   String
+  instance     ProcessInstance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId   String
+  createdAt    DateTime         @default(now())
+  originalName String
+  mimeType     String
+
+  @@unique([artifactId, instanceId])
+  @@map("artiface_instance_reference")
 }
 
 model Space {
@@ -462,18 +477,19 @@ model ProcessDeployment {
 }
 
 model ProcessInstance {
-  id              String            @id
-  deploymentId    String
-  deployment      ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
-  versionId       String       
-  version         Version           @relation(fields: [versionId], references: [id], onDelete: Cascade)
-  initiatorId     String?
-  initiator       User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
-  userTasks       UserTask[]
+  id                  String            @id
+  deploymentId        String
+  deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  versionId           String       
+  version             Version           @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  initiatorId         String?
+  initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  userTasks           UserTask[]
   // These are not the "Engines" but the actual machines the process is running on
   // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"
-  machineIds      String[]
-  state           Json
+  machineIds          String[]
+  state               Json
+  artifactReferences  ArtifactInstanceReference[]
 
   @@map("process_instance")
 }

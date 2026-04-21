@@ -15,6 +15,9 @@ export async function getDeployment(deploymentId: string) {
 
   return {
     ...deployment,
+    instances: deployment.instances as ((typeof deployment.instances)[number] & {
+      state: InstanceInfo;
+    })[],
     processId: deployment.version.processId,
   };
 }

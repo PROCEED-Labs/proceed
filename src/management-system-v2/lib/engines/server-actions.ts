@@ -14,7 +14,6 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  DeployedProcessInfo,
   getDeploymentActivation,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
@@ -61,7 +60,6 @@ import {
   getInstance as getStoredInstance,
   addInstance as storeInstanceData,
   updateInstance as updateStoredInstance,
-  getDeployment as getStoredDeployment,
   getDeployments as getStoredDeployments,
   updateDeployment,
   getProcessDeployments,
@@ -69,6 +67,7 @@ import {
 import { engineRequest } from './endpoints';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
+import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 
 export async function getCorrectTargetEngines(
   spaceId: string,
@@ -472,7 +471,7 @@ export async function getTasklistEntryHTML(
   spaceId: string,
   userTaskId: string,
   filename: string,
-  engine: Engine | null,
+  engine?: Engine | null,
 ) {
   try {
     if (!enableUseDB)
@@ -535,7 +534,7 @@ export async function getTasklistEntryHTML(
 
       html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
         const path = match.split('/');
-        return `/api/private/${spaceId}/engine/resources/process/${definitionId}/images/${path.pop()}`;
+        return `/api/private/${spaceId}/engine/resources/process/${instanceId}/images/${path.pop()}`;
       });
 
       const processIds = await getProcessIds(bpmn);
@@ -566,7 +565,7 @@ export async function getTasklistEntryHTML(
 
     // maps relative urls used to get resources on the engine to the MS api to allow them to work here as well
     function mapResourceUrls(variables: Record<string, any>) {
-      if (!variables || !engine) return variables;
+      if (!variables) return variables;
 
       return Object.fromEntries(
         Object.entries(variables).map(([key, value]) => {
@@ -591,16 +590,12 @@ export async function getTasklistEntryHTML(
     let globalVars: Record<string, any> = {};
 
     if (storedUserTask.instanceID) {
-      if (!engine) throw new Error('Cannot retrieve the instance initiator information.');
-      const [definitionId] = storedUserTask.instanceID.split('-_');
-      const deployment = await fetchDeployment(engine, definitionId);
-      const instance = deployment.instances.find(
-        (i) => i.processInstanceId === storedUserTask.instanceID,
-      );
-      if (!instance) throw new Error('Unknown instance');
-      if (!instance.processInitiator) throw new Error('Missing initiator information');
+      const instance = await getStoredInstance(spaceId, storedUserTask.instanceID);
+      if (isUserErrorResponse(instance)) return instance;
+      if (!instance) throw new Error('Cannot retrieve the instance initiator information.');
+      if (!instance.initiatorId) throw new Error('Missing initiator information');
 
-      globalVars = await getGlobalVariablesForHTML(spaceId, instance.processInitiator, html);
+      globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
     }
 
     variableChanges = { ...variableChanges, ...globalVars };
@@ -826,14 +821,19 @@ export async function getFile(
 ) {
   const { ability } = await getCurrentEnvironment(spaceId);
 
+  const instance = await getStoredInstance(spaceId, instanceId);
+
+  if (isUserErrorResponse(instance)) return instance;
+
+  const savedFile = await getInstanceFile(instanceId, fileName);
+  if (savedFile) {
+    return savedFile;
+  }
+
   try {
     // find the engine the instance is running on
     let engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
-
-      return deployments.some((deployment) =>
-        deployment.instances.some((i) => i.processInstanceId === instanceId),
-      );
+      return instance.machineIds.includes(engine.id);
     });
 
     engines = ability ? ability.filter('view', 'Machine', engines) : engines;
@@ -842,7 +842,25 @@ export async function getFile(
       throw new UserFacingError('Failed to find the engine the instance is running on!');
     }
 
-    return await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
+    const file = await getFileFromMachine(definitionId, instanceId, fileName, engines[0]);
+
+    try {
+      const res = await saveInstanceArtifact(
+        spaceId,
+        instanceId,
+        fileName,
+        file.type,
+        Buffer.from(await file.arrayBuffer()),
+      );
+
+      if (res.presignedUrl) {
+        // TODO: handle cloud storage case
+      }
+    } catch (err) {
+      console.error(`Failed to cache instance file ${fileName}.`);
+    }
+
+    return file;
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);

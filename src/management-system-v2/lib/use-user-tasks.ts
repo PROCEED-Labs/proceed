@@ -137,9 +137,6 @@ function useUserTasks(
   async function getTaskListEntryHtml(taskId: string, fileName: string) {
     const machine = getTaskEngine(taskId);
 
-    if (machine === undefined)
-      return { error: 'Could not find the machine the task is running on' };
-
     return await getTasklistEntryHTML(space.spaceId, taskId, fileName, machine);
   }
 

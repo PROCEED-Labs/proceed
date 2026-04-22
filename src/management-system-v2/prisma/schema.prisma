@@ -471,6 +471,10 @@ model ProcessDeployment {
   // TODO: create function that sets this to true when the linked process is deleted
   deleted       Boolean     @default(false)
 
+  // marks a deployment as active if it is allowed to spawn new instances automatically on the engines it is deployed to
+  // this can happen when the bpmn contains typed start events like timer start events
+  active        Boolean     @default(false)
+
   instances     ProcessInstance[]
 
   @@map("process_deployment")

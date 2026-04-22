@@ -14,7 +14,6 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  getDeploymentActivation,
 } from './deployment';
 import { Engine, SpaceEngine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
@@ -176,19 +175,27 @@ export async function deployProcess(
       machineIds: deployedTo.map((engine) => engine.id),
       deployerId: userId,
       deployTime: new Date(),
+      active: true,
     });
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
-    await Promise.allSettled(
-      processAlreadyDeployedInfo
-        .flatMap((i) => i.machines)
-        .map(async (engine) => {
-          if (!deployedTo.some((dE) => dE.id === engine.id)) {
-            await _changeDeploymentActivation(engine, definitionId, undefined, false);
-          }
-        }),
-    );
+    await AsyncArray.from(processAlreadyDeployedInfo)
+      .filter((d) => d.active)
+      .forEach(async (d) => {
+        // set all currently active deployments to inactive (locally)
+        await updateDeployment(spaceId, d.id, { active: false });
+      })
+      .map((d) => d.machines)
+      .flatten()
+      .deduplicate((m) => m.id)
+      .filter((m) => !deployedTo.some((dE) => dE.id === m.id))
+      // send a deactivation request to every machine that has a previous deployment of the process
+      .forEach(async (m) => {
+        try {
+          await _changeDeploymentActivation(m, definitionId, undefined, false);
+        } catch (err) {}
+      });
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -229,7 +236,8 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
       }).nonNullable();
 
       await updateDeployment(spaceId, deployment.id, {
-        deleted: !stillDeployedOn.length || deployment.deleted,
+        deleted: true,
+        active: false,
         machineIds: stillDeployedOn,
       });
     });
@@ -247,44 +255,58 @@ export async function changeDeploymentActivation(
 ) {
   try {
     const engines = await getCorrectTargetEngines(spaceId, false);
+    const deployments = await getProcessDeployments(spaceId, definitionId);
 
-    const versionDeploymentsResult = await getProcessDeployments(spaceId, definitionId);
-    if (isUserErrorResponse(versionDeploymentsResult)) return versionDeploymentsResult;
+    if (isUserErrorResponse(deployments)) return deployments;
 
-    // TODO: what do we do if some engines are not reachable/if changing the activation fails?
-    await Promise.allSettled(
-      versionDeploymentsResult
-        .filter((d) => d.versionId === version)
-        .flatMap((d) => d.machineIds)
-        .map((machineId) => {
-          const engine = engines.find((e) => e.id === machineId);
-          if (engine) _changeDeploymentActivation(engine, definitionId, version, value);
-        }),
-    );
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
+    const versionDeployments = deployments.filter((d) => d.versionId === version);
+    if (!versionDeployments.length) return userError('This version is not deployed.');
 
-export async function getProcessActivationStatus(
-  definitionId: string,
-  spaceId: string,
-  version: string,
-) {
-  try {
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine: Engine) => {
-      const deployments = await fetchDeployments([engine]);
-      return deployments.some(
-        (deployment) =>
-          deployment.definitionId === definitionId &&
-          deployment.versions.some((v) => v.versionId === version),
-      );
+    // exit early if executing the function will/should not change the already existing activation state
+    if (
+      (value === true && versionDeployments.some((d) => d.active === true)) ||
+      (value === false && versionDeployments.every((d) => d.active === false))
+    ) {
+      return;
+    }
+
+    let deploymentsToChange = versionDeployments.filter((d) => d.active !== value);
+
+    if (value === true) {
+      let activated = false;
+      for (const deployment of deploymentsToChange) {
+        for (const machineId of deployment.machineIds) {
+          const machine = engines.find((e) => e.id === machineId);
+          if (machine) {
+            try {
+              // change the activation on a single machine so we do not spawn new instances on multiple machines at once
+              await _changeDeploymentActivation(machine, definitionId, version, true);
+              await updateDeployment(spaceId, deployment.id, { active: true });
+              activated = true;
+              break;
+            } catch (err) {}
+          }
+        }
+        if (activated) break;
+      }
+
+      if (!activated) return userError('Could not reach any engine to activate the deployment.');
+
+      // if we activate a deployment we need to deactivate all deployments of other versions that are currently
+      // active
+      deploymentsToChange = deployments.filter((d) => d.versionId !== version && d.active);
+    }
+
+    await asyncForEach(deploymentsToChange, async (d) => {
+      await updateDeployment(spaceId, d.id, { active: false });
+
+      await asyncForEach(d.machineIds, async (machineId) => {
+        try {
+          const machine = engines.find((e) => e.id === machineId);
+          if (machine) await _changeDeploymentActivation(machine, definitionId, version, false);
+        } catch (err) {}
+      });
     });
-
-    if (!engines.length) return false;
-
-    return await getDeploymentActivation(engines[0], definitionId, version);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -313,7 +335,15 @@ export async function getAvailableTaskListEntries(spaceId: string, engines: Engi
 
     if (isUserErrorResponse(deployments)) return deployments;
 
-    const knownInstances = deployments.flatMap((d) => d.instances).map((i) => i.id);
+    const knownInstances = deployments
+      .filter((d) => !d.deleted)
+      .flatMap((d) => d.instances)
+      .map((i) => i.id);
+
+    // filter out user tasks belonging to instances that are not managed anymore
+    stored = stored.filter(
+      (uT) => !uT.instanceID || knownInstances.some((instanceId) => instanceId === uT.instanceID),
+    );
 
     const removedTasks = [] as string[];
     const newTasks: UserTask[] = [];
@@ -975,43 +1005,54 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
     );
 
     // update/extend the known instance information
-    const updatedInstancesMap = fetchedInstances.reduce((map, curr) => {
-      const id = curr.instance.processInstanceId;
-      if (id in map) {
-        const known = map[id];
-        if (!known.data.machineIds.includes(curr.machine.id)) {
-          known.data.machineIds.push(curr.machine.id);
-          // TODO: merge the instance state
-          known.data.state = curr.instance;
-          known.changed = true;
+    const updatedInstancesMap = fetchedInstances.reduce(
+      (map, curr) => {
+        const id = curr.instance.processInstanceId;
+        if (id in map) {
+          const known = map[id];
+          if (!known.data.machineIds.includes(curr.machine.id)) {
+            known.data.machineIds.push(curr.machine.id);
+            // TODO: merge the instance state
+            known.data.state = curr.instance;
+            known.changed = true;
+          }
+        } else {
+          map[id] = {
+            data: {
+              id,
+              versionId: curr.instance.processVersion,
+              deploymentId: deployment.id,
+              machineIds: [curr.machine.id],
+              state: curr.instance,
+              initiatorId: curr.instance.processInitiator || null,
+            },
+            changed: true,
+          };
         }
-      } else {
-        map[id] = {
-          data: {
-            id,
-            versionId: curr.instance.processVersion,
-            deploymentId: deployment.id,
-            machineIds: [curr.machine.id],
-            state: curr.instance,
-            initiatorId: null,
-          },
-          changed: true,
-        };
-      }
 
-      return map;
-    }, knownInstances);
+        return map;
+      },
+      JSON.parse(JSON.stringify(knownInstances)) as typeof knownInstances,
+    );
 
     const updatedInstances = Object.values(updatedInstancesMap);
 
     // push instance changes to the database
-    asyncForEach(updatedInstances, async (instance) => {
+    await asyncForEach(updatedInstances, async (instance) => {
       if (instance.changed) {
         if (!knownInstances[instance.data.id]) {
-          await storeInstanceData(spaceId, instance as any);
+          try {
+            // instances with an initiator should be created and manually added in this
+            // management system instance so we should not add them automatically (this should
+            // prevent timing problems when this logic runs before the instance has been manually
+            // added)
+            if (!instance.data.initiatorId) {
+              await storeInstanceData(spaceId, instance.data);
+            }
+          } catch (err) {}
         } else {
           await updateStoredInstance(spaceId, instance.data.id, {
-            state: instance.data.state as any,
+            state: instance.data.state,
           });
         }
       }
@@ -1020,6 +1061,8 @@ export async function getDeployments(spaceId: string, engines?: Engine[]) {
     return {
       ...deployment,
       deleted: !machines.length || deployment.deleted,
+      // TODO: check for changes to the active state on reachable machines
+      active: !machines.length ? false : deployment.active,
       instances: updatedInstances.map((u) => u.data),
       machineIds: machines.map((m) => (typeof m === 'string' ? m : m.id)),
     };

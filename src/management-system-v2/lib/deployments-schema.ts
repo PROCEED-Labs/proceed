@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { InstanceInfo } from './engines/deployment';
 
 export const DeploymentInputSchema = z.object({
   versionId: z.string(),
@@ -6,6 +7,7 @@ export const DeploymentInputSchema = z.object({
   deployerId: z.string(),
   deployTime: z.date(),
   deleted: z.boolean().default(false),
+  active: z.boolean().default(false),
 });
 
 export type DeploymentInput = z.input<typeof DeploymentInputSchema>;
@@ -18,9 +20,11 @@ export const InstanceInputSchema = z.object({
   id: z.string(),
   deploymentId: z.string(),
   versionId: z.string(),
-  initiatorId: z.string().optional(),
+  initiatorId: z.string().nullish().default(null),
   machineIds: z.string().array(),
   state: z.object({}).passthrough(),
 });
 
-export type InstanceInput = z.input<typeof InstanceInputSchema>;
+export type InstanceInput = Omit<z.input<typeof InstanceInputSchema>, 'state'> & {
+  state: InstanceInfo;
+};

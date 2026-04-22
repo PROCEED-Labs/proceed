@@ -390,20 +390,6 @@ export async function changeDeploymentActivation(
   }
 }
 
-export async function getDeploymentActivation(
-  engine: Engine,
-  definitionId: string,
-  version: string,
-): Promise<boolean> {
-  const result = await engineRequest({
-    method: 'get',
-    endpoint: '/process/:definitionId/versions/:version/active',
-    engine,
-    pathParams: { definitionId, version },
-  });
-  return result.active;
-}
-
 export async function getProcessImageFromMachine(
   engine: Engine,
   definitionId: string,

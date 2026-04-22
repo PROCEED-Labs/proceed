@@ -1,7 +1,7 @@
 import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '@/lib/deployments-schema';
+import { InstanceInfo } from '@/lib/engines/deployment';
 import { UserFacingError } from '@/lib/user-error';
-import { InstanceInfo } from '@proceed/user-task-helper';
 
 export async function getDeployment(deploymentId: string) {
   const deployment = await db.processDeployment.findUnique({
@@ -34,7 +34,9 @@ export async function getDeployments(environmentId: string, skipAbilityCheck = f
 
   return deployments.map((d) => ({
     ...d,
-    instances: d.instances as ((typeof d.instances)[number] & { state: InstanceInfo })[],
+    instances: d.instances as (Omit<(typeof d.instances)[number], 'state'> & {
+      state: InstanceInfo;
+    })[],
     processId: d.version.processId,
   }));
 }

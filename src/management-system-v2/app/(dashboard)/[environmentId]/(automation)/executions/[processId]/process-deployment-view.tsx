@@ -1,7 +1,7 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result, App } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -40,7 +40,6 @@ import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
 import {
   changeDeploymentActivation,
-  getProcessActivationStatus,
   getGlobalVariablesForHTML,
 } from '@/lib/engines/server-actions';
 import { useSession } from 'next-auth/react';
@@ -52,7 +51,6 @@ export default function ProcessDeploymentView({
   processId: string;
   initialDeployments: StoredDeployment[];
 }) {
-  const app = App.useApp();
   const { data: session } = useSession();
   const { spaceId } = useEnvironment();
 
@@ -66,8 +64,6 @@ export default function ProcessDeploymentView({
   const [pausingInstance, setPausingInstance] = useState(false);
   const [stoppingInstance, setStoppingInstance] = useState(false);
   const [togglingActivation, setTogglingActivation] = useState(false);
-  const [isProcessActivated, setIsProcessActivated] = useState(false);
-  const [isActivationLoading, setIsActivationLoading] = useState(false);
   const [hasTimerStartEvents, setHasTimerStartEvents] = useState(false);
   const [hasPlainStartEvents, setHasPlainStartEvents] = useState(false);
 
@@ -141,6 +137,11 @@ export default function ProcessDeploymentView({
     };
   }, [deployments, selectedVersionId, selectedInstanceId]);
 
+  const isProcessActivated = useMemo(() => {
+    if (!deployments || !currentVersion) return false;
+    return !!deployments.some((d) => d.versionId === currentVersion.id && d.active);
+  }, [deployments, currentVersion]);
+
   const { data: selectedBpmn } = useQuery({
     queryFn: async () => {
       const bpmn = await getProcessBPMN(processId, spaceId, currentVersion?.id);
@@ -182,34 +183,6 @@ export default function ProcessDeploymentView({
       setHasPlainStartEvents(false);
     };
   }, [selectedBpmn]);
-
-  useEffect(() => {
-    if (!currentVersion) return;
-    let cancelled = false;
-
-    async function fetchActivationStatus() {
-      setIsActivationLoading(true);
-      await wrapServerCall({
-        fn: () => getProcessActivationStatus(processId, spaceId, currentVersion!.id),
-        onSuccess: (active) => {
-          if (!cancelled) setIsProcessActivated(active as boolean);
-        },
-        onError: (error) => {
-          if (!cancelled) {
-            app.message.error(error.message);
-            setIsProcessActivated(false);
-          }
-        },
-      });
-      if (!cancelled) setIsActivationLoading(false);
-    }
-
-    fetchActivationStatus();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentVersion?.id]);
 
   const { variableDefinitions, variables } = useInstanceVariables({
     version: selectedBpmn,
@@ -404,7 +377,7 @@ export default function ProcessDeploymentView({
                 >
                   <Button
                     type="text"
-                    loading={togglingActivation || isActivationLoading}
+                    loading={togglingActivation}
                     icon={
                       isProcessActivated ? (
                         <span className={styles.SpinIcon}>
@@ -422,7 +395,6 @@ export default function ProcessDeploymentView({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
                         onSuccess: async () => {
-                          setIsProcessActivated(nextState);
                           await refetch();
                         },
                       });

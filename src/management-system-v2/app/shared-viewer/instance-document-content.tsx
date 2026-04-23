@@ -258,6 +258,16 @@ const InstanceDocumentContent: React.FC<Props> = ({
             />
           </div>
         )}
+        {/* Boundary events shown under parent element attached with it */}
+        {node.boundaryEvents?.map((be) => (
+          <ElementSections
+            key={`boundary_${be.id}`}
+            node={be}
+            settings={{ ...settings, showElementSVG: false }}
+            headingLevel={isInsideSubprocess ? 5 : 4}
+            labelPrefix={getElementTypeLabel(be)}
+          />
+        ))}
       </div>,
     );
   }

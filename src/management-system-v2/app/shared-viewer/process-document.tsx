@@ -61,7 +61,6 @@ async function getContent(
   subprocessPages: React.JSX.Element[],
   params: GetContentParams,
   isRoot = false,
-  isFirstChild = false,
 ): Promise<void> {
   const { settings, processData, version, getImage, environment, shareToken } = params;
 
@@ -156,19 +155,17 @@ async function getContent(
       const { mainChildren, subprocessChildren } = separateChildren(hierarchyElement.children);
       // Render normal elements into main pages (includes collapsed subprocesses)
       for (let i = 0; i < mainChildren.length; i++) {
-        await getContent(mainChildren[i], currentPages, subprocessPages, params, false, false);
+        await getContent(mainChildren[i], currentPages, subprocessPages, params, false);
       }
 
       // Render only expanded and event-triggered subprocesses into subprocess pages
       // Collapsed subprocesses handle their own section inside the else branch
       for (const sub of subprocessChildren) {
         if (!sub.nestedSubprocess) {
-          await getContent(sub, currentPages, subprocessPages, params, false, false);
+          await getContent(sub, currentPages, subprocessPages, params, false);
         }
       }
     }
-
-    // Append subprocess sections at the very end
   } else if (isExcludedFromMainList(hierarchyElement)) {
     // Expanded/event-triggered subprocess: goes to subprocessPages
     const subLabel = getSubprocessLabel(hierarchyElement);
@@ -267,6 +264,19 @@ async function getContent(
               diagramHeading="Diagram Element"
               descriptionHeading="Description"
             />
+            {/* Boundary events shown under subprocess child attached with it */}
+            {child.boundaryEvents?.map((be) => {
+              if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+              return (
+                <ElementSections
+                  key={`boundary_${be.id}`}
+                  node={be}
+                  settings={{ ...(settings as Record<string, boolean>), showElementSVG: false }}
+                  headingLevel={5}
+                  labelPrefix={getElementTypeLabel(be)}
+                />
+              );
+            })}
           </div>,
         );
       }
@@ -298,6 +308,19 @@ async function getContent(
           diagramHeading="Diagram Element"
           descriptionHeading="Description"
         />
+        {/* Boundary events shown under parent element attached with it*/}
+        {hierarchyElement.boundaryEvents?.map((be) => {
+          if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+          return (
+            <ElementSections
+              key={`boundary_${be.id}`}
+              node={be}
+              settings={{ ...(settings as Record<string, boolean>), showElementSVG: false }}
+              headingLevel={4}
+              labelPrefix={getElementTypeLabel(be)}
+            />
+          );
+        })}
       </div>,
     );
   }
@@ -372,6 +395,19 @@ async function getContent(
               diagramHeading="Diagram Element"
               descriptionHeading="Description"
             />
+            {/* Boundary events shown under subprocess child attached with it */}
+            {child.boundaryEvents?.map((be) => {
+              if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+              return (
+                <ElementSections
+                  key={`boundary_${be.id}`}
+                  node={be}
+                  settings={{ ...(settings as Record<string, boolean>), showElementSVG: false }}
+                  headingLevel={5}
+                  labelPrefix={getElementTypeLabel(be)}
+                />
+              );
+            })}
           </div>,
         );
       }
@@ -417,7 +453,6 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
           newSubprocessPages,
           { settings, processData, version, getImage, environment, shareToken },
           true,
-          false,
         ));
       setProcessPages(newProcessPages);
       setSubprocessPages(newSubprocessPages);

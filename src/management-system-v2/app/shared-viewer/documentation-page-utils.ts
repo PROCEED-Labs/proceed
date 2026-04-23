@@ -192,6 +192,15 @@ export async function getElementSVG(
   // show incoming/outgoing sequence flows for the current element
   if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
   if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
+  // find boundary events attached to this element from parent's flowElements
+  const parentFlowElements = el.$parent?.flowElements ?? [];
+  const attachedBoundaryEvents = parentFlowElements.filter(
+    (fe: any) => fe.$type === 'bpmn:BoundaryEvent' && fe.attachedToRef?.id === el.id,
+  );
+  for (const be of attachedBoundaryEvents) {
+    elementsToShow.push(be.id);
+    if (be.outgoing?.length) elementsToShow.push(be.outgoing[0].id);
+  }
   // get the representation of the element (and its incoming/outgoing sequence flows) as seen in the current plane
   let svg = await getSVGFromBPMN(bpmnViewer, currentRootId, elementsToShow);
 
@@ -647,6 +656,94 @@ export function makeSvgResponsive(svg: string, fullWidth = false): string {
 }
 
 /**
+ * Builds base TOC children for any element (Diagram, Description, Image, Meta, Milestones).
+ * Used by both process and instance TOC builders.
+ */
+function buildBaseElementTocChildren(
+  node: ElementInfo,
+  href: (id: string) => string,
+  showElementSVG: boolean,
+): AnchorLinkItemProps[] {
+  const children: AnchorLinkItemProps[] = [];
+
+  if (showElementSVG || !!node.children?.length) {
+    children.push({
+      key: `${node.id}_diagram`,
+      href: href(`#${node.id}_diagram_page`),
+      title: 'Diagram Element',
+    });
+  }
+  if (node.description) {
+    children.push({
+      key: `${node.id}_description`,
+      href: href(`#${node.id}_description_page`),
+      title: 'Description',
+    });
+  }
+  if (node.image) {
+    children.push({
+      key: `${node.id}_image`,
+      href: href(`#${node.id}_image_page`),
+      title: 'Overview Image',
+    });
+  }
+  if (node.meta) {
+    children.push({
+      key: `${node.id}_meta`,
+      href: href(`#${node.id}_meta_page`),
+      title: 'Meta Data',
+    });
+  }
+  if (node.milestones) {
+    children.push({
+      key: `${node.id}_milestones`,
+      href: href(`#${node.id}_milestone_page`),
+      title: 'Milestones',
+    });
+  }
+
+  return children;
+}
+
+/**
+ * Builds TOC items for boundary events attached to an element.
+ */
+function buildBoundaryEventTocItems(
+  node: ElementInfo,
+  href: (id: string) => string,
+): AnchorLinkItemProps[] {
+  const items: AnchorLinkItemProps[] = [];
+  if (!node.boundaryEvents?.length) return items;
+
+  node.boundaryEvents.forEach((be) => {
+    const beLabel = getElementTypeLabel(be);
+    if (be.description) {
+      items.push({
+        key: `${be.id}_description`,
+        href: href(`#${be.id}_description_page`),
+        title: `${beLabel} — Description`,
+      });
+    }
+    if (be.meta) {
+      items.push({
+        key: `${be.id}_meta`,
+        href: href(`#${be.id}_meta_page`),
+        title: `${beLabel} — Meta Data`,
+      });
+    }
+    if (be.milestones) {
+      items.push({
+        key: `${be.id}_milestones`,
+        href: href(`#${be.id}_milestone_page`),
+        title: `${beLabel} — Milestones`,
+      });
+    }
+  });
+
+  return items;
+}
+
+/**
  * Builds TOC items for the process documentation page.
  * Used in both the sidebar TOC and the printed TOC.
  */
@@ -736,6 +833,10 @@ export function buildProcessTocItems(
         key: child.id,
         href: href(`#${child.id}_page`),
         title: getElementTypeLabel(child),
+        children: [
+          ...buildBaseElementTocChildren(child, href, !!settings.showElementSVG),
+          ...buildBoundaryEventTocItems(child, href),
+        ],
       })),
     },
     ...subprocessSections,
@@ -757,37 +858,29 @@ export function buildInstanceTocItems(
   function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
     const hasLog = !!node.instanceStatus?.logEntries?.length;
     const hasToken = !!node.instanceStatus?.token;
-    const children: AnchorLinkItemProps[] = [];
 
-    if (settings.showElementSVG) {
-      children.push({
-        key: `${node.id}_diagram`,
-        href: href(`#${node.id}_diagram_page`),
-        title: 'Diagram Element',
-      });
-    }
-    if (node.description) {
-      children.push({
-        key: `${node.id}_description`,
-        href: href(`#${node.id}_description_page`),
-        title: 'Description',
-      });
-    }
-    if ((hasLog || hasToken) && settings.showInstanceStatus) {
-      children.push({
-        key: `${node.id}_execution_log`,
-        href: href(`#${node.id}_execution_log_page`),
-        title: 'Execution Log',
-      });
-    }
-    if (settings.showInstanceVariables && hasVariableChangesForElement(instance, node)) {
-      children.push({
-        key: `${node.id}_variable_changes`,
-        href: href(`#${node.id}_variable_changes_page`),
-        title: 'Variable Changes',
-      });
-    }
-    return children;
+    return [
+      ...buildBaseElementTocChildren(node, href, !!settings.showElementSVG),
+      ...((hasLog || hasToken) && settings.showInstanceStatus
+        ? [
+            {
+              key: `${node.id}_execution_log`,
+              href: href(`#${node.id}_execution_log_page`),
+              title: 'Execution Log',
+            },
+          ]
+        : []),
+      ...(settings.showInstanceVariables && hasVariableChangesForElement(instance, node)
+        ? [
+            {
+              key: `${node.id}_variable_changes`,
+              href: href(`#${node.id}_variable_changes_page`),
+              title: 'Variable Changes',
+            },
+          ]
+        : []),
+      ...buildBoundaryEventTocItems(node, href),
+    ];
   }
 
   function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
@@ -985,4 +1078,29 @@ export function separateChildren(children: ElementInfo[]): {
       ...children.filter((child) => isEventTriggeredSubprocess(child)),
     ],
   };
+}
+
+/**
+ * Groups boundary events under their attached elements.
+ * Boundary events are removed from the top level list and added
+ * as boundaryEvents on their attached element.
+ */
+export function groupBoundaryEvents(children: ElementInfo[]): ElementInfo[] {
+  const boundaryEvents = children.filter((n) => n.elementType === 'bpmn:BoundaryEvent');
+  const nonBoundary = children.filter((n) => n.elementType !== 'bpmn:BoundaryEvent');
+
+  // Build a map for quick lookup
+  const elementMap = new Map(nonBoundary.map((n) => [n.id, n]));
+
+  for (const be of boundaryEvents) {
+    if (be.attachedToElementId) {
+      const parent = elementMap.get(be.attachedToElementId);
+      if (parent) {
+        if (!parent.boundaryEvents) parent.boundaryEvents = [];
+        parent.boundaryEvents.push(be);
+      }
+    }
+  }
+
+  return nonBoundary;
 }

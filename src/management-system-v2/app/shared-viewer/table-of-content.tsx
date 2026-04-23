@@ -32,6 +32,8 @@ export type ElementInfo = MetaInformation & {
   id: string;
   elementType?: string;
   children?: ElementInfo[];
+  attachedToElementId?: string;
+  boundaryEvents?: ElementInfo[];
   // marks the element as a subprocess and contains the visual representation of the plane of that subprocess and the contained children
   nestedSubprocess?: { planeSvg: string };
   isEventTriggeredSubprocess?: boolean;

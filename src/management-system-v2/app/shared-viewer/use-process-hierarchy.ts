@@ -17,6 +17,7 @@ import {
   ImportsInfo,
   sortChildrenByFlow,
   makeSvgResponsive,
+  groupBoundaryEvents,
 } from './documentation-page-utils';
 
 type UseProcessHierarchyOptions = {
@@ -73,8 +74,8 @@ export function useProcessHierarchy({
       for (const childEl of getChildElements(el)) {
         children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
       }
-
-      children.splice(0, children.length, ...sortChildrenByFlow(el, children));
+      const grouped = groupBoundaryEvents(children);
+      children.splice(0, children.length, ...sortChildrenByFlow(el, grouped));
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
 
       const node: ElementInfo = {
@@ -90,6 +91,7 @@ export function useProcessHierarchy({
         image,
         elementType: el.$type,
         isEventTriggeredSubprocess: el.triggeredByEvent === true,
+        attachedToElementId: el.attachedToRef?.id,
       };
 
       // Let callers attach extra data without forking transform

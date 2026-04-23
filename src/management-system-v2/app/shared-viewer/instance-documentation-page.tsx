@@ -5,13 +5,10 @@ import { Spin } from 'antd';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
 import { InstanceInfo } from '@/lib/engines/deployment';
-import { instanceSettings, SettingsOption } from './settings-modal';
+import { instanceSettings } from './settings-modal';
 import {
   ImportsInfo,
   getSVGWithInstanceColoring,
-  getElementTypeLabel,
-  isInstanceElementEmpty,
-  hasVariableChangesForElement,
   buildInstanceTocItems,
 } from './documentation-page-utils';
 import { ElementInfo } from './table-of-content';
@@ -78,56 +75,6 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
 
   const activeSettings = Object.fromEntries(checkedSettings.map((k) => [k, true]));
   const shortInstanceId = instance.processInstanceId.slice(-8);
-
-  function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
-    const hasLog = !!node.instanceStatus?.logEntries?.length;
-    const hasToken = !!node.instanceStatus?.token;
-    const children: AnchorLinkItemProps[] = [];
-
-    if (activeSettings.showElementSVG) {
-      children.push({
-        key: `${node.id}_diagram`,
-        href: `#${node.id}_diagram_page`,
-        title: 'Diagram Element',
-      });
-    }
-    if (node.description) {
-      children.push({
-        key: `${node.id}_description`,
-        href: `#${node.id}_description_page`,
-        title: 'Description',
-      });
-    }
-    if ((hasLog || hasToken) && activeSettings.showInstanceStatus) {
-      children.push({
-        key: `${node.id}_execution_log`,
-        href: `#${node.id}_execution_log_page`,
-        title: 'Execution Log',
-      });
-    }
-    if (activeSettings.showInstanceVariables) {
-      // Only add if variables actually changed for this element
-      if (hasVariableChangesForElement(instance, node)) {
-        children.push({
-          key: `${node.id}_variable_changes`,
-          href: `#${node.id}_variable_changes_page`,
-          title: 'Variable Changes',
-        });
-      }
-    }
-    return children;
-  }
-
-  function buildDetailedLogItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
-    return nodes
-      .filter((node) => activeSettings.hideEmpty || !isInstanceElementEmpty(node))
-      .map((node) => ({
-        key: node.id,
-        href: `#${node.id}_page`,
-        title: getElementTypeLabel(node),
-        children: buildElementChildren(node),
-      }));
-  }
 
   const extraRootItems = useMemo(
     (): AnchorLinkItemProps[] =>

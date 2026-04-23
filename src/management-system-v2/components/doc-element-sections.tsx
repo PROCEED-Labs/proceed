@@ -12,6 +12,7 @@ type ElementSectionsProps = {
   headingLevel?: 3 | 4 | 5;
   diagramHeading?: string;
   descriptionHeading?: string;
+  labelPrefix?: string; // prefix for all headings e.g. "Boundary Event: foo — "
 };
 
 /**
@@ -25,6 +26,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
   headingLevel = 3,
   diagramHeading = 'Diagram Element',
   descriptionHeading = 'Description',
+  labelPrefix = '',
 }) => {
   const { description, meta, milestones, importedProcess } = node;
 
@@ -40,7 +42,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {(settings.showElementSVG || !!node.children?.length) && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_diagram_page`}>
-            {diagramHeading}
+            {labelPrefix ? `${labelPrefix} — ${diagramHeading}` : diagramHeading}{' '}
           </Title>
           <div
             className={styles.ElementCanvas}
@@ -54,7 +56,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {settings.importedProcesses && importedProcess?.versionId && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_version_page`}>
-            Version Information
+            {labelPrefix ? `${labelPrefix} — Version Information` : 'Version Information'}{' '}
           </Title>
           {importedProcess.versionName && (
             <p>
@@ -73,7 +75,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {effectiveDescription && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_description_page`}>
-            {descriptionHeading}
+            {labelPrefix ? `${labelPrefix} — ${descriptionHeading}` : descriptionHeading}
           </Title>
           <div
             className="toastui-editor-contents"
@@ -86,7 +88,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {resolvedImageUrl && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_image_page`}>
-            Overview Image
+            {labelPrefix ? `${labelPrefix} — Overview Image` : 'Overview Image'}
           </Title>
           <Image
             alt="Element overview image"
@@ -108,7 +110,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {effectiveMeta && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_meta_page`}>
-            Meta Data
+            {labelPrefix ? `${labelPrefix} — Meta Data` : 'Meta Data'}
           </Title>
           <Table
             pagination={false}
@@ -126,7 +128,7 @@ const ElementSections: React.FC<ElementSectionsProps> = ({
       {effectiveMilestones && (
         <div className={styles.MetaInformation}>
           <Title level={headingLevel} id={`${node.id}_milestone_page`}>
-            Milestones
+            {labelPrefix ? `${labelPrefix} — Milestones` : 'Milestones'}
           </Title>
           <Table
             pagination={false}

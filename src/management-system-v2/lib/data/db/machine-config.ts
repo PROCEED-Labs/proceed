@@ -12,7 +12,9 @@ import {
   StoredParameterZod,
   StoredMetaParameter,
   MetaParameter,
-  VirtualUserParameter,
+  VirtualUserInfoParameter,
+  VirtualUserRolesParameter,
+  VirtualOrganizationRolesParameter,
 } from '../machine-config-schema';
 import {
   AasJson,
@@ -37,8 +39,11 @@ import {
   extractParameter,
   findParameter,
   findPathToParameter,
-  isVirtualUserParameter,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+  isVirtualOrganizationRolesParameter,
+  isVirtualUserInfoParameter,
+  isVirtualUserRolesParameter,
+  stringifyValue,
+} from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
@@ -50,10 +55,14 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import {
   createTdsTemplateMachineDatasetHeader,
   defaultMachineDataSet,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-tds';
-import { defaultUserParameterTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/parameter-templates';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
-import { User } from '../user-schema';
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-templates-tds';
+import {
+  defaultUserParameterTemplate,
+  userInfoMap,
+} from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
+import { getRoles, getUserRoles } from '../roles';
+import { getRolesWithMembers } from './iam/roles';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -730,6 +739,11 @@ export async function addParameter(
     const parentConfigResult = await db.config.findUnique({ where: { id: parentId } });
     const parentConfig = parentConfigResult?.data as unknown as StoredConfig;
     if (!parentConfig) throw new Error(`There is no parent configuration with the id ${parentId}.`);
+    if (await checkSiblingNames(parentConfig.content, parameter.name)) {
+      return userError(
+        `The name ${parameter.name} already exists among the direct child parameters of the config with the id ${parentId}.`,
+      );
+    }
     parentConfig.content.push(parameter.id);
     await parametersToStorage(parentConfig.id, parentType, [parameter]);
     await storeAllCachedData();
@@ -741,6 +755,11 @@ export async function addParameter(
     const parentParameterResult = await db.configParameter.findUnique({ where: { id: parentId } });
     const parentParameter = parentParameterResult?.data as unknown as StoredParameter;
     if (!parentParameter) throw new Error(`There is no parameter with the id ${parentId}.`);
+    if (await checkSiblingNames(parentParameter.subParameters, parameter.name)) {
+      return userError(
+        `The name ${parameter.name} already exists among the children of the parameter with the id ${parentId}.`,
+      );
+    }
     parentParameter.subParameters.push(parameter.id);
     await parametersToStorage(parentParameter.id, parentType, [parameter]);
     await storeAllCachedData();
@@ -1033,9 +1052,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'StructureVersionNumber',
-                [
+              defaultParameter({
+                name: 'StructureVersionNumber',
+                displayName: [
                   {
                     text: 'Structure Version',
                     language: 'en',
@@ -1045,7 +1064,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The structure version number shows a structual change in the Machine Dataset (e.g. to adapt the machine program). It is increased if a parameter was added or deleted in this Machine Dataset.',
                     language: 'en',
@@ -1055,10 +1074,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1075,9 +1094,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'VersionNumber',
-                [
+              defaultParameter({
+                name: 'VersionNumber',
+                displayName: [
                   {
                     text: 'Version Number',
                     language: 'en',
@@ -1087,7 +1106,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
                     language: 'en',
@@ -1097,10 +1116,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1117,9 +1136,9 @@ async function parametersToMachineStorage(
           const header = param.subParameters.find((e: Parameter) => e.name === 'Header');
           if (header) {
             header.subParameters.push(
-              defaultParameter(
-                'VersionNumber',
-                [
+              defaultParameter({
+                name: 'VersionNumber',
+                displayName: [
                   {
                     text: 'Version Number',
                     language: 'en',
@@ -1129,7 +1148,7 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                [
+                description: [
                   {
                     text: 'The machine version number shows optimization changes in the Machine Dataset by feedback from the Machine Operator. It is increased if a value of a parameter changed by feedback. It is reset to 0 if the change came from the Target Dataset, Reference Dataset or from a structural change in the Machine Dataset.',
                     language: 'en',
@@ -1139,10 +1158,10 @@ async function parametersToMachineStorage(
                     language: 'de',
                   },
                 ],
-                'none',
-                versionReference.fullVersion[1].toString(),
-                'xs:integer',
-              ),
+                parameterType: 'none',
+                value: versionReference.fullVersion[1].toString(),
+                valueType: 'xs:integer',
+              }),
             );
           } else {
             // if header does not exist: throw an error.
@@ -1552,8 +1571,12 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
         ...storedParameter,
         subParameters: await nestedParametersFromStorage(storedParameter.subParameters),
       };
-      if (isVirtualUserParameter(newParameter)) {
-        newParameter = await getVirtualUserData(newParameter);
+      if (isVirtualUserInfoParameter(newParameter)) {
+        newParameter = await getVirtualUserInfo(newParameter);
+      } else if (isVirtualUserRolesParameter(newParameter)) {
+        newParameter = await getVirtualUserRoles(newParameter);
+      } else if (isVirtualOrganizationRolesParameter(newParameter)) {
+        newParameter = await getVirtualOrganizationRoles(newParameter);
       }
       parameters.push(newParameter);
     }
@@ -1561,19 +1584,116 @@ export async function nestedParametersFromStorage(parameterIds: string[]): Promi
   return parameters;
 }
 
-export async function getVirtualUserData(parameter: VirtualUserParameter): Promise<Parameter> {
+export async function getVirtualUserInfo(parameter: VirtualUserInfoParameter): Promise<Parameter> {
   const userInfo = await getUserById(parameter.userId);
   let subParameters: typeof parameter.subParameters = [];
   if (!userInfo.isGuest) {
+    // mapping all entries of userInfo to parameters (except keys: 'isGuest', 'emailVerifiedOn', 'profileImage', 'favourites')
+    subParameters = Object.entries(userInfo)
+      .filter(
+        ([key]) => !['isGuest', 'emailVerifiedOn', 'profileImage', 'favourites'].includes(key),
+      )
+      .map(([key, val]) => {
+        return defaultParameter({
+          name: key.replace(/[A-Z]/g, (char) => '-' + char.toLowerCase()),
+          displayName: userInfoMap[key]?.displayName || [{ text: key, language: 'en' }],
+          description: userInfoMap[key]?.description || [
+            { text: `Record of the users ${key}`, language: 'en' },
+          ],
+          value: stringifyValue(val),
+          origin: 'external',
+        });
+      });
+
     const { firstName, lastName } = userInfo;
-    const name = `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`;
-    const extendedInfo = { ...userInfo, name };
-    subParameters = parameter.subParameters.map((param) => {
-      const infoValue = extendedInfo[param.name as keyof User];
-      return { ...param, ...(infoValue && { value: infoValue }) };
-    });
+    // prepending a parameter for the full name
+    subParameters = [
+      defaultParameter({
+        name: 'name',
+        displayName: [
+          {
+            text: 'Name',
+            language: 'en',
+          },
+          {
+            text: 'Name',
+            language: 'de',
+          },
+        ],
+        description: [
+          {
+            text: 'Name of the user.',
+            language: 'en',
+          },
+          {
+            text: 'Name des Nutzers.',
+            language: 'de',
+          },
+        ],
+        value: `${firstName || ''}${firstName && lastName ? ' ' : ''}${lastName || ''}`,
+        origin: 'external',
+      }),
+      ...subParameters,
+    ];
   }
-  return { ...parameter, subParameters };
+  return { ...parameter, subParameters: [...subParameters, ...parameter.subParameters] };
+}
+
+export async function getVirtualUserRoles(
+  parameter: VirtualUserRolesParameter,
+): Promise<Parameter> {
+  let roleParameters: Parameter[] = [];
+  const roles = await getUserRoles(parameter.environmentId, parameter.userId);
+  if ('error' in roles) {
+    throw new Error(
+      `Cannot get roles for user ${parameter.userId} in space ${parameter.environmentId}.`,
+    );
+  }
+  roleParameters = roles.map((role) => {
+    return defaultParameter({
+      name: role.id,
+      displayName: [{ text: role.name, language: 'en' }],
+      id: parameter.userId + role.name, // hardcoded ID for frontend consistency
+      origin: 'external',
+    });
+  });
+  return { ...parameter, subParameters: roleParameters };
+}
+
+export async function getVirtualOrganizationRoles(
+  parameter: VirtualOrganizationRolesParameter,
+): Promise<Parameter> {
+  // {role, members} mappings
+  let rolesWithMembers = await getRolesWithMembers(parameter.environmentId);
+  // mapping to {role, userData[]} objects
+  let roleUsersMapping = await asyncMap(rolesWithMembers, async (role) => ({
+    role: role,
+    users: await asyncMap(role.members, async (member) => await getUserById(member.id)),
+  }));
+
+  let roleParameters = roleUsersMapping.map((roleUsers) => {
+    let subParameters = roleUsers.users
+      .map((e) => {
+        if (!e.isGuest) {
+          return defaultParameter({
+            name: e.id,
+            displayName: [{ text: e.lastName + ', ' + e.firstName, language: 'en' }],
+            origin: 'external',
+            id: roleUsers.role.name + e.id, // hardcoded ID for frontend consistency
+          });
+        }
+      })
+      .filter(truthyFilter);
+
+    return defaultParameter({
+      name: roleUsers.role.id,
+      displayName: [{ text: roleUsers.role.name, language: 'en' }],
+      origin: 'external',
+      subParameters,
+      id: roleUsers.role.name, // hardcoded ID for frontend consistency
+    });
+  });
+  return { ...parameter, subParameters: roleParameters };
 }
 
 // TODO rework handling of subConfigs (target, reference, machine)
@@ -4597,8 +4717,7 @@ export async function addMemberParameter(member: Membership) {
   const user = await getUserById(member.userId);
   if (user && !user.isGuest) {
     const newUserParameter = defaultUserParameterTemplate(
-      user.id,
-      member.id,
+      member,
       user.firstName || 'N/A',
       user.lastName || 'N/A',
     );
@@ -4832,4 +4951,15 @@ export async function syncSpaceConfigs() {
 
 export async function getUser(userId: string) {
   return await getUserById(userId);
+}
+
+async function checkSiblingNames(siblings: string[], name: string) {
+  for (const id of siblings) {
+    let childParameterResult = await db.configParameter.findUnique({
+      where: { id: id },
+    });
+    const childParameter = childParameterResult?.data as StoredParameter;
+    if (childParameter.name == name) return true;
+  }
+  return false;
 }

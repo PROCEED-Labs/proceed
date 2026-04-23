@@ -27,6 +27,8 @@ import { updateConfigMetadata } from '@/lib/data/db/machine-config';
 import { Modal } from 'antd';
 import Tree from 'antd/es/tree/Tree';
 import { Localization } from '@/lib/data/locale';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import useApp from 'antd/es/app/useApp';
 export const getInitialTransformationData = (param: Parameter | MetaParameter) => {
   const paramWithTransformation = param as Parameter & {
     transformation?: {
@@ -480,10 +482,17 @@ export const useParameterActions = ({
   currentLanguage,
 }: UseParameterActionsParams) => {
   const router = useRouter();
+  const app = useApp();
   const [currentParameter, setCurrentParameter] = useState<Parameter | MetaParameter>();
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [editFieldOpen, setEditFieldOpen] = useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
+
+  const onSubmitSuccess = () => {
+    setCreateFieldOpen(false);
+    router.refresh();
+    setCurrentParameter(undefined);
+  };
 
   const addParameter = async (
     values: CreateParameterModalReturnType[],
@@ -555,14 +564,22 @@ export const useParameterActions = ({
     // use parent parameter if provided, otherwise use currentParameter, otherwise add to root
     const targetParent = parent || currentParameter;
     if (targetParent) {
-      await backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     } else {
-      await backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     }
-
-    setCreateFieldOpen(false);
-    router.refresh();
-    setCurrentParameter(undefined);
   };
 
   const handleEditParameter = async (values: CreateParameterModalReturnType[]) => {

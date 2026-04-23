@@ -178,19 +178,7 @@ const AasCreateParameterModal = <T extends CreateParameterModalReturnType>({
 
       // Let the parent of this modal handle the submission.
       setSubmitting(true);
-      try {
-        const res = await onSubmit(mergedValues);
-        if (res?.error) {
-          message.open({ type: 'error', content: res.error.message });
-        }
-      } catch (e) {
-        setError(e);
-
-        message.open({
-          type: 'error',
-          content: 'Something went wrong while submitting the data',
-        });
-      }
+      await onSubmit(mergedValues);
       setSubmitting(false);
     } catch (info) {
       // Validate Failed

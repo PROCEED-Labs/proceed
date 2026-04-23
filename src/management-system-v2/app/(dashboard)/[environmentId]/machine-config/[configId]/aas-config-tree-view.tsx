@@ -73,7 +73,12 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     description: '',
   });
 
-  const { setCurrentParameter, addParameter: baseAddParameter } = useParameterActions({
+  const {
+    setCurrentParameter,
+    addParameter: baseAddParameter,
+    createFieldOpen,
+    setCreateFieldOpen,
+  } = useParameterActions({
     parentConfig,
     onRefresh: () => router.refresh(),
     currentLanguage,
@@ -157,8 +162,6 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
 
   const handleCreateParameterOk = async (values: CreateParameterModalReturnType[]) => {
     await addParameter(values);
-    closeModal();
-    setCurrentParameter(undefined);
   };
 
   // const handleCreateMetadataOk = async (values: CreateParameterModalReturnType[]) => {
@@ -369,6 +372,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           onClick: () => {
             setCurrentParameter(currentParameter as Parameter);
             setOpenModal('parameter');
+            setCreateFieldOpen(true);
           },
           disabled: !editMode,
         },
@@ -436,8 +440,11 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
 
       <AasCreateParameterModal
         title="Create Parameter"
-        open={openModal === 'parameter'}
-        onCancel={closeModal}
+        open={createFieldOpen}
+        onCancel={() => {
+          closeModal();
+          setCreateFieldOpen(false);
+        }}
         onSubmit={handleCreateParameterOk}
         okText="Create"
         showKey

@@ -740,7 +740,7 @@ export async function addParameter(
     const parentConfig = parentConfigResult?.data as unknown as StoredConfig;
     if (!parentConfig) throw new Error(`There is no parent configuration with the id ${parentId}.`);
     if (await checkSiblingNames(parentConfig.content, parameter.name)) {
-      throw new Error(
+      return userError(
         `The name ${parameter.name} already exists among the direct child parameters of the config with the id ${parentId}.`,
       );
     }
@@ -756,7 +756,7 @@ export async function addParameter(
     const parentParameter = parentParameterResult?.data as unknown as StoredParameter;
     if (!parentParameter) throw new Error(`There is no parameter with the id ${parentId}.`);
     if (await checkSiblingNames(parentParameter.subParameters, parameter.name)) {
-      throw new Error(
+      return userError(
         `The name ${parameter.name} already exists among the children of the parameter with the id ${parentId}.`,
       );
     }

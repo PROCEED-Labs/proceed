@@ -559,23 +559,10 @@ export function isInstanceElementEmpty(node: ElementInfo): boolean {
   );
 }
 
-// Calculate variable changes for each individial event or element based on time
-export function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo): boolean {
-  type VariableEntry = { value: unknown; log?: { changedTime: number; changedBy?: string }[] };
-  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
-  const startTime =
-    node.instanceStatus?.logEntries?.[0]?.startTime ??
-    node.instanceStatus?.token?.currentFlowElementStartTime;
-  const endTime = node.instanceStatus?.logEntries?.at(-1)?.endTime;
-
-  return Object.values(rawVariables).some((data) =>
-    data.log?.some((logEntry) => {
-      if (logEntry.changedBy) return logEntry.changedBy === node.id;
-      if (startTime === undefined) return false;
-      const effectiveEnd = endTime ?? Date.now();
-      return logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd;
-    }),
-  );
+// variable changes for each individial event or element
+function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo): boolean {
+  const logEntry = instance.log.find((l) => l.flowElementId === node.id);
+  return !!logEntry?.variableChanges && Object.keys(logEntry.variableChanges).length > 0;
 }
 
 // get variables changed by or during an element
@@ -584,34 +571,35 @@ export function getVariablesForElement(
   elementId: string,
   startTime?: number,
   endTime?: number,
-): { name: string; value: string; changedTime: number }[] {
-  type VariableEntry = { value: unknown; log?: { changedTime: number; changedBy?: string }[] };
-  const rawVariables = (instance.variables || {}) as Record<string, VariableEntry>;
-  const result: { name: string; value: string; changedTime: number }[] = [];
+): { name: string; oldValue?: string; value: string; changedTime: number }[] {
+  const result: { name: string; oldValue?: string; value: string; changedTime: number }[] = [];
 
-  for (const [name, data] of Object.entries(rawVariables)) {
-    if (!data.log?.length) continue;
+  const logEntry = instance.log.find((l) => l.flowElementId === elementId);
+  if (!logEntry?.variableChanges) return result;
 
-    for (const logEntry of data.log) {
-      const displayValue =
-        data.value === null || data.value === undefined
-          ? '—'
-          : typeof data.value === 'object'
-            ? JSON.stringify(data.value)
-            : String(data.value);
-
-      if (logEntry.changedBy) {
-        if (logEntry.changedBy === elementId) {
-          result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
-        }
-        continue;
-      }
-
-      if (startTime === undefined) continue;
-      const effectiveEnd = endTime ?? Date.now();
-      if (logEntry.changedTime >= startTime && logEntry.changedTime <= effectiveEnd) {
-        result.push({ name, value: displayValue, changedTime: logEntry.changedTime });
-      }
+  for (const [name, changes] of Object.entries(
+    logEntry.variableChanges as Record<
+      string,
+      { newValue: unknown; changedTime: number; oldValue?: unknown }[]
+    >,
+  )) {
+    for (const change of changes) {
+      result.push({
+        name,
+        oldValue:
+          change.oldValue !== undefined
+            ? typeof change.oldValue === 'object'
+              ? JSON.stringify(change.oldValue)
+              : String(change.oldValue)
+            : undefined,
+        value:
+          change.newValue === null || change.newValue === undefined
+            ? '—'
+            : typeof change.newValue === 'object'
+              ? JSON.stringify(change.newValue)
+              : String(change.newValue),
+        changedTime: change.changedTime,
+      });
     }
   }
 

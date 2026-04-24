@@ -246,7 +246,13 @@ const InstanceDocumentContent: React.FC<Props> = ({
               rowKey="name"
               columns={[
                 { title: 'Variable', dataIndex: 'name', key: 'name' },
-                { title: 'Value', dataIndex: 'value', key: 'value' },
+                {
+                  title: 'Old Value',
+                  dataIndex: 'oldValue',
+                  key: 'oldValue',
+                  render: (v: string | undefined) => v ?? '—',
+                },
+                { title: 'New Value', dataIndex: 'value', key: 'value' },
                 {
                   title: 'Changed At',
                   dataIndex: 'changedTime',
@@ -463,7 +469,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                   The following table lists the final states of the process variables for the
                   executed process.
                 </Paragraph>
-                <FinalVariablesTable instance={instance} />
+                <FinalVariablesTable instance={instance} processHierarchy={processHierarchy} />{' '}
                 <Paragraph style={{ marginTop: '1rem', fontStyle: 'italic' }}>
                   To view the complete history of changes to the variables throughout the process,
                   please refer to the detailed list of process elements below.

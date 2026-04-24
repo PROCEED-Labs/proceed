@@ -18,9 +18,10 @@ const columns = [
     title: 'State',
     dataIndex: 'executionState',
     key: 'executionState',
+    width: 160,
     render: (state: string) => (
       <Alert
-        style={{ display: 'inline-flex' }}
+        style={{ display: 'inline-flex', whiteSpace: 'nowrap' }}
         type={statusToType(state)}
         message={state}
         showIcon
@@ -56,6 +57,7 @@ const columns = [
     title: 'Machine',
     dataIndex: 'machine',
     key: 'machine',
+    width: 120,
     render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
   },
 ];

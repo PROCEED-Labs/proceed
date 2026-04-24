@@ -57,7 +57,7 @@ const columns = [
     title: 'Machine',
     dataIndex: 'machine',
     key: 'machine',
-    width: 120,
+    width: 150,
     render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
   },
 ];

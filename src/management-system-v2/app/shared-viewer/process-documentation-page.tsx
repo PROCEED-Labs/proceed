@@ -10,7 +10,7 @@ import SharedViewerLayout from './shared-viewer-layout';
 import { useProcessHierarchy } from './use-process-hierarchy';
 import { buildProcessTocItems, ImportsInfo } from './documentation-page-utils';
 
-type BPMNSharedViewerProps = {
+type ProcessDocumentationPageProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   isOwner: boolean;
   userWorkspaces: Environment[];
@@ -18,7 +18,7 @@ type BPMNSharedViewerProps = {
   availableImports: ImportsInfo;
 };
 
-const ProcessDocumentationPage: React.FC<BPMNSharedViewerProps> = ({
+const ProcessDocumentationPage: React.FC<ProcessDocumentationPageProps> = ({
   processData,
   isOwner,
   userWorkspaces,

@@ -32,7 +32,7 @@ import {
   separateChildren,
 } from './documentation-page-utils';
 
-type ProcessDocumentProps = {
+type ProcessDocumentContentProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
@@ -425,7 +425,7 @@ async function getContent(
 /**
  * A printable document containing information about a process
  */
-const ProcessDocumentContent: React.FC<ProcessDocumentProps> = ({
+const ProcessDocumentContent: React.FC<ProcessDocumentContentProps> = ({
   processData,
   settings,
   processHierarchy,

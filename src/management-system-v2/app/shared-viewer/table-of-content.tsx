@@ -89,7 +89,6 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
       ({ milestones, meta, description } = importedProcess);
     }
 
-    // unshift builds in reverse: last unshift appears first in the list
     if (milestones) {
       children.unshift({
         key: `${hierarchyElement.id}_milestones`,

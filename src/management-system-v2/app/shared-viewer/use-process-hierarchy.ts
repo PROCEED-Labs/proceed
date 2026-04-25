@@ -6,7 +6,7 @@ import { getRootFromElement, getDefinitionsVersionInformation } from '@proceed/b
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 import { getProcess } from '@/lib/data/db/process';
 import { ElementInfo } from './table-of-content';
-import { VersionInfo } from './process-document';
+import { VersionInfo } from './process-document-content';
 import {
   getTitle,
   getMetaDataFromBpmnElement,

@@ -5,15 +5,10 @@ import { Spin } from 'antd';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
 import { settingsOptions, settings, SettingsOption } from './settings-modal';
-import ProcessDocument from './process-document';
+import ProcessDocumentContent from './process-document-content';
 import SharedViewerLayout from './shared-viewer-layout';
 import { useProcessHierarchy } from './use-process-hierarchy';
-import {
-  buildProcessTocItems,
-  getElementTypeLabel,
-  ImportsInfo,
-  isProcessElementEmpty,
-} from './documentation-page-utils';
+import { buildProcessTocItems, ImportsInfo } from './documentation-page-utils';
 
 type BPMNSharedViewerProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -23,7 +18,7 @@ type BPMNSharedViewerProps = {
   availableImports: ImportsInfo;
 };
 
-const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
+const ProcessDocumentationPage: React.FC<BPMNSharedViewerProps> = ({
   processData,
   isOwner,
   userWorkspaces,
@@ -68,7 +63,7 @@ const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
           <div />
         </Spin>
       ) : (
-        <ProcessDocument
+        <ProcessDocumentContent
           settings={activeSettings as any}
           processHierarchy={processHierarchy}
           processData={processData}
@@ -79,4 +74,4 @@ const BPMNSharedViewer: React.FC<BPMNSharedViewerProps> = ({
   );
 };
 
-export default BPMNSharedViewer;
+export default ProcessDocumentationPage;

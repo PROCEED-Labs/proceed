@@ -43,7 +43,7 @@ import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
 
 import { GrDocumentUser } from 'react-icons/gr';
-import { handleOpenInstanceDocumentation } from '../../../processes/processes-helper';
+import { handleOpenDocumentation } from '../../../processes/processes-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -497,12 +497,12 @@ export default function ProcessDeploymentView({
                       aria-label="view-instance-documentation"
                       icon={<GrDocumentUser />}
                       onClick={() =>
-                        handleOpenInstanceDocumentation(
+                        handleOpenDocumentation(
                           processId,
                           spaceId,
+                          selectedInstance.processVersion,
                           selectedInstance.processInstanceId,
                           selectedColoring,
-                          selectedInstance.processVersion,
                         )
                       }
                     />

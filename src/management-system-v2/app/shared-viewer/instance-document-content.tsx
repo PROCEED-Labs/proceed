@@ -10,8 +10,8 @@ import { useEnvironment } from '@/components/auth-can';
 import { useFileManager } from '@/lib/useFileManager';
 import { EntityType } from '@/lib/helpers/fileManagerHelpers';
 import { ElementInfo } from './table-of-content';
-import { VersionInfo } from './process-document';
-import styles from './process-document.module.scss';
+import { VersionInfo } from './process-document-content';
+import styles from './document-content.module.scss';
 import { statusToType } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import {
   getElementTypeLabel,
@@ -24,11 +24,10 @@ import {
 } from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
-import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 import ProcessDetailsTable from '@/components/doc-process-details-table';
 import ElementSections from '@/components/doc-element-sections';
-import ExecutionLogTable from './instance-doc-tables/execution-log-table';
-import FinalVariablesTable from './instance-doc-tables/final-variables-table';
+import ExecutionLogTable from '../../components/instance-doc-tables/execution-log-table';
+import FinalVariablesTable from '../../components/instance-doc-tables/final-variables-table';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -38,7 +37,6 @@ type Props = {
   versionInfo: VersionInfo;
   instance: InstanceInfo;
   settings: Record<string, boolean>;
-  extraRootItems: AnchorLinkItemProps[];
 };
 
 const InstanceDocumentContent: React.FC<Props> = ({
@@ -47,7 +45,6 @@ const InstanceDocumentContent: React.FC<Props> = ({
   versionInfo,
   instance,
   settings,
-  extraRootItems,
 }) => {
   const environment = useEnvironment();
   const breakpoint = Grid.useBreakpoint();
@@ -64,7 +61,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
       const { mainChildren, subprocessChildren } = separateChildren(sorted);
 
-      // Render main elements + collapsed subprocesses in main log
+      // Render main elements and collapsed subprocesses in main log
       for (const child of mainChildren) {
         await renderDetailedElement(child, mainPages);
       }
@@ -143,7 +140,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     }
   }
   /**
-   * Renders one BPMN element as a Detailed Execution Log entry.
+   * Renders one BPMN element as a Detailed Execution Log entry
    * Recurses into subprocess children.
    */
   async function renderDetailedElement(
@@ -175,8 +172,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
 
     const label = getElementTypeLabel(node);
     /**
-     * Build unified log rows from both token and log entries
-     * to show a consistent table
+     * Build log rows from both token and log entries to show a consistent table
      */
     const logRows: {
       key: string;

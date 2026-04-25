@@ -13,7 +13,7 @@ import {
 } from '@/lib/data/db/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
-import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
+import ProcessDocumentationPage from '@/app/shared-viewer/process-documentation-page';
 import { ImportsInfo } from './documentation-page-utils';
 import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
@@ -172,6 +172,7 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
+// generate the file name which will be saved as pdf
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const searchParams = await props.searchParams;
   const { token, version } = searchParams;
@@ -195,6 +196,7 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   }
 }
 
+// get display name of user to show it as process initiator or owner
 async function resolveUserDisplayName(userId: string | undefined) {
   if (!userId) return null;
 
@@ -310,11 +312,7 @@ const SharedViewer = async (props: PageProps) => {
   let instanceData = undefined;
   if (typeof instanceId === 'string' && processData) {
     try {
-      const deployment = await getDeployment(
-        // I am not completely sure about these paramteres
-        processData?.creatorId ?? '',
-        processData.id,
-      );
+      const deployment = await getDeployment(processData?.creatorId ?? '', processData.id);
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
     } catch (err) {
       console.error('Failed to fetch instance data:', err);
@@ -357,7 +355,7 @@ const SharedViewer = async (props: PageProps) => {
                   coloring={(coloring as ColorOptions) || 'processColors'}
                 />
               ) : (
-                <BPMNSharedViewer
+                <ProcessDocumentationPage
                   isOwner={isOwner}
                   userWorkspaces={userEnvironments}
                   processData={enrichedProcessData as any}

@@ -107,7 +107,6 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
           versionInfo={versionInfo}
           instance={instance}
           settings={activeSettings}
-          extraRootItems={extraRootItems}
         />
       )}
     </SharedViewerLayout>

@@ -50,7 +50,7 @@ export function getTitle(el: any) {
   } else if (isType(el, 'bpmn:Participant')) {
     return 'Pool: ' + name;
   } else if (isType(el, 'bpmn:SubProcess')) {
-    return name;
+    return 'Subprocess: ' + name;
   } else if (isType(el, 'bpmn:CallActivity')) {
     return 'Call Activity: ' + name;
   }
@@ -192,7 +192,7 @@ export async function getElementSVG(
   // show incoming/outgoing sequence flows for the current element
   if (el.outgoing?.length) elementsToShow.push(el.outgoing[0].id);
   if (el.incoming?.length) elementsToShow.push(el.incoming[0].id);
-  // find boundary events attached to this element from parent's flowElements
+  // find boundary events attached to this element from parent's flowElements so that it can be shown attached to element
   const parentFlowElements = el.$parent?.flowElements ?? [];
   const attachedBoundaryEvents = parentFlowElements.filter(
     (fe: any) => fe.$type === 'bpmn:BoundaryEvent' && fe.attachedToRef?.id === el.id,
@@ -258,6 +258,7 @@ export async function getElementSVG(
   return { svg, el, definitions, oldBpmn, nestedSubprocess, importedProcess, currentRootId };
 }
 
+// returns the svg of BPMN diagram for instance documention page with correcct token position
 export async function getSVGWithInstanceColoring(
   bpmn: string,
   instance: InstanceInfo,
@@ -412,7 +413,7 @@ export const markdownEditor: Promise<ToastEditorType> =
         })
     : (Promise.resolve(null) as any);
 
-// get element Type: Name or Type: ID label
+// get element <Type: Name> or <Type: ID> label
 export function getElementTypeLabel(node: ElementInfo): string {
   const hasName = node.name && !node.name.startsWith('<');
   const identifier = hasName ? node.name : node.id;
@@ -427,7 +428,6 @@ export function getElementTypeLabel(node: ElementInfo): string {
   if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
   if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
   if (type.includes('Gateway')) return `Gateway: ${identifier}`;
-  if (type.includes('SubProcess')) return `Sub Process: ${identifier}`;
   if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
   return String(identifier);
 }
@@ -481,7 +481,8 @@ export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInf
   // Detect backedges using DFS to break cycles
   const visited = new Set<string>();
   const inStack = new Set<string>();
-  const backEdges = new Set<string>(); // "sourceId -> targetId"
+  // "sourceId -> targetId"
+  const backEdges = new Set<string>();
 
   function dfs(nodeId: string) {
     visited.add(nodeId);
@@ -510,7 +511,8 @@ export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInf
     const targetId = resolveId(flow.targetRef);
     if (!sourceId || !targetId) continue;
     if (!outgoing.has(sourceId) || !outgoing.has(targetId)) continue;
-    if (backEdges.has(`${sourceId}->${targetId}`)) continue; // skip backedges
+    // skip backedges
+    if (backEdges.has(`${sourceId}->${targetId}`)) continue;
 
     outgoing.get(sourceId)!.push(targetId);
     incomingCount.set(targetId, (incomingCount.get(targetId) ?? 0) + 1);
@@ -618,8 +620,8 @@ export function isProcessElementEmpty(node: ElementInfo): boolean {
 }
 
 /**
- * Makes an SVG string responsive by replacing fixed width/height with
- * max-width constraint, preserving the viewBox for correct scaling.
+ * Makes an SVG string responsive
+ * preserving the viewBox for correct scaling.
  * @param svg: the raw SVG string
  * @param fullWidth: if true (root diagram) stretch to full container width,
  *                   if false (individual element) use natural size up to max
@@ -694,7 +696,7 @@ function buildBaseElementTocChildren(
 }
 
 /**
- * Builds TOC items for boundary events attached to an element.
+ * Builds TOC items for boundary events since they are displayed attached to element.
  */
 function buildBoundaryEventTocItems(
   node: ElementInfo,
@@ -752,7 +754,7 @@ export function buildProcessTocItems(
   );
 
   // Subprocess sections: expanded subprocesses and event-triggered subprocesses
-  // Maintain same order as page rendering: expanded subprocesses first, then event-triggered
+  // expanded subprocesses would be displayed first, then event-triggered
   const subprocessChildren = [
     ...allChildren.filter(
       (child) => isSubprocessWithOwnSection(child) && !isEventTriggeredSubprocess(child),
@@ -974,7 +976,7 @@ export function buildInstanceTocItems(
 /**
  * Returns true if the element is an expanded subprocess (has children to show separately)
  */
-export function isExpandedSubprocess(node: ElementInfo): boolean {
+function isExpandedSubprocess(node: ElementInfo): boolean {
   return (
     (node.elementType === 'bpmn:SubProcess' ||
       node.elementType === 'bpmn:AdHocSubProcess' ||
@@ -992,24 +994,24 @@ export function isCollapsedSubprocess(node: ElementInfo): boolean {
 }
 
 /**
- * Returns true if the element is an event-triggered subprocess
+ * Returns true if the element is an event triggered subprocess
  */
-export function isEventTriggeredSubprocess(node: ElementInfo): boolean {
+function isEventTriggeredSubprocess(node: ElementInfo): boolean {
   return !!node.isEventTriggeredSubprocess;
 }
 
 /**
  * Returns true if the element should be excluded from the main Process Element Details list
- * (expanded subprocesses and event-triggered subprocesses get their own sections)
+ * (expanded subprocesses and event triggered subprocesses get their own sections)
  */
-export function isSubprocessWithOwnSection(node: ElementInfo): boolean {
+function isSubprocessWithOwnSection(node: ElementInfo): boolean {
   return (
     isExpandedSubprocess(node) || isEventTriggeredSubprocess(node) || isCollapsedSubprocess(node)
   );
 }
 
 export function isExcludedFromMainList(node: ElementInfo): boolean {
-  // Expanded subprocesses and event-triggered subprocesses are fully excluded from main list
+  // Expanded subprocesses and event triggered subprocesses are fully excluded from main list
   // Collapsed subprocesses stay in main list (showing collapsed view) and also get their own section
   return isExpandedSubprocess(node) || isEventTriggeredSubprocess(node);
 }
@@ -1019,8 +1021,8 @@ export function isExcludedFromMainList(node: ElementInfo): boolean {
  */
 export function getSubprocessLabel(node: ElementInfo): string {
   const name = node.name && !node.name.startsWith('<') ? node.name : node.id;
-  if (node.isEventTriggeredSubprocess) return `Event-Triggered Subprocess: ${name}`;
-  return `Subprocess: ${name}`;
+  if (node.isEventTriggeredSubprocess) return `Event-Triggered ${name}`;
+  return name;
 }
 
 /**

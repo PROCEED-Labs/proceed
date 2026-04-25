@@ -8,7 +8,7 @@ import { Typography, Grid, Image, Spin } from 'antd';
 
 const { Title } = Typography;
 
-import styles from './process-document.module.scss';
+import styles from './document-content.module.scss';
 import cn from 'classnames';
 
 import { ActiveSettings } from './settings-modal';
@@ -31,6 +31,13 @@ import {
   resolveElementImageUrl,
   separateChildren,
 } from './documentation-page-utils';
+
+type ProcessDocumentProps = {
+  processData: Awaited<ReturnType<typeof getProcess>>;
+  settings: ActiveSettings;
+  processHierarchy?: ElementInfo;
+  version: VersionInfo;
+};
 
 export type VersionInfo = {
   id?: string;
@@ -415,17 +422,10 @@ async function getContent(
   }
 }
 
-type ProcessDocumentProps = {
-  processData: Awaited<ReturnType<typeof getProcess>>;
-  settings: ActiveSettings;
-  processHierarchy?: ElementInfo;
-  version: VersionInfo;
-};
-
 /**
  * A printable document containing information about a process
  */
-const ProcessDocument: React.FC<ProcessDocumentProps> = ({
+const ProcessDocumentContent: React.FC<ProcessDocumentProps> = ({
   processData,
   settings,
   processHierarchy,
@@ -539,4 +539,4 @@ const ProcessDocument: React.FC<ProcessDocumentProps> = ({
   );
 };
 
-export default ProcessDocument;
+export default ProcessDocumentContent;

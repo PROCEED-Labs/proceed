@@ -3,8 +3,8 @@ import { Table, Typography } from 'antd';
 import { getProcess } from '@/lib/data/db/process';
 import { generateDateString } from '@/lib/utils';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
-import styles from '@/app/shared-viewer//process-document.module.scss';
-import { VersionInfo } from '@/app/shared-viewer/process-document';
+import styles from '@/app/shared-viewer/document-content.module.scss';
+import { VersionInfo } from '@/app/shared-viewer/process-document-content';
 
 const { Title, Text } = Typography;
 

@@ -2,7 +2,7 @@ import { generateSharedViewerUrl } from '@/lib/sharing/process-sharing';
 import { message } from 'antd';
 import { ColorOptions } from '../(automation)/executions/[processId]/instance-coloring';
 
-async function openDocumentationUrl(
+export async function handleOpenDocumentation(
   processId: string,
   spaceId: string,
   versionId?: string | null,
@@ -31,22 +31,4 @@ async function openDocumentationUrl(
   } catch (err) {
     message.error('Failed to open the documentation page.');
   }
-}
-
-export function handleOpenDocumentation(
-  processId: string,
-  spaceId: string,
-  versionId?: string | null,
-) {
-  return openDocumentationUrl(processId, spaceId, versionId);
-}
-
-export function handleOpenInstanceDocumentation(
-  processId: string,
-  spaceId: string,
-  instanceId: string,
-  coloring: ColorOptions,
-  versionId?: string | null,
-) {
-  return openDocumentationUrl(processId, spaceId, versionId, instanceId, coloring);
 }

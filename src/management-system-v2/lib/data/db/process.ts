@@ -1314,7 +1314,7 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
 
 /**
  * Returns only the name of a process by its ID without any permission checks.
- * is needed and the caller has already verified authorization via JWT.
+ * needed when the caller has already verified authorization via JWT.
  *
  * @param processId - the id of the process to get the name for
  * @returns the process name or null if the process does not exist

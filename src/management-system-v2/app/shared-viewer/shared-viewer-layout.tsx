@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
 import { ElementInfo } from './table-of-content';
-import { VersionInfo } from './process-document';
+import { VersionInfo } from './process-document-content';
 import TableOfContents from './table-of-content';
 import WorkspaceSelectionModalButton from './workspace-selection';
 import SettingsModal from './settings-modal';

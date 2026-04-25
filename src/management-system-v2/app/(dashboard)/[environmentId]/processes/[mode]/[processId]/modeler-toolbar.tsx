@@ -419,7 +419,11 @@ const ModelerToolbar = ({
                   aria-label="view-documentation"
                   icon={<GrDocumentUser />}
                   onClick={() => {
-                    handleOpenDocumentation(processId, selectedVersionId || undefined);
+                    handleOpenDocumentation(
+                      processId,
+                      environment.spaceId,
+                      selectedVersionId || undefined,
+                    );
                   }}
                 />
               </Tooltip>

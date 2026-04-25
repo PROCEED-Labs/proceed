@@ -1,10 +1,19 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
-import { getProcesses, getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/db/process';
+import {
+  getProcess,
+  getProcessWithBpmnForAuthenticatedUser,
+  getSharedProcessWithBpmn,
+} from '@/lib/data/processes';
+import {
+  getProcesses,
+  getProcessVersionBpmn,
+  getProcessBpmn,
+  getProcessNameById,
+} from '@/lib/data/db/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
-import BPMNSharedViewer from '@/app/shared-viewer/documentation-page';
+import ProcessDocumentationPage from '@/app/shared-viewer/process-documentation-page';
 import { ImportsInfo } from './documentation-page-utils';
 import BPMNCanvas from '@/components/bpmn-canvas';
 import { Process } from '@/lib/data/process-schema';
@@ -21,6 +30,11 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
+import { getDeployment } from '@/lib/engines/server-actions';
+import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
+import InstanceDocumentationPage from './instance-documentation-page';
+import { Metadata } from 'next';
+import { getUserById } from '@/lib/data/db/iam/users';
 
 interface PageProps {
   searchParams: Promise<{
@@ -47,18 +61,41 @@ const getProcessInfo = async (
 ) => {
   const { session, userId } = await getCurrentUser();
 
-  let spaceId;
+  let spaceId = '';
   let isOwner = false;
   let processData;
 
   // check if there is a session (=> the user is already logged in)
   if (session) {
+    // Check active environment first
     const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
     ({ spaceId } = activeEnvironment);
     // get all the processes the user has access to
     const ownedProcesses = await getProcesses(spaceId, ability);
     // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
     isOwner = ownedProcesses.some((process) => process.id === definitionId);
+
+    // If not found in active environment, check all other environments
+    if (!isOwner) {
+      const personalEnv = await getEnvironmentById(userId);
+      const orgEnvIds = await getUserOrganizationEnvironments(userId);
+      const allEnvIds = [personalEnv?.id, ...orgEnvIds].filter(
+        (id): id is string => !!id && id !== spaceId,
+      );
+
+      for (const envId of allEnvIds) {
+        try {
+          const envProcesses = await getProcesses(envId, ability);
+          if (envProcesses.some((process) => process.id === definitionId)) {
+            isOwner = true;
+            spaceId = envId;
+            break;
+          }
+        } catch {
+          // env not accessible, skip
+        }
+      }
+    }
   }
 
   if (isOwner) {
@@ -72,6 +109,13 @@ const getProcessInfo = async (
 
       processData = { ...processMetaData, bpmn };
     }
+  } else if (session) {
+    // any authenticated user can view documentation
+    const res = await getProcessWithBpmnForAuthenticatedUser(definitionId, versionId);
+    if ('error' in res) {
+      return <ErrorMessage message={res.error.message as string} />;
+    }
+    processData = res;
   } else {
     // the user has no regular access to the process so get the process data from the sharing api
     const res = await getSharedProcessWithBpmn(definitionId, versionId);
@@ -91,7 +135,11 @@ const getProcessInfo = async (
     }
   }
 
-  return { isOwner, processData } as { isOwner: boolean; processData: Process };
+  return { isOwner, processData, spaceId } as {
+    isOwner: boolean;
+    processData: Process;
+    spaceId?: string;
+  };
 };
 
 /**
@@ -124,34 +172,90 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
+// generate the file name which will be saved as pdf
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const { token, version } = searchParams;
+
+  if (typeof token !== 'string') return {};
+
+  try {
+    const key = env.SHARING_ENCRYPTION_SECRET;
+    const { processId } = jwt.verify(token, key!) as TokenPayload;
+    const versionId = version as string | undefined;
+    const versionLabel = versionId ?? 'Latest';
+
+    const processName = await getProcessNameById(processId as string);
+    if (!processName) return { title: `PROCEED - Version ${versionLabel}` };
+
+    return {
+      title: `PROCEED - ${processName} - Version ${versionLabel}`,
+    };
+  } catch {
+    return {};
+  }
+}
+
+// get display name of user to show it as process initiator or owner
+async function resolveUserDisplayName(userId: string | undefined) {
+  if (!userId) return null;
+
+  try {
+    const user = await getUserById(userId);
+
+    if (!user) return userId;
+
+    if (user.isGuest) return 'Guest User';
+
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+
+    return fullName || user.username || userId;
+  } catch {
+    return userId;
+  }
+}
+
 const SharedViewer = async (props: PageProps) => {
   const searchParams = await props.searchParams;
-  const { token, version, settings } = searchParams;
+  const { token, version, settings, instance: instanceId, coloring } = searchParams;
   const { session, userId } = await getCurrentUser();
   if (typeof token !== 'string') {
     return <ErrorMessage message="Invalid Token " />;
   }
 
-  const userEnvironments: Environment[] = [(await getEnvironmentById(userId))!];
+  const personalEnv = await getEnvironmentById(userId);
+  const userEnvironments: Environment[] = personalEnv ? [personalEnv] : [];
   const userOrgEnvs = await getUserOrganizationEnvironments(userId);
 
-  const orgEnvironments = await asyncMap(
-    userOrgEnvs,
-    async (environmentId) => (await getEnvironmentById(environmentId))!,
-  );
+  const orgEnvironments = (
+    await asyncMap(userOrgEnvs, async (environmentId) => await getEnvironmentById(environmentId))
+  ).filter((e): e is Environment => e !== null);
 
   userEnvironments.push(...orgEnvironments);
 
   let isOwner = false;
+  let activeSpaceId = userId || '';
+  let activeIsOrg = false;
 
   const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
   try {
-    const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
+    const {
+      processId,
+      embeddedMode,
+      timestamp,
+      spaceId: tokenSpaceId,
+    } = jwt.verify(token, key!) as TokenPayload;
 
     const versionId = version as string | undefined;
+
+    // Use spaceId from token if available to go back to the correct space
+    if (tokenSpaceId) {
+      activeSpaceId = tokenSpaceId;
+      activeIsOrg = userEnvironments.find((e) => e.id === tokenSpaceId)?.isOrganization ?? false;
+    }
 
     const processInfo = await getProcessInfo(
       processId as string,
@@ -167,6 +271,13 @@ const SharedViewer = async (props: PageProps) => {
     }
 
     ({ isOwner, processData } = processInfo);
+
+    // If token do not have spaceId, fall back to where process was found
+    if (!tokenSpaceId && processInfo.spaceId) {
+      activeSpaceId = processInfo.spaceId;
+      activeIsOrg =
+        userEnvironments.find((e) => e.id === processInfo.spaceId)?.isOrganization ?? false;
+    }
 
     if (!processData) {
       return <ErrorMessage message="Process no longer exists!" />;
@@ -198,11 +309,32 @@ const SharedViewer = async (props: PageProps) => {
     redirect(loginPath);
   }
 
+  let instanceData = undefined;
+  if (typeof instanceId === 'string' && processData) {
+    try {
+      const deployment = await getDeployment(processData?.creatorId ?? '', processData.id);
+      instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
+    } catch (err) {
+      console.error('Failed to fetch instance data:', err);
+    }
+  }
+
+  const ownerName = await resolveUserDisplayName(processData?.creatorId);
+
+  const processInitiatorName = await resolveUserDisplayName(instanceData?.processInitiator);
+
+  // Inject both ownerName and processInitiatorName into processData
+  const enrichedProcessData = {
+    ...processData,
+    ownerName,
+    processInitiatorName,
+  };
+
   return (
     <>
       <div style={{ height: '100vh' }}>
         {iframeMode ? (
-          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: processData.bpmn }} />
+          <BPMNCanvas type="navigatedviewer" bpmn={{ bpmn: enrichedProcessData.bpmn }} />
         ) : (
           <div className={styles.ProcessOverview}>
             <Layout
@@ -210,15 +342,27 @@ const SharedViewer = async (props: PageProps) => {
               loggedIn={!!userId}
               layoutMenuItems={[]}
               userEnvironments={userEnvironments}
-              activeSpace={{ spaceId: userId || '', isOrganization: false }}
+              activeSpace={{ spaceId: activeSpaceId, isOrganization: activeIsOrg }}
             >
-              <BPMNSharedViewer
-                isOwner={isOwner}
-                userWorkspaces={userEnvironments}
-                processData={processData as any}
-                defaultSettings={defaultSettings}
-                availableImports={availableImports}
-              />
+              {instanceData ? (
+                <InstanceDocumentationPage
+                  isOwner={isOwner}
+                  userWorkspaces={userEnvironments}
+                  processData={enrichedProcessData as any}
+                  defaultSettings={defaultSettings}
+                  availableImports={availableImports}
+                  instance={instanceData}
+                  coloring={(coloring as ColorOptions) || 'processColors'}
+                />
+              ) : (
+                <ProcessDocumentationPage
+                  isOwner={isOwner}
+                  userWorkspaces={userEnvironments}
+                  processData={enrichedProcessData as any}
+                  defaultSettings={defaultSettings}
+                  availableImports={availableImports}
+                />
+              )}
             </Layout>
           </div>
         )}

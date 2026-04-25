@@ -1312,6 +1312,21 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
   }
 }
 
+/**
+ * Returns only the name of a process by its ID without any permission checks.
+ * needed when the caller has already verified authorization via JWT.
+ *
+ * @param processId - the id of the process to get the name for
+ * @returns the process name or null if the process does not exist
+ */
+export async function getProcessNameById(processId: string): Promise<string | null> {
+  const process = await db.process.findUnique({
+    where: { id: processId },
+    select: { name: true },
+  });
+  return process?.name ?? null;
+}
+
 /** Return Array with fileNames of images for given process */
 export async function getProcessImageFileNames(processDefinitionsId: string) {
   // TODO

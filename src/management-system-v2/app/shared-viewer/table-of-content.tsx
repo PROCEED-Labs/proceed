@@ -9,6 +9,8 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import styles from './table-of-content.module.scss';
 
 import { ActiveSettings } from './settings-modal';
+import { InstanceInfo } from '@/lib/engines/deployment';
+import { getElementTypeLabel } from './documentation-page-utils';
 
 type MetaInformation = {
   name?: string;
@@ -28,9 +30,13 @@ export type ElementInfo = MetaInformation & {
   // the visual representation of an element (and its children) as seen in its parent elements plane
   svg: string;
   id: string;
+  elementType?: string;
   children?: ElementInfo[];
+  attachedToElementId?: string;
+  boundaryEvents?: ElementInfo[];
   // marks the element as a subprocess and contains the visual representation of the plane of that subprocess and the contained children
   nestedSubprocess?: { planeSvg: string };
+  isEventTriggeredSubprocess?: boolean;
   // information about the imported process that is used by the call-activity that this object represents; can overwrite the information of the call-activity based on the selected settings
   importedProcess?: MetaInformation & {
     planeSvg: string;
@@ -39,18 +45,24 @@ export type ElementInfo = MetaInformation & {
     versionDescription?: string;
     versionCreatedOn?: string;
   };
+  instanceStatus?: {
+    token?: InstanceInfo['tokens'][number];
+    logEntries?: InstanceInfo['log'];
+  };
 };
 
 type TableOfContentProps = Omit<AnchorProps, 'items'> & {
   settings: ActiveSettings;
   processHierarchy?: ElementInfo;
   linksDisabled?: boolean;
+  extraRootItems?: AnchorLinkItemProps[];
 };
 
 const TableOfContents: React.FC<TableOfContentProps> = ({
   settings,
   processHierarchy,
   linksDisabled = false,
+  extraRootItems = [],
   ...anchorProps
 }) => {
   // transform the document data into a table of contents
@@ -70,7 +82,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
 
     let { milestones, meta, description, importedProcess, image } = hierarchyElement;
 
-    let label = hierarchyElement.name || `<${hierarchyElement.id}>`;
+    let label = getElementTypeLabel(hierarchyElement);
 
     if (settings.importedProcesses && importedProcess) {
       label = importedProcess.name!;
@@ -98,11 +110,12 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
         title: 'Overview Image',
       });
     }
+
     if (description) {
       children.unshift({
         key: `${hierarchyElement.id}_description`,
         href: linksDisabled ? '' : `#${hierarchyElement.id}_description_page`,
-        title: 'General Description',
+        title: 'Description',
       });
     }
     if (settings.importedProcesses && importedProcess && importedProcess.versionId) {
@@ -137,7 +150,12 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     // put the children of the root process in the root layer of the table of contents instead of nesting them
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
-    tableOfContents = [tableOfContents, ...directChildren];
+    if (extraRootItems.length > 0) {
+      // extraRootItems defines the full structure
+      tableOfContents = [...extraRootItems];
+    } else {
+      tableOfContents = [tableOfContents, ...directChildren];
+    }
   }
 
   return tableOfContents ? (

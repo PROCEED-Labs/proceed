@@ -42,6 +42,9 @@ import {
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
 
+import { GrDocumentUser } from 'react-icons/gr';
+import { handleOpenDocumentation } from '../../../processes/processes-helper';
+
 export default function ProcessDeploymentView({
   processId,
   initialDeploymentInfo,
@@ -488,6 +491,23 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
+                {selectedInstance && (
+                  <Tooltip title="View Instance Documentation">
+                    <Button
+                      aria-label="view-instance-documentation"
+                      icon={<GrDocumentUser />}
+                      onClick={() =>
+                        handleOpenDocumentation(
+                          processId,
+                          spaceId,
+                          selectedInstance.processVersion,
+                          selectedInstance.processInstanceId,
+                          selectedColoring,
+                        )
+                      }
+                    />
+                  </Tooltip>
+                )}
                 <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button
                     icon={<InfoCircleOutlined />}

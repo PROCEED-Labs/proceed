@@ -6,7 +6,7 @@ import type { Connection } from 'diagram-js/lib/util/Elements';
 
 type TokenInfo = InstanceInfo['tokens'][number];
 
-function getTokenPosition(token: TokenInfo, bpmnViewer: BPMNCanvasRef) {
+export function getTokenPosition(token: TokenInfo, bpmnViewer: BPMNCanvasRef) {
   let targetFlowElement: Element | Connection | undefined = bpmnViewer.getElement(
     token.currentFlowElementId,
   );
@@ -108,7 +108,7 @@ function getTokenTooltip(token: InstanceInfo['tokens'][number], instance: Instan
   return token.state;
 }
 
-function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
+export function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
   if (isPausingToken(token, instance)) {
     return '#faad14';
   }

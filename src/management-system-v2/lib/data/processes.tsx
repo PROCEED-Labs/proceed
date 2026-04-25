@@ -903,3 +903,25 @@ export async function checkIfProcessExistsByName(
     return data.batch === true ? [] : false;
   }
 }
+
+/**
+ * Fetches process with BPMN for any authenticated user regardless of sharing status.
+ */
+export const getProcessWithBpmnForAuthenticatedUser = async (
+  definitionId: string,
+  versionCreatedOn?: string,
+) => {
+  const processMetaObj = await _getProcess(definitionId);
+
+  if (!processMetaObj) {
+    return userError(`Process does not exist`);
+  }
+
+  const bpmn = await getBpmnVersion(definitionId, versionCreatedOn);
+
+  if (typeof bpmn === 'object') {
+    return bpmn;
+  }
+
+  return { ...processMetaObj, bpmn };
+};

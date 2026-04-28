@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Col, Row, Space, Tag, Table, Modal } from 'antd';
 import { updateParameter } from '@/lib/data/db/machine-config';
-import { buildLinkedInputParametersFromIds } from '../configuration-helper';
+import { buildLinkedInputParametersFromIds } from '../helpers/configuration-helper';
 import AddButton from './add-button';
 import AasCreateParameterModal, {
   CreateParameterModalReturnType,

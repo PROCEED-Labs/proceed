@@ -73,5 +73,3 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
 };
 
 export default SignInPage;
-
-export const dynamic = 'force-dynamic';

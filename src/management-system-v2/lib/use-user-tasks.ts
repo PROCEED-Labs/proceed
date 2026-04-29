@@ -3,7 +3,6 @@ import useEngines from '@/lib/engines/use-engines';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import {
-  getAvailableTaskListEntries,
   completeTasklistEntry,
   setTasklistMilestoneValues,
   setTasklistEntryVariableValues,
@@ -12,10 +11,11 @@ import {
   submitFile as _submitFile,
 } from './engines/server-actions';
 import { getUserRoles } from './data/roles';
+import { getUserTasks } from './data/user-tasks';
 
 function useUserTasks(
   space: { spaceId: string; isOrganization: boolean },
-  fetchInterval = 10000,
+  fetchInterval = 1000,
   filter?: {
     allowedStates?: string[];
     hideUnassignedTasks?: boolean;
@@ -28,16 +28,13 @@ function useUserTasks(
   const session = useSession();
 
   const queryFn = useCallback(async () => {
-    if (engines) {
-      let result = await getAvailableTaskListEntries(space.spaceId, engines);
+    let result = await getUserTasks(space.spaceId);
 
-      if ('error' in result) return [];
+    if ('error' in result) return [];
 
-      return result;
-    }
-
-    return [];
-  }, [engines, space.spaceId]);
+    // filter out user tasks that were removed from the machine they were triggered on
+    return result.filter((uT) => !uT.instanceID || uT.machineId);
+  }, [space.spaceId]);
 
   const query = useQuery({
     queryFn,
@@ -134,12 +131,6 @@ function useUserTasks(
     return await addOwnerToTaskListEntry(taskId, owner, machine);
   }
 
-  async function getTaskListEntryHtml(taskId: string, fileName: string) {
-    const machine = getTaskEngine(taskId);
-
-    return await getTasklistEntryHTML(space.spaceId, taskId, fileName, machine);
-  }
-
   async function submitFile(taskId: string, file: File) {
     const machine = getTaskEngine(taskId);
 
@@ -155,12 +146,10 @@ function useUserTasks(
   return {
     engines,
     userTasks,
-    ...query,
     completeEntry,
     setMilestoneValues,
     setVariableValues,
     addOwner,
-    getTaskListEntryHtml,
     submitFile,
   };
 }

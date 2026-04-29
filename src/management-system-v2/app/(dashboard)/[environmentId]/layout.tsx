@@ -179,7 +179,7 @@ const DashboardLayout = async (
       });
     }
 
-    let pollingInterval = 10000;
+    let pollingInterval = 1000;
 
     if (Number.isInteger(automationSettings.taskPollingInterval)) {
       pollingInterval = automationSettings.taskPollingInterval;

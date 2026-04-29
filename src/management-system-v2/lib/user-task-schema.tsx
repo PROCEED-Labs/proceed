@@ -3,14 +3,15 @@ import { z } from 'zod';
 export const UserTaskInputSchema = z.object({
   id: z.string(),
   taskId: z.string(),
+  environmentId: z.string(),
+  instanceID: z.string().nullable(),
   name: z.string().nullish(),
-  instanceID: z.string(),
   fileName: z.string(),
-  html: z.string().nullish(),
+  html: z.string(),
   state: z.string(),
   priority: z.number(),
   progress: z.number(),
-  startTime: z.number(),
+  startTime: z.union([z.number().transform((val) => new Date(val)), z.date()]),
   owner: z.string().optional(),
   actualOwner: z.string().array(),
   potentialOwners: z
@@ -20,9 +21,9 @@ export const UserTaskInputSchema = z.object({
     })
     .optional()
     .default({}),
-  endTime: z.number().nullish(),
-  initialVariables: z.record(z.string(), z.any()).optional(),
-  variableChanges: z.record(z.string(), z.any()).optional(),
+  endTime: z.union([z.number().transform((val) => new Date(val)), z.date()]).nullish(),
+  initialVariables: z.record(z.string(), z.any()),
+  variableChanges: z.record(z.string(), z.any()),
   milestones: z
     .object({
       id: z.string(),
@@ -30,16 +31,15 @@ export const UserTaskInputSchema = z.object({
       description: z.string().optional(),
       value: z.number(),
     })
-    .array()
-    .optional(),
-  milestonesChanges: z.record(z.string(), z.number()).optional(),
+    .array(),
+  milestonesChanges: z.record(z.string(), z.number()),
   machineId: z.string(),
   offline: z.boolean().optional(),
 });
 
-export type UserTaskInput = z.infer<typeof UserTaskInputSchema>;
+export type UserTaskInput = z.input<typeof UserTaskInputSchema>;
 
-export type UserTask = UserTaskInput;
+export type UserTask = z.output<typeof UserTaskInputSchema>;
 
 export type ExtendedTaskListEntry = Omit<UserTask, 'actualOwner'> & {
   actualOwner: { id: string; name: string; userName?: string }[];

@@ -2,23 +2,21 @@ import Content from '@/components/content';
 import { Skeleton, Spin } from 'antd';
 import { notFound } from 'next/navigation';
 import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
-import { getDbEngines } from '@/lib/data/db/engines';
+import { getEnginesWithMachines } from '@/lib/data/db/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
-import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';
 import { spaceURL } from '@/lib/utils';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { Engine } from '@/lib/engines/machines';
 
-const getEngineStatus = async (engine: DBEngine) => {
-  const engines = await savedEnginesToEngines([engine]);
-
-  if (engines.length === 0) {
+const getEngineStatus = async (engine: DBEngine & { machines: Engine[] }) => {
+  if (engine.machines.length === 0) {
     return { online: false } as const;
   } else {
-    return { online: true, engines } as const;
+    return { online: true, engines: engine.machines } as const;
   }
 };
 
@@ -39,7 +37,8 @@ const EnginesPage = async ({ environmentId }: { environmentId: string }) => {
     return notFound();
   }
 
-  const engines = await getDbEngines(activeEnvironment.spaceId, ability);
+  const engines = await getEnginesWithMachines(activeEnvironment.spaceId, ability);
+  console.log(engines);
 
   const enginesWithStatus = engines.map((engine) => {
     return {

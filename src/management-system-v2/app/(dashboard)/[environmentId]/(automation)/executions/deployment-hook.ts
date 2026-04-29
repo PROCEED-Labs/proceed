@@ -1,13 +1,8 @@
 import { useEnvironment, useSession } from '@/components/auth-can';
 import { StoredDeployment } from '@/lib/data/db/deployment';
-import { addInstance } from '@/lib/data/deployment';
+import { addInstance, getInstance, getProcessDeployments } from '@/lib/data/deployment';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '@/lib/data/processes';
-import {
-  DeployedProcessInfo,
-  InstanceInfo,
-  getDeployments as _getDeployments,
-  getDeployment,
-} from '@/lib/engines/deployment';
+import { DeployedProcessInfo, InstanceInfo, getDeployment } from '@/lib/engines/deployment';
 import {
   pauseInstanceOnMachine,
   resumeInstanceOnMachine,
@@ -15,10 +10,10 @@ import {
   stopInstanceOnMachine,
 } from '@/lib/engines/instances';
 import { Engine } from '@/lib/engines/machines';
-import { deployProcess, getDeployments } from '@/lib/engines/server-actions';
+import { deployProcess } from '@/lib/engines/server-actions';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
-import { asyncFilter, asyncForEach } from '@/lib/helpers/javascriptHelpers';
+import { AsyncArray } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
@@ -31,26 +26,49 @@ export type DeploymentInfo = {
   instances: DeployedProcessInfo['instances'];
 };
 
-function useDeployment(definitionId: string, initialData: StoredDeployment[]) {
+function useDeployment(definitionId: string, initialDeployments: StoredDeployment[]) {
   const space = useEnvironment();
   const { data: session } = useSession();
 
   const { data: engines, refetch: refetchEngines } = useEngines(space);
 
   const queryFn = useCallback(async () => {
-    // TODO: use the stored deployment data and instance data and update the instance data (maybe
-    // only if something changed in comparison to the stored state)
-    // TODO: this only handles situations where we have only a single engine
-    // in the future we have to implement logic that merges data from multiple engines
-    const deployments = await getDeployments(space.spaceId, engines || []);
+    const deployments = await getProcessDeployments(space.spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return null;
-    return deployments.filter((d) => !d.deleted && d.processId === definitionId) || null;
-  }, [space, engines, definitionId]);
 
-  const query = useQuery({
+    return deployments.filter((d) => !d.deleted) || null;
+  }, [space, definitionId]);
+
+  const deploymentsQuery = useQuery({
     queryFn,
-    initialData,
     queryKey: ['processDeployments', space.spaceId, definitionId],
+    initialData: initialDeployments,
+    refetchInterval: 1000,
+  });
+
+  const instanceQueryFn = useCallback(async () => {
+    if (!deploymentsQuery.data) return [];
+
+    type InstanceRes = Awaited<ReturnType<typeof getInstance>>;
+    function isNotAnError(
+      instanceRes: InstanceRes,
+    ): instanceRes is Exclude<NonNullable<InstanceRes>, { error: any }> {
+      return !!instanceRes && !('error' in instanceRes);
+    }
+
+    return (
+      await AsyncArray.from(deploymentsQuery.data)
+        .map((d) => d.instances)
+        .flatten()
+        .map((iId) => getInstance(space.spaceId, iId))
+    ).filter(isNotAnError);
+  }, [space, deploymentsQuery.data]);
+
+  const instancesQuery = useQuery({
+    queryKey: ['processDeployments', space.spaceId, definitionId, 'instances'],
+    initialData: [],
+    queryFn: instanceQueryFn,
+    enabled: !!deploymentsQuery.data,
     refetchInterval: 1000,
   });
 
@@ -63,7 +81,7 @@ function useDeployment(definitionId: string, initialData: StoredDeployment[]) {
 
     await deployProcess(definitionId, versionId, space.spaceId, 'dynamic', updatedEngines.data);
 
-    const updated = await query.refetch();
+    const updated = await deploymentsQuery.refetch();
     if (updated.error) {
       return userError('Unable to get up to date deployment info.');
     }
@@ -122,9 +140,9 @@ function useDeployment(definitionId: string, initialData: StoredDeployment[]) {
   };
 
   const deployedTo = useMemo(() => {
-    const machineIds = query.data?.flatMap((v) => v.machineIds) || [];
+    const machineIds = deploymentsQuery.data?.flatMap((v) => v.machineIds) || [];
     return engines?.filter((engine) => machineIds.includes(engine.id));
-  }, [query.data, engines]);
+  }, [deploymentsQuery.data, engines]);
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
   async function changeInstanceState(
@@ -134,24 +152,25 @@ function useDeployment(definitionId: string, initialData: StoredDeployment[]) {
   ) {
     if (!deployedTo) return;
     try {
-      const targetEngines = await asyncFilter(deployedTo, async (engine: Engine) => {
-        const deployments = await _getDeployments([engine]);
+      await AsyncArray.from(deployedTo)
+        .filter(async (engine: Engine) => {
+          try {
+            const deployment = await getDeployment(engine, definitionId);
 
-        return deployments.some((deployment) => {
-          if (deployment.definitionId !== definitionId) return false;
+            const instance = deployment.instances.find(
+              (instance) => instance.processInstanceId === instanceId,
+            );
 
-          const instance = deployment.instances.find(
-            (instance) => instance.processInstanceId === instanceId,
-          );
-          if (!instance) return false;
+            if (!instance) return false;
 
-          return stateValidator(instance.instanceState);
+            return stateValidator(instance.instanceState);
+          } catch (err) {
+            return false;
+          }
+        })
+        .forEach(async (engine) => {
+          await stateChangeFunction(definitionId, instanceId, engine);
         });
-      });
-
-      await asyncForEach(targetEngines, async (engine) => {
-        await stateChangeFunction(definitionId, instanceId, engine);
-      });
     } catch (e) {
       const message = getErrorMessage(e);
       return userError(message);
@@ -211,8 +230,10 @@ function useDeployment(definitionId: string, initialData: StoredDeployment[]) {
   }
 
   return {
-    data: query.data,
-    refetch: query.refetch,
+    deployments: deploymentsQuery.data,
+    refetchDeployments: deploymentsQuery.refetch,
+    instances: instancesQuery.data,
+    refetchInstances: instancesQuery.refetch,
     startInstance,
     resumeInstance,
     pauseInstance,

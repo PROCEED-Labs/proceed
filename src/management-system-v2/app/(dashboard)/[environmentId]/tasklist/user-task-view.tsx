@@ -14,6 +14,7 @@ import styles from './user-task-view.module.scss';
 import { App, Skeleton } from 'antd';
 import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 import useUserTasks from '@/lib/use-user-tasks';
+import { getTasklistEntryHTML } from '@/lib/engines/server-actions';
 
 type UserTaskFormProps = {
   html?: string;
@@ -98,21 +99,15 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
 
   const { message } = App.useApp();
 
-  const {
-    completeEntry,
-    setMilestoneValues,
-    setVariableValues,
-    addOwner,
-    getTaskListEntryHtml,
-    submitFile,
-  } = useUserTasks(space, Infinity);
+  const { completeEntry, setMilestoneValues, setVariableValues, addOwner, submitFile } =
+    useUserTasks(space, Infinity);
 
   const { data: html } = useQuery({
     queryFn: async () => {
       if (!task) return null;
       const html = await wrapServerCall({
         fn: async () => {
-          const html = await getTaskListEntryHtml(task.id, task.fileName);
+          const html = await getTasklistEntryHTML(space.spaceId, task.id);
 
           return html || null;
         },

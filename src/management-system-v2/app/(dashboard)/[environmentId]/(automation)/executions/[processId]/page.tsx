@@ -6,7 +6,10 @@ import { getProcessDeployments } from '@/lib/data/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
-  let deployments = await getProcessDeployments(spaceId, processId);
+  let deployments = await getProcessDeployments(
+    decodeURIComponent(spaceId),
+    decodeURIComponent(processId),
+  );
 
   if (isUserErrorResponse(deployments)) throw deployments;
 

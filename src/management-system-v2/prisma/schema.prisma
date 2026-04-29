@@ -177,6 +177,7 @@ model Space {
   folders            Folder[]
   processes          Process[]
   htmlForms          HtmlForm[]
+  userTasks          UserTask[]
   roles              Role[]
   engines            Engine[]
   settings           SpaceSettings? @relation("spaceSettings")
@@ -355,19 +356,22 @@ model UserTask {
   instanceID        String?
   instance          ProcessInstance? @relation(fields: [instanceID], references: [id], onDelete: Cascade)
   fileName          String
-  html              String?
+  html              String
   state             String
   priority          Int
   progress          Int
   startTime         DateTime
   endTime           DateTime?
-  initialVariables  Json?
-  variableChanges   Json?
-  milestones        Json?
-  milestonesChanges Json?
+  initialVariables  Json
+  variableChanges   Json
+  milestones        Json
+  milestonesChanges Json
   machineId         String
   actualOwner       String[]
   potentialOwners   Json
+
+  space             Space           @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId     String
 
   @@map("userTask")
 }

@@ -73,8 +73,10 @@ export default function ProcessDeploymentView({
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
   const {
-    data: deployments,
-    refetch,
+    deployments,
+    refetchDeployments,
+    instances: knownInstances,
+    refetchInstances,
     startInstance,
     resumeInstance,
     pauseInstance,
@@ -101,7 +103,7 @@ export default function ProcessDeploymentView({
     if (deployments?.length) {
       selectedVersion = deployments.find((v) => v.version.id === selectedVersionId)?.version;
 
-      const rawInstances = getVersionInstances(deployments, selectedVersionId);
+      const rawInstances = getVersionInstances(knownInstances, selectedVersionId);
       instances = [...rawInstances].sort(
         (a, b) => new Date(b.globalStartTime).getTime() - new Date(a.globalStartTime).getTime(),
       );
@@ -135,7 +137,7 @@ export default function ProcessDeploymentView({
       instanceIsPausing,
       instanceIsPaused,
     };
-  }, [deployments, selectedVersionId, selectedInstanceId]);
+  }, [deployments, knownInstances, selectedVersionId, selectedInstanceId]);
 
   const isProcessActivated = useMemo(() => {
     if (!deployments || !currentVersion) return false;
@@ -240,6 +242,9 @@ export default function ProcessDeploymentView({
                   label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
                 }))}
                 placeholder="Select an instance"
+                onOpenChange={(open) => {
+                  if (open) refetchInstances();
+                }}
               />
 
               <Tooltip title="Filter by version">
@@ -270,7 +275,7 @@ export default function ProcessDeploymentView({
                       const versionId = key === '-2' ? undefined : key;
                       setSelectedVersionId(versionId);
 
-                      const instances = getVersionInstances(deployments, versionId);
+                      const instances = getVersionInstances(knownInstances, versionId);
                       if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
                         const youngestInstance = getYoungestInstance(instances);
                         setSelectedInstanceId(youngestInstance?.processInstanceId);
@@ -356,8 +361,11 @@ export default function ProcessDeploymentView({
                           }
                         },
                         onSuccess: async (instanceId) => {
-                          await refetch();
-                          setSelectedInstanceId(instanceId);
+                          await refetchDeployments();
+                          setTimeout(async () => {
+                            await refetchInstances();
+                            setSelectedInstanceId(instanceId);
+                          }, 1000);
                         },
                       });
                       setStartingInstance(false);
@@ -395,7 +403,7 @@ export default function ProcessDeploymentView({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
                         onSuccess: async () => {
-                          await refetch();
+                          await refetchDeployments();
                         },
                       });
                       setTogglingActivation(false);
@@ -424,7 +432,7 @@ export default function ProcessDeploymentView({
                           setResumingInstance(true);
                           await wrapServerCall({
                             fn: () => resumeInstance(selectedInstance.processInstanceId),
-                            onSuccess: async () => await refetch(),
+                            onSuccess: async () => await refetchDeployments(),
                           });
                           setResumingInstance(false);
                         }}
@@ -442,7 +450,7 @@ export default function ProcessDeploymentView({
                           setPausingInstance(true);
                           await wrapServerCall({
                             fn: async () => pauseInstance(selectedInstance.processInstanceId),
-                            onSuccess: async () => await refetch(),
+                            onSuccess: async () => await refetchDeployments(),
                           });
                           setPausingInstance(false);
                         }}
@@ -460,7 +468,7 @@ export default function ProcessDeploymentView({
                         setStoppingInstance(true);
                         await wrapServerCall({
                           fn: async () => stopInstance(selectedInstance.processInstanceId),
-                          onSuccess: async () => await refetch(),
+                          onSuccess: async () => await refetchDeployments(),
                         });
                         setStoppingInstance(false);
                       }}
@@ -489,7 +497,7 @@ export default function ProcessDeploymentView({
                     element={selectedElement}
                     open={infoPanelOpen}
                     close={() => setInfoPanelOpen(false)}
-                    refetch={refetch}
+                    refetch={refetchDeployments}
                   />
                 </div>
               )}
@@ -518,7 +526,7 @@ export default function ProcessDeploymentView({
               fn: () => startInstance(deployment.version.id, mappedVariables),
 
               onSuccess: async (instanceId) => {
-                await refetch();
+                await refetchDeployments();
                 setSelectedInstanceId(instanceId);
                 setStartForm('');
               },

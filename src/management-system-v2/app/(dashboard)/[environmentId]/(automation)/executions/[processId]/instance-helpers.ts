@@ -1,4 +1,5 @@
 import { StoredDeployment } from '@/lib/data/db/deployment';
+import { StoredInstance } from '@/lib/data/db/instances';
 import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -133,11 +134,11 @@ export function getPlanDelays({
   return { plan, delays };
 }
 
-export function getVersionInstances(deployments: StoredDeployment[], version?: string) {
-  const instances = deployments.flatMap((d) => d.instances.map((i) => i.state as InstanceInfo));
+export function getVersionInstances(instances: StoredInstance[], version?: string) {
+  const instanceStates = instances.map((i) => i.state as InstanceInfo);
 
-  if (!version) return instances;
-  return instances.filter((instance) => instance.processVersion === version);
+  if (!version) return instanceStates;
+  return instanceStates.filter((instance) => instance.processVersion === version);
 }
 
 export function getLatestDeployment(deployments: StoredDeployment[]) {

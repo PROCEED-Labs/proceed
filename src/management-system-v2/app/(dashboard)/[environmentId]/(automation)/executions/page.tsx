@@ -4,7 +4,7 @@ import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDeployments } from '@/lib/engines/server-actions';
+import { getDeployments } from '@/lib/data/deployment';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { getProcess } from '@/lib/data/processes';
 

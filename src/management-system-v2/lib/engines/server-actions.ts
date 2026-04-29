@@ -347,7 +347,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
 
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -422,23 +422,20 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
       if (!instance.initiatorId) throw new Error('Missing initiator information');
 
       globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
+
+      variableChanges = mapResourceUrls(variableChanges);
     }
 
     variableChanges = { ...variableChanges, ...globalVars };
 
-    return inlineUserTaskData(html, mapResourceUrls(variableChanges), milestones);
+    return inlineUserTaskData(html, variableChanges, milestones);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
   }
 }
 
-export async function addOwnerToTaskListEntry(
-  spaceId: string,
-  userTaskId: string,
-  owner: string,
-  engine: Engine | null,
-) {
+export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
   try {
     if (!enableUseDB)
       throw new Error('getAvailableTaskListEntries only available with enableUseDB');
@@ -456,7 +453,15 @@ export async function addOwnerToTaskListEntry(
         actualOwner: [...actualOwner, owner],
       });
 
-      if (engine) {
+      if (storedUserTask.instanceID) {
+        const { machineId } = storedUserTask;
+        const engines = await getAvailableMachines(spaceId);
+        const engine = machineId && engines.find((e) => e.id === machineId);
+
+        if (!engine) {
+          return userError('Could not find the engine this user task is running on.');
+        }
+
         const [taskId, instanceId] = userTaskId.split('|');
 
         return await addOwnerToTaskListEntryOnMachine(engine, instanceId, taskId, owner);
@@ -474,7 +479,6 @@ export async function setTasklistEntryVariableValues(
   spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
-  engine: Engine | null,
 ) {
   try {
     if (!enableUseDB)
@@ -490,7 +494,15 @@ export async function setTasklistEntryVariableValues(
       variableChanges: { ...storedUserTask.variableChanges, ...variables },
     });
 
-    if (engine) {
+    if (storedUserTask.instanceID) {
+      const { machineId } = storedUserTask;
+      const engines = await getAvailableMachines(spaceId);
+      const engine = machineId && engines.find((e) => e.id === machineId);
+
+      if (!engine) {
+        return userError('Could not find the engine this user task is running on.');
+      }
+
       const [taskId, instanceId] = userTaskId.split('|');
 
       await setTasklistEntryVariableValuesOnMachine(engine, instanceId, taskId, variables);
@@ -505,7 +517,6 @@ export async function setTasklistMilestoneValues(
   spaceId: string,
   userTaskId: string,
   milestones: { [key: string]: any },
-  engine: Engine | null,
 ) {
   try {
     if (!enableUseDB)
@@ -521,7 +532,15 @@ export async function setTasklistMilestoneValues(
       milestonesChanges: { ...storedUserTask.milestonesChanges, ...milestones },
     });
 
-    if (engine) {
+    if (storedUserTask.instanceID) {
+      const { machineId } = storedUserTask;
+      const engines = await getAvailableMachines(spaceId);
+      const engine = machineId && engines.find((e) => e.id === machineId);
+
+      if (!engine) {
+        return userError('Could not find the engine this user task is running on.');
+      }
+
       const [taskId, instanceId] = userTaskId.split('|');
 
       await setTasklistEntryMilestoneValuesOnMachine(engine, instanceId, taskId, milestones);
@@ -536,7 +555,6 @@ export async function completeTasklistEntry(
   spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
-  engine: Engine | null,
 ) {
   try {
     if (!enableUseDB)
@@ -550,7 +568,15 @@ export async function completeTasklistEntry(
 
     const { variableChanges, milestonesChanges } = storedUserTask;
 
-    if (engine) {
+    if (storedUserTask.instanceID) {
+      const { machineId } = storedUserTask;
+      const engines = await getAvailableMachines(spaceId);
+      const engine = machineId && engines.find((e) => e.id === machineId);
+
+      if (!engine) {
+        return userError('Could not find the engine this user task is running on.');
+      }
+
       const [taskId, instanceId] = userTaskId.split('|');
 
       // push the values from the database to the engine so the instance state is correctly updated
@@ -613,8 +639,26 @@ export async function updateVariables(
   }
 }
 
-export async function submitFile(engine: Engine | null, userTaskId: string, formData: FormData) {
+export async function submitFile(spaceId: string, userTaskId: string, formData: FormData) {
   try {
+    const storedUserTask = await getUserTaskById(userTaskId);
+
+    if (!storedUserTask || 'error' in storedUserTask) {
+      throw new Error('Failed to get stored user task data.');
+    }
+
+    if (!storedUserTask.instanceID) {
+      return userError('We cannot save files for locally created user tasks');
+    }
+
+    const { machineId } = storedUserTask;
+    const engines = await getAvailableMachines(spaceId);
+    const engine = machineId && engines.find((e) => e.id === machineId);
+
+    if (!engine) {
+      return userError('Could not find the engine this user task is running on.');
+    }
+
     const file = formData.get('file') as File;
 
     const fileName = file.name;
@@ -635,6 +679,8 @@ export async function submitFile(engine: Engine | null, userTaskId: string, form
       fileType,
       Array.from(new Uint8Array(await file.arrayBuffer())),
     );
+
+    // TODO: store the file locally as well
 
     return res;
   } catch (err) {

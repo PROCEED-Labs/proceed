@@ -1,14 +1,6 @@
 import { useSession } from '@/components/auth-can';
-import useEngines from '@/lib/engines/use-engines';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import {
-  completeTasklistEntry,
-  setTasklistMilestoneValues,
-  setTasklistEntryVariableValues,
-  addOwnerToTaskListEntry,
-  submitFile as _submitFile,
-} from './engines/server-actions';
 import { getUserRoles } from './data/roles';
 import { getUserTasks } from './data/user-tasks';
 
@@ -22,8 +14,6 @@ function useUserTasks(
   },
   disabled?: boolean,
 ) {
-  const { data: engines } = useEngines(space);
-
   const session = useSession();
 
   const queryFn = useCallback(async () => {
@@ -87,70 +77,7 @@ function useUserTasks(
     }
   }
 
-  function getTaskEngine(taskId: string) {
-    const task = userTasks.find((t) => t.id === taskId);
-
-    if (!task) return;
-
-    if (task.machineId === 'ms-local') return null;
-
-    return engines?.find((e) => e.id === task.machineId);
-  }
-
-  async function completeEntry(taskId: string, variables: Record<string, any>) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined) return;
-
-    return completeTasklistEntry(space.spaceId, taskId, variables, machine);
-  }
-
-  async function setMilestoneValues(taskId: string, milestones: Record<string, any>) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined) return;
-
-    return await setTasklistMilestoneValues(space.spaceId, taskId, milestones, machine);
-  }
-
-  async function setVariableValues(taskId: string, variables: Record<string, any>) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined) return;
-
-    return await setTasklistEntryVariableValues(space.spaceId, taskId, variables, machine);
-  }
-
-  async function addOwner(taskId: string, owner: string) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined)
-      return { error: 'Could not find the machine the task is running on' };
-
-    return await addOwnerToTaskListEntry(space.spaceId, taskId, owner, machine);
-  }
-
-  async function submitFile(taskId: string, file: File) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined)
-      return { error: 'Could not find the machine the task is running on' };
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return await _submitFile(machine, taskId, formData);
-  }
-
-  return {
-    engines,
-    userTasks,
-    completeEntry,
-    setMilestoneValues,
-    setVariableValues,
-    addOwner,
-    submitFile,
-  };
+  return { userTasks };
 }
 
 export default useUserTasks;

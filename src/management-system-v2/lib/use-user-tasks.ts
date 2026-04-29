@@ -7,7 +7,6 @@ import {
   setTasklistMilestoneValues,
   setTasklistEntryVariableValues,
   addOwnerToTaskListEntry,
-  getTasklistEntryHTML,
   submitFile as _submitFile,
 } from './engines/server-actions';
 import { getUserRoles } from './data/roles';
@@ -103,7 +102,7 @@ function useUserTasks(
 
     if (machine === undefined) return;
 
-    return completeTasklistEntry(taskId, variables, machine);
+    return completeTasklistEntry(space.spaceId, taskId, variables, machine);
   }
 
   async function setMilestoneValues(taskId: string, milestones: Record<string, any>) {
@@ -111,7 +110,7 @@ function useUserTasks(
 
     if (machine === undefined) return;
 
-    return await setTasklistMilestoneValues(taskId, milestones, machine);
+    return await setTasklistMilestoneValues(space.spaceId, taskId, milestones, machine);
   }
 
   async function setVariableValues(taskId: string, variables: Record<string, any>) {
@@ -119,7 +118,7 @@ function useUserTasks(
 
     if (machine === undefined) return;
 
-    return await setTasklistEntryVariableValues(taskId, variables, machine);
+    return await setTasklistEntryVariableValues(space.spaceId, taskId, variables, machine);
   }
 
   async function addOwner(taskId: string, owner: string) {
@@ -128,7 +127,7 @@ function useUserTasks(
     if (machine === undefined)
       return { error: 'Could not find the machine the task is running on' };
 
-    return await addOwnerToTaskListEntry(taskId, owner, machine);
+    return await addOwnerToTaskListEntry(space.spaceId, taskId, owner, machine);
   }
 
   async function submitFile(taskId: string, file: File) {

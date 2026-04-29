@@ -353,6 +353,36 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
 
     let { initialVariables, variableChanges, milestones, milestonesChanges, html } = storedUserTask;
 
+    if (storedUserTask.state === 'READY') {
+      let activated = true;
+      if (storedUserTask.instanceID && storedUserTask.machineId) {
+        try {
+          const engines = await getAvailableMachines(spaceId);
+          const engine = engines.find((e) => e.id === storedUserTask.machineId);
+          if (engine) {
+            console.log(
+              engine,
+              storedUserTask.instanceID,
+              userTaskId,
+              storedUserTask.startTime.getTime(),
+            );
+            await activateUserTask(
+              engine,
+              storedUserTask.instanceID,
+              storedUserTask.taskId,
+              storedUserTask.startTime.getTime(),
+            );
+          } else {
+            activated = false;
+          }
+        } catch (err) {
+          activated = false;
+        }
+      }
+
+      if (activated) await updateUserTask(spaceId, userTaskId, { state: 'ACTIVE' });
+    }
+
     variableChanges = { ...initialVariables, ...(variableChanges || {}) };
 
     if (milestonesChanges) {
@@ -404,6 +434,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
 }
 
 export async function addOwnerToTaskListEntry(
+  spaceId: string,
   userTaskId: string,
   owner: string,
   engine: Engine | null,
@@ -421,7 +452,7 @@ export async function addOwnerToTaskListEntry(
     let { actualOwner } = storedUserTask;
 
     if (!actualOwner.includes(owner)) {
-      await updateUserTask(userTaskId, {
+      await updateUserTask(spaceId, userTaskId, {
         actualOwner: [...actualOwner, owner],
       });
 
@@ -440,6 +471,7 @@ export async function addOwnerToTaskListEntry(
 }
 
 export async function setTasklistEntryVariableValues(
+  spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
   engine: Engine | null,
@@ -454,7 +486,7 @@ export async function setTasklistEntryVariableValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       variableChanges: { ...storedUserTask.variableChanges, ...variables },
     });
 
@@ -470,6 +502,7 @@ export async function setTasklistEntryVariableValues(
 }
 
 export async function setTasklistMilestoneValues(
+  spaceId: string,
   userTaskId: string,
   milestones: { [key: string]: any },
   engine: Engine | null,
@@ -484,7 +517,7 @@ export async function setTasklistMilestoneValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       milestonesChanges: { ...storedUserTask.milestonesChanges, ...milestones },
     });
 
@@ -500,6 +533,7 @@ export async function setTasklistMilestoneValues(
 }
 
 export async function completeTasklistEntry(
+  spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
   engine: Engine | null,
@@ -537,7 +571,7 @@ export async function completeTasklistEntry(
       await completeTasklistEntryOnMachine(engine, instanceId, taskId, variables);
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       variableChanges: { ...variableChanges, ...variables },
       state: 'COMPLETED',
     });
@@ -1037,12 +1071,6 @@ export async function refetchDeployments() {
 
             html = inlineScript(html, task.instanceID, id, variableDefinitions);
 
-            // TODO
-            // if (storedState === 'READY') {
-            //   await activateUserTask(engine, instanceId, taskId, startTime);
-            //   storedState = 'ACTIVE';
-            // }
-
             return {
               ...task,
               attrs: undefined,
@@ -1114,162 +1142,6 @@ export async function refetchDeployments() {
   }
 
   setTimeout(refetchDeployments, 10000);
-
-  // const deployments = await getProcessDeployments(spaceId, processId);
-
-  // const instances = await getProcessInstances(spaceId, processId);
-
-  // if (isUserErrorResponse(deployments)) return deployments;
-  // if (isUserErrorResponse(instances)) return instances;
-
-  // await asyncMap(deployments, async (deployment) => {
-  //   let { machineIds } = deployment;
-
-  //   // update the list of machines on which we expect the deployment to exist
-  //   const machines = await AsyncArray.from(machineIds)
-  //     // if a machine is reachable we fetch the newest information otherwise we assume that nothing
-  //     // changed until we can reach the machine again
-  //     .map((id) => reachableEngines.find((e) => e.id === id) || id)
-  //     .filter(async (machine) => {
-  //       if (typeof machine !== 'string') {
-  //         if (deployment.deleted) {
-  //           try {
-  //             // remove the deployment from the machine and remove the machine from the
-  //             // machine list
-  //             await removeDeploymentFromMachines([machine], deployment.processId);
-  //             return false;
-  //           } catch (err) { }
-  //         } else {
-  //           try {
-  //             await fetchDeployment(machine, deployment.processId, 'definitionId');
-  //           } catch (err) {
-  //             // remove the machine from the machine list if the deployment has been removed for
-  //             // some reason
-  //             return false;
-  //           }
-  //         }
-  //       }
-  //       return true;
-  //     });
-
-  //   // TODO: handle that instances can be forwaded automatically which might change the list of
-  //   // machines the deployment can be found on
-  //   const fetchedInstances = await asyncMap(machines, async (machine) => {
-  //     if (typeof machine !== 'string') {
-  //       try {
-  //         // try to get the newest information for all instances of the deployment
-  //         const updatedInstances = await fetchDeployment(
-  //           machine,
-  //           deployment.processId,
-  //           'instances',
-  //         );
-
-  //         return updatedInstances.instances
-  //           .filter(({ processVersion }) => processVersion === deployment.versionId)
-  //           .map((instance) => ({ instance, machine }));
-  //       } catch (err) { }
-  //     }
-
-  //     return [];
-  //   }).flatten();
-
-  //   let knownInstances = Object.fromEntries(
-  //     deployment.instances
-  //       .map((iId) => {
-  //         const instance = instances?.find((i) => i.id === iId);
-  //         if (!instance) return;
-  //         const filteredMachines = instance.machineIds.filter(
-  //           (id) => !reachableEngines.some((e) => e.id === id),
-  //         );
-
-  //         const info = { data: { ...instance, machineIds: filteredMachines }, changed: false };
-  //         return [iId, info] as [string, typeof info];
-  //       })
-  //       .filter(truthyFilter),
-  //   );
-
-  //   // update/extend the known instance information
-  //   const updatedInstancesMap = fetchedInstances.reduce(
-  //     (map, curr) => {
-  //       const id = curr.instance.processInstanceId;
-  //       if (id in map) {
-  //         const known = map[id];
-  //         if (!known.data.machineIds.includes(curr.machine.id)) {
-  //           known.data.machineIds.push(curr.machine.id);
-  //           // TODO: merge the instance state
-  //           known.data.state = curr.instance;
-  //           known.changed = true;
-  //         }
-  //       } else {
-  //         map[id] = {
-  //           data: {
-  //             id,
-  //             versionId: curr.instance.processVersion,
-  //             deploymentId: deployment.id,
-  //             machineIds: [curr.machine.id],
-  //             state: curr.instance,
-  //             initiatorId: curr.instance.processInitiator || null,
-  //           },
-  //           changed: true,
-  //         };
-  //       }
-
-  //       return map;
-  //     },
-  //     JSON.parse(JSON.stringify(knownInstances)) as typeof knownInstances,
-  //   );
-
-  //   const updatedInstances = Object.values(updatedInstancesMap);
-
-  //   // push instance changes to the database
-  //   await asyncForEach(updatedInstances, async (instance) => {
-  //     if (instance.changed) {
-  //       if (!knownInstances[instance.data.id]) {
-  //         try {
-  //           // instances with an initiator should be created and manually added in this
-  //           // management system instance so we should not add them automatically (this should
-  //           // prevent timing problems when this logic runs before the instance has been manually
-  //           // added)
-  //           if (!instance.data.initiatorId) {
-  //             await storeInstanceData(spaceId, instance.data, true);
-  //           }
-  //         } catch (err) { }
-  //       } else {
-  //         await updateStoredInstance(
-  //           spaceId,
-  //           instance.data.id,
-  //           {
-  //             state: instance.data.state,
-  //           },
-  //           true,
-  //         );
-  //       }
-  //     }
-  //   });
-
-  //   return {
-  //     ...deployment,
-  //     deleted: !machines.length || deployment.deleted,
-  //     // TODO: check for changes to the active state on reachable machines
-  //     active: !machines.length ? false : deployment.active,
-  //     instances: updatedInstances.map((u) => u.data),
-  //     machineIds: machines.map((m) => (typeof m === 'string' ? m : m.id)),
-  //   };
-  // }).forEach(async (uD) => {
-  //   const storedDeployment = deployments.find((sD) => sD.id === uD.id)!;
-
-  //   // updated deleted status and machine information for deployments with changes
-  //   if (
-  //     (uD.deleted && !storedDeployment.deleted) ||
-  //     uD.machineIds.length !== storedDeployment.machineIds.length ||
-  //     !uD.machineIds.every((id, index) => id === storedDeployment.machineIds[index])
-  //   ) {
-  //     await updateDeployment(spaceId, uD.processId, uD.id, {
-  //       deleted: uD.deleted,
-  //       machineIds: uD.machineIds,
-  //     });
-  //   }
-  // });
 }
 
 const global = globalThis as any;
@@ -1277,64 +1149,3 @@ if (!global.deploymentFetchLoopActive) {
   global.deploymentFetchLoopActive = true;
   refetchDeployments();
 }
-
-//type RefetchHandler = {
-//  register: (spaceId: string, processId: string, userId: string) => void;
-//  unregister: (spaceId: string, processId: string, userId: string) => void;
-//  registrations: {
-//    [spaceAndProcessId: string]: BackgroundUpdateRegister;
-//  };
-//};
-
-// const global = globalThis as any;
-// const deploymentRefetchHandler: RefetchHandler =
-//   global.deploymentRefetchHandler ||
-//   (global.deploymentRefetchHandler = {
-//     /**
-//      * Registers the interest of a user in updates for a specific process' deployments in a space
-//      */
-//     register(spaceId: string, processId: string, userId: string) {
-//       const self = this as RefetchHandler;
-//
-//       const registrationId = `${spaceId}|${processId}`;
-//
-//       // register a new user or renew a users registration
-//       let registration = self.registrations[registrationId];
-//       if (!registration) {
-//         console.log('Creating space registration index ', spaceId);
-//         registration = self.registrations[registrationId] = new BackgroundUpdateRegister(
-//           () => refetchDeployments(spaceId, processId),
-//           () => {
-//             console.log('No interest in updates for ', registrationId, ' anymore. Cleaning up.');
-//             delete self.registrations[registrationId];
-//           },
-//           10000,
-//         );
-//       }
-//
-//       registration.registerUser(userId);
-//     },
-//     unregister(spaceId: string, processId: string, userId: string) {
-//       const self = this as RefetchHandler;
-//
-//       const registrationId = `${spaceId}|${processId}`;
-//
-//       const registration = self.registrations[registrationId];
-//       if (registration) {
-//         registration.unregisterUser(userId);
-//       }
-//     },
-//     registrations: {},
-//   });
-//
-// export async function registerForDeploymentUpdates(spaceId: string, processId: string) {
-//   const { userId, user } = await getCurrentUser();
-//   if (!user) return userError('Only known users can register for deployment updates');
-//   deploymentRefetchHandler.register(spaceId, processId, userId);
-// }
-//
-// export async function unregisterFromDeploymentUpdates(spaceId: string, processId: string) {
-//   const { userId, user } = await getCurrentUser();
-//   if (!user) return userError('Only known users can register for deployment updates');
-//   deploymentRefetchHandler.unregister(spaceId, processId, userId);
-// }

@@ -282,14 +282,19 @@ export type InstanceInfo = {
     currentFlowNodeState: string;
     currentFlowElementStartTime: number;
     previousFlowElementId: string;
-    intermediateVariablesState?: { [key: string]: any };
+    variablesIntermediateState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];
-  variables: {};
+  variables: {
+    [key: string]: {
+      value: any;
+      log: { changedTime: number; changedBy?: string; oldValue?: any; newValue: any }[];
+    };
+  };
   log: {
     flowElementId: string;
     tokenId: string;
@@ -309,10 +314,14 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];
   processVersion: string;
   userTasks: any[];
+  managementSystemLocation?: string;
+  processInitiator?: string;
+  spaceIdOfProcessInitiator?: string;
 };
 export type DeployedProcessInfo = {
   definitionId: string;
@@ -376,6 +385,20 @@ export async function changeDeploymentActivation(
       body: { active: value },
     });
   }
+}
+
+export async function getDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string,
+): Promise<boolean> {
+  const result = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId/versions/:version/active',
+    engine,
+    pathParams: { definitionId, version },
+  });
+  return result.active;
 }
 
 export async function getProcessImageFromMachine(

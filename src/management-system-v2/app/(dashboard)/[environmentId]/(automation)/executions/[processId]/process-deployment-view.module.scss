@@ -9,3 +9,18 @@
 .StopIcon {
   color: #ff4d4f;
 }
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.SpinIcon {
+  animation: spin 2s linear infinite;
+  display: flex;
+  align-items: center;
+}

@@ -11,7 +11,7 @@ import {
   buildLinkedInputParametersFromIds,
   findParameter,
   getAllParameters,
-} from '../configuration-helper';
+} from '../helpers/configuration-helper';
 import { useMemo } from 'react';
 import { updateParameter } from '@/lib/data/db/machine-config';
 import { useRouter } from 'next/navigation';

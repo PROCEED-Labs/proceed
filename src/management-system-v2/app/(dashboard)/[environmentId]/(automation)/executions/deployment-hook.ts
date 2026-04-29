@@ -100,13 +100,14 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   });
 
   const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (engines?.length)
-      // TODO: in case of static deployment or different versions on different engines we will have
-      // to check if the engine can actually be used to start an instance
-      return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-        processInitiator: session?.user.id,
-        spaceIdOfProcessInitiator: space.spaceId,
-      });
+    if (!engines?.length) return userError('No fitting engine found');
+
+    // TODO: in case of static deployment or different versions on different engines we will have
+    // to check if the engine can actually be used to start an instance
+    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
+      processInitiator: session?.user.id,
+      spaceIdOfProcessInitiator: space.spaceId,
+    });
   };
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
@@ -170,7 +171,8 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   }
 
   async function getStartForm(versionId: string) {
-    if (!engines) return;
+    if (!engines?.length) return userError('No fitting engine found');
+
     try {
       // TODO: in case of static deployment or different versions on different engines we will have
       // to check if the engine can actually be used to start an instance

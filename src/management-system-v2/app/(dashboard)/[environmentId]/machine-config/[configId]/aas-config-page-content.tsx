@@ -27,7 +27,7 @@ import { FaFolderTree } from 'react-icons/fa6';
 import AasConfigEditor from './aas-config-editor';
 import AasConfigurationTreeView from './aas-config-tree-view';
 import { nestedParametersFromStorage, updateConfigMetadata } from '@/lib/data/db/machine-config';
-import { findParameter } from '../configuration-helper';
+import { findParameter } from '../helpers/configuration-helper';
 import ConfigModal from '@/components/config-modal';
 import { useRouter } from 'next/navigation';
 import { useConfigEditStore } from './store/useConfigEditStore';

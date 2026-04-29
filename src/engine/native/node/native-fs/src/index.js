@@ -191,6 +191,28 @@ class NativeFS extends NativeModule {
     }
     this._mutex.add(table);
 
+    /**
+     * Function that writes a file in a way that prevents partially written files
+     * (these did occur when the engine crashed mid write and prevented the engine from restarting)
+     **/
+    function saveWrite(path, data, cb) {
+      fs.writeFile(path + '.new', data, (writeError) => {
+        if (writeError) {
+          cb(writeError);
+          return;
+        }
+
+        fs.rename(path + '.new', path, (renameError) => {
+          if (renameError) {
+            cb(renameError);
+            return;
+          }
+
+          cb();
+        });
+      });
+    }
+
     // Delete
     if (value === null) {
       // delete given attribute inside json
@@ -210,7 +232,7 @@ class NativeFS extends NativeModule {
           // File is JSON with key-value-objects as elements
           const file = newFile ? {} : JSON.parse(data);
           delete file[id];
-          fs.writeFile(fullPath, JSON.stringify(file), (err2) => {
+          saveWrite(fullPath, JSON.stringify(file), (err2) => {
             if (err2) {
               fail(err2);
               return;
@@ -255,7 +277,7 @@ class NativeFS extends NativeModule {
           // File is JSON with key-value-objects as elements
           const file = newFile ? {} : JSON.parse(data);
           file[id] = value;
-          fs.writeFile(fullPath, JSON.stringify(file), (err2) => {
+          saveWrite(fullPath, JSON.stringify(file), (err2) => {
             if (err2) {
               fail(err2);
               return;
@@ -272,7 +294,7 @@ class NativeFS extends NativeModule {
           fs.mkdirSync(fileDir, { recursive: true });
         }
 
-        fs.writeFile(fullPath, value, (err) => {
+        saveWrite(fullPath, value, (err) => {
           if (err) {
             fail(err);
             return;

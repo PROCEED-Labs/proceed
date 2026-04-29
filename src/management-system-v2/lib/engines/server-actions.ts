@@ -1080,6 +1080,7 @@ export async function refetchDeployments() {
               priority: data.priority,
               progress: data.progress,
               endTime: data.endTime,
+              machineId: data.machineId,
             },
           ] as const,
       );

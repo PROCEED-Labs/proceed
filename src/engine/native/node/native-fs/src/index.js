@@ -196,13 +196,13 @@ class NativeFS extends NativeModule {
      * (these did occur when the engine crashed mid write and prevented the engine from restarting)
      **/
     function saveWrite(path, data, cb) {
-      fs.writeFile(path + '.new', data, (writeError) => {
+      fs.writeFile(path + '.tmp', data, (writeError) => {
         if (writeError) {
           cb(writeError);
           return;
         }
 
-        fs.rename(path + '.new', path, (renameError) => {
+        fs.rename(path + '.tmp', path, (renameError) => {
           if (renameError) {
             cb(renameError);
             return;

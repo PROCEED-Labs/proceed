@@ -2,15 +2,6 @@ import db from '@/lib/data/db';
 import { z } from 'zod';
 import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-schema';
 
-export async function getUserTasks() {
-  const userTasks = await db.userTask.findMany();
-
-  return userTasks.map((userTask) => ({
-    ...userTask,
-    offline: userTask.machineId !== 'ms-local',
-  })) as unknown as UserTask[];
-}
-
 export async function getUserTaskById(userTaskId: string) {
   const userTask = await db.userTask.findUnique({
     where: {
@@ -70,15 +61,6 @@ export async function updateUserTask(userTaskId: string, userTaskInput: Partial<
 
   return await db.userTask.update({
     data: updateData,
-    where: {
-      id: userTaskId,
-    },
-  });
-}
-
-export async function deleteUserTask(userTaskId: string) {
-  // TODO: check if a user is allowed to delete a user task
-  return await db.userTask.delete({
     where: {
       id: userTaskId,
     },

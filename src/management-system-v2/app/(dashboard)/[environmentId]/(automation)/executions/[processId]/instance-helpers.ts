@@ -1,6 +1,7 @@
-import { DeployedProcessInfo, InstanceInfo } from '@/lib/engines/deployment';
+import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import jsonToCsvExport from 'json-to-csv-export';
 
 export type ElementStatus =
   | 'PAUSED'
@@ -159,4 +160,8 @@ export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
     if (instances[i].globalStartTime < instances[firstInstance].globalStartTime) firstInstance = i;
   }
   return instances[firstInstance];
+}
+
+export function exportInstanceData(selectedInstances: (InstanceInfo | undefined)[]) {
+  return jsonToCsvExport({ data: selectedInstances });
 }

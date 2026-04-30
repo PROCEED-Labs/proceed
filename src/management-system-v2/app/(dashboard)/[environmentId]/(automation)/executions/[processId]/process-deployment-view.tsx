@@ -12,6 +12,7 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -25,7 +26,12 @@ import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
-import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
+import {
+  exportInstanceData,
+  getLatestDeployment,
+  getVersionInstances,
+  getYoungestInstance,
+} from './instance-helpers';
 
 import useColors from './use-colors';
 import useTokens from './use-tokens';
@@ -487,6 +493,28 @@ export default function ProcessDeploymentView({
             </div>
 
             <Space style={{ alignItems: 'start' }}>
+              <ToolbarGroup>
+                <Tooltip title={'Export data of this selected instance as a csv file'}>
+                  <Button onClick={() => exportInstanceData([selectedInstance])}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <ExportOutlined style={{ fontSize: '18px' }} />
+                      <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                        THIS
+                      </span>
+                    </div>
+                  </Button>
+                </Tooltip>
+                <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                  <Button onClick={() => exportInstanceData(deploymentInfo.instances)}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <ExportOutlined style={{ fontSize: '18px' }} />
+                      <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                        ALL
+                      </span>
+                    </div>
+                  </Button>
+                </Tooltip>
+              </ToolbarGroup>
               <ToolbarGroup>
                 <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button

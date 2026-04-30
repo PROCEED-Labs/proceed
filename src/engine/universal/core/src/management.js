@@ -108,7 +108,7 @@ const Management = {
       }
     }
 
-    const engine = await this.ensureProcessEngineWithVersion(definitionId, version, false);
+    const engine = await this.ensureProcessEngineWithVersion(definitionId, version, true);
 
     return await engine.startProcessVersion(version, variables, activityID, onStarted, onEnded);
   },

@@ -12,6 +12,7 @@ describe('Native-FS', () => {
       fs.mkdirSync.mockReset();
       fs.readFile.mockReset();
       fs.writeFile.mockReset();
+      fs.rename.mockReset();
       exitHook.mockReset();
     });
 
@@ -210,6 +211,7 @@ describe('Native-FS', () => {
         _cb = cb || cbOrEncoding;
       });
       fs.writeFile.mockImplementation((path, content, cb) => cb());
+      fs.rename.mockImplementation((oldPath, newPath, cb) => cb());
 
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
       const writeP = nfs.write(['table.json/test', 'data']);
@@ -232,6 +234,7 @@ describe('Native-FS', () => {
       fs.statSync.mockReset();
       fs.readFile.mockReset();
       fs.writeFile.mockReset();
+      fs.rename.mockReset();
       fs.rm.mockReset();
     });
 
@@ -242,6 +245,7 @@ describe('Native-FS', () => {
       fs.writeFile.mockImplementationOnce((path, content, cb) => {
         cb();
       });
+      fs.rename.mockImplementation((oldPath, newPath, cb) => cb());
 
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
       const writeP = nfs.write(['table.json/test', 'data']);
@@ -251,12 +255,18 @@ describe('Native-FS', () => {
         '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
+      // it writes the data to a temporary file first
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test: 'data',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
     });
@@ -270,11 +280,17 @@ describe('Native-FS', () => {
         cb(error);
       });
       fs.writeFile.mockImplementationOnce((path, content, cb) => cb());
+      fs.rename.mockImplementationOnce((oldPath, newPath, cb) => cb());
       const res = nfs.write(['table.json/test', 'data']);
       await expect(res).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({ test: 'data' }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
     });
@@ -286,11 +302,17 @@ describe('Native-FS', () => {
         cb(null, JSON.stringify({ foo: 'bar', test: 'data' }));
       });
       fs.writeFile.mockImplementationOnce((path, content, cb) => cb());
+      fs.rename.mockImplementationOnce((oldPath, newPath, cb) => cb());
       const res = nfs.write(['table.json/test', null]);
       await expect(res).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({ foo: 'bar' }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
 
@@ -300,11 +322,17 @@ describe('Native-FS', () => {
         cb(error);
       });
       fs.writeFile.mockImplementationOnce((path, content, cb) => cb());
+      fs.rename.mockImplementationOnce((oldPath, newPath, cb) => cb());
       const res2 = nfs.write(['table.json/test', null]);
       await expect(res2).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({}),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
     });
@@ -372,6 +400,20 @@ describe('Native-FS', () => {
       });
       const res5 = nfs.write(['table.json', null]);
       await expect(res5).rejects.toBeInstanceOf(Error);
+
+      fs.readFile.mockImplementationOnce((path, cb) => {
+        cb(null, JSON.stringify({ foo: 'bar' }));
+      });
+      fs.writeFile.mockImplementationOnce((path, content, cb) => {
+        cb();
+      });
+      fs.rename.mockImplementationOnce((oldPath, newPath, cb) => {
+        const error = new Error();
+        error.code = 'ENOENT';
+        cb(error);
+      });
+      const res6 = nfs.write(['table.json/test', 'data']);
+      await expect(res6).rejects.toBeInstanceOf(Error);
     });
 
     it("Doesn't schedule the write if a read operation is ongoing", async () => {
@@ -388,12 +430,14 @@ describe('Native-FS', () => {
         _cb = cb || cbOrEncoding;
       });
       fs.writeFile.mockImplementation((path, content, cb) => cb());
+      fs.rename.mockImplementationOnce((oldPath, newPath, cb) => cb());
 
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
       const readP = nfs.read(['table.json/test']);
       const writeP = nfs.write(['table.json/test', 'data']);
       expect(fs.readFile).toHaveBeenCalledTimes(1);
       expect(fs.writeFile).toHaveBeenCalledTimes(0);
+      expect(fs.rename).toHaveBeenCalledTimes(0);
 
       // Resolve read op
       _cb(null, JSON.stringify({ test: 'data' }));
@@ -404,6 +448,7 @@ describe('Native-FS', () => {
       await expect(writeP).resolves.toBeUndefined();
       expect(fs.readFile).toHaveBeenCalledTimes(2);
       expect(fs.writeFile).toHaveBeenCalledTimes(1);
+      expect(fs.rename).toHaveBeenCalledTimes(1);
     });
 
     it('Blocks the same table when two writes occur', async () => {
@@ -414,6 +459,7 @@ describe('Native-FS', () => {
       fs.writeFile.mockImplementation((path, content, cb) => {
         cb();
       });
+      fs.rename.mockImplementation((oldPath, newPath, cb) => cb());
 
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
       const write1 = nfs.write(['table.json/test1', 'data1']);
@@ -422,16 +468,22 @@ describe('Native-FS', () => {
 
       expect(fs.readFile).toHaveBeenCalledTimes(1);
       expect(fs.writeFile).not.toHaveBeenCalled();
+      expect(fs.rename).not.toHaveBeenCalled();
 
       // Resolve first write
       _cb(null, JSON.stringify({ foo: 'bar' }));
       expect(write1).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test1: 'data1',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenLastCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
       // Wait for promise flush
@@ -442,11 +494,16 @@ describe('Native-FS', () => {
       _cb(null, JSON.stringify({ foo: 'bar', test1: 'data1' }));
       expect(write2).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test1: 'data2',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenLastCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -456,11 +513,16 @@ describe('Native-FS', () => {
       _cb(null, JSON.stringify({ foo: 'bar', test1: 'data2' }));
       expect(write3).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test1: 'data3',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenLastCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
     });
@@ -474,6 +536,7 @@ describe('Native-FS', () => {
       fs.writeFile.mockImplementation((path, content, cb) => {
         cb();
       });
+      fs.rename.mockImplementation((oldPath, newPath, cb) => cb());
 
       const nfs = new NativeFS({ dir: '/Path/To/Dir' });
       const write1 = nfs.write(['table.json/test1', 'data1']);
@@ -482,16 +545,22 @@ describe('Native-FS', () => {
 
       expect(fs.readFile).toHaveBeenCalledTimes(2);
       expect(fs.writeFile).not.toHaveBeenCalled();
+      expect(fs.rename).not.toHaveBeenCalled();
 
       // Resolve first write
       _cb.shift()(null, JSON.stringify({ foo: 'bar' }));
       expect(write1).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test1: 'data1',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenLastCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
 
@@ -499,11 +568,16 @@ describe('Native-FS', () => {
       _cb.shift()(null, JSON.stringify({ otherFoo: 'bar' }));
       expect(write3).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table2.json',
+        '/Path/To/Dir/data_files/table2.json.tmp',
         JSON.stringify({
           otherFoo: 'bar',
           test2: 'data3',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenCalledWith(
+        '/Path/To/Dir/data_files/table2.json.tmp',
+        '/Path/To/Dir/data_files/table2.json',
         expect.any(Function),
       );
       // Wait for promise flush
@@ -514,11 +588,16 @@ describe('Native-FS', () => {
       _cb.shift()(null, JSON.stringify({ foo: 'bar', test1: 'data1' }));
       expect(write2).resolves.toBeUndefined();
       expect(fs.writeFile).toHaveBeenLastCalledWith(
-        '/Path/To/Dir/data_files/table.json',
+        '/Path/To/Dir/data_files/table.json.tmp',
         JSON.stringify({
           foo: 'bar',
           test1: 'data2',
         }),
+        expect.any(Function),
+      );
+      expect(fs.rename).toHaveBeenLastCalledWith(
+        '/Path/To/Dir/data_files/table.json.tmp',
+        '/Path/To/Dir/data_files/table.json',
         expect.any(Function),
       );
     });

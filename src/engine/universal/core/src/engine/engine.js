@@ -127,17 +127,21 @@ class Engine {
    *
    * @param {string} definitionId The name of the file of the (main) process (as stored in the `data`)
    * @param {string} the version of the process to deploy
+   * @param {boolean} [active=true] defines if the deployed process is allowed to spawn instances
+   * automatically
    */
-  async deployProcessVersion(definitionId, versionId) {
-    const otherVersions = this.versions.filter((version) => version !== versionId);
-    otherVersions.forEach((version) => {
-      const process = this._versionProcessMapping[version];
+  async deployProcessVersion(definitionId, versionId, active = true) {
+    if (active) {
+      const otherVersions = this.versions.filter((version) => version !== versionId);
+      otherVersions.forEach((version) => {
+        const process = this._versionProcessMapping[version];
 
-      // deactivate other versions so they don't keep spawning new instances automatically
-      if (process) {
-        process.undeploy();
-      }
-    });
+        // deactivate other versions so they don't keep spawning new instances automatically
+        if (process) {
+          process.undeploy();
+        }
+      });
+    }
 
     if (!this._versionProcessMapping[versionId]) {
       // Fetch the stored BPMN
@@ -211,7 +215,7 @@ class Engine {
         shouldActivateFlowNodeHook: getShouldActivateFlowNode(this),
       });
 
-      process.deploy();
+      if (active) process.deploy();
 
       // Subscribe to the new process instances stream before we start the execution
       process.getInstance$().subscribe(getNewInstanceHandler(this));
@@ -226,7 +230,7 @@ class Engine {
     } else if (!this._versionProcessMapping[versionId].isDeployed()) {
       // activate the process so auto-start events like timer events are allowed to trigger new
       // instances
-      this._versionProcessMapping[versionId].deploy();
+      if (active) this._versionProcessMapping[versionId].deploy();
     }
   }
 

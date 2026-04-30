@@ -2,20 +2,18 @@ import Content from '@/components/content';
 import { Skeleton, Spin } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
-import { getDbEngines } from '@/lib/data/db/engines';
+import { getEnginesWithMachines } from '@/lib/data/db/engines';
 import { getCurrentUser } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
-import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { Engine as DBEngine } from '@prisma/client';
+import { Engine } from '@/lib/engines/machines';
 
-const getEngineStatus = async (engine: DBEngine) => {
-  const engines = await savedEnginesToEngines([engine]);
-
-  if (engines.length === 0) {
+const getEngineStatus = async (engine: DBEngine & { machines: Engine[] }) => {
+  if (engine.machines.length === 0) {
     return { online: false } as const;
   } else {
-    return { online: true, engines } as const;
+    return { online: true, engines: engine.machines } as const;
   }
 };
 
@@ -26,7 +24,7 @@ const EnginesPage = async () => {
   const { systemAdmin } = await getCurrentUser();
   if (!systemAdmin) return redirect('/');
 
-  const engines = await getDbEngines(null, undefined, systemAdmin);
+  const engines = await getEnginesWithMachines(null, undefined, systemAdmin);
 
   const enginesWithStatus = engines.map((engine) => {
     return {

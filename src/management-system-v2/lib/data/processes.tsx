@@ -67,7 +67,10 @@ import { getFolderById, getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
 import Ability from '../ability/abilityHelper';
+import { asyncForEach } from '../helpers/javascriptHelpers';
+import { setRemovedOnProcessDeployments } from './db/deployment';
 import { isDummyFolderProcess } from '../process-export/export-preparation';
+import { skip } from 'node:test';
 
 // Import necessary functions from processModule
 
@@ -164,10 +167,13 @@ export const getProcessBPMN = async (
   spaceId: string,
   versionId?: string,
   ability?: Ability,
+  skipAbilityCheck = false,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId, ability);
+  if (!skipAbilityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
-  if (error) return error;
+    if (error) return error;
+  }
 
   return await getBpmnVersion(definitionId, versionId);
 };
@@ -177,6 +183,10 @@ export const deleteProcesses = async (definitionIds: string[], spaceId: string) 
     const error = await checkValidity(definitionId, 'delete', spaceId);
 
     if (error) return error;
+
+    await asyncForEach(definitionIds, async (definitionId) => {
+      await setRemovedOnProcessDeployments(definitionId);
+    });
 
     await removeProcess(definitionId);
   }
@@ -692,10 +702,13 @@ export const getProcessHtmlFormHTML = async (
   fileName: string,
   spaceId: string,
   ability?: Ability,
+  skipAbilityCheck = false,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId, ability);
+  if (!skipAbilityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
-  if (error) return error;
+    if (error) return error;
+  }
 
   try {
     return await _getHtmlForm(definitionId, fileName);

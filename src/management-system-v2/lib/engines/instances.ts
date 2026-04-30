@@ -135,10 +135,10 @@ export async function getFileFromMachine(
   fileName: string,
   machine: Engine,
 ) {
-  return await engineRequest({
+  return (await engineRequest({
     method: 'get',
     endpoint: '/resources/process/:definitionId/instance/:instanceId/file/:fileName',
     engine: machine,
     pathParams: { definitionId, instanceId, fileName },
-  });
+  })) as Blob;
 }

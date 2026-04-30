@@ -1,14 +1,21 @@
 import { Result, Skeleton } from 'antd';
 import Content from '@/components/content';
-import { getDeployment } from '@/lib/engines/server-actions';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getProcessDeployments } from '@/lib/data/deployment';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
-  const deployment = await getDeployment(spaceId, processId);
+  let deployments = await getProcessDeployments(
+    decodeURIComponent(spaceId),
+    decodeURIComponent(processId),
+  );
 
-  if (!deployment) {
+  if (isUserErrorResponse(deployments)) throw deployments;
+
+  deployments = deployments.filter((deployment) => !deployment.deleted);
+
+  if (!deployments.length) {
     return (
       <Content>
         <Result status="404" title="Process not found" />
@@ -16,7 +23,7 @@ async function Deployment({ processId, spaceId }: { processId: string; spaceId: 
     );
   }
 
-  return <ProcessDeploymentView processId={processId} initialDeploymentInfo={deployment} />;
+  return <ProcessDeploymentView processId={processId} initialDeployments={deployments} />;
 }
 
 export default async function Page(props: {
@@ -24,7 +31,6 @@ export default async function Page(props: {
 }) {
   const params = await props.params;
   //TODO: authentication + authorization
-  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
 
   return (
     <Suspense
@@ -36,7 +42,7 @@ export default async function Page(props: {
     >
       <Deployment
         processId={decodeURIComponent(params.processId)}
-        spaceId={activeEnvironment.spaceId}
+        spaceId={decodeURIComponent(params.environmentId)}
       />
     </Suspense>
   );

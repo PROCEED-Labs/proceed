@@ -13,7 +13,14 @@ import styles from './user-task-view.module.scss';
 
 import { App, Skeleton } from 'antd';
 import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
-import useUserTasks from '@/lib/use-user-tasks';
+import {
+  addOwnerToTaskListEntry,
+  completeTasklistEntry,
+  getTasklistEntryHTML,
+  setTasklistEntryVariableValues,
+  setTasklistMilestoneValues,
+  submitFile,
+} from '@/lib/engines/server-actions';
 
 type UserTaskFormProps = {
   html?: string;
@@ -98,21 +105,12 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
 
   const { message } = App.useApp();
 
-  const {
-    completeEntry,
-    setMilestoneValues,
-    setVariableValues,
-    addOwner,
-    getTaskListEntryHtml,
-    submitFile,
-  } = useUserTasks(space, Infinity);
-
   const { data: html } = useQuery({
     queryFn: async () => {
       if (!task) return null;
       const html = await wrapServerCall({
         fn: async () => {
-          const html = await getTaskListEntryHtml(task.id, task.fileName);
+          const html = await getTasklistEntryHTML(space.spaceId, task.id);
 
           return html || null;
         },
@@ -147,10 +145,10 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           await wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwner(task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await completeEntry(task.id, variables);
+              return await completeTasklistEntry(space.spaceId, task.id, variables);
             },
           });
         }}
@@ -158,10 +156,10 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           await wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwner(task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await setMilestoneValues(task.id, newValues);
+              return await setTasklistMilestoneValues(space.spaceId, task.id, newValues);
             },
             onSuccess: () => {},
           });
@@ -170,17 +168,21 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwner(task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await setVariableValues(task.id, newValues);
+              return await setTasklistEntryVariableValues(space.spaceId, task.id, newValues);
             },
             onSuccess: () => {},
           });
         }}
         onFileSubmit={async (file) => {
           const path = await wrapServerCall({
-            fn: async () => submitFile(task.id, file),
+            fn: async () => {
+              const formData = new FormData();
+              formData.append('file', file);
+              return submitFile(space.spaceId, task.id, formData);
+            },
             onSuccess: false,
             onError: () =>
               message.error(

@@ -1,10 +1,8 @@
 import { useEnvironment, useSession } from '@/components/auth-can';
-import {
-  DeployedProcessInfo,
-  InstanceInfo,
-  VersionInfo,
-  getDeployments,
-} from '@/lib/engines/deployment';
+import { StoredDeployment } from '@/lib/data/db/deployment';
+import { addInstance, getInstance, getProcessDeployments } from '@/lib/data/deployment';
+import { getProcessBPMN, getProcessHtmlFormHTML } from '@/lib/data/processes';
+import { DeployedProcessInfo, InstanceInfo, getDeployment } from '@/lib/engines/deployment';
 import {
   pauseInstanceOnMachine,
   resumeInstanceOnMachine,
@@ -12,103 +10,139 @@ import {
   stopInstanceOnMachine,
 } from '@/lib/engines/instances';
 import { Engine } from '@/lib/engines/machines';
+import { deployProcess } from '@/lib/engines/server-actions';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
-import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { AsyncArray } from '@/lib/helpers/javascriptHelpers';
+import { truthyFilter } from '@/lib/typescript-utils';
+import { getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
+import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
-const mergeInstance = (newInstance: InstanceInfo, oldInstance?: InstanceInfo) => {
-  if (!oldInstance) return newInstance;
-
-  let hasChanges = false;
-
-  const toMerge: (keyof InstanceInfo)[] = [
-    'log',
-    'tokens',
-    'adaptationLog',
-    'variables',
-    'userTasks',
-    'instanceState',
-  ];
-
-  toMerge.forEach((key) => {
-    if (!deepEquals(oldInstance[key], newInstance[key])) {
-      hasChanges = true;
-    } else {
-      newInstance[key] = oldInstance[key] as never;
-    }
-  });
-
-  return hasChanges ? newInstance : oldInstance;
+export type DeploymentInfo = {
+  definitionId: string;
+  versions: (DeployedProcessInfo['versions'][number] & { machines: string[] })[];
+  instances: DeployedProcessInfo['instances'];
 };
 
-const mergeVersion = (newVersion: VersionInfo, oldVersion?: VersionInfo) => {
-  if (!oldVersion) return newVersion;
-
-  // we expect that a version will not change so the only difference should be the deployment
-  // date
-  if (oldVersion.deploymentDate != newVersion.deploymentDate) {
-    return newVersion;
-  }
-
-  return oldVersion;
-};
-
-const mergeDeployment = (
-  newDeployment: DeployedProcessInfo,
-  oldDeployment?: DeployedProcessInfo,
-) => {
-  if (!oldDeployment) return newDeployment;
-
-  let hasChanges = false;
-
-  newDeployment.versions.forEach((newInfo, index) => {
-    const oldInfo = oldDeployment.versions.find((v) => v.versionId === newInfo.versionId);
-    const merged = mergeVersion(newInfo, oldInfo);
-    if (merged !== oldInfo) hasChanges = true;
-    newDeployment.versions[index] = merged;
-  });
-
-  if (newDeployment.versions.length !== oldDeployment.versions.length) hasChanges = true;
-
-  newDeployment.instances.forEach((newInfo, index) => {
-    const oldInfo = oldDeployment.instances.find(
-      (v) => v.processInstanceId === newInfo.processInstanceId,
-    );
-    const merged = mergeInstance(newInfo, oldInfo);
-    if (merged !== oldInfo) hasChanges = true;
-    newDeployment.instances[index] = merged;
-  });
-
-  if (newDeployment.instances.length !== oldDeployment.instances.length) hasChanges = true;
-
-  return hasChanges ? newDeployment : oldDeployment;
-};
-
-function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
+function useDeployment(definitionId: string, initialDeployments: StoredDeployment[]) {
   const space = useEnvironment();
   const { data: session } = useSession();
 
-  const { data: engines } = useEngines(space, {
-    key: [definitionId],
-    fn: async (engine) => {
-      const deployments = await getDeployments([engine]);
-      return deployments.some((d) => d.definitionId === definitionId);
-    },
+  const { data: engines, refetch: refetchEngines } = useEngines(space);
+
+  const queryFn = useCallback(async () => {
+    const deployments = await getProcessDeployments(space.spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return null;
+
+    return deployments.filter((d) => !d.deleted) || null;
+  }, [space, definitionId]);
+
+  const deploymentsQuery = useQuery({
+    queryFn,
+    queryKey: ['processDeployments', space.spaceId, definitionId],
+    initialData: initialDeployments,
+    refetchInterval: 1000,
+  });
+
+  const instanceQueryFn = useCallback(async () => {
+    if (!deploymentsQuery.data) return [];
+
+    type InstanceRes = Awaited<ReturnType<typeof getInstance>>;
+    function isNotAnError(
+      instanceRes: InstanceRes,
+    ): instanceRes is Exclude<NonNullable<InstanceRes>, { error: any }> {
+      return !!instanceRes && !('error' in instanceRes);
+    }
+
+    return (
+      await AsyncArray.from(deploymentsQuery.data)
+        .map((d) => d.instances)
+        .flatten()
+        .map((iId) => getInstance(space.spaceId, iId))
+    ).filter(isNotAnError);
+  }, [space, deploymentsQuery.data]);
+
+  const instancesQuery = useQuery({
+    queryKey: ['processDeployments', space.spaceId, definitionId, 'instances'],
+    initialData: [],
+    queryFn: instanceQueryFn,
+    enabled: !!deploymentsQuery.data,
+    refetchInterval: 1000,
   });
 
   const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (!engines?.length) return userError('No fitting engine found');
+    // make sure that the version is deployed on one of the currently reachable engines
+    const updatedEngines = await refetchEngines();
+    if (updatedEngines.error || !updatedEngines.data?.length) {
+      return userError('Unable to find an engine to start the instance on.');
+    }
 
-    // TODO: in case of static deployment or different versions on different engines we will have
-    // to check if the engine can actually be used to start an instance
-    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-      processInitiator: session?.user.id,
-      spaceIdOfProcessInitiator: space.spaceId,
-    });
+    await deployProcess(definitionId, versionId, space.spaceId, 'dynamic', updatedEngines.data);
+
+    const updated = await deploymentsQuery.refetch();
+    if (updated.error) {
+      return userError('Unable to get up to date deployment info.');
+    }
+
+    const versionDeployments = updated.data?.filter((d) => d.version.id === versionId);
+    if (!versionDeployments?.length) return userError('This process version is not deployed.');
+
+    const targetDeployment = versionDeployments
+      .flatMap((v) => {
+        const machineIds = v.machineIds
+          .map((id) => updatedEngines.data?.find((e) => e.id === id))
+          .filter(truthyFilter);
+
+        return machineIds.length ? { deploymentId: v.id, machineIds } : undefined;
+      })
+      .filter(truthyFilter);
+
+    // Deploy the version if no available engine has it deployed
+    if (!targetDeployment.length) {
+      return userError('None of the engines that this version is deployed to are reachable.');
+    }
+
+    if (targetDeployment.length) {
+      const result = await startInstanceOnMachine(
+        definitionId,
+        versionId,
+        targetDeployment[0].machineIds[0],
+        variables,
+        {
+          processInitiator: session?.user.id,
+          spaceIdOfProcessInitiator: space.spaceId,
+        },
+      );
+
+      if (isUserErrorResponse(result)) return result;
+
+      const engineDeploymentInfo = await getDeployment(
+        targetDeployment[0].machineIds[0],
+        definitionId,
+      );
+      const instance = engineDeploymentInfo.instances.find((i) => i.processInstanceId === result);
+
+      if (!instance) return userError('Failed to fetch the newly created instance');
+
+      await addInstance(space.spaceId, {
+        id: result,
+        versionId,
+        deploymentId: targetDeployment[0].deploymentId,
+        machineIds: [targetDeployment[0].machineIds[0].id],
+        initiatorId: session!.user.id,
+        state: instance,
+      });
+
+      return result;
+    }
   };
+
+  const deployedTo = useMemo(() => {
+    const machineIds = deploymentsQuery.data?.flatMap((v) => v.machineIds) || [];
+    return engines?.filter((engine) => machineIds.includes(engine.id));
+  }, [deploymentsQuery.data, engines]);
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
   async function changeInstanceState(
@@ -116,26 +150,27 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     stateValidator: (state: InstanceInfo['instanceState']) => boolean,
     stateChangeFunction: typeof resumeInstanceOnMachine,
   ) {
-    if (!engines) return;
+    if (!deployedTo) return;
     try {
-      const targetEngines = await asyncFilter(engines, async (engine: Engine) => {
-        const deployments = await getDeployments([engine]);
+      await AsyncArray.from(deployedTo)
+        .filter(async (engine: Engine) => {
+          try {
+            const deployment = await getDeployment(engine, definitionId);
 
-        return deployments.some((deployment) => {
-          if (deployment.definitionId !== definitionId) return false;
+            const instance = deployment.instances.find(
+              (instance) => instance.processInstanceId === instanceId,
+            );
 
-          const instance = deployment.instances.find(
-            (instance) => instance.processInstanceId === instanceId,
-          );
-          if (!instance) return false;
+            if (!instance) return false;
 
-          return stateValidator(instance.instanceState);
+            return stateValidator(instance.instanceState);
+          } catch (err) {
+            return false;
+          }
+        })
+        .forEach(async (engine) => {
+          await stateChangeFunction(definitionId, instanceId, engine);
         });
-      });
-
-      await asyncForEach(targetEngines, async (engine) => {
-        await stateChangeFunction(definitionId, instanceId, engine);
-      });
     } catch (e) {
       const message = getErrorMessage(e);
       return userError(message);
@@ -171,48 +206,40 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
   }
 
   async function getStartForm(versionId: string) {
-    if (!engines?.length) return userError('No fitting engine found');
-
     try {
+      // try to get the start form locally
+      try {
+        const bpmn = await getProcessBPMN(definitionId, space.spaceId, versionId);
+        const [startForm] = Object.values(await getStartFormFileNameMapping(bpmn)).filter(
+          truthyFilter,
+        );
+        if (!startForm) return '';
+
+        return getProcessHtmlFormHTML(definitionId, startForm, space.spaceId);
+      } catch (err) {}
+
+      if (!deployedTo) return;
+
       // TODO: in case of static deployment or different versions on different engines we will have
       // to check if the engine can actually be used to start an instance
-      return await getStartFormFromMachine(definitionId, versionId, engines[0]);
+      return await getStartFormFromMachine(definitionId, versionId, deployedTo[0]);
     } catch (e) {
       const message = getErrorMessage(e);
       return userError(message);
     }
   }
 
-  const queryFn = useCallback(async () => {
-    if (engines?.length) {
-      // TODO: this only handles situations where we have only a single engine
-      // in the future we have to implement logic that merges data from multiple engines
-      const deployments = await getDeployments([engines[0]]);
-      return deployments.find((d) => d.definitionId === definitionId) || null;
-    }
-
-    return null;
-  }, [engines, definitionId]);
-
-  const query = useQuery({
-    queryFn,
-    initialData,
-    queryKey: ['processDeployments', space.spaceId, definitionId],
-    refetchInterval: 1000,
-    // return the same data if nothing has changed from the last fetch to prevent unnecessary
-    // rerenders
-    structuralSharing: (oldQuery, newQuery) => {
-      if (!newQuery) return oldQuery;
-      if (!oldQuery) return newQuery;
-
-      const oldData = oldQuery as DeployedProcessInfo;
-      const newData = newQuery as DeployedProcessInfo;
-
-      return mergeDeployment(newData, oldData);
-    },
-  });
-
-  return { ...query, startInstance, resumeInstance, pauseInstance, stopInstance, getStartForm };
+  return {
+    deployments: deploymentsQuery.data,
+    refetchDeployments: deploymentsQuery.refetch,
+    instances: instancesQuery.data,
+    refetchInstances: instancesQuery.refetch,
+    startInstance,
+    resumeInstance,
+    pauseInstance,
+    stopInstance,
+    getStartForm,
+  };
 }
 
 export default useDeployment;

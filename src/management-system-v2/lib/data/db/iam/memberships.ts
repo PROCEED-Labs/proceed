@@ -84,6 +84,7 @@ export async function getFullMembersWithRoles(environmentId: string, ability?: A
         where: {
           role: {
             environmentId: environmentId,
+            parentRoleId: null,
           },
         },
         include: {

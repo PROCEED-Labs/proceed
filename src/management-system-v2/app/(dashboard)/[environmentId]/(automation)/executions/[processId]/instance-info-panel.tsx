@@ -39,29 +39,35 @@ export function DisplayTable({ data }: { data: ReactNode[][] }) {
 export default function InstanceInfoPanel({
   open,
   close,
-  info,
+  processId,
+  version,
+  instance,
+  element,
   refetch,
 }: {
   close: () => void;
   open: boolean;
-  info: RelevantInstanceInfo;
+  processId: string;
+  version: { bpmn: string };
+  instance?: InstanceInfo;
+  element?: ElementLike;
   refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   const breakpoints = Grid.useBreakpoint();
 
-  const title = info.element?.businessObject?.name || info.element?.id || 'How to PROCEED?';
+  const title = element?.businessObject?.name || element?.id || 'How to PROCEED?';
 
   if (breakpoints.xl && !open) return null;
 
-  const tabs = info.element ? (
+  const tabs = element ? (
     <Tabs
       defaultActiveKey="1"
       items={[
         {
           key: 'Status',
           label: 'Status',
-          children: <ElementStatus info={info} />,
+          children: <ElementStatus processId={processId} element={element} instance={instance} />,
         },
         {
           key: 'Advanced',
@@ -81,7 +87,14 @@ export default function InstanceInfoPanel({
         {
           key: 'Variables',
           label: 'Variables',
-          children: <InstanceVariables refetch={refetch} info={info} />,
+          children: (
+            <InstanceVariables
+              refetch={refetch}
+              processId={processId}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
           key: 'Resources',

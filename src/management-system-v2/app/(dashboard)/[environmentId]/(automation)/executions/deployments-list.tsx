@@ -5,15 +5,14 @@ import { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useState } from 'react';
-import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import SpaceLink from '@/components/space-link';
 import processListStyles from '@/components/process-icon-list.module.scss';
 
 type InputItem = {
   id: string;
   name: string;
-  versions: DeployedProcessInfo['versions'];
-  instances: DeployedProcessInfo['instances'];
+  versions: { id: string; name: string }[];
+  instances: string[];
 };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
 
@@ -65,11 +64,7 @@ const DeploymentsList = ({
       dataIndex: 'description',
       key: 'Versions',
       render: (_, { versions }) => (
-        <Tooltip
-          title={
-            versions.length > 1 && versions.map((v) => v.versionName || v.definitionName).join(', ')
-          }
-        >
+        <Tooltip title={versions.length > 1 && versions.map((v) => v.name).join(', ')}>
           <span>{versions.length}</span>
         </Tooltip>
       ),
@@ -100,7 +95,7 @@ const DeploymentsList = ({
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: (id, record) => {
+      render: () => {
         return (
           <Button style={{ float: 'right' }} type="text">
             <DeleteOutlined color="red" />

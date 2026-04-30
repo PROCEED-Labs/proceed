@@ -7,13 +7,21 @@ import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 
-export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
+export function ElementStatus({
+  processId,
+  element,
+  instance,
+}: {
+  processId: string;
+  element: RelevantInstanceInfo['element'];
+  instance: RelevantInstanceInfo['instance'];
+}) {
   const statusEntries: ReactNode[][] = [];
 
-  const isRootElement = info.element && info.element.type === 'bpmn:Process';
-  const metaData = getMetaDataFromElement(info.element.businessObject);
-  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
-  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+  const isRootElement = element && element.type === 'bpmn:Process';
+  const metaData = getMetaDataFromElement(element.businessObject);
+  const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
+  const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   // Element image
   if (metaData.overviewImage)
@@ -35,7 +43,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
           alt="Image linked to the element"
           src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
             pathParams: {
-              definitionId: info.process.definitionId,
+              definitionId: processId,
               fileName: metaData.overviewImage,
             },
           })}
@@ -45,14 +53,14 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // Element status
   let status = undefined;
-  if (isRootElement && info.instance) {
-    status = info.instance.instanceState[0];
-  } else if (info.element && info.instance) {
-    const elementInfo = info.instance.log.find((l) => l.flowElementId == info.element.id);
+  if (isRootElement && instance) {
+    status = instance.instanceState[0];
+  } else if (element && instance) {
+    const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
     if (elementInfo) {
       status = elementInfo.executionState;
     } else {
-      const tokenInfo = info.instance.tokens.find((l) => l.currentFlowElementId == info.element.id);
+      const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
       status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
     }
   }
@@ -73,7 +81,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <Checkbox
         key="external"
         disabled
-        value={info.element.businessObject && info.element.businessObject.external}
+        value={element.businessObject && element.businessObject.external}
       />,
     ]);
   }
@@ -81,7 +89,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   // Progress
   // TODO: editable progress
   // see src/management-system/src/frontend/components/deployments/activityInfo/ProgressSetter.vue
-  if (info.instance && !isRootElement) {
+  if (instance && !isRootElement) {
     let progress:
       | { value: number; manual: boolean; milestoneCalculatedProgress?: number }
       | undefined = undefined;
@@ -116,10 +124,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // User task
   // TODO: editable priority
-  if (info.element.type === 'bpmn:UserTask') {
+  if (element.type === 'bpmn:UserTask') {
     let priority: number | undefined = undefined;
 
-    if (info.instance) {
+    if (instance) {
       if (token) priority = token.priority;
       else if (logInfo) priority = logInfo.priority;
     } else {
@@ -142,7 +150,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // Real Costs
   // TODO: Set real costs
-  if (info.instance && !isRootElement) {
+  if (instance && !isRootElement) {
     let costs: string | undefined = undefined;
     if (token) costs = token.costsRealSetByOwner;
     else if (logInfo) costs = logInfo.costsRealSetByOwner;
@@ -151,12 +159,12 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   }
 
   // Documentation
-  statusEntries.push(['Documentation:', info.element.businessObject?.documentation?.[0]?.text]);
+  statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
 
   // Activity time calculation
   const { start, end, duration } = getTimeInfo({
-    element: info.element,
-    instance: info.instance,
+    element: element,
+    instance: instance,
     logInfo,
     token,
   });

@@ -26,10 +26,10 @@ import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getAvailableSpaceEngines } from '@/lib/engines/server-actions';
-import { SpaceEngine } from '@/lib/engines/machines';
+import { Engine, SpaceEngine } from '@/lib/engines/machines';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
+import { getAvailableMachines } from '@/lib/data/db/engines';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -78,11 +78,11 @@ const DeploymentButtons = ({
   );
 };
 
-const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEED') => void }) => {
+const EngineSelection = ({ onEngine }: { onEngine: (args?: Engine | 'PROCEED') => void }) => {
   const space = useEnvironment();
   const { isLoading, error, data } = useQuery({
     queryFn: async () => {
-      const response = await getAvailableSpaceEngines(space.spaceId);
+      const response = await getAvailableMachines(space.spaceId);
       if (isUserErrorResponse(response)) throw response.error;
       return response;
     },
@@ -158,7 +158,7 @@ const DeploymentsModal = ({
   processes: InputItem[];
   favourites?: string[];
   folder: Folder;
-  selectProcess: (process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') => void;
+  selectProcess: (process: ProcessListProcess, engine?: Engine | 'PROCEED') => void;
 }) => {
   const environment = useEnvironment();
 
@@ -167,7 +167,7 @@ const DeploymentsModal = ({
     ProcessListProcess | undefined
   >();
 
-  function selectProcess(process: ProcessListProcess, engine?: SpaceEngine | 'PROCEED') {
+  function selectProcess(process: ProcessListProcess, engine?: Engine | 'PROCEED') {
     _selectProcess(process, engine);
     close();
   }

@@ -49,6 +49,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
+  deployments             ProcessDeployment[]
+  instances               ProcessInstance[]
 
   @@map("user")
 }
@@ -86,8 +88,10 @@ model Process {
   inEditingBy               Json?
   processIds                String[]
   type                      String
-  folder                    Folder                     @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  folderId                  String
+  // if the folder is null the process has been removed from the space but is kept in storage for reference in audit trails
+  // TODO: when this is set the artifacts of the latest process version should be marked for removal since they are not needed anymore
+  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId                  String?
   sharedAs                  String
   shareTimestamp            BigInt
   allowIframeTimestamp      BigInt
@@ -106,15 +110,16 @@ model Process {
 }
 
 model Artifact {
-  id                String                     @id @default(uuid())
-  filePath          String                     @unique
-  fileName          String                     @unique
-  deletable         Boolean?                   @default(false)
-  deletedOn         DateTime?
-  artifactType      String // html-forms, script, image, etc.
-  processReferences ArtifactProcessReference[] // Relation to track references
-  versionReferences ArtifactVersionReference[]
-  refCounter        Int                        @default(0)
+  id                 String                      @id @default(uuid())
+  filePath           String                      @unique
+  fileName           String                      @unique
+  deletable          Boolean?                    @default(false)
+  deletedOn          DateTime?
+  artifactType       String // html-forms, script, image, etc.
+  processReferences  ArtifactProcessReference[] // Relation to track references
+  versionReferences  ArtifactVersionReference[]
+  instanceReferences ArtifactInstanceReference[]
+  refCounter         Int                         @default(0)
 
   @@map("artifact")
 }
@@ -143,6 +148,20 @@ model ArtifactVersionReference {
   @@map("artifact_version_reference")
 }
 
+model ArtifactInstanceReference {
+  id           String           @id @default(uuid())
+  artifact     Artifact         @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId   String
+  instance     ProcessInstance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId   String
+  createdAt    DateTime         @default(now())
+  originalName String
+  mimeType     String
+
+  @@unique([artifactId, instanceId])
+  @@map("artiface_instance_reference")
+}
+
 model Space {
   id                 String         @id @default(uuid())
   name               String?
@@ -158,6 +177,7 @@ model Space {
   folders            Folder[]
   processes          Process[]
   htmlForms          HtmlForm[]
+  userTasks          UserTask[]
   roles              Role[]
   engines            Engine[]
   settings           SpaceSettings? @relation("spaceSettings")
@@ -210,6 +230,8 @@ model Version {
   createdOn                 DateTime                   @unique @updatedAt
   bpmnFilePath              String
   artifactVersionReferences ArtifactVersionReference[]
+  deployments               ProcessDeployment[]
+  instances                 ProcessInstance[]     
 
   @@map("version")
 }
@@ -229,6 +251,9 @@ model Role {
   lastEditedOn  DateTime  @updatedAt
   parentId      String?
   parentFolder  Folder?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parentRoleId  String?
+  parentRole    Role?      @relation("roleHierarchy", fields: [parentRoleId], references: [id], onDelete: Cascade)
+  children      Role[]    @relation("roleHierarchy")
 
   organigramTeam       UserOrganigram[] @relation("teamRole")
   organigramBackOffice UserOrganigram[] @relation("backOfficeRole")
@@ -328,21 +353,25 @@ model UserTask {
   id                String    @id
   taskId            String
   name              String?
-  instanceID        String
+  instanceID        String?
+  instance          ProcessInstance? @relation(fields: [instanceID], references: [id], onDelete: Cascade)
   fileName          String
-  html              String?
+  html              String
   state             String
   priority          Int
   progress          Int
   startTime         DateTime
   endTime           DateTime?
-  initialVariables  Json?
-  variableChanges   Json?
-  milestones        Json?
-  milestonesChanges Json?
+  initialVariables  Json
+  variableChanges   Json
+  milestones        Json
+  milestonesChanges Json
   machineId         String
   actualOwner       String[]
   potentialOwners   Json
+
+  space             Space           @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId     String
 
   @@map("userTask")
 }
@@ -428,4 +457,47 @@ model UserOrganigram {
   backOfficeRole Role?       @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
 
   @@map("user_organigram")
+}
+
+model ProcessDeployment {
+  id            String     @id @default(uuid())
+  versionId     String      
+  version       Version    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  // These are not the "Engines" but the actual machines the process was deployed to
+  // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"
+  machineIds    String[]
+  deployerId    String
+  deployer      User?       @relation(fields: [deployerId], references: [id], onDelete: SetNull) 
+  deployTime    DateTime    @default(now())
+
+  // marks a deployment as deleted if the deployment could not be removed from the related engines at the time a user tried to delete it
+  // when the engine becomes available again the deployment should be removed from it and then the database entry should be removed
+  // TODO: create function that sets this to true when the linked process is deleted
+  deleted       Boolean     @default(false)
+
+  // marks a deployment as active if it is allowed to spawn new instances automatically on the engines it is deployed to
+  // this can happen when the bpmn contains typed start events like timer start events
+  active        Boolean     @default(false)
+
+  instances     ProcessInstance[]
+
+  @@map("process_deployment")
+}
+
+model ProcessInstance {
+  id                  String            @id
+  deploymentId        String
+  deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  versionId           String       
+  version             Version           @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  initiatorId         String?
+  initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  userTasks           UserTask[]
+  // These are not the "Engines" but the actual machines the process is running on
+  // an "Engine" can represent multiple machines in case it is an "MQTT-Engine"
+  machineIds          String[]
+  state               Json
+  artifactReferences  ArtifactInstanceReference[]
+
+  @@map("process_instance")
 }

@@ -179,7 +179,7 @@ const DashboardLayout = async (
       });
     }
 
-    let pollingInterval = 10000;
+    let pollingInterval = 1000;
 
     if (Number.isInteger(automationSettings.taskPollingInterval)) {
       pollingInterval = automationSettings.taskPollingInterval;
@@ -224,14 +224,15 @@ const DashboardLayout = async (
           icon: <CopyOutlined />,
           selectedRegex: '/processes/list($|/)',
         },
-        documentationSettings.editor?.active !== false && {
-          key: 'processes-editor',
-          label: (
-            <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Process Editor</Link>
-          ),
-          icon: <EditOutlined />,
-          selectedRegex: '/processes/editor($|/)',
-        },
+        documentationSettings.editor?.active !== false &&
+          ability.can('manage', 'Process') && {
+            key: 'processes-editor',
+            label: (
+              <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Process Editor</Link>
+            ),
+            icon: <EditOutlined />,
+            selectedRegex: '/processes/editor($|/)',
+          },
       ].filter(truthyFilter);
 
       if (children.length)

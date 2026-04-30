@@ -83,13 +83,21 @@ const Tasklist: React.FC<TasklistProps> = ({ userId, pollingInterval }) => {
       return (a: ExtendedTaskListEntry, b: ExtendedTaskListEntry) => {
         // tiebreak equal value by comparing the startTime
         if (a[key] === b[key]) {
-          return selectedSortItem.ascending ? a.startTime - b.startTime : b.startTime - a.startTime;
+          return selectedSortItem.ascending
+            ? +a.startTime - +b.startTime
+            : +b.startTime - +a.startTime;
         }
 
         if (key === 'state') {
           const indexA = stateOrder.findIndex((state) => a.state === state);
           const indexB = stateOrder.findIndex((state) => b.state === state);
           return selectedSortItem.ascending ? indexA - indexB : indexB - indexA;
+        }
+
+        if (key === 'startTime' || key === 'endTime') {
+          return selectedSortItem.ascending
+            ? (a[key]?.getTime() || 0) - (b[key]?.getTime() || 0)
+            : (b[key]?.getTime() || 0) - (a[key]?.getTime() || 0);
         }
 
         return selectedSortItem.ascending

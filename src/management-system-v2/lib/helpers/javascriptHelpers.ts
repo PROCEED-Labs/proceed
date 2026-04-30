@@ -1,29 +1,114 @@
-export async function asyncMap<Type, TReturn>(
-  array: Array<Type>,
-  cb: (entry: Type, index: number) => Promise<TReturn>,
-) {
-  const mappingCallbacks = array.map(async (entry, index) => await cb(entry, index));
+import { truthyFilter } from '../typescript-utils';
 
-  const mappedValues = await Promise.all(mappingCallbacks);
+export class AsyncArray<Type> {
+  static from<StaticType>(array: StaticType[] | Promise<StaticType[]>) {
+    return new AsyncArray(array);
+  }
 
-  return mappedValues as Array<TReturn>;
+  _promise: Promise<Type[]>;
+  constructor(array: Type[] | Promise<Type[]>) {
+    if (array instanceof Promise) this._promise = array;
+    else this._promise = Promise.resolve(array);
+  }
+
+  map<TReturn>(cb: (entry: Type, index: number) => Promise<TReturn> | TReturn) {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        const mappingCallbacks = array.map(async (entry, index) => await cb(entry, index));
+        const mappedValues = await Promise.all(mappingCallbacks);
+        return mappedValues as Array<TReturn>;
+      }),
+    );
+  }
+
+  filter(cb: (entry: Type) => Promise<boolean> | boolean) {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        const mapped = await asyncMap(array, async (entry) => {
+          const keep = await cb(entry);
+          return keep ? entry : undefined;
+        });
+        return mapped.filter(truthyFilter);
+      }),
+    );
+  }
+
+  forEach(cb: (entry: Type, index: number) => Promise<void> | void) {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        await AsyncArray.from(array).map(cb);
+        return array;
+      }),
+    );
+  }
+
+  /**
+   * Recursively flattens the array
+   **/
+  flatten() {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        return array.flat();
+      }),
+    );
+  }
+
+  /**
+   * Removes all occurences of falsy values from the array
+   **/
+  nonNullable() {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        return array.filter(truthyFilter);
+      }) as Promise<NonNullable<Type>[]>,
+    );
+  }
+
+  /**
+   * Removes duplicate elements from the array
+   *
+   * @param hash function that maps entries to strings or numbers that are the same for equal
+   * entries
+   **/
+  deduplicate<T extends string | number>(hash: (a: Type) => T) {
+    return new AsyncArray(
+      this._promise.then(async (array) => {
+        const existing = {} as { [Type in T]: true };
+
+        return array.reduce((set, curr) => {
+          const hashed = hash(curr);
+          if (existing[hashed]) return set;
+          else {
+            existing[hashed] = true;
+            return [...set, curr];
+          }
+        }, [] as Type[]);
+      }),
+    );
+  }
+
+  then(res?: (val: Type[]) => Type[] | PromiseLike<Type[]>, rej?: (err: unknown) => unknown) {
+    return this._promise.then(res, rej);
+  }
 }
 
-export async function asyncForEach<Type>(
+export function asyncMap<Type, TReturn>(
   array: Array<Type>,
-  cb: (entry: Type, index: number) => Promise<void>,
+  cb: (entry: Type, index: number) => Promise<TReturn> | TReturn,
 ) {
-  await asyncMap(array, cb);
+  return AsyncArray.from(array).map(cb);
 }
 
-export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) => Promise<boolean>) {
+export function asyncForEach<Type>(
+  array: Array<Type>,
+  cb: (entry: Type, index: number) => Promise<void> | void,
+) {
+  return AsyncArray.from(array).forEach(cb);
+}
+
+export function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) => Promise<boolean>) {
   // map the elements to their value or undefined and then filter undefined entries
-  return (
-    await asyncMap(array, async (entry) => {
-      const keep = await cb(entry);
-      return keep ? entry : undefined;
-    })
-  ).filter((entry) => entry) as Array<Type>;
+  return AsyncArray.from(array).filter(cb);
 }
 
 export interface DiffResult {

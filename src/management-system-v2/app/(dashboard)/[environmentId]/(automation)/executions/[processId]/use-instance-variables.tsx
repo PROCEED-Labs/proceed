@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import { InstanceInfo } from '@/lib/engines/deployment';
 import { ProcessVariable, ProcessVariableSchema } from '@/lib/process-variable-schema';
 
 export type Variable = {
@@ -11,17 +11,11 @@ export type Variable = {
   value: any;
 };
 
-type DeploymentInfo = {
-  process?: DeployedProcessInfo | null;
-  version?: VersionInfo;
-  instance?: InstanceInfo | undefined;
-};
-
-const useInstanceVariables = (info: DeploymentInfo) => {
+const useInstanceVariables = (info: { version?: { bpmn: string }; instance?: InstanceInfo }) => {
   const [variableDefinitions, setVariableDefinitions] = useState<ProcessVariable[]>([]);
 
   useEffect(() => {
-    const initVariables = async (version: VersionInfo) => {
+    const initVariables = async (version: { bpmn: string }) => {
       const [processId] = await getProcessIds(version.bpmn);
       const variables = ProcessVariableSchema.array().safeParse(
         await getVariablesFromElementById(version.bpmn, processId),

@@ -10,11 +10,10 @@ import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { processHasChangesSinceLastVersion } from '@/lib/data/processes';
-import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
 import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { SpaceEngine } from '@/lib/engines/machines';
+import { Engine } from '@/lib/engines/machines';
 import { userError } from '@/lib/user-error';
 import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,8 +32,8 @@ const DeploymentsView = ({
   deployedProcesses: {
     id: string;
     name: string;
-    versions: DeployedProcessInfo['versions'];
-    instances: DeployedProcessInfo['instances'];
+    versions: { id: string; name: string }[];
+    instances: string[];
   }[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -53,7 +52,7 @@ const DeploymentsView = ({
   const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
   function deployProcess(
     process: Pick<Process, 'id' | 'versions'>,
-    forceEngine?: SpaceEngine | 'PROCEED',
+    forceEngine?: Engine | 'PROCEED',
   ) {
     startCheckingProcessVersion(async () => {
       wrapServerCall({

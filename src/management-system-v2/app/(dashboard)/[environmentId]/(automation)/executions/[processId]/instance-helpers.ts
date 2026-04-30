@@ -1,4 +1,6 @@
-import { DeployedProcessInfo, InstanceInfo } from '@/lib/engines/deployment';
+import { StoredDeployment } from '@/lib/data/db/deployment';
+import { StoredInstance } from '@/lib/data/db/instances';
+import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -132,23 +134,23 @@ export function getPlanDelays({
   return { plan, delays };
 }
 
-export function getVersionInstances(process: DeployedProcessInfo, version?: string) {
-  const instances = process.instances;
+export function getVersionInstances(instances: StoredInstance[], version?: string) {
+  const instanceStates = instances.map((i) => i.state as InstanceInfo);
 
-  if (!version) return instances;
-  return instances.filter((instance) => instance.processVersion === version);
+  if (!version) return instanceStates;
+  return instanceStates.filter((instance) => instance.processVersion === version);
 }
 
-export function getLatestDeployment(process: DeployedProcessInfo) {
-  let latest = process.versions.length - 1;
-  for (let i = process.versions.length - 2; i >= 0; i--) {
-    // TODO: this is actually the last version that was deployed since there is no version creation
-    // information stored on the engine (do we keep this, store the creation time on the engine or
-    // parse the creation time from the bpmn?)
-    if (process.versions[i].deploymentDate > process.versions[latest].deploymentDate) latest = i;
-  }
-
-  return process.versions[latest];
+export function getLatestDeployment(deployments: StoredDeployment[]) {
+  return deployments.reduce(
+    (latest, curr) => {
+      if (!latest || latest.deployTime.getTime() > curr.deployTime.getTime()) {
+        return curr;
+      }
+      return latest;
+    },
+    undefined as undefined | StoredDeployment,
+  );
 }
 
 export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {

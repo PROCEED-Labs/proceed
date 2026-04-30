@@ -64,7 +64,7 @@ const UserTaskCard = ({
   const endTime = userTaskData.endTime;
 
   const durationValues = transformMilisecondsToDurationValues(
-    (endTime || +new Date()) - userTaskData.startTime,
+    (endTime?.getTime() || +new Date()) - userTaskData.startTime.getTime(),
     true,
   );
 

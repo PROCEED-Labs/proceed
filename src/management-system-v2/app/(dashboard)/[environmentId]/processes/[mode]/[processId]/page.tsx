@@ -9,7 +9,7 @@ import { getProcessBPMN } from '@/lib/data/processes';
 import BPMNTimeline from '@/components/bpmn-timeline';
 import { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import type { Process } from '@/lib/data/process-schema';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById } from '@/lib/data/db/folders';
 import { getUserById } from '@/lib/data/db/iam/users';
@@ -40,6 +40,10 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
   const selectedVersionId = searchParams.version;
   // Only load BPMN if no version selected (for latest version)
   const process = await getProcess(processId, !selectedVersionId);
+
+  if (!process.folderId) {
+    return notFound();
+  }
 
   // For list view: check for redirect
   if (props.isListView) {

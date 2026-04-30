@@ -321,7 +321,7 @@ export async function moveProcess(processId: string, newParentId: string, abilit
     where: { id: processId },
   });
 
-  if (!process) throw new Error('Folder not found');
+  if (!process || !process.folderId) throw new Error('Folder not found');
 
   if (process.folderId === newParentId) return;
 

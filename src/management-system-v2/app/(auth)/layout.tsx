@@ -2,8 +2,46 @@ import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import Content from '@/components/content';
 import Processes from '@/components/processes';
 import { SetAbility } from '@/lib/abilityStore';
-import { FC, PropsWithChildren } from 'react';
+import { connection } from 'next/server';
+import { FC, PropsWithChildren, Suspense } from 'react';
 import { AiOutlineFile, AiOutlineProfile } from 'react-icons/ai';
+
+const DummyProcesses = async () => {
+  await connection();
+  return (
+    <Processes
+      processes={[
+        {
+          id: '',
+          folderId: '',
+          environmentId: '',
+          creatorId: '',
+          name: 'How to PROCEED',
+          type: 'process',
+          versions: [],
+          createdOn: new Date(),
+          lastEditedOn: new Date(),
+          //variables: [],
+          //departments: [],
+          processIds: [],
+          description: 'How to PROCEED',
+          sharedAs: 'protected',
+          shareTimestamp: 0,
+          allowIframeTimestamp: 0,
+        },
+      ]}
+      folder={{
+        id: '',
+        name: '',
+        parentId: null,
+        createdOn: new Date(),
+        createdBy: '',
+        lastEditedOn: new Date(),
+        environmentId: '',
+      }}
+    />
+  );
+};
 
 const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
   return (
@@ -35,37 +73,9 @@ const SigninLayout: FC<PropsWithChildren> = ({ children }) => {
         disableUserDataModal
       >
         <Content title="Processes">
-          <Processes
-            processes={[
-              {
-                id: '',
-                folderId: '',
-                environmentId: '',
-                creatorId: '',
-                name: 'How to PROCEED',
-                type: 'process',
-                versions: [],
-                createdOn: new Date(),
-                lastEditedOn: new Date(),
-                //variables: [],
-                //departments: [],
-                processIds: [],
-                description: 'How to PROCEED',
-                sharedAs: 'protected',
-                shareTimestamp: 0,
-                allowIframeTimestamp: 0,
-              },
-            ]}
-            folder={{
-              id: '',
-              name: '',
-              parentId: null,
-              createdOn: new Date(),
-              createdBy: '',
-              lastEditedOn: new Date(),
-              environmentId: '',
-            }}
-          />
+          <Suspense fallback={<p>Loading...</p>}>
+            <DummyProcesses />
+          </Suspense>
         </Content>
       </Layout>
     </>

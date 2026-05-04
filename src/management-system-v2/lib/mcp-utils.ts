@@ -55,13 +55,13 @@ export async function isAccessible(
   for (const cV of configValues) {
     // allow values that are defined with subpath (e.g. 'process-automation.tasklist')
     const [settingName, ...path] = cV.split('.');
-    let settings = await getSpaceSettingsValues(spaceId, settingName, ability);
+    const settings = await getSpaceSettingsValues(spaceId, settingName, ability);
     if (isUserErrorResponse(settings)) return false;
     if (settings?.active === false) return false;
     let subSetting = settings;
     for (let i = 0; i < path.length && !!subSetting; ++i) {
       if (subSetting[path[i]]?.active === false) return false;
-      settings = subSetting[path[i]];
+      subSetting = subSetting[path[i]];
     }
   }
 

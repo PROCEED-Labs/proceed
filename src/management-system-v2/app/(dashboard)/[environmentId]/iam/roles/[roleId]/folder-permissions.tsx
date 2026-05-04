@@ -36,8 +36,9 @@ type PermissionCategory = {
 const FolderSelection: React.FC<{
   defaultFolders: SelectionFolder[];
   onSubmit: (selected: SelectionFolder[]) => void;
+  onCancel: () => void;
   notSelectable: string[];
-}> = ({ defaultFolders, onSubmit, notSelectable }) => {
+}> = ({ defaultFolders, onSubmit, onCancel, notSelectable }) => {
   const [selectedFolders, setSelectedFolders] = useState<SelectionFolder[]>(defaultFolders);
 
   return (
@@ -46,7 +47,7 @@ const FolderSelection: React.FC<{
         title="Choose a folder"
         open={true}
         onOk={() => onSubmit(selectedFolders)}
-        onCancel={() => onSubmit([])}
+        onCancel={onCancel}
         cancelText={null}
         closeIcon={null}
       >
@@ -363,6 +364,10 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
               ].filter(truthyFilter),
             );
 
+            setInitialFolders(undefined);
+            setGroupInEditing(undefined);
+          }}
+          onCancel={() => {
             setInitialFolders(undefined);
             setGroupInEditing(undefined);
           }}

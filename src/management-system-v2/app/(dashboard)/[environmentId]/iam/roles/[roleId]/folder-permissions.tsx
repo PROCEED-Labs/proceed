@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, Space, Button, Modal, Collapse, Flex } from 'antd';
+import { Form, Space, Button, Modal, Collapse, Flex, App } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
 import { FC, use, useEffect, useMemo, useState } from 'react';
@@ -18,6 +18,7 @@ import { Folder } from '@/lib/data/folder-schema';
 import { FolderTree } from '@/components/FolderTree';
 import { useRouter } from 'next/navigation';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { wrapServerCall } from '@/lib/wrap-server-call';
 
 type SelectionFolder = { id: string; name: string; type: 'folder' };
 
@@ -179,6 +180,7 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
   const environment = useEnvironment();
   const envVars = use(EnvVarsContext);
 
+  const { message } = App.useApp();
   const router = useRouter();
 
   const [form] = Form.useForm();
@@ -260,48 +262,57 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
   async function updateRoles() {
     setLoading(true);
 
-    const values = (await form.validateFields()) as Record<
-      string,
-      Record<ResourceType, Record<ResourceActionType, boolean>>
-    >;
+    try {
+      const values = (await form.validateFields()) as Record<
+        string,
+        Record<ResourceType, Record<ResourceActionType, boolean>>
+      >;
 
-    const existingFolderRoles = Object.fromEntries(
-      role.children.map(({ id, parentId }) => [parentId, id]),
-    );
+      const existingFolderRoles = Object.fromEntries(
+        role.children.map(({ id, parentId }) => [parentId, id]),
+      );
 
-    const updates: { roleId: string; permissions: Role['permissions'] }[] = [];
-    const additions: Parameters<typeof addRole>[1][] = [];
+      const updates: { roleId: string; permissions: Role['permissions'] }[] = [];
+      const additions: Parameters<typeof addRole>[1][] = [];
 
-    Object.entries(values).forEach(([indexString, resource]) => {
-      const index = parseInt(indexString);
-      const permissions = formDataToPermissions(resource);
+      Object.entries(values).forEach(([indexString, resource]) => {
+        const index = parseInt(indexString);
+        const permissions = formDataToPermissions(resource);
 
-      groups[index].folders.forEach((folder) => {
-        if (existingFolderRoles[folder.id]) {
-          updates.push({ roleId: existingFolderRoles[folder.id], permissions });
-        } else {
-          additions.push({
-            name: `${role.name}-${folder.name || folder.id}`,
-            environmentId: environment.spaceId,
-            permissions,
-            parentRoleId: role.id,
-            parentId: folder.id,
-          });
-        }
+        groups[index].folders.forEach((folder) => {
+          if (existingFolderRoles[folder.id]) {
+            updates.push({ roleId: existingFolderRoles[folder.id], permissions });
+          } else {
+            additions.push({
+              name: `${role.name}-${folder.name || folder.id}`,
+              environmentId: environment.spaceId,
+              permissions,
+              parentRoleId: role.id,
+              parentId: folder.id,
+            });
+          }
+        });
       });
-    });
 
-    // remove all child roles that refer to folders that are not mapped to rules anymore
-    const removals = role.children
-      .filter(
-        (child) =>
-          !groups.some((group) => group.folders.some((folder) => folder.id === child.parentId)),
-      )
-      .map((role) => role.id);
+      // remove all child roles that refer to folders that are not mapped to rules anymore
+      const removals = role.children
+        .filter(
+          (child) =>
+            !groups.some((group) => group.folders.some((folder) => folder.id === child.parentId)),
+        )
+        .map((role) => role.id);
 
-    await handleFolderRoleChanges(environment.spaceId, role.id, additions, updates, removals);
-
-    router.refresh();
+      await wrapServerCall({
+        fn: () =>
+          handleFolderRoleChanges(environment.spaceId, role.id, additions, updates, removals),
+        onSuccess: () => {
+          message.success('Updated folder permissions.');
+          router.refresh();
+        },
+      });
+    } catch (err) {
+      message.error('Failed to update the folder permissions.');
+    }
 
     setLoading(false);
   }

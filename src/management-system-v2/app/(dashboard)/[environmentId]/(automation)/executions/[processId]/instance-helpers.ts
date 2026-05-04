@@ -163,5 +163,15 @@ export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
 }
 
 export function exportInstanceData(selectedInstances: (InstanceInfo | undefined)[]) {
-  return jsonToCsvExport({ data: selectedInstances });
+  const objectOrderTemplate = {
+    processId: null,
+    processVersion: null,
+    processInstanceId: null,
+    processInitiator: null,
+    spaceIdOfProcessInitiator: null,
+    globalStartTime: null,
+  };
+  return jsonToCsvExport({
+    data: selectedInstances.map((instance) => Object.assign(objectOrderTemplate, instance)),
+  });
 }

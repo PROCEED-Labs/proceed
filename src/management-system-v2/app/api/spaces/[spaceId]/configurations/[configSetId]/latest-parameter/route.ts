@@ -1,4 +1,4 @@
-import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import {
   addParameter,
   addParentConfig,
@@ -16,7 +16,7 @@ import {
   ParameterZod,
   Parameter,
   StoredParameterZod,
-  VirtualParameter,
+  MetaParameter,
   BaseParameterZod,
 } from '@/lib/data/machine-config-schema';
 import { z } from 'zod';
@@ -38,7 +38,7 @@ export async function POST(
     let body: Parameter;
     if (aasFormat) {
       const aasBody = await request.json();
-      body = (await partialPropToParameter(aasBody)) as Parameter | VirtualParameter;
+      body = (await partialPropToParameter(aasBody)) as Parameter | MetaParameter;
       console.log(body);
       BaseParameterZod.extend({
         valueTemplateSource: z.enum(['shortName', 'name', 'description', 'category']).optional(),
@@ -67,7 +67,7 @@ export async function POST(
         .parse(body);
     }
 
-    const newParam = { ...defaultParameter('new-param', [], []), ...body };
+    const newParam = defaultParameter(body);
 
     if (subParameterOf) {
       if (!(await validateParameterName(queryId, subParameterOf, 'parameter', body.name))) {

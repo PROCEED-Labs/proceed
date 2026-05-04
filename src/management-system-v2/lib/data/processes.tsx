@@ -8,6 +8,7 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -65,6 +66,8 @@ import { saveProcessArtifact } from './file-manager-facade';
 import { getFolderById, getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
+import Ability from '../ability/abilityHelper';
+import { isDummyFolderProcess } from '../process-export/export-preparation';
 
 // Import necessary functions from processModule
 
@@ -72,8 +75,9 @@ export const checkValidity = async (
   definitionId: string,
   operation: 'view' | 'update' | 'delete',
   spaceId: string,
+  ability?: Ability,
 ) => {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   const process = await _getProcess(definitionId);
   if (!process) {
@@ -144,9 +148,10 @@ export const getProcess = async (
   definitionId: string,
   spaceId: string,
   skipValidityCheck = false,
+  ability?: Ability,
 ) => {
   if (!skipValidityCheck) {
-    const error = await checkValidity(definitionId, 'view', spaceId);
+    const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
     if (error) return error;
   }
@@ -154,8 +159,13 @@ export const getProcess = async (
   return result as Process;
 };
 
-export const getProcessBPMN = async (definitionId: string, spaceId: string, versionId?: string) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
+export const getProcessBPMN = async (
+  definitionId: string,
+  spaceId: string,
+  versionId?: string,
+  ability?: Ability,
+) => {
+  const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
   if (error) return error;
 
@@ -265,6 +275,12 @@ export const addProcesses = async (
       if (isUserErrorResponse(folder)) return folder;
 
       value.folderId = folder.id;
+    }
+
+    if (isDummyFolderProcess(value)) {
+      // if the process represents a placeholder for importing empty folders then skip adding the
+      // process after the folder structure was created
+      continue;
     }
 
     // bpmn prop gets deleted in addProcess()
@@ -386,6 +402,9 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
   if ('error' in importedProcesses) {
     return importedProcesses;
   }
+
+  // filter out dummy processes that were included in the import to generate empty folders
+  processData = processData.filter((p) => !isDummyFolderProcess(p));
 
   for (let idx = 0; idx < importedProcesses.length; idx++) {
     const process = importedProcesses[idx];
@@ -578,10 +597,13 @@ export const createVersion = async (
   versionDescription: string,
   processId: string,
   spaceId: string,
+  skipValidityCheck = false,
 ) => {
-  const error = await checkValidity(processId, 'update', spaceId);
+  if (!skipValidityCheck) {
+    const error = await checkValidity(processId, 'update', spaceId);
 
-  if (error) return error;
+    if (error) return error;
+  }
 
   const bpmn = await _getProcessBpmn(processId);
   if (!bpmn) {
@@ -649,8 +671,9 @@ export const getProcessHtmlFormData = async (
   definitionId: string,
   fileName: string,
   spaceId: string,
+  ability?: Ability,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
+  const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
   if (error) return error;
 
@@ -668,8 +691,9 @@ export const getProcessHtmlFormHTML = async (
   definitionId: string,
   fileName: string,
   spaceId: string,
+  ability?: Ability,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
+  const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
   if (error) return error;
 
@@ -734,8 +758,9 @@ export const getProcessScriptTaskData = async (
   taskFileName: string,
   fileExtension: 'js' | 'ts' | 'xml',
   spaceId: string,
+  ability?: Ability,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
+  const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
   if (error) return error;
 
@@ -783,8 +808,9 @@ export const getProcessImage = async (
   definitionId: string,
   imageFileName: string,
   spaceId: string,
+  ability?: Ability,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId);
+  const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
   if (error) return error;
 

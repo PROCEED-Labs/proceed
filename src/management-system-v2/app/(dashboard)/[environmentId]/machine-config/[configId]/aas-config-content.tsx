@@ -3,7 +3,7 @@
 import {
   Config,
   Parameter,
-  VirtualParameter,
+  MetaParameter,
   StoredParameter,
   LinkedParameter,
 } from '@/lib/data/machine-config-schema';
@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Col, Row, Space, Tag, Table, Modal } from 'antd';
 import { updateParameter } from '@/lib/data/db/machine-config';
-import { buildLinkedInputParametersFromIds } from '../configuration-helper';
+import { buildLinkedInputParametersFromIds } from '../helpers/configuration-helper';
 import AddButton from './add-button';
 import AasCreateParameterModal, {
   CreateParameterModalReturnType,
@@ -79,16 +79,16 @@ const AasContent: React.FC<MachineDataViewProps> = ({
     currentLanguage,
   });
 
-  const moveRowUp = async (record: Parameter | VirtualParameter) => {
+  const moveRowUp = async (record: Parameter | MetaParameter) => {
     await moveParameterUp(record, parentConfig, () => router.refresh());
   };
 
-  const moveRowDown = async (record: Parameter | VirtualParameter) => {
+  const moveRowDown = async (record: Parameter | MetaParameter) => {
     await moveParameterDown(record, parentConfig, () => router.refresh());
   };
 
   const actionBarGenerator = useCallback(
-    (record: Parameter | VirtualParameter) => {
+    (record: Parameter | MetaParameter) => {
       const currentIndex = data.findIndex((item) => item.id === record.id);
       const isFirst = currentIndex === 0;
       const isLast = currentIndex === data.length - 1;

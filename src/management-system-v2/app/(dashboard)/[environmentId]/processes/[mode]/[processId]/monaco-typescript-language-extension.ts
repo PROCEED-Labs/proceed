@@ -1,32 +1,88 @@
-export default `
-class Variable {
+export function getProceedLanguageExtension(
+  variables: { name: string; type: string }[],
+  writeVarsIntoGlobalScope = false,
+) {
+  const hasVariables = variables.length;
+
+  const varNames = hasVariables
+    ? variables.map((variable) => `'${variable.name}'`).join(' | ')
+    : 'never';
+
+  const withoutLogs = `{
+    ${variables.map((variable) => `'${variable.name}'?: ${variable.type},`).join('\n    ')}
+  }`;
+
+  const withLogs = `{
+    ${variables.map((variable) => `'${variable.name}'?: { value: ${variable.type}, log: { changedTime: number; changedBy?: string; oldValue?: ${variable.type}; }[] },`).join('\n    ')}
+  }`;
+
+  return `
+  type __varNameTypeMap = {
+    ${variables.map((variable) => `'${variable.name}': ${variable.type},`).join('\n    ')}
+  };
+
+type Variable = {
   /**
-   * Allows setting values for instance variables
+   * ${hasVariables ? 'Allows setting values for instance variables' : 'Define a variable to be able to use this function'}
    **/
-  set(varName: string, value: any): void;
+  set: ${hasVariables ? `<VariableName extends ${varNames}>(varName: VariableName, value: __varNameTypeMap[VariableName]) => void;` : 'never;'}
+  // in theory it is possible to call set on a variable that is not predefined
+  // but we prefer users to predefine all variables so we disable this type definition
+  // set(varName: string, value: any): void;
 
   /**
-   * Returns value of an instance variable
+   * ${hasVariables ? 'Returns value of an instance variable' : 'Define a variable to be able to use this function'}
    **/
-  get(varName: string): any;
+  get: ${hasVariables ? `<VariableName extends ${varNames}>(varName: VariableName) => __varNameTypeMap[VariableName] | undefined;` : 'never;'}
+  // in theory it is possible to call get on a variable that is not predefined
+  // but we prefer users to predefine all variables so we disable this type definition
+  // get(varName: string): any;
 
   /**
    * Returns all instance variables and their values
    **/
-  getAll(): object;
+  getAll: () => ${withoutLogs};
 
-  // TODO: jsdoc for these
-  getWithLogs(): any;
+  /**
+   * Returns all instance variables with their values and information about change events for each variable
+   **/
+  getWithLogs: () => ${withLogs};
 
-  getGlobal(name: string): any;
+  /**
+   * ${hasVariables ? 'Returns the value of an instance variable ignoring changes made earlier in this script' : 'Define a variable to be able to use this function'}
+   **/
+  getProcess: ${hasVariables ? `<VariableName extends ${varNames}>(name: VariableName) => __varNameTypeMap[VariableName] | undefined;` : 'never;'}
 
-  getAllGlobal(): any;
+  /**
+   * Returns all instance variables and their values ignoring changes made earlier in this script
+   **/
+  getAllProcess: () => ${withoutLogs};
 
-  getWithLogsGlobal(): any;
+  /**
+   * Returns all instance variables with their values and information about change events for each variable ignoring changes made earlier in this script
+   **/
+  getWithLogsProcess: () => ${withLogs};
 
-  setGlobal(name: string, value: any);
+  /**
+   * ${hasVariables ? 'Allows setting values for instance variables directly in the instance state' : 'Define a variable to be able to use this function'}
+   **/
+  setProcess: ${hasVariables ? `<VariableName extends ${varNames}>(name: VariableName, value: __varNameTypeMap[VariableName]) => void;` : 'never;'}
+
+  setGlobal: (varPath: string, value: any) => void;
+
+  getGlobal: (varPath: string) => any;
+
+  getGlobalFull: (varPath: string) => any;
+
+  setGlobalOrg: (varPath: string, value: any) => void;
+
+  getGlobalOrg: (varPath: string) => any;
+
+  getGlobalOrgFull: (varPath: string) => any;
 }
 declare var variable: Variable;
+
+${writeVarsIntoGlobalScope ? variables.map((variable) => `declare var ${variable.name}: undefined | ${variable.type};`).join('\n') : ''}
 
 declare class Log {
   trace(message?: any): void;
@@ -63,7 +119,7 @@ declare function setInterval(callback: () => any, timeout: number): number;
 /**
  * Cancel an interval
  **/
-declare function clearInterval(intervalId): boolean;
+declare function clearInterval(intervalId: number): boolean;
 
 // declare class CapabilityService {
 //   /**
@@ -221,7 +277,7 @@ type _Request = {
   // files?: { name: string; data: any };
 };
 
-class _Response {
+type _Response = {
   status(code: number): _Response;
   send(body: any): void;
 }
@@ -252,16 +308,16 @@ declare class NetworkServer {
   getAsync(path: string): Promise<{ req: _Request; res: _Response }>;
 
   /** Open a POST route listener */
-  post(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
+  post(path: string, callback: ({ req, res }: { req: _Request, res: _Response }) => void): void;
 
   /** Open a PUT route listener */
-  put(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
+  put(path: string, callback: ({ req, res }: { req: _Request, res: _Response }) => void): void;
 
   /** Open a DELETE route listener */
-  delete(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
+  delete(path: string, callback: ({ req, res }: { req: _Request, res: _Response }) => void): void;
 
   /** Open a GET route listener */
-  get(path: string, callback: ({ req: _Request, res: _Response }) => void): void;
+  get(path: string, callback: ({ req, res }: { req: _Request, res: _Response }) => void): void;
 
   /**
    * Close the network server. This is necessary for the task script to stop, after a route handler
@@ -291,3 +347,4 @@ declare function wait(ms: number): void;
 /** Returns a promise that is resolved after the given amount of milliseconds */
 declare function waitAsync(ms: number): Promise<void>;
 `;
+}

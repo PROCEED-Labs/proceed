@@ -56,6 +56,7 @@ export const globalPersonalSpaceRules = Object.freeze(
     'Process',
     'Folder',
     'Execution',
+    'Task',
     'Machine',
     'Environment',
     'Setting',

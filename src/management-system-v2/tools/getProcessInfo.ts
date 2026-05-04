@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
-import { getProcessBpmn } from '@/lib/data/db/process';
+import { getProcessLatestVersion } from '@/lib/data/db/process';
 import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 
@@ -23,13 +23,14 @@ export const metadata = {
 
 // Tool implementation
 export default async function getProcessInfo({ processId, userCode }: InferSchema<typeof schema>) {
-  const verification = await verifyCode(userCode);
-
-  if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
-
   try {
-    const bpmn = await getProcessBpmn(processId);
-    return bpmn;
+    const verification = await verifyCode(userCode);
+
+    if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;
+
+    const process = await getProcessLatestVersion(processId, true);
+
+    return process.bpmn;
   } catch (err) {
     return `Error: Process with ID ${processId} not found.`;
   }

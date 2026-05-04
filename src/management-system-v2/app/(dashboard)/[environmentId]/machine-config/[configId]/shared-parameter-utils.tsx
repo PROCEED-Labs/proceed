@@ -4,7 +4,7 @@ import { useUserPreferences } from '@/lib/user-preferences';
 import {
   Config,
   Parameter,
-  VirtualParameter,
+  MetaParameter,
   LinkedParameter,
   StoredParameter,
 } from '@/lib/data/machine-config-schema';
@@ -18,16 +18,18 @@ import {
 } from '@/lib/data/db/machine-config';
 import {
   defaultParameter,
-  defaultVirtualParameter,
+  defaultMetaParameter,
   buildLinkedInputParametersFromIds,
   findParameter,
-} from '../configuration-helper';
+} from '../helpers/configuration-helper';
 import { CreateParameterModalReturnType } from './aas-create-parameter-modal';
 import { updateConfigMetadata } from '@/lib/data/db/machine-config';
 import { Modal } from 'antd';
 import Tree from 'antd/es/tree/Tree';
 import { Localization } from '@/lib/data/locale';
-export const getInitialTransformationData = (param: Parameter | VirtualParameter) => {
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import useApp from 'antd/es/app/useApp';
+export const getInitialTransformationData = (param: Parameter | MetaParameter) => {
   const paramWithTransformation = param as Parameter & {
     transformation?: {
       transformationType: string;
@@ -58,7 +60,7 @@ export const getInitialTransformationData = (param: Parameter | VirtualParameter
   };
 };
 
-export const hasNestedContent = (record: Parameter | VirtualParameter) => {
+export const hasNestedContent = (record: Parameter | MetaParameter) => {
   return record.subParameters && record.subParameters.length > 0;
 };
 
@@ -89,7 +91,7 @@ export const generateMachineDatasetNames = (
 };
 
 export const moveParameterUp = async (
-  record: Parameter | VirtualParameter,
+  record: Parameter | MetaParameter,
   parentConfig: Config,
   onRefresh: () => void,
 ) => {
@@ -111,7 +113,7 @@ export const moveParameterUp = async (
 };
 
 export const moveParameterDown = async (
-  record: Parameter | VirtualParameter,
+  record: Parameter | MetaParameter,
   parentConfig: Config,
   onRefresh: () => void,
 ) => {
@@ -182,7 +184,7 @@ interface UseTreeExpansionParams {
 
 export const editParameter = async (
   currentlanguage: Localization,
-  currentParameter: Parameter | VirtualParameter,
+  currentParameter: Parameter | MetaParameter,
   valuesFromModal: CreateParameterModalReturnType,
   parentConfig: Config,
   onSuccess: () => void,
@@ -245,30 +247,31 @@ export const editParameter = async (
   // 1: conversion needed
   if (needsTypeConversion) {
     // create new parameter with correct type
-    let newParam: Parameter | VirtualParameter;
+    let newParam: Parameter | MetaParameter;
 
     if (shouldBeVirtual) {
       // converting regular to virtual
-      newParam = defaultVirtualParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.valueTemplateSource as unknown as VirtualParameter['valueTemplateSource'],
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultMetaParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
     } else {
       // Converting virtual to regular
-      newParam = defaultParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.value,
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        value: valuesFromModal.value,
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
 
       // apply transformation for regular parameter
       if (transformationUpdate.transformation) {
@@ -479,47 +482,55 @@ export const useParameterActions = ({
   currentLanguage,
 }: UseParameterActionsParams) => {
   const router = useRouter();
-  const [currentParameter, setCurrentParameter] = useState<Parameter | VirtualParameter>();
+  const app = useApp();
+  const [currentParameter, setCurrentParameter] = useState<Parameter | MetaParameter>();
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [editFieldOpen, setEditFieldOpen] = useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
 
+  const onSubmitSuccess = () => {
+    setCreateFieldOpen(false);
+    router.refresh();
+    setCurrentParameter(undefined);
+  };
+
   const addParameter = async (
     values: CreateParameterModalReturnType[],
-    parent?: Parameter | VirtualParameter,
+    parent?: Parameter | MetaParameter,
   ) => {
     const valuesFromModal = values[0];
     // use full display name and description arrays from modal
     const displayName = valuesFromModal.displayName || [];
     const description = valuesFromModal.description || [];
     // get parameterType from advanced settings or default to 'none'
-    const parameterType = valuesFromModal.parameterType || 'none';
+    const parameterType = (valuesFromModal.parameterType || 'none') as 'meta' | 'content' | 'none';
 
-    let newParameter: Parameter | VirtualParameter;
+    let newParameter: Parameter | MetaParameter;
 
     const shouldBeVirtual =
       valuesFromModal.valueTemplateSource && valuesFromModal.valueTemplateSource !== 'none';
 
     if (shouldBeVirtual) {
-      newParameter = defaultVirtualParameter(
-        valuesFromModal.name,
+      newParameter = defaultMetaParameter({
+        name: valuesFromModal.name,
         displayName,
         description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.valueTemplateSource as unknown as VirtualParameter['valueTemplateSource'],
-        'xs:string',
-        valuesFromModal.unit,
-      );
+        parameterType,
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     } else {
-      newParameter = defaultParameter(
-        valuesFromModal.name,
+      newParameter = defaultParameter({
+        name: valuesFromModal.name,
         displayName,
         description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.value,
-        'xs:string',
-        valuesFromModal.unit,
-      );
+        parameterType,
+        value: valuesFromModal.value,
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     }
 
     // apply advanced settings
@@ -553,14 +564,22 @@ export const useParameterActions = ({
     // use parent parameter if provided, otherwise use currentParameter, otherwise add to root
     const targetParent = parent || currentParameter;
     if (targetParent) {
-      await backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     } else {
-      await backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     }
-
-    setCreateFieldOpen(false);
-    router.refresh();
-    setCurrentParameter(undefined);
   };
 
   const handleEditParameter = async (values: CreateParameterModalReturnType[]) => {
@@ -573,7 +592,7 @@ export const useParameterActions = ({
     }
   };
 
-  const handleDeleteConfirm = async (paramToDelete?: Parameter | VirtualParameter | any) => {
+  const handleDeleteConfirm = async (paramToDelete?: Parameter | MetaParameter | any) => {
     // if it's a MouseEvent (from Modal), use currentParameter and if it's a Parameter, use that instead
     const isMouseEvent = paramToDelete && 'nativeEvent' in paramToDelete;
     const targetParam = isMouseEvent ? currentParameter : paramToDelete || currentParameter;

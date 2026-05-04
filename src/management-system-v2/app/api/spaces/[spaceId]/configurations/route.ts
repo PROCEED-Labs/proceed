@@ -1,8 +1,8 @@
 import {
   defaultConfiguration,
-  defaultTdsConfigurationTemplate,
   defaultParentConfiguration,
-} from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+} from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
+import { defaultTdsConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-templates-tds';
 import {
   addParentConfig,
   getParentConfigurations,

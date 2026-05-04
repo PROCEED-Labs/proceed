@@ -10,13 +10,13 @@ import {
 import {
   ParameterZod,
   Parameter,
-  VirtualParameter,
+  MetaParameter,
   StoredParameterZod,
 } from '@/lib/data/machine-config-schema';
 import { z } from 'zod';
 import { NextRequest, NextResponse } from 'next/server';
 import { validate as uuidValidate } from 'uuid';
-import { parameterToProp } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { parameterToProp } from '@/app/(dashboard)/[environmentId]/machine-config/helpers/aas-configuration-helpers';
 
 export async function GET(
   request: NextRequest,
@@ -85,7 +85,7 @@ export async function PUT(
     if (
       'valueTemplateSource' in body &&
       !['shortName', 'name', 'description', 'category'].includes(
-        (body as VirtualParameter).valueTemplateSource,
+        (body as MetaParameter).valueTemplateSource,
       )
     ) {
       throw new Error(

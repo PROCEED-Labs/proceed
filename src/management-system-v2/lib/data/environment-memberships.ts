@@ -24,6 +24,8 @@ import { hashPassword } from '../password-hashes';
 import db from '@/lib/data/db';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { removeParameter, syncOrganizationUsers } from './db/machine-config';
+import { getRoleMappingByUserId } from '@/lib/data/db/iam/role-mappings';
+import { upsertUserOrganigram } from './db/iam/organigram';
 
 const EmailListSchema = z.array(
   z.union([z.object({ email: z.string().email() }), z.object({ username: z.string() })]),
@@ -36,6 +38,9 @@ export async function inviteUsersToEnvironment(
   environmentId: string,
   invitedUsersIdentifiers: ({ email: string } | { username: string })[],
   roleIds?: string[],
+  teamRoleId?: string,
+  backOfficeRoleId?: string,
+  directManagerId?: string,
 ) {
   try {
     const invitedEmails = EmailListSchema.parse(invitedUsersIdentifiers);
@@ -90,6 +95,9 @@ export async function inviteUsersToEnvironment(
       const invite: Invitation = {
         spaceId: environmentId,
         roleIds: filteredRoles,
+        teamRoleId,
+        backOfficeRoleId,
+        directManagerId,
         ...(invitedUser ? { userId: invitedUser.id } : { email: invitedUserEmail! }),
       };
 
@@ -156,8 +164,17 @@ export async function createUserAndAddToOrganization(
   {
     password,
     roles,
+    teamRoleId,
+    backOfficeRoleId,
+    directManagerId,
     ...userDataInput
-  }: z.infer<typeof createUserDataSchema> & { password: string; roles: string[] },
+  }: z.infer<typeof createUserDataSchema> & {
+    password: string;
+    roles: string[];
+    teamRoleId?: string;
+    backOfficeRoleId?: string;
+    directManagerId?: string;
+  },
 ) {
   try {
     const { ability } = await getCurrentEnvironment(organizationId);
@@ -183,7 +200,8 @@ export async function createUserAndAddToOrganization(
       const passwordHash = await hashPassword(password);
       await setUserPassword(user.id, passwordHash, tx, true);
 
-      await addMember(organizationId, user.id, ability, tx);
+      // add and get newly created created membership
+      const membership = await addMember(organizationId, user.id, ability, tx);
       await addRoleMappings(
         roles.map((roleId) => ({
           roleId,
@@ -193,11 +211,126 @@ export async function createUserAndAddToOrganization(
         ability,
         tx,
       );
+
+      if (membership && (teamRoleId || backOfficeRoleId || directManagerId)) {
+        await tx.userOrganigram.create({
+          data: {
+            memberId: membership.id,
+            directManagerId: directManagerId ?? null,
+            teamRoleId: teamRoleId ?? null,
+            backOfficeRoleId: backOfficeRoleId ?? null,
+          },
+        });
+      }
     });
 
     return user!;
   } catch (error) {
     const message = getErrorMessage(error);
     return userError(message);
+  }
+}
+
+export async function updateMemberByAdmin(
+  organizationId: string,
+  userId: string,
+  {
+    roles,
+    teamRoleId,
+    backOfficeRoleId,
+    directManagerId,
+  }: {
+    roles: string[];
+    teamRoleId?: string | null;
+    backOfficeRoleId?: string | null;
+    directManagerId?: string | null;
+  },
+) {
+  try {
+    const { ability } = await getCurrentEnvironment(organizationId);
+
+    if (!ability.can('admin', 'All')) {
+      return userError(
+        'You do not have permission to update users in this organization',
+        UserErrorType.PermissionError,
+      );
+    }
+
+    await db.$transaction(async (tx) => {
+      // Check membership exists first before any updates
+      const membership = await tx.membership.findUnique({
+        where: { userId_environmentId: { userId, environmentId: organizationId } },
+      });
+
+      if (!membership) throw new Error('User is not a member of this organization');
+
+      // Get current role mappings for this user in this environment
+      const currentMappings = await getRoleMappingByUserId(userId, organizationId);
+      const currentRoleIds = currentMappings.map((m) => m.roleId);
+
+      // Diff and update role mappings
+      const roleIdsToAdd = roles.filter((id) => !currentRoleIds.includes(id));
+      const roleIdsToRemove = currentRoleIds.filter((id) => !roles.includes(id));
+
+      // Remove roles that are no longer assigned
+      for (const roleId of roleIdsToRemove) {
+        await tx.roleMember.deleteMany({
+          where: { userId, roleId },
+        });
+      }
+
+      // Add new role mappings
+      if (roleIdsToAdd.length > 0) {
+        await addRoleMappings(
+          roleIdsToAdd.map((roleId) => ({
+            roleId,
+            environmentId: organizationId,
+            userId,
+          })),
+          ability,
+          tx,
+        );
+      }
+
+      // Upsert organigram using confirmed membership
+      await upsertUserOrganigram(
+        {
+          memberId: membership.id,
+          directManagerId: directManagerId ?? null,
+          teamRoleId: teamRoleId ?? null,
+          backOfficeRoleId: backOfficeRoleId ?? null,
+        },
+        tx,
+      );
+    });
+  } catch (error) {
+    const message = getErrorMessage(error);
+    return userError(message);
+  }
+}
+
+// Returns members with their userId for the direct manager dropdown
+export async function getSpaceMembers(environmentId: string) {
+  try {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    if (!ability.can('view', 'User'))
+      return userError('Permission denied', UserErrorType.PermissionError);
+
+    return await db.membership.findMany({
+      where: { environmentId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+  } catch (_) {
+    return userError('Error fetching members');
   }
 }

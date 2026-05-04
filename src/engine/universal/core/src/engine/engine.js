@@ -129,6 +129,16 @@ class Engine {
    * @param {string} the version of the process to deploy
    */
   async deployProcessVersion(definitionId, versionId) {
+    const otherVersions = this.versions.filter((version) => version !== versionId);
+    otherVersions.forEach((version) => {
+      const process = this._versionProcessMapping[version];
+
+      // deactivate other versions so they don't keep spawning new instances automatically
+      if (process) {
+        process.undeploy();
+      }
+    });
+
     if (!this._versionProcessMapping[versionId]) {
       // Fetch the stored BPMN
       const bpmn = await distribution.db.getProcessVersion(definitionId, versionId);
@@ -213,7 +223,33 @@ class Engine {
       this._versionProcessMapping[versionId] = process;
       this._versionBpmnMapping[versionId] = bpmn;
       this.versions.push(versionId);
+    } else if (!this._versionProcessMapping[versionId].isDeployed()) {
+      // activate the process so auto-start events like timer events are allowed to trigger new
+      // instances
+      this._versionProcessMapping[versionId].deploy();
     }
+  }
+
+  /**
+   * Removes the deployed state from the process version in the NeoBPMN Engine preventing it from starting instances
+   *
+   * @param {string} the version of the process to undeploy
+   */
+  undeployProcessVersion(versionId) {
+    const process = this._versionProcessMapping[versionId];
+    if (process && process.isDeployed()) {
+      process.undeploy();
+    }
+  }
+
+  /**
+   * Returns whether the given process version is currently deployed in the NeoBPMN Engine
+   *
+   * @param {string} versionId the version of the process to check
+   * @returns {boolean} true if the version is deployed, false if it is known but not active
+   */
+  async isProcessVersionDeployed(versionId) {
+    return this._versionProcessMapping[versionId]?.isDeployed() ?? false;
   }
 
   /**
@@ -434,7 +470,7 @@ class Engine {
 
     const token = this.getToken(instanceID, userTask.tokenId);
     // remember the changes made by this user task invocation
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
     userTask.milestones = { ...token.milestones };
     userTask.actualOwner = [...token.actualOwner];
 
@@ -984,7 +1020,7 @@ class Engine {
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
   }
 
   setFlowNodeState(instanceId, tokenId, state, variables) {
@@ -1014,6 +1050,9 @@ class Engine {
    * Clean up some data when the engine is supposed to be removed
    */
   destroy() {
+    for (const version of this.versions) {
+      this._versionProcessMapping[version].undeploy();
+    }
     for (const instanceId of this.instanceIDs) {
       this.deleteInstance(instanceId);
     }

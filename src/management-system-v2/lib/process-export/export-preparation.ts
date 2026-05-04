@@ -21,6 +21,9 @@ import {
   toBpmnXml,
   getAllElements,
   getStartFormFileNameMapping,
+  initXml,
+  setDefinitionsId,
+  setDefinitionsName,
 } from '@proceed/bpmn-helper';
 
 import { asyncMap, asyncFilter } from '../helpers/javascriptHelpers';
@@ -33,6 +36,7 @@ import { truthyFilter } from '../typescript-utils';
 import { SerializedNode } from '@craftjs/core';
 import { UserError, isUserErrorResponse } from '../user-error';
 import { getFolder, getFolderContents } from '../data/folders';
+import Ability from '../ability/abilityHelper';
 
 /**
  * The options that can be used to select what should be exported
@@ -115,8 +119,13 @@ export type ProcessesExportData = ProcessExportData[];
  * @param definitionId
  * @param processVersion
  */
-async function getVersionBpmn(definitionId: string, spaceId: string, processVersion?: string) {
-  const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion);
+async function getVersionBpmn(
+  definitionId: string,
+  spaceId: string,
+  processVersion?: string,
+  ability?: Ability,
+) {
+  const bpmn = await getProcessBPMN(definitionId, spaceId, processVersion, ability);
 
   if (typeof bpmn !== 'string') {
     throw bpmn!.error;
@@ -242,9 +251,34 @@ async function ensureProcessInfo(
   }: ExportProcessInfo,
   spaceId: string,
   isImport = false,
+  ability?: Ability,
 ) {
+  if (definitionId.startsWith(dummyProcessId)) {
+    let bpmn = initXml();
+    bpmn = (await setDefinitionsId(bpmn, definitionId)) as string;
+    bpmn = (await setDefinitionsName(bpmn, 'Placeholder Process To Keep The Folder')) as string;
+    exportData[definitionId] = {
+      definitionName: 'Placeholder Process To Keep The Folder',
+      folderPath,
+      isImport,
+      versions: {
+        latest: {
+          bpmn,
+          isImport,
+          layers: [],
+          imports: [],
+        },
+      },
+      scriptTasks: [],
+      userTasks: [],
+      images: [],
+    };
+
+    return;
+  }
+
   if (!exportData[definitionId]) {
-    const process = await getProcess(definitionId, spaceId);
+    const process = await getProcess(definitionId, spaceId, undefined, ability);
 
     if ('error' in process) {
       throw process.error;
@@ -265,7 +299,7 @@ async function ensureProcessInfo(
   const versionName = getVersionName(processVersion);
 
   if (!exportData[definitionId].versions[versionName]) {
-    const versionBpmn = await getVersionBpmn(definitionId, spaceId, processVersion);
+    const versionBpmn = await getVersionBpmn(definitionId, spaceId, processVersion, ability);
     const versionInformation = await getDefinitionsVersionInformation(versionBpmn);
 
     // add the default root process layer if there is no rootSubprocessLayer given
@@ -288,6 +322,12 @@ async function ensureProcessInfo(
   }
 }
 
+export const dummyProcessId = '___empty_dummy_process___';
+
+export function isDummyFolderProcess(input: { id?: string }) {
+  return 'id' in input && input.id?.startsWith(dummyProcessId);
+}
+
 /**
  * Gets the data that is needed to export all the requested processes with the given options
  *
@@ -299,6 +339,7 @@ export async function prepareExport(
   options: ProcessExportOptions,
   toExport: ExportInfos,
   spaceId: string,
+  ability?: Ability,
 ): Promise<ProcessesExportData> {
   if (!toExport.length) {
     throw new Error('Tried exporting without specifying the data to export!');
@@ -307,11 +348,21 @@ export async function prepareExport(
   const exportData: ExportMap = {};
 
   async function mapFolderToContent(folderId: string, path = ''): Promise<ExportProcessInfo[]> {
-    const folder = await getFolder(spaceId, folderId);
-    const content = await getFolderContents(spaceId, folderId);
+    const folder = await getFolder(spaceId, folderId, ability);
+    const content = await getFolderContents(spaceId, folderId, ability);
 
     if (isUserErrorResponse(folder)) throw folder.error.message;
     if (isUserErrorResponse(content)) throw content.error.message;
+
+    // make sure empty folders are exported by placing a dummy process into the folder
+    if (!content.length) {
+      return [
+        {
+          definitionId: `${dummyProcessId}_${path.split('/').join('_')}_${folder.name}`,
+          folderPath: path + '/' + folder.name,
+        },
+      ];
+    }
 
     return (
       await asyncMap(content, async (entry) => {
@@ -351,6 +402,7 @@ export async function prepareExport(
         { definitionId, processVersion, selectedElements, rootSubprocessLayerId, folderPath },
         spaceId,
         isImport,
+        ability,
       );
 
       // if the option to export referenced processes is selected make sure to fetch their information as well
@@ -467,8 +519,8 @@ export async function prepareExport(
         if (filenames.length) {
           const [filename] = filenames;
 
-          const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
-          const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
+          const json = await getProcessHtmlFormData(definitionId, filename, spaceId, ability);
+          const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId, ability);
 
           if (typeof json !== 'string') {
             throw json!.error;
@@ -486,6 +538,7 @@ export async function prepareExport(
           filename,
           'js',
           spaceId,
+          ability,
         );
 
         let ts: string | { error: UserError } | undefined = await getProcessScriptTaskData(
@@ -493,6 +546,7 @@ export async function prepareExport(
           filename,
           'ts',
           spaceId,
+          ability,
         );
 
         let xml: string | { error: UserError } | undefined = await getProcessScriptTaskData(
@@ -500,6 +554,7 @@ export async function prepareExport(
           filename,
           'xml',
           spaceId,
+          ability,
         );
 
         if (typeof js !== 'string') js = undefined;
@@ -511,8 +566,8 @@ export async function prepareExport(
 
       // fetch the required user tasks files from the backend
       for (const filename of allRequiredUserTaskFiles) {
-        const json = await getProcessHtmlFormData(definitionId, filename, spaceId);
-        const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId);
+        const json = await getProcessHtmlFormData(definitionId, filename, spaceId, ability);
+        const html = await getProcessHtmlFormHTML(definitionId, filename, spaceId, ability);
 
         if (typeof json !== 'string') {
           throw json!.error;
@@ -554,7 +609,7 @@ export async function prepareExport(
       // fetch the required image files from the backend
       for (let filename of allRequiredImageFiles) {
         if (filename.includes('/')) filename = filename.split('/').pop() as string;
-        const image = await getProcessImage(definitionId, filename, spaceId);
+        const image = await getProcessImage(definitionId, filename, spaceId, ability);
 
         if ('error' in image) throw image.error;
 

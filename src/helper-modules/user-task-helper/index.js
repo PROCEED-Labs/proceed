@@ -1,4 +1,5 @@
 const { render } = require('./src/render.js');
+const { tokenize } = require('./src/tokenize.js');
 
 const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/getters');
 /**
@@ -27,7 +28,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @property {string} state - the state the token is in
  * @property {string} currentFlowElementId - the flow element the token resides on
  * @property {number} currentFlowElementStartTime - the time the current execution of the current flow element started
- * @property {{ [key: string]: any }} [intermediateVariablesState] - the values of variables changed during the tokens execution that are not yet committed to the instance
+ * @property {{ [key: string]: any }} [variablesIntermediateState] - the values of variables changed during the tokens execution that are not yet committed to the instance
  */
 
 /**
@@ -36,7 +37,7 @@ const { getMilestonesFromElementById } = require('@proceed/bpmn-helper/src/gette
  * @typedef VariableInfo
  * @type {object}
  * @property {any} value - the value of the variable
- * @property {{ changedTime: number, changedBy: string, oldValue?: any }[]} log
+ * @property {{ changedTime: number, changedBy?: string, oldValue?: any, newValue: any }[]} log
  */
 
 /**
@@ -99,7 +100,7 @@ function getCorrectVariableState(userTask, instance) {
   );
 
   if (userTaskToken) {
-    Object.entries(userTaskToken.intermediateVariablesState).forEach(([key, value]) => {
+    Object.entries(userTaskToken.variablesIntermediateState).forEach(([key, value]) => {
       variables[key] = value;
     });
   }
@@ -446,9 +447,76 @@ function inlineUserTaskData(html, variables, milestones) {
   return finalHtml;
 }
 
+/**
+ * Function that returns all occurences of variables of the form "@global..." in placeholders
+ *
+ * @param {string | Buffer} html the html that contains placeholders that might reference global
+ * variables
+ * @returns {string[]} an array with all unique occurences of variable placholders
+ */
+function getGlobalVariableReferences(html) {
+  if (Buffer.isBuffer(html)) html = html.toString();
+
+  const globalDataVariables = tokenize(html);
+
+  const uniqueGlobalDataVariables = globalDataVariables
+    .filter(
+      (token, index) =>
+        token.type === 'variable' &&
+        token.variableName.startsWith('@global') &&
+        !globalDataVariables
+          .slice(0, index)
+          .some((entry) => entry.variableName === token.variableName),
+    )
+    .map(({ variableName }) => variableName.split('.').slice(1).join('.'));
+
+  return uniqueGlobalDataVariables;
+}
+
+/**
+ * Function that will create an object containing the values for global variables referenced in the
+ * given html
+ *
+ * @param {string | Buffer} html the html that contains placeholders that might reference global
+ * variables
+ * @param {(varPath: string) => Promise<any>} variableGetterFn a function that given a path to a
+ * specific global variable returns the value of that variable
+ * @returns {Promise<{ [key: string]: any }>} an object that maps the global variable paths in the html to
+ * values returned by the provided varaibleGetterFn
+ */
+async function getGlobalVariables(html, variableGetterFn) {
+  const variableReferences = getGlobalVariableReferences(html);
+
+  const globalVarPromises = variableReferences.map(async (varPath) => [
+    `@global.${varPath}`,
+    await variableGetterFn(varPath),
+  ]);
+
+  const globalVariables = await Promise.all(globalVarPromises);
+
+  const variables = {};
+
+  globalVariables.forEach(([varPath, value]) => {
+    const path = varPath.split('.');
+    const [varName] = path.splice(path.length - 1);
+    let current = variables;
+    for (const entry of path) {
+      if (!(entry in current)) {
+        current[entry] = {};
+      }
+      current = current[entry];
+    }
+    current[varName] = value;
+  });
+
+  return variables;
+}
+
 module.exports = {
   getCorrectVariableState,
   getCorrectMilestoneState,
+  getGlobalVariableReferences,
+  getGlobalVariables,
   inlineScript,
   inlineUserTaskData,
 };

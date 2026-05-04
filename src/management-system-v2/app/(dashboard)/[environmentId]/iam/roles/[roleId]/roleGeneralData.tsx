@@ -1,7 +1,7 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, Form, Input, Modal, Space } from 'antd';
+import { Alert, App, Button, Form, Input, Modal, Select, Space, Tooltip } from 'antd';
 import { FC, useState } from 'react';
 // import dayjs from 'dayjs';
 // import germanLocale from 'antd/es/date-picker/locale/de_DE';
@@ -16,6 +16,7 @@ import { FolderTree } from '@/components/FolderTree';
 import { ProcessListItemIcon } from '@/components/process-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const InputSchema = RoleInputSchema.omit({ environmentId: true, permissions: true });
 
@@ -148,6 +149,36 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
         <Input.TextArea disabled={!ability.can('update', role, { field: 'description' })} />
       </Form.Item>
 
+      <Form.Item
+        label={
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            Organisation Role Type
+            <Tooltip
+              title={
+                <>
+                  Link this role to specific departments or teams. This ensures people can find the
+                  right role when updating user profiles or assigning tasks.
+                </>
+              }
+            >
+              {' '}
+              <QuestionCircleOutlined style={{ color: '#888', cursor: 'pointer' }} />
+            </Tooltip>
+          </span>
+        }
+        name="organizationRoleType"
+      >
+        <Select
+          mode="multiple"
+          allowClear
+          disabled={!ability.can('update', role, { field: 'organizationRoleType' })}
+          placeholder="Select organisation role type (optional)"
+          options={[
+            { label: 'Team', value: 'team' },
+            { label: 'Back Office', value: 'back-office' },
+          ]}
+        />
+      </Form.Item>
       {/** <Form.Item label="Expiration" name="expirationDayJs">
         <DatePicker
           // Note german locale hard coded

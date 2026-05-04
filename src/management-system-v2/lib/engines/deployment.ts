@@ -16,6 +16,7 @@ import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';
 import { asyncForEach } from '../helpers/javascriptHelpers';
 import { UserFacingError } from '../user-error';
+import Ability from '../ability/abilityHelper';
 
 type ProcessesExportData = Prettify<Awaited<ReturnType<typeof prepareExport>>>;
 
@@ -105,6 +106,17 @@ async function deployProcessToMachines(
     });
 
     await Promise.all(allMachineRequests);
+
+    // TODO: if we handle static deployment with machine mapping of process elements in the future
+    // we might need to make sure that we only activate the process in a way that start events that are not mapped to a machine are not triggered on that machine
+    // (maybe we need to split the process into multiple sections and deploy them seperately
+    await asyncForEach(machines, async (machine) => {
+      await asyncForEach(processesExportData, async (process) => {
+        await asyncForEach(Object.keys(process.versions), async (version) => {
+          await changeDeploymentActivation(machine, process.definitionId, version, true);
+        });
+      });
+    });
   } catch (error) {
     // TODO: don't remove the whole process when deploying a single version fails
     await asyncForEach(Object.values(processesExportData), async ({ definitionId }) => {
@@ -152,6 +164,8 @@ async function dynamicDeployment(
   }
 
   await deployProcessToMachines([preferredMachine], processesExportData);
+
+  return [preferredMachine];
 }
 
 async function staticDeployment(
@@ -197,6 +211,8 @@ async function staticDeployment(
   //   targetedMachines.push(forceMachine);
 
   await deployProcessToMachines(targetedMachines, processesExportData);
+
+  return targetedMachines;
 }
 
 export async function deployProcess(
@@ -205,6 +221,7 @@ export async function deployProcess(
   spaceId: string,
   method: 'static' | 'dynamic',
   machines: Engine[],
+  ability?: Ability,
 ) {
   if (machines.length === 0) throw new UserFacingError('No machines available for deployment');
 
@@ -224,12 +241,13 @@ export async function deployProcess(
       },
     ],
     spaceId,
+    ability,
   );
 
   if (method === 'static') {
-    await staticDeployment(definitionId, version, processesExportData, machines);
+    return await staticDeployment(definitionId, version, processesExportData, machines);
   } else {
-    await dynamicDeployment(definitionId, version, processesExportData, machines);
+    return await dynamicDeployment(definitionId, version, processesExportData, machines);
   }
 }
 export type ImportInformation = { definitionId: string; processId: string; version: number };
@@ -264,14 +282,19 @@ export type InstanceInfo = {
     currentFlowNodeState: string;
     currentFlowElementStartTime: number;
     previousFlowElementId: string;
-    intermediateVariablesState?: { [key: string]: any };
+    variablesIntermediateState?: { [key: string]: any };
     localExecutionTime: number;
     currentFlowNodeProgress?: { value: number; manual: boolean };
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
   }[];
-  variables: {};
+  variables: {
+    [key: string]: {
+      value: any;
+      log: { changedTime: number; changedBy?: string; oldValue?: any; newValue: any }[];
+    };
+  };
   log: {
     flowElementId: string;
     tokenId: string;
@@ -291,10 +314,14 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];
   processVersion: string;
   userTasks: any[];
+  managementSystemLocation?: string;
+  processInitiator?: string;
+  spaceIdOfProcessInitiator?: string;
 };
 export type DeployedProcessInfo = {
   definitionId: string;
@@ -333,6 +360,45 @@ export async function getDeployment(engine: Engine, definitionId: string) {
   });
 
   return deployment as DeployedProcessInfo;
+}
+
+export async function changeDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string | undefined,
+  value: boolean,
+) {
+  if (version) {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/versions/:version/active',
+      engine,
+      pathParams: { definitionId, version },
+      body: { active: value },
+    });
+  } else {
+    await engineRequest({
+      method: 'put',
+      endpoint: '/process/:definitionId/active',
+      engine,
+      pathParams: { definitionId },
+      body: { active: value },
+    });
+  }
+}
+
+export async function getDeploymentActivation(
+  engine: Engine,
+  definitionId: string,
+  version: string,
+): Promise<boolean> {
+  const result = await engineRequest({
+    method: 'get',
+    endpoint: '/process/:definitionId/versions/:version/active',
+    engine,
+    pathParams: { definitionId, version },
+  });
+  return result.active;
 }
 
 export async function getProcessImageFromMachine(

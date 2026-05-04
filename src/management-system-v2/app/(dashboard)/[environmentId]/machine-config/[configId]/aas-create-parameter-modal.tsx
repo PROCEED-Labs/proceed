@@ -29,7 +29,7 @@ import {
   LinkedParameter,
   LocalizedText,
 } from '@/lib/data/machine-config-schema';
-import { buildLinkedInputParametersFromIds } from '../configuration-helper';
+import { buildLinkedInputParametersFromIds } from '../helpers/configuration-helper';
 import { getConfigurationCategories } from '@/lib/data/db/machine-config';
 import { useEnvironment } from '../../../../../components/auth-can';
 import { QuestionCircleOutlined } from '@ant-design/icons';
@@ -178,19 +178,7 @@ const AasCreateParameterModal = <T extends CreateParameterModalReturnType>({
 
       // Let the parent of this modal handle the submission.
       setSubmitting(true);
-      try {
-        const res = await onSubmit(mergedValues);
-        if (res?.error) {
-          message.open({ type: 'error', content: res.error.message });
-        }
-      } catch (e) {
-        setError(e);
-
-        message.open({
-          type: 'error',
-          content: 'Something went wrong while submitting the data',
-        });
-      }
+      await onSubmit(mergedValues);
       setSubmitting(false);
     } catch (info) {
       // Validate Failed
@@ -547,7 +535,8 @@ const ParameterInputs = ({
   };
   // determine if transformation type should be disabled
   const isTransformationDisabled = formValueTemplateSource !== 'none';
-  const isAdminLocked = initialData?.[index]?.origin === 'admin';
+
+  const isAdminLocked = initialData?.[index]?.origin ? true : false;
   return (
     <Row gutter={16}>
       <Col span={12}>

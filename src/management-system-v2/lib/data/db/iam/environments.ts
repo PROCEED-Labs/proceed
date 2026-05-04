@@ -1,6 +1,6 @@
 import { v4 } from 'uuid';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { addRole, getRoleByName } from './roles';
+import { addRole, getAdminRole } from './roles';
 import { adminPermissions } from '@/lib/authorization/permissionHelpers';
 import { addRoleMappings } from './role-mappings';
 import { addMember } from './memberships';
@@ -13,7 +13,6 @@ import {
 } from '../../environment-schema';
 import { createFolder } from '../folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 import { env } from '@/lib/ms-config/env-vars';
@@ -56,7 +55,7 @@ export async function activateEnvrionment(environmentId: string, userId: string)
   if (!environment.isOrganization) throw new Error('Environment is a personal environment');
   if (environment.isActive) throw new Error('Environment is already active');
 
-  const adminRole = await getRoleByName(environmentId, '@admin');
+  const adminRole = await getAdminRole(environmentId);
   if (!adminRole) throw new Error(`Consistency error: admin role of ${environmentId} not found`);
 
   await db.$transaction(async (tx) => {

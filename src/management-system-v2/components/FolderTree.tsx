@@ -43,10 +43,12 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   treeProps,
   showRootAsFolder,
   onSelect: onExternalSelect,
+  onMultiSelect: onExternalMultiSelect,
   selectedKeys: externalSelectedKeys,
   subtreesToReload,
   onExpand: onExternalExpand,
   expandedKeys: externalExpandedKeys,
+  notSelectableKeys = [],
   customGetContent,
   onTreeDataChange,
   // Managed State
@@ -61,10 +63,12 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   treeProps?: TreeProps<TreeNode<TContentType>>;
   showRootAsFolder?: boolean;
   onSelect?: (folder: TContentType | undefined) => void;
+  onMultiSelect?: (folder: TContentType[] | undefined) => void;
   selectedKeys?: React.Key[];
   subtreesToReload?: string[];
   onExpand?: (expanded: React.Key[]) => void;
   expandedKeys?: React.Key[];
+  notSelectableKeys?: string[];
   customGetContent?: (
     spaceId: string,
     folderId?: string,
@@ -132,12 +136,15 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
       const rootFolder = await getFolder(spaceId);
       if ('error' in rootFolder) return;
 
-      rootNode = generateTreeNode({
-        // TODO: this needs to be corrected
-        type: 'folder',
-        name: '< root >',
-        id: rootFolder.id,
-      } as TContentType);
+      rootNode = {
+        ...generateTreeNode({
+          // TODO: this needs to be corrected
+          type: 'folder',
+          name: '< root >',
+          id: rootFolder.id,
+        } as TContentType),
+        selectable: !notSelectableKeys.includes(rootFolder.id),
+      };
       if (newChildrenHook) rootNode = newChildrenHook?.({ nodes: [rootNode] })[0];
 
       // TODO: raise error
@@ -161,9 +168,17 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
 
     const children = _children as unknown as TContentType[];
 
-    let childrenNodes = children.map(generateTreeNode);
+    let childrenNodes = children.map((child) => ({
+      ...generateTreeNode(child),
+      selectable: !notSelectableKeys.includes(child.id),
+    }));
     if (newChildrenHook) {
-      childrenNodes = newChildrenHook({ nodes: childrenNodes, parent: parentNode });
+      childrenNodes = newChildrenHook({ nodes: childrenNodes, parent: parentNode }).map(
+        (child) => ({
+          ...child,
+          selectable: child.selectable || !notSelectableKeys.includes(child.key as string),
+        }),
+      );
     }
 
     for (const node of childrenNodes) nodeMap.current.set(node.key, node);
@@ -295,9 +310,13 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
         // correct loadedKeys
         loadedKeys={[...loadedKeys.current.keys()]}
         selectedKeys={externalSelectedKeys || selectedKeys}
-        onSelect={(selectedKeys, { node }) => {
+        multiple={!!onExternalMultiSelect}
+        onSelect={(selectedKeys, { node, selectedNodes }) => {
           if (onExternalSelect) {
             onExternalSelect(node.element);
+          }
+          if (onExternalMultiSelect) {
+            onExternalMultiSelect(selectedNodes.map((n) => n.element));
           }
           setSelectedKeys(selectedKeys);
         }}

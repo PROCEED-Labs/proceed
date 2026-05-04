@@ -11,7 +11,8 @@ import RolePermissions from './rolePermissions';
 import RoleMembers from './role-members';
 import { AuthenticatedUser } from '@/lib/data/user-schema';
 import SpaceLink from '@/components/space-link';
-import { getFolderById } from '@/lib/data/db/folders';
+import { getFolderById, getFolders } from '@/lib/data/db/folders';
+import FolderPermissions from './folder-permissions';
 
 const Page = async (props: { params: Promise<{ roleId: string; environmentId: string }> }) => {
   const params = await props.params;
@@ -19,7 +20,7 @@ const Page = async (props: { params: Promise<{ roleId: string; environmentId: st
   const { roleId, environmentId } = params;
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-  const role = await getRoleWithMembersById(roleId, ability);
+  const role = await getRoleWithMembersById(roleId, ability, true);
   // if (role && !ability.can('manage', toCaslResource('Role', role))) return <UnauthorizedFallback />;
   if (!ability.can('admin', 'All')) return <UnauthorizedFallback />;
 
@@ -39,6 +40,8 @@ const Page = async (props: { params: Promise<{ roleId: string; environmentId: st
         );
       </Content>
     );
+
+  const folders = await getFolders(environmentId);
 
   const usersInRole = role.members;
   const roleUserSet = new Set(usersInRole.map((member) => member.id));
@@ -62,6 +65,11 @@ const Page = async (props: { params: Promise<{ roleId: string; environmentId: st
       key: 'permissions',
       label: 'Permissions',
       children: <RolePermissions role={role} />,
+    },
+    {
+      key: 'folder-permissions',
+      label: 'Folder Permissions',
+      children: <FolderPermissions role={role} folders={folders} />,
     },
   ];
 

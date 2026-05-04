@@ -18,6 +18,7 @@ export const RoleInputSchema = z.object({
   expiration: z.date().nullish().optional(),
   default: z.boolean().optional().nullable(),
   parentId: z.string().optional().nullable(),
+  parentRoleId: z.string().optional().nullable(),
 });
 
 export type RoleInput = z.input<typeof RoleInputSchema>;
@@ -28,6 +29,14 @@ export type Role = RoleInput & {
   lastEditedOn: Date;
 };
 
+export type RoleWithChildren = Role & {
+  children: RoleWithChildren[];
+};
+
 export type RoleWithMembers = Role & {
+  members: Pick<AuthenticatedUser, 'id' | 'email' | 'username' | 'firstName' | 'lastName'>[];
+};
+
+export type RoleWithMembersAndChildren = RoleWithChildren & {
   members: Pick<AuthenticatedUser, 'id' | 'email' | 'username' | 'firstName' | 'lastName'>[];
 };

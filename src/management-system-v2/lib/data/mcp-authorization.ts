@@ -10,6 +10,7 @@ import { isUserErrorResponse, userError } from '../user-error';
 import { getTokenHash } from '../email-verification-tokens/utils';
 
 import crypto from 'crypto';
+import { getMSConfig } from '../ms-config/ms-config';
 
 const getUserData = async () => {
   const { user } = await getCurrentUser();
@@ -21,6 +22,11 @@ const getUserData = async () => {
 
 export const getPairingCode = async (environmentId: string) => {
   try {
+    const msConfig = await getMSConfig();
+    if (!msConfig.PROCEED_PUBLIC_MCP_ACTIVE) {
+      return userError('Not available.');
+    }
+
     const user = await getUserData();
     if (isUserErrorResponse(user)) return user;
 
@@ -51,6 +57,11 @@ export const getPairingCode = async (environmentId: string) => {
 
 export const getPairingInfo = async (code: string) => {
   try {
+    const msConfig = await getMSConfig();
+    if (!msConfig.PROCEED_PUBLIC_MCP_ACTIVE) {
+      return userError('Not available.');
+    }
+
     const codeHash = await getTokenHash(code);
 
     const pairingInfo = await _getPairingCodeInfo(codeHash);
@@ -69,6 +80,11 @@ export const getPairingInfo = async (code: string) => {
 };
 
 export const revokePairingCodes = async () => {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_MCP_ACTIVE) {
+    return userError('Not available.');
+  }
+
   const user = await getUserData();
   if (isUserErrorResponse(user)) return user;
 

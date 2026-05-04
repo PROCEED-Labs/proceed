@@ -171,7 +171,11 @@ export function exportInstanceData(selectedInstances: (InstanceInfo | undefined)
     spaceIdOfProcessInitiator: null,
     globalStartTime: null,
   };
+  const instanceEvents = selectedInstances.flatMap((instance) =>
+    instance ? instance.log.map((eventEntry) => ({ ...instance, ...eventEntry })) : [],
+  );
+
   return jsonToCsvExport({
-    data: selectedInstances.map((instance) => Object.assign(objectOrderTemplate, instance)),
+    data: instanceEvents.map((instance) => ({ ...objectOrderTemplate, ...instance })),
   });
 }

@@ -16,7 +16,28 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
+import ProcessAnalyticsCards from '@/components/processes/process-analytics-cards';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
+
+// Helper function to get all processes from a folder and its subfolders
+async function getAllProcessesRecursive(
+  folderId: string,
+  ability: any,
+  collected: ListItem[] = [],
+): Promise<ListItem[]> {
+  const contents = await getFolderContents(folderId, ability);
+
+  for (const item of contents) {
+    if (item.type === 'process') {
+      collected.push(item);
+    } else if (item.type === 'folder') {
+      // Recursively get processes from subfolders
+      await getAllProcessesRecursive(item.id, ability, collected);
+    }
+  }
+
+  return collected;
+}
 
 const ProcessesPage = async (props: {
   params: Promise<{ environmentId: string; folderId?: string; mode: string }>;
@@ -66,6 +87,11 @@ const ProcessesPage = async (props: {
   pathToFolder.reverse();
   wrappingFolderIds.reverse();
 
+  // Determine if this is the root folder
+  const isRootFolder = !folder.parentId;
+  // Get all processes from root folder for total count
+  const allProcessesRecursive = await getAllProcessesRecursive(rootFolder.id, ability);
+
   return (
     <>
       <Content
@@ -87,7 +113,14 @@ const ProcessesPage = async (props: {
           </Space>
         }
       >
-        <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+        <Space orientation="vertical" size="small">
+          {/* Analytics Cards Section */}
+          <ProcessAnalyticsCards
+            items={folderContentsFiltered}
+            allProcesses={allProcessesRecursive}
+            isRootFolder={isRootFolder}
+          />
+          {/* Processes List */}
           <Processes
             {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
             rootFolder={rootFolder}

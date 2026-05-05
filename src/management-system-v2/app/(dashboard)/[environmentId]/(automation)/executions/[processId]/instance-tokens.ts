@@ -6,7 +6,10 @@ import type { Connection } from 'diagram-js/lib/util/Elements';
 
 type TokenInfo = InstanceInfo['tokens'][number];
 
-export function getTokenPosition(token: TokenInfo, bpmnViewer: BPMNCanvasRef) {
+export function getTokenPosition(
+  token: TokenInfo,
+  bpmnViewer: { getElement: (id: string) => Element | undefined },
+) {
   let targetFlowElement: Element | Connection | undefined = bpmnViewer.getElement(
     token.currentFlowElementId,
   );

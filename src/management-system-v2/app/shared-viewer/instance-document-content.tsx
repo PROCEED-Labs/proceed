@@ -159,7 +159,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     const startTime = logEntries?.[0]?.startTime ?? token?.currentFlowElementStartTime;
     const endTime = logEntries?.[logEntries.length - 1]?.endTime;
     const changedVariables = settings.showInstanceVariables
-      ? getVariablesForElement(instance, node.id, startTime, endTime)
+      ? getVariablesForElement(instance, node.id)
       : [];
 
     const resolvedImageUrl = await resolveElementImageUrl(

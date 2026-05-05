@@ -40,6 +40,7 @@ import {
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import { ElementInfo } from './table-of-content';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
+import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -268,14 +269,10 @@ export async function getSVGWithInstanceColoring(
 
   // Collect token positions
   const elementRegistry = viewer.get<any>('elementRegistry');
-  const canvas = viewer.get<Canvas>('canvas');
 
   const viewerRef = {
     getElement: (id: string) => elementRegistry.get(id),
-    getAllElements: () => elementRegistry.getAll(),
-    getOverlays: () => viewer.get<any>('overlays'),
-    getCanvas: () => canvas,
-  } as any;
+  };
 
   const tokenPositions = instance.tokens.map((token) => ({
     token,
@@ -360,8 +357,6 @@ export async function getSVGWithInstanceColoring(
       const secondLast = pointMatches[pointMatches.length - 2];
       const lx = parseFloat(last[1]);
       const ly = parseFloat(last[2]);
-      const slx = parseFloat(secondLast[1]);
-      const sly = parseFloat(secondLast[2]);
 
       // Use top/right from getTokenPosition as offsets from the last waypoint
       cx = lx - (position.right || 0) + 10;
@@ -419,17 +414,15 @@ export function getElementTypeLabel(node: ElementInfo): string {
   const identifier = hasName ? node.name : node.id;
   const type = node.elementType || '';
 
-  if (type.includes('StartEvent')) return `Start Event: ${identifier}`;
-  if (type.includes('EndEvent')) return `End Event: ${identifier}`;
-  if (type.includes('UserTask')) return `User Task: ${identifier}`;
-  if (type.includes('ServiceTask')) return `Service Task: ${identifier}`;
-  if (type.includes('ScriptTask')) return `Script Task: ${identifier}`;
-  if (type.includes('Task')) return `Task: ${identifier}`;
-  if (type.includes('ExclusiveGateway')) return `Exclusive Gateway: ${identifier}`;
-  if (type.includes('ParallelGateway')) return `Parallel Gateway: ${identifier}`;
-  if (type.includes('Gateway')) return `Gateway: ${identifier}`;
-  if (type.includes('CallActivity')) return `Call Activity: ${identifier}`;
-  return String(identifier);
+  if (!type.includes(':')) return String(identifier);
+
+  // Convert "bpmn:UserTask" to "User Task", "bpmn:StartEvent" to "Start Event" etc.
+  const typeString = type
+    .replace(/.*:(.*)/, '$1')
+    .replace(/([A-Z])/g, ' $1')
+    .trim();
+
+  return `${typeString}: ${identifier}`;
 }
 
 /**
@@ -452,100 +445,82 @@ export function getElementTypeLabel(node: ElementInfo): string {
 export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInfo[] {
   if (children.length === 0) return children;
 
-  // Extract sequence flows connecting elements only in this scope
-  const flowElements: any[] = el.flowElements ?? el.processRef?.flowElements ?? [];
-  const sequenceFlows = flowElements.filter((e: any) => e.$type === 'bpmn:SequenceFlow');
-
-  const childIds = new Set(children.map((n) => n.id));
   const childMap = new Map(children.map((n) => [n.id, n]));
 
-  // Helper to extract id from either a reference object or a plain string
-  const resolveId = (ref: any): string | undefined =>
-    ref ? (typeof ref === 'string' ? ref : ref.id) : undefined;
+  // Get bpmn element by id from parent's flowElements
+  const flowElements: any[] = el.flowElements ?? el.processRef?.flowElements ?? [];
+  const getBpmnElement = (id: string) => flowElements.find((e: any) => e.id === id);
 
-  // Only EndEvents go last
-  const endEvents = children.filter((n) => n.elementType === 'bpmn:EndEvent');
-  const nonEndChildren = children.filter((n) => n.elementType !== 'bpmn:EndEvent');
-
-  // Build adjacency list for cycle detection
-  const adjacency = new Map<string, string[]>(nonEndChildren.map((n) => [n.id, []]));
-
-  for (const flow of sequenceFlows) {
-    const sourceId = resolveId(flow.sourceRef);
-    const targetId = resolveId(flow.targetRef);
-    if (!sourceId || !targetId) continue;
-    if (!adjacency.has(sourceId) || !adjacency.has(targetId)) continue;
-    adjacency.get(sourceId)!.push(targetId);
-  }
+  const nonEndBpmn = children
+    .filter((n) => n.elementType !== 'bpmn:EndEvent')
+    .map((n) => getBpmnElement(n.id))
+    .filter(Boolean);
 
   // Detect backedges using DFS to break cycles
   const visited = new Set<string>();
   const inStack = new Set<string>();
-  // "sourceId -> targetId"
   const backEdges = new Set<string>();
 
-  function dfs(nodeId: string) {
-    visited.add(nodeId);
-    inStack.add(nodeId);
-    for (const neighbor of adjacency.get(nodeId) ?? []) {
-      if (!visited.has(neighbor)) {
+  function dfs(node: any) {
+    visited.add(node.id);
+    inStack.add(node.id);
+    const outgoing = node.outgoing?.map((flow: any) => flow.targetRef) || [];
+    for (const neighbor of outgoing) {
+      if (!childMap.has(neighbor.id)) continue;
+      if (!visited.has(neighbor.id)) {
         dfs(neighbor);
-      } else if (inStack.has(neighbor)) {
-        // This is a backedge (part of a cycle)
-        backEdges.add(`${nodeId}->${neighbor}`);
+      } else if (inStack.has(neighbor.id)) {
+        backEdges.add(`${node.id}->${neighbor.id}`);
       }
     }
-    inStack.delete(nodeId);
+    inStack.delete(node.id);
   }
 
-  nonEndChildren.forEach((n) => {
-    if (!visited.has(n.id)) dfs(n.id);
+  nonEndBpmn.forEach((n) => {
+    if (!visited.has(n.id)) dfs(n);
   });
 
-  // Build outgoing and incomingCount ignoring backedges
-  const outgoing = new Map<string, string[]>(nonEndChildren.map((n) => [n.id, []]));
-  const incomingCount = new Map<string, number>(nonEndChildren.map((n) => [n.id, 0]));
+  const incomingCount = new Map<string, number>(
+    nonEndBpmn.map((n) => [
+      n.id,
+      n.incoming
+        ?.map((flow: any) => flow.sourceRef)
+        .filter((source: any) => childMap.has(source.id) && !backEdges.has(`${source.id}->${n.id}`))
+        .length || 0,
+    ]),
+  );
 
-  for (const flow of sequenceFlows) {
-    const sourceId = resolveId(flow.sourceRef);
-    const targetId = resolveId(flow.targetRef);
-    if (!sourceId || !targetId) continue;
-    if (!outgoing.has(sourceId) || !outgoing.has(targetId)) continue;
-    // skip backedges
-    if (backEdges.has(`${sourceId}->${targetId}`)) continue;
-
-    outgoing.get(sourceId)!.push(targetId);
-    incomingCount.set(targetId, (incomingCount.get(targetId) ?? 0) + 1);
-  }
-
-  // Kahn's algorithm without cycles
   const sorted: ElementInfo[] = [];
-  const queue = nonEndChildren.filter((n) => incomingCount.get(n.id) === 0);
+  const queue = nonEndBpmn.filter((n) => incomingCount.get(n.id) === 0);
 
   while (queue.length > 0) {
     const current = queue.shift()!;
-    sorted.push(current);
+    const currentInfo = childMap.get(current.id);
+    if (currentInfo) sorted.push(currentInfo);
 
-    for (const targetId of outgoing.get(current.id) ?? []) {
-      const remaining = (incomingCount.get(targetId) ?? 0) - 1;
-      incomingCount.set(targetId, remaining);
+    const outgoing = current.outgoing?.map((flow: any) => flow.targetRef) || [];
+    for (const target of outgoing) {
+      if (!childMap.has(target.id)) continue;
+      if (backEdges.has(`${current.id}->${target.id}`)) continue;
+      const remaining = (incomingCount.get(target.id) ?? 0) - 1;
+      incomingCount.set(target.id, remaining);
       if (remaining === 0) {
-        const target = childMap.get(targetId);
-        if (target) queue.push(target);
+        const targetBpmn = getBpmnElement(target.id);
+        if (targetBpmn) queue.push(targetBpmn);
       }
     }
   }
 
-  // Append any remaining disconnected elements in original order
-  if (sorted.length < nonEndChildren.length) {
+  // Append any disconnected non-end elements in original order
+  if (sorted.length < nonEndBpmn.length) {
     const sortedIds = new Set(sorted.map((n) => n.id));
-    nonEndChildren.forEach((n) => {
-      if (!sortedIds.has(n.id)) sorted.push(n);
-    });
+    children
+      .filter((n) => n.elementType !== 'bpmn:EndEvent' && !sortedIds.has(n.id))
+      .forEach((n) => sorted.push(n));
   }
 
   // End events always last
-  sorted.push(...endEvents);
+  sorted.push(...children.filter((n) => n.elementType === 'bpmn:EndEvent'));
 
   return sorted;
 }
@@ -563,45 +538,41 @@ export function isInstanceElementEmpty(node: ElementInfo): boolean {
 
 // variable changes for each individial event or element
 function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo): boolean {
-  const logEntry = instance.log.find((l) => l.flowElementId === node.id);
-  return !!logEntry?.variableChanges && Object.keys(logEntry.variableChanges).length > 0;
+  return instance.log
+    .filter((l) => l.flowElementId === node.id)
+    .some((l) => l.variableChanges && Object.keys(l.variableChanges).length > 0);
 }
 
 // get variables changed by or during an element
 export function getVariablesForElement(
   instance: InstanceInfo,
   elementId: string,
-  startTime?: number,
-  endTime?: number,
 ): { name: string; oldValue?: string; value: string; changedTime: number }[] {
   const result: { name: string; oldValue?: string; value: string; changedTime: number }[] = [];
 
-  const logEntry = instance.log.find((l) => l.flowElementId === elementId);
-  if (!logEntry?.variableChanges) return result;
+  const logEntries = instance.log.filter((l) => l.flowElementId === elementId);
 
-  for (const [name, changes] of Object.entries(
-    logEntry.variableChanges as Record<
-      string,
-      { newValue: unknown; changedTime: number; oldValue?: unknown }[]
-    >,
-  )) {
-    for (const change of changes) {
-      result.push({
-        name,
-        oldValue:
-          change.oldValue !== undefined
-            ? typeof change.oldValue === 'object'
-              ? JSON.stringify(change.oldValue)
-              : String(change.oldValue)
-            : undefined,
-        value:
-          change.newValue === null || change.newValue === undefined
-            ? '—'
-            : typeof change.newValue === 'object'
-              ? JSON.stringify(change.newValue)
-              : String(change.newValue),
-        changedTime: change.changedTime,
-      });
+  for (const logEntry of logEntries) {
+    if (!logEntry.variableChanges) continue;
+    for (const [name, changes] of Object.entries(logEntry.variableChanges)) {
+      for (const change of changes) {
+        result.push({
+          name,
+          oldValue:
+            change.oldValue !== undefined
+              ? typeof change.oldValue === 'object'
+                ? JSON.stringify(change.oldValue)
+                : String(change.oldValue)
+              : undefined,
+          value:
+            change.newValue === null || change.newValue === undefined
+              ? '—'
+              : typeof change.newValue === 'object'
+                ? JSON.stringify(change.newValue)
+                : String(change.newValue),
+          changedTime: change.changedTime,
+        });
+      }
     }
   }
 
@@ -1001,8 +972,7 @@ function isEventTriggeredSubprocess(node: ElementInfo): boolean {
 }
 
 /**
- * Returns true if the element should be excluded from the main Process Element Details list
- * (expanded subprocesses and event triggered subprocesses get their own sections)
+ * Returns true if the element gets its own separate section in the documentation.
  */
 function isSubprocessWithOwnSection(node: ElementInfo): boolean {
   return (

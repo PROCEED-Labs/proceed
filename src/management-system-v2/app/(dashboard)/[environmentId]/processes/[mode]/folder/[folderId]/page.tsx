@@ -113,7 +113,7 @@ const ProcessesPage = async (props: {
           </Space>
         }
       >
-        <Space orientation="vertical" size="small">
+        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Analytics Cards Section */}
           <ProcessAnalyticsCards
             items={folderContentsFiltered}
@@ -121,15 +121,17 @@ const ProcessesPage = async (props: {
             isRootFolder={isRootFolder}
           />
           {/* Processes List */}
-          <Processes
-            {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
-            rootFolder={rootFolder}
-            processes={folderContentsFiltered}
-            favourites={favs as string[]}
-            folder={folder}
-            pathToFolder={wrappingFolderIds}
-          />
-        </Space>
+          <div style={{ overflow: 'auto', width: '100%' }}>
+            <Processes
+              {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
+              rootFolder={rootFolder}
+              processes={folderContentsFiltered}
+              favourites={favs as string[]}
+              folder={folder}
+              pathToFolder={wrappingFolderIds}
+            />
+          </div>
+        </div>
       </Content>
     </>
   );

@@ -39,6 +39,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
 
   const app = App.useApp();
   const environment = useEnvironment();
+  const { spaceId } = environment;
   const [embeddingUrl, setEmbeddingUrl] = useState('');
 
   const [selectedVersionId, setSelectedVersionId] = useProcessVersion(
@@ -56,6 +57,7 @@ const ModelerShareModalOptionEmdedInWeb = ({
               processId: process.id,
               embeddedMode: true,
               timestamp: allowIframeTimestamp,
+              spaceId,
             },
             selectedVersionId,
           ),

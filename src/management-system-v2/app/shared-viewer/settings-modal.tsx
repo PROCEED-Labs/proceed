@@ -32,31 +32,49 @@ export const settings = [
       'Add the content of processes that are imported as the internal logic of a call-activity in the process.',
   },
   {
-    label: 'Exclude Empty Elements',
-    value: 'hideEmpty',
+    label: 'Include Empty Elements',
+    value: 'showEmpty',
     tooltip:
-      'Will exclude sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
+      'Will include sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
+  },
+] as const;
+
+export const instanceSettings = [
+  ...settings,
+  {
+    label: 'Instance Status',
+    value: 'showInstanceStatus',
+    tooltip: 'Show the execution status for each element in the instance.',
+  },
+  {
+    label: 'Instance Variables',
+    value: 'showInstanceVariables',
+    tooltip: 'Show the instance variables at the end of the document.',
   },
 ] as const;
 
 export const settingsOptions = settings.map(({ value }) => value);
 
 export type SettingsOption = typeof settingsOptions;
+export type ActiveSettings = Partial<{
+  [key in SettingsOption[number] | 'showInstanceStatus' | 'showInstanceVariables']: boolean;
+}>;
 
-export type ActiveSettings = Partial<{ [key in SettingsOption[number]]: boolean }>;
+type AnySettingItem = { label: string; value: string; tooltip: string };
 
 type SettingsModalProps = {
-  checkedSettings: SettingsOption;
-  onConfirm: (settings: SettingsModalProps['checkedSettings']) => void;
+  checkedSettings: string[];
+  onConfirm: (settings: string[]) => void;
+  availableSettings?: readonly AnySettingItem[];
 };
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ checkedSettings, onConfirm }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  checkedSettings,
+  onConfirm,
+  availableSettings = settings,
+}) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [checked, setChecked] = useState<SettingsOption>(checkedSettings);
-
-  const handleSettingsChange = (checkedValues: SettingsOption) => {
-    setChecked(checkedValues);
-  };
+  const [checked, setChecked] = useState<string[]>(checkedSettings);
 
   const handleCancel = () => {
     setModalOpen(false);
@@ -77,9 +95,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ checkedSettings, onConfir
         onOk={handleConfirm}
         onCancel={handleCancel}
       >
-        <Checkbox.Group value={checked} onChange={handleSettingsChange}>
+        <Checkbox.Group value={checked} onChange={(vals) => setChecked(vals as string[])}>
           <Space orientation="vertical">
-            {settings.map(({ label, value, tooltip }) => (
+            {availableSettings.map(({ label, value, tooltip }) => (
               <Tooltip placement="right" title={tooltip} key={label}>
                 <Checkbox value={value}>{label}</Checkbox>
               </Tooltip>

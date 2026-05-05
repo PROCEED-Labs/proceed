@@ -221,3 +221,34 @@ export async function setUserTemporaryPassword(
     return userError(message);
   }
 }
+
+export async function getUserName(userId: string) {
+  try {
+    const user = await getUserById(userId);
+
+    if (!user) {
+      return userError('User not found');
+    }
+
+    if (user.isGuest) {
+      return {
+        id: user.id,
+        name: 'Guest User',
+        username: null,
+        firstName: null,
+        lastName: null,
+      };
+    }
+
+    return {
+      id: user.id,
+      username: user.username,
+      fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      firstName: user.firstName,
+      lastName: user.lastName,
+    };
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}

@@ -3,21 +3,63 @@
     font-size: 4em;
     text-align: center;
     font-weight: 500;
+    margin-top: 2rem;
+    margin-bottom: 1.3rem;
   }
   :global(h2.ant-typography) {
     font-size: 3em;
-    margin-bottom: 2em;
     font-weight: 500;
-    margin-bottom: 60px;
+    margin-top: 1.5rem;
+    margin-bottom: 0.3rem;
   }
   :global(h3.ant-typography) {
     font-size: 2em;
-    margin-bottom: 1.5em;
     font-weight: 500;
+    margin-top: 1.7rem;
+    margin-bottom: 0.4rem;
+  }
+  :global(h4.ant-typography) {
+    font-size: 1.5em;
+    font-weight: 500;
+    margin-top: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  :global(h5.ant-typography) {
+    font-size: 1.2em;
+    font-weight: 500;
+    margin-top: 0.5rem;
+    margin-bottom: 0.2rem;
   }
 
   @media print {
     overflow: visible;
+
+    :global(h1.ant-typography) {
+      font-size: 30pt;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 6pt;
+    }
+    :global(h2.ant-typography) {
+      font-size: 26pt;
+      margin-top: 0;
+      margin-bottom: 2pt;
+    }
+    :global(h3.ant-typography) {
+      font-size: 20pt;
+      margin-top: 22pt;
+      margin-bottom: 3pt;
+    }
+    :global(h4.ant-typography) {
+      font-size: 16pt;
+      margin-top: 4pt;
+      margin-bottom: 1pt;
+    }
+    :global(h5.ant-typography) {
+      font-size: 14pt;
+      margin-top: 4pt;
+      margin-bottom: 1pt;
+    }
   }
 
   :global(.ant-layout) {

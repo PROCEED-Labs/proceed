@@ -23,7 +23,7 @@ export const colorOptions = [
 ] as const;
 export type ColorOptions = (typeof colorOptions)[number]['key'];
 
-function getExecutionColor(executionState: string, wasInterrupted: boolean) {
+export function getExecutionColor(executionState: string, wasInterrupted: boolean) {
   switch (executionState) {
     case 'COMPLETED':
       return wasInterrupted ? 'yellow' : 'green';

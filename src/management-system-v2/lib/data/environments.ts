@@ -17,7 +17,7 @@ import { env } from '../ms-config/env-vars';
 import { isMember, removeMember } from './db/iam/memberships';
 import { UserHasToDeleteOrganizationsError } from './db/iam/users';
 import { addParentConfig } from './db/machine-config';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 
 export async function addOrganizationEnvironment(
   environmentInput: UserOrganizationEnvironmentInput,

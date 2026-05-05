@@ -21,12 +21,14 @@ import {
   defaultMetaParameter,
   buildLinkedInputParametersFromIds,
   findParameter,
-} from '../configuration-helper';
+} from '../helpers/configuration-helper';
 import { CreateParameterModalReturnType } from './aas-create-parameter-modal';
 import { updateConfigMetadata } from '@/lib/data/db/machine-config';
 import { Modal } from 'antd';
 import Tree from 'antd/es/tree/Tree';
 import { Localization } from '@/lib/data/locale';
+import { wrapServerCall } from '@/lib/wrap-server-call';
+import useApp from 'antd/es/app/useApp';
 export const getInitialTransformationData = (param: Parameter | MetaParameter) => {
   const paramWithTransformation = param as Parameter & {
     transformation?: {
@@ -249,26 +251,27 @@ export const editParameter = async (
 
     if (shouldBeVirtual) {
       // converting regular to virtual
-      newParam = defaultMetaParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultMetaParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
     } else {
       // Converting virtual to regular
-      newParam = defaultParameter(
-        valuesFromModal.name,
-        newDisplayName,
-        newDescription,
-        advancedSettingsUpdate.parameterType || 'none',
-        valuesFromModal.value,
-        currentParameter.valueType,
-        valuesFromModal.unit,
-      );
+      newParam = defaultParameter({
+        name: valuesFromModal.name,
+        displayName: newDisplayName,
+        description: newDescription,
+        parameterType: advancedSettingsUpdate.parameterType || 'none',
+        value: valuesFromModal.value,
+        valueType: currentParameter.valueType,
+        unitRef: valuesFromModal.unit,
+      });
 
       // apply transformation for regular parameter
       if (transformationUpdate.transformation) {
@@ -479,10 +482,17 @@ export const useParameterActions = ({
   currentLanguage,
 }: UseParameterActionsParams) => {
   const router = useRouter();
+  const app = useApp();
   const [currentParameter, setCurrentParameter] = useState<Parameter | MetaParameter>();
   const [createFieldOpen, setCreateFieldOpen] = useState<boolean>(false);
   const [editFieldOpen, setEditFieldOpen] = useState<boolean>(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState<boolean>(false);
+
+  const onSubmitSuccess = () => {
+    setCreateFieldOpen(false);
+    router.refresh();
+    setCurrentParameter(undefined);
+  };
 
   const addParameter = async (
     values: CreateParameterModalReturnType[],
@@ -493,7 +503,7 @@ export const useParameterActions = ({
     const displayName = valuesFromModal.displayName || [];
     const description = valuesFromModal.description || [];
     // get parameterType from advanced settings or default to 'none'
-    const parameterType = valuesFromModal.parameterType || 'none';
+    const parameterType = (valuesFromModal.parameterType || 'none') as 'meta' | 'content' | 'none';
 
     let newParameter: Parameter | MetaParameter;
 
@@ -501,25 +511,26 @@ export const useParameterActions = ({
       valuesFromModal.valueTemplateSource && valuesFromModal.valueTemplateSource !== 'none';
 
     if (shouldBeVirtual) {
-      newParameter = defaultMetaParameter(
-        valuesFromModal.name,
+      newParameter = defaultMetaParameter({
+        name: valuesFromModal.name,
         displayName,
         description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
-        'xs:string',
-        valuesFromModal.unit,
-      );
+        parameterType,
+        valueTemplateSource:
+          valuesFromModal.valueTemplateSource as unknown as MetaParameter['valueTemplateSource'],
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     } else {
-      newParameter = defaultParameter(
-        valuesFromModal.name,
+      newParameter = defaultParameter({
+        name: valuesFromModal.name,
         displayName,
         description,
-        parameterType as 'meta' | 'content' | 'none',
-        valuesFromModal.value,
-        'xs:string',
-        valuesFromModal.unit,
-      );
+        parameterType,
+        value: valuesFromModal.value,
+        valueType: 'xs:string',
+        unitRef: valuesFromModal.unit,
+      });
     }
 
     // apply advanced settings
@@ -553,14 +564,22 @@ export const useParameterActions = ({
     // use parent parameter if provided, otherwise use currentParameter, otherwise add to root
     const targetParent = parent || currentParameter;
     if (targetParent) {
-      await backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(targetParent.id, 'parameter', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     } else {
-      await backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id);
+      wrapServerCall({
+        fn: () => backendAddParameter(parentConfig.id, 'config', newParameter, parentConfig.id),
+        onSuccess: () => {
+          app.message.success('Parameter successfully created.');
+          onSubmitSuccess();
+        },
+      });
     }
-
-    setCreateFieldOpen(false);
-    router.refresh();
-    setCurrentParameter(undefined);
   };
 
   const handleEditParameter = async (values: CreateParameterModalReturnType[]) => {

@@ -71,7 +71,7 @@ async function getContent(
 ): Promise<void> {
   const { settings, processData, version, getImage, environment, shareToken } = params;
 
-  if (!settings.hideEmpty && isProcessElementEmpty(hierarchyElement)) return;
+  if (!settings.showEmpty && isProcessElementEmpty(hierarchyElement)) return;
 
   const isContainer = !!hierarchyElement.children?.length;
 
@@ -246,7 +246,7 @@ async function getContent(
     // Render each child of the subprocess into subprocessPages
     if (hierarchyElement.children) {
       for (const child of hierarchyElement.children) {
-        if (!settings.hideEmpty && isProcessElementEmpty(child)) continue;
+        if (!settings.showEmpty && isProcessElementEmpty(child)) continue;
         const childImageURL = await resolveElementImageUrl(
           child.image,
           processData.id,
@@ -273,7 +273,7 @@ async function getContent(
             />
             {/* Boundary events shown under subprocess child attached with it */}
             {child.boundaryEvents?.map((be) => {
-              if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+              if (!settings.showEmpty && isProcessElementEmpty(be)) return null;
               return (
                 <ElementSections
                   key={`boundary_${be.id}`}
@@ -317,7 +317,7 @@ async function getContent(
         />
         {/* Boundary events shown under parent element attached with it*/}
         {hierarchyElement.boundaryEvents?.map((be) => {
-          if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+          if (!settings.showEmpty && isProcessElementEmpty(be)) return null;
           return (
             <ElementSections
               key={`boundary_${be.id}`}
@@ -377,7 +377,7 @@ async function getContent(
 
     if (hierarchyElement.children) {
       for (const child of hierarchyElement.children) {
-        if (!settings.hideEmpty && isProcessElementEmpty(child)) continue;
+        if (!settings.showEmpty && isProcessElementEmpty(child)) continue;
         const childImageURL = await resolveElementImageUrl(
           child.image,
           processData.id,
@@ -404,7 +404,7 @@ async function getContent(
             />
             {/* Boundary events shown under subprocess child attached with it */}
             {child.boundaryEvents?.map((be) => {
-              if (!settings.hideEmpty && isProcessElementEmpty(be)) return null;
+              if (!settings.showEmpty && isProcessElementEmpty(be)) return null;
               return (
                 <ElementSections
                   key={`boundary_${be.id}`}

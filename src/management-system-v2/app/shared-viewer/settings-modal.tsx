@@ -33,7 +33,7 @@ export const settings = [
   },
   {
     label: 'Include Empty Elements',
-    value: 'hideEmpty',
+    value: 'showEmpty',
     tooltip:
       'Will include sub-chapters of elements that have no meta data and of collapsed sub-processes that contain no elements.',
   },

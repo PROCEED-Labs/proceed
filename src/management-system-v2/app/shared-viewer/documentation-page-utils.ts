@@ -721,7 +721,7 @@ export function buildProcessTocItems(
   // Keep collapsed subprocesses (nestedSubprocess) in main list
   const mainChildren = allChildren.filter(
     (child) =>
-      !isExcludedFromMainList(child) && (settings.hideEmpty || !isProcessElementEmpty(child)),
+      !isExcludedFromMainList(child) && (settings.showEmpty || !isProcessElementEmpty(child)),
   );
 
   // Subprocess sections: expanded subprocesses and event-triggered subprocesses
@@ -758,11 +758,13 @@ export function buildProcessTocItems(
               key: `subprocess_${sub.id}_elements`,
               href: href(`#subprocess_${sub.id}_elements_page`),
               title: 'Element Details',
-              children: (sub.children || []).map((child) => ({
-                key: child.id,
-                href: href(`#${child.id}_page`),
-                title: getElementTypeLabel(child),
-              })),
+              children: (sub.children || [])
+                .filter((child) => settings.showEmpty || !isProcessElementEmpty(child))
+                .map((child) => ({
+                  key: child.id,
+                  href: href(`#${child.id}_page`),
+                  title: getElementTypeLabel(child),
+                })),
             },
           ]
         : []),
@@ -848,7 +850,7 @@ export function buildInstanceTocItems(
     const result: AnchorLinkItemProps[] = [];
 
     nodes
-      .filter((node) => settings.hideEmpty || !isInstanceElementEmpty(node))
+      .filter((node) => settings.showEmpty || !isInstanceElementEmpty(node))
       .filter((node) => !isExcludedFromMainList(node))
       .forEach((node) => {
         result.push({
@@ -891,7 +893,7 @@ export function buildInstanceTocItems(
                   href: href(`#subprocess_${sub.id}_elements_page`),
                   title: 'Element Details',
                   children: (sub.children || [])
-                    .filter((child) => settings.hideEmpty || !isInstanceElementEmpty(child))
+                    .filter((child) => settings.showEmpty || !isInstanceElementEmpty(child))
                     .map((child) => ({
                       key: child.id,
                       href: href(`#${child.id}_page`),

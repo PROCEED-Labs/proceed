@@ -126,7 +126,7 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
       });
     }
 
-    if (settings.hideEmpty && !children.length && !hierarchyElement.children?.length) {
+    if (settings.showEmpty && !children.length && !hierarchyElement.children?.length) {
       return undefined;
     }
 

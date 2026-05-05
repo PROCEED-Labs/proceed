@@ -32,10 +32,10 @@ export function buildTreeNodes(params: any[], pathPrefix: string, depth: number)
  * Builds a scoped tree of global data objects from the raw config response.
  *
  * - '@organization' reads from the 'organization' top-level node
- * - '@worker' reads from 'common-user-data', paths prefixed with '@worker.data'
- * - '@process-initiator' same structure as worker but with `@process-initiator` prefix
+ * - '@worker' reads from 'common-user-data' + 'userInfo', paths prefixed with '@global.@worker'
+ * - '@process-initiator' same structure as worker but with '@global.@process-initiator'
  *
- * Both worker and process-initiator display the same data (common-user-data) but
+ * Both worker and process-initiator display the same data structure (common-user-data + userInfo) but
  * generate different path prefixes so the correct modifier is used in the final token.
  */
 export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
@@ -52,21 +52,80 @@ export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
 
       // Worker scope: show common-user-data with @worker prefix
       if (commonUserData && scope === '@worker') {
-        const children = buildTreeNodes(commonUserData.subParameters, '@global.@worker.data', 0);
-        nodes.push(...children);
+        // non-selectable "Data" parent for common-user-data
+        const dataChildren = buildTreeNodes(
+          commonUserData.subParameters,
+          '@global.@worker.data',
+          1,
+        );
+        nodes.push({
+          key: '@global.@worker.data',
+          title: 'Data',
+          selectable: false,
+          children: dataChildren,
+        });
+
+        // Create non-selectable "User Info" parent for userInfo
+        const userSection = topLevel.subParameters.find((p: any) => p.name === 'user');
+        if (userSection && userSection.subParameters) {
+          const anyUser = userSection.subParameters[0];
+          if (anyUser) {
+            const userInfo = anyUser.subParameters?.find((p: any) => p.name === 'userInfo');
+            if (userInfo && userInfo.subParameters) {
+              const userInfoChildren = buildTreeNodes(
+                userInfo.subParameters,
+                '@global.@worker.userInfo',
+                1,
+              );
+              nodes.push({
+                key: '@global.@worker.userInfo',
+                title: 'User Info',
+                selectable: false,
+                children: userInfoChildren,
+              });
+            }
+          }
+        }
       }
 
       // Process-initiator scope: same data as worker but different prefix
       if (commonUserData && scope === '@process-initiator') {
-        const children = buildTreeNodes(
+        // non-selectable "Data" parent for common-user-data
+        const dataChildren = buildTreeNodes(
           commonUserData.subParameters,
           '@global.@process-initiator.data',
-          0,
+          1,
         );
-        nodes.push(...children);
+        nodes.push({
+          key: '@global.@process-initiator.data',
+          title: 'Data',
+          selectable: false,
+          children: dataChildren,
+        });
+
+        // non-selectable "User Info" parent for userInfo
+        const userSection = topLevel.subParameters.find((p: any) => p.name === 'user');
+        if (userSection && userSection.subParameters) {
+          const anyUser = userSection.subParameters[0];
+          if (anyUser) {
+            const userInfo = anyUser.subParameters?.find((p: any) => p.name === 'userInfo');
+            if (userInfo && userInfo.subParameters) {
+              const userInfoChildren = buildTreeNodes(
+                userInfo.subParameters,
+                '@global.@process-initiator.userInfo',
+                1,
+              );
+              nodes.push({
+                key: '@global.@process-initiator.userInfo',
+                title: 'User Info',
+                selectable: false,
+                children: userInfoChildren,
+              });
+            }
+          }
+        }
       }
     }
   }
-
   return nodes;
 }

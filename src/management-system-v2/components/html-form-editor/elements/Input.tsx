@@ -223,11 +223,19 @@ export const InputSettings = () => {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const currentValue = globalVariable
-    ? `{%${globalVariable}%}`
-    : variable
-      ? `{%${variable}%}`
-      : 'None';
+  // Determine display text for the button
+  const getDisplayText = () => {
+    if (globalVariable) {
+      return globalVariable;
+    }
+    if (variable) {
+      return variable;
+    }
+    return 'Select Variable';
+  };
+
+  const displayText = getDisplayText();
+  const hasVariable = !!(globalVariable || variable);
 
   return (
     <>
@@ -252,10 +260,31 @@ export const InputSettings = () => {
       />
 
       <Setting
-        label="Add Variable"
+        label="Variable"
         control={
-          <Button style={{ display: 'flex', width: '100%' }} onClick={() => setModalOpen(true)}>
-            {currentValue}
+          <Button
+            style={{
+              display: 'flex',
+              width: '100%',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            onClick={() => setModalOpen(true)}
+            type={hasVariable ? 'default' : 'dashed'}
+            title={hasVariable ? displayText : 'Click to select a variable'}
+          >
+            <span
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                textAlign: 'left',
+              }}
+            >
+              {displayText}
+            </span>
+            <EditOutlined style={{ marginLeft: 8, flexShrink: 0 }} />
           </Button>
         }
       />

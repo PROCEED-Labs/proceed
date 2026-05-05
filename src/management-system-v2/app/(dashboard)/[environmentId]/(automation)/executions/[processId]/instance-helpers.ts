@@ -1,4 +1,7 @@
+import { getEnv, getUser } from '@/lib/data/db/machine-config';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { truthyFilter } from '@/lib/typescript-utils';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import jsonToCsvExport from 'json-to-csv-export';
@@ -162,20 +165,92 @@ export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
   return instances[firstInstance];
 }
 
-export function exportInstanceData(selectedInstances: (InstanceInfo | undefined)[]) {
+export async function exportInstanceData(
+  selectedInstances: (InstanceInfo | undefined)[],
+  versionInfo: VersionInfo[],
+) {
   const objectOrderTemplate = {
-    processId: null,
-    processVersion: null,
-    processInstanceId: null,
-    processInitiator: null,
-    spaceIdOfProcessInitiator: null,
-    globalStartTime: null,
+    processId: null, //rename ProzessId
+    ProcessName: null,
+    ProcessShortName: null,
+    processVersion: null, //rename ProcessVersionId
+    ProcessVersionName: null,
+    ProcessVersionDescription: null,
+    ProcessVersionCreatedOn: null,
+    ProcessVersionBasedOn: null,
+    processInstanceId: null, //rename ProcessInstanceId
+    processInitiator: null, //rename ProcessInstanceInitiatorId
+    ProcessInstanceInitiatorFullName: null,
+    ProcessInstanceInitiatorUsername: null,
+    spaceIdOfProcessInitiator: null, //rename ProcessInstanceInitiatorSpaceId
+    ProcessInstanceInitiatorSpaceName: null,
+    globalStartTime: null, //rename InstanceStartTime
+    flowElementId: null, //rename ProcessStepId
+    ProcessStepName: null, //tofind
+    ProcessStepType: null, //tofind
+    executionState: null, //rename ProcessStepStatus
+    startTime: null, //rename ProcessStepStartTime
+    endTime: null, //rename ProcessStepEndTime
+    PreviousProcessStepId: null, //tofind
+    tokenId: null, //rename ProcessStepTokenId
+    ActualPerformerId: null, //tofind
+    ActualPerformerName: null, //tofind
+    ActualPerformerUsername: null, //tofind
+    ProcessEngineId: null, //tofind
+    ProcessEngineName: null, //tofind
+    Log: null, //tofind
   };
-  const instanceEvents = selectedInstances.flatMap((instance) =>
+
+  const instancesWithVersionData = (
+    await asyncMap(selectedInstances, async (instance) => {
+      if (instance) {
+        const correspondingVersion = versionInfo.find(
+          (e) => e.versionId == instance.processVersion,
+        );
+        const parser = new DOMParser();
+        const bpmn = parser.parseFromString(correspondingVersion?.bpmn || '', 'text/xml');
+        const bpmnDefinitions = bpmn.getElementsByTagName('definitions')[0];
+
+        const initiator = await getUser(instance.processInitiator!);
+        const initiatorSpace = await getEnv(instance.spaceIdOfProcessInitiator!);
+        console.log(initiatorSpace);
+
+        return {
+          ...instance,
+          ProcessName: bpmnDefinitions.getAttribute('name'),
+          ProcessShortName: bpmnDefinitions.getAttribute('proceed:userDefinedId'),
+          ProcessVersionName: correspondingVersion?.versionName,
+          ProcessVersionDescription: correspondingVersion?.versionDescription,
+          ProcessVersionCreatedOn: correspondingVersion?.deploymentDate,
+          ProcessVersionBasedOn: correspondingVersion?.basedOnVersion,
+          ProcessInstanceInitiatorFullName: !initiator.isGuest
+            ? `${initiator.firstName} ${initiator.lastName}`
+            : 'Guest',
+          ProcessInstanceInitiatorUsername: !initiator.isGuest ? initiator.username : 'Guest',
+          ProcessInstanceInitiatorSpaceName: initiatorSpace.isOrganization
+            ? initiatorSpace.name
+            : 'no organization',
+        };
+      } else {
+        return undefined;
+      }
+    })
+  ).filter(truthyFilter);
+
+  const instanceEvents = instancesWithVersionData.flatMap((instance) =>
     instance ? instance.log.map((eventEntry) => ({ ...instance, ...eventEntry })) : [],
   );
 
+  // console.log(selectedInstances);
+  // console.log(versionInfo);
+  console.log(instanceEvents);
+
+  const structuredInstanceEvents = instanceEvents.map((instance) => ({
+    ...objectOrderTemplate,
+    ...instance,
+  }));
+
   return jsonToCsvExport({
-    data: instanceEvents.map((instance) => ({ ...objectOrderTemplate, ...instance })),
+    data: structuredInstanceEvents,
   });
 }

@@ -63,6 +63,7 @@ import {
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 import { getRoles, getUserRoles } from '../roles';
 import { getRolesWithMembers } from './iam/roles';
+import { getEnvironmentById } from './iam/environments';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -4951,6 +4952,10 @@ export async function syncSpaceConfigs() {
 
 export async function getUser(userId: string) {
   return await getUserById(userId);
+}
+
+export async function getEnv(envId: string) {
+  return await getEnvironmentById(envId);
 }
 
 async function checkSiblingNames(siblings: string[], name: string) {

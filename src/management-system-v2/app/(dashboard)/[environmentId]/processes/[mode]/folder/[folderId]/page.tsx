@@ -16,6 +16,7 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async (props: {
@@ -39,9 +40,12 @@ const ProcessesPage = async (props: {
 
   const folderContentsFiltered = isListView
     ? folderContents.filter(
-        (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
-      )
-    : folderContents;
+      (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
+    )
+    : folderContents.filter(
+      (entry) =>
+        entry.type === 'folder' || ability.can('update', toCaslResource('Process', entry)),
+    );
 
   const hasNoReleasedProcesses = isListView
     ? folderContentsFiltered.every((item) => item.type === 'folder')

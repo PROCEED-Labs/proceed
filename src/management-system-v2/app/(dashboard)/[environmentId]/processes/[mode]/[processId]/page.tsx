@@ -70,7 +70,7 @@ const ProcessComponent = async (props: ProcessComponentProps) => {
   //   return acc;
   // }, {} as UserType);
 
-  if (!ability.can('view', toCaslResource('Process', process))) {
+  if (!ability.can(props.isListView ? 'view' : 'manage', toCaslResource('Process', process))) {
     throw new UnauthorizedError();
   }
 

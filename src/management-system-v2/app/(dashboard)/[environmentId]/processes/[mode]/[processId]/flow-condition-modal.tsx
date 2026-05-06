@@ -5,9 +5,11 @@ import { Checkbox, Form, Input, Modal } from 'antd';
 import useModelerStateStore from './use-modeler-state-store';
 import { Editor, Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
-import languageExtension from './monaco-typescript-language-extension.js';
+import { getProceedLanguageExtension } from './monaco-typescript-language-extension';
 import styles from './flow-condition-modal.module.scss';
 import cn from 'classnames';
+import useProcessVariables from './use-process-variables';
+import { typeTypescriptMap } from '@/lib/process-variable-schema';
 
 export function isConditionalFlow(element?: Element) {
   return (
@@ -47,9 +49,12 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({
 }) => {
   const [description, setDescription] = useState('');
   const [isDefault, setIsDefault] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
   const monacoEditorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const monacoRef = useRef<null | Monaco>(null);
+
+  const { variables } = useProcessVariables();
 
   const modeler = useModelerStateStore((state) => state.modeler);
 
@@ -66,23 +71,44 @@ const FlowConditionModal: React.FC<FlowConditionModalProps> = ({
     monacoRef.current = monaco;
 
     const defaultOptions =
-      monacoRef.current.languages.typescript.javascriptDefaults.getCompilerOptions();
+      monacoRef.current.languages.typescript.typescriptDefaults.getCompilerOptions();
 
-    monacoRef.current.languages.typescript.javascriptDefaults.setCompilerOptions({
+    monacoRef.current.languages.typescript.typescriptDefaults.setCompilerOptions({
       ...defaultOptions,
       target: monacoRef.current.languages.typescript.ScriptTarget.ES2017,
+      strictNullChecks: true,
       lib: ['es2017'],
     });
 
     monacoEditorRef.current.setValue(getConditionString(element));
 
-    monacoRef.current.languages.typescript.javascriptDefaults.addExtraLib(languageExtension);
-    monacoRef.current.editor.createModel(languageExtension, 'typescript');
+    setInitialized(true);
 
     editor.onKeyDown((e) => {
       if (e.keyCode == monaco.KeyCode.Enter) e.preventDefault();
     });
   };
+
+  useEffect(() => {
+    if (initialized) {
+      const languageExtension = getProceedLanguageExtension(
+        variables.map((variable) => ({
+          name: variable.name,
+          type: typeTypescriptMap[variable.dataType],
+        })),
+        true,
+      );
+
+      const lib =
+        monacoRef.current!.languages.typescript.typescriptDefaults.addExtraLib(languageExtension);
+      const model = monacoRef.current!.editor.createModel(languageExtension, 'typescript');
+
+      return () => {
+        lib.dispose();
+        model.dispose();
+      };
+    }
+  }, [initialized, variables]);
 
   const handleSubmit = () => {
     if (!modeler || !element) return;

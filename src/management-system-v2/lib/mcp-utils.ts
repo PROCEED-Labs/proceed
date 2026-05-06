@@ -4,7 +4,7 @@ import { getPairingInfo } from './data/mcp-authorization';
 import { isUserErrorResponse } from './user-error';
 import { getSpaceSettingsValues } from './data/space-settings';
 import { ResourceActionType, ResourceType } from './ability/caslAbility';
-import { getPublicMSConfig } from './ms-config/ms-config';
+import { getMSConfig, getPublicMSConfig } from './ms-config/ms-config';
 import { PublicMSConfig } from './ms-config/config-schema';
 
 export const authorizationInfoSchema = {
@@ -22,6 +22,11 @@ export function toAuthorizationSchema<T extends Record<string, any>>(
 }
 
 export async function verifyCode(code: string) {
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_MCP_ACTIVE) {
+    throw new Error('MCP feature is disabled.');
+  }
+
   if (!code) throw new Error('Invalid user code.');
 
   const info = await getPairingInfo(code);
@@ -50,13 +55,13 @@ export async function isAccessible(
   for (const cV of configValues) {
     // allow values that are defined with subpath (e.g. 'process-automation.tasklist')
     const [settingName, ...path] = cV.split('.');
-    let settings = await getSpaceSettingsValues(spaceId, settingName, ability);
+    const settings = await getSpaceSettingsValues(spaceId, settingName, ability);
     if (isUserErrorResponse(settings)) return false;
     if (settings?.active === false) return false;
     let subSetting = settings;
     for (let i = 0; i < path.length && !!subSetting; ++i) {
       if (subSetting[path[i]]?.active === false) return false;
-      settings = subSetting[path[i]];
+      subSetting = subSetting[path[i]];
     }
   }
 

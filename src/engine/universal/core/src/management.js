@@ -55,9 +55,7 @@ const Management = {
     const engine = this.ensureProcessEngine(definitionId);
 
     // ensure that the version is deployed
-    if (!engine.versions.includes(version)) {
-      await engine.deployProcessVersion(definitionId, version);
-    }
+    await engine.deployProcessVersion(definitionId, version);
 
     return engine;
   },

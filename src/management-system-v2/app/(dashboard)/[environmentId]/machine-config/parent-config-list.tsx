@@ -48,12 +48,9 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { useUserPreferences } from '@/lib/user-preferences';
 import { generateDateString } from '@/lib/utils';
 import ConfigModal from '@/components/config-modal';
-import { defaultParameter } from './configuration-helper';
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { validate } from 'uuid';
-import AasConfigCreationButton from '@/components/aas-config-creation-button';
 import PreviewFeatureModal from './preview-feature-modal';
-import OrganizationConfigCreationButton from '@/components/organization-config-creation-button';
 
 type InputItem = Config;
 export type ParentConfigListConfigs = ReplaceKeysWithHighlighted<InputItem, 'name'>;

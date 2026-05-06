@@ -1,6 +1,7 @@
 const DisplayItem = require('./../../display-item.js');
 const distribution = require('@proceed/distribution');
 const { logging } = require('@proceed/machine');
+const { network } = require('@proceed/system');
 const { enable5thIndustryIntegration } = require('../../../../../../../FeatureFlags.js');
 
 const {
@@ -8,6 +9,7 @@ const {
   getCorrectVariableState,
   getCorrectMilestoneState,
   inlineScript,
+  getGlobalVariables,
 } = require('@proceed/user-task-helper/index.js');
 const { getProcessIds, getVariablesFromElementById } = require('@proceed/bpmn-helper');
 
@@ -68,6 +70,13 @@ class TaskListTab extends DisplayItem {
     let userTaskInstance;
     let definitionId;
 
+    let initiatorInfo;
+    const expectedInitiatorInfo = [
+      'processInitiator',
+      'spaceIdOfProcessInitiator',
+      'managementSystemLocation',
+    ];
+
     if (engine) {
       userTask = engine.userTasks.find(
         (userTask) =>
@@ -83,6 +92,15 @@ class TaskListTab extends DisplayItem {
       userTaskInstance = engine.getInstanceInformation(instanceId);
 
       definitionId = engine.definitionId;
+
+      const instanceInformation = engine.getInstanceInformation(instanceId);
+      if (expectedInitiatorInfo.every((info) => info in instanceInformation)) {
+        initiatorInfo = {
+          processInitiator: instanceInformation.processInitiator,
+          spaceIdOfProcessInitiator: instanceInformation.spaceIdOfProcessInitiator,
+          managementSystemLocation: instanceInformation.managementSystemLocation,
+        };
+      }
     } else {
       const inactiveTasks = await this.management.getInactiveUserTasks();
       userTask = inactiveTasks.find(
@@ -95,6 +113,14 @@ class TaskListTab extends DisplayItem {
         userTask.definitionId,
       );
       userTaskInstance = allArchivedUserTaskInstances[query.instanceID];
+
+      if (
+        'extras' in userTaskInstance &&
+        typeof userTaskInstance.extras === 'object' &&
+        expectedInitiatorInfo.every((info) => info in userTaskInstance.extras)
+      ) {
+        initiatorInfo = userTaskInstance.extras;
+      }
 
       definitionId = userTask.definitionId;
     }
@@ -130,12 +156,41 @@ class TaskListTab extends DisplayItem {
       const bpmn = await distribution.db.getProcessVersion(definitionId, definitionVersion);
       let html = await distribution.db.getHTML(definitionId, userTaskFileName);
 
-      const variables = getCorrectVariableState(userTask, userTaskInstance);
+      let variables = getCorrectVariableState(userTask, userTaskInstance);
       const milestones = await getCorrectMilestoneState(bpmn, userTask, userTaskInstance);
       const processIds = await getProcessIds(bpmn);
       const variableDefinitions = await getVariablesFromElementById(bpmn, processIds[0]);
 
       html = inlineScript(html, instanceId, userTask.id, variableDefinitions);
+
+      const globalDataVariables = await getGlobalVariables(html, async (varPath) => {
+        if (!initiatorInfo) throw new Error('Unable to get data for global variables.');
+
+        let path = `/api/spaces/${initiatorInfo.spaceIdOfProcessInitiator}/data`;
+
+        if (varPath.startsWith('@process-initiator')) {
+          path += `/user/${initiatorInfo.processInitiator}`;
+          varPath = varPath.split('.').slice(1).join('.');
+        } else if (varPath.startsWith('@organization')) {
+          path += '/organization';
+          varPath = varPath.split('.').slice(1).join('.');
+        } else {
+          throw new Error(`Unable to get data for global variable (@global.${varPath}).`);
+        }
+        path += `/${varPath}`;
+
+        const response = await network.sendRequest(
+          initiatorInfo.managementSystemLocation,
+          undefined,
+          path,
+        );
+        const result = JSON.parse(response.body);
+
+        return result.value;
+      });
+
+      variables = { ...variables, ...globalDataVariables };
+
       return inlineUserTaskData(html, variables, milestones);
     }
   }

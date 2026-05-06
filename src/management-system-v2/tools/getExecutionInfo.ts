@@ -138,7 +138,10 @@ export default async function getExecutionInfo({
           {
             ...info,
             // add the name so the llm can show it instead of the id
-            log: info.log.map((l) => ({ ...l, changedByElementName: idToName(l.changedBy) })),
+            log: info.log.map((l) => ({
+              ...l,
+              changedByElementName: l.changedBy && idToName(l.changedBy),
+            })),
           },
         ]),
       ),

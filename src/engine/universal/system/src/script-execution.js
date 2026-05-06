@@ -172,7 +172,7 @@ class ScriptExecutor extends System {
                   path += '/organization';
                   dataPath = dataPath.split('.').slice(1).join('.');
                 } else {
-                  if (dataPath.startsWith('@user')) {
+                  if (dataPath.startsWith('@user') || dataPath.startsWith('@process-initiator')) {
                     dataPath = dataPath.split('.').slice(1).join('.');
                   } else if (dataPath.startsWith('@')) {
                     throw new Error(

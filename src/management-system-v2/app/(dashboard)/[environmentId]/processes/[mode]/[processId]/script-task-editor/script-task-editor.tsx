@@ -46,6 +46,7 @@ import ProcessVariableForm from '../variable-definition/process-variable-form';
 import { useCanEdit } from '@/lib/can-edit-context';
 const BlocklyEditor = dynamic(() => import('./blockly-editor'), { ssr: false });
 import MonacoEditor, { MonacoEditorRef } from './monaco-editor';
+import { typeTypescriptMap } from '@/lib/process-variable-schema';
 
 export type ScriptEditorRef = {
   save: () => Promise<string | undefined>;
@@ -360,13 +361,21 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
+                        margin: '10px',
                       }}
                     >
                       <Divider style={{ margin: '0px' }}>Variables</Divider>
                       <List
                         size="small"
+                        style={{ marginBottom: '20px' }}
                         header={<Search size="middle" placeholder="Search for variables"></Search>}
                         dataSource={variables}
+                        pagination={{
+                          align: 'center',
+                          responsive: true,
+                          style: { marginTop: '-10px' },
+                          hideOnSinglePage: true,
+                        }}
                         renderItem={(item) => (
                           <List.Item style={{ padding: '0.75rem 0' }}>
                             <span>{item.name}</span>
@@ -420,11 +429,16 @@ const ScriptEditor = forwardRef<ScriptEditorRef, ScriptEditorProps>(
                     initialScript={initialScript}
                     onChange={() => onChangeRef.current?.(true)}
                     disabled={!canEdit}
+                    variables={variables.map((variable) => ({
+                      name: variable.name,
+                      type: typeTypescriptMap[variable.dataType],
+                    }))}
                   />
                 ) : (
                   <BlocklyEditor
                     editorRef={blocklyRef}
                     initialXml={initialScript}
+                    variables={variables}
                     onChange={(isScriptValid, code) => {
                       if (code.xml && initialScript !== code.xml) {
                         onChangeRef.current?.(true);

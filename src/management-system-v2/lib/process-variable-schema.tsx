@@ -22,6 +22,20 @@ export const typeLabelMap: Record<AllowedType, string> = {
   date: 'Date',
 } as const;
 
+export const typeTypescriptMap: Record<AllowedType, string> = {
+  string: 'string',
+  number: 'number',
+  boolean: 'boolean',
+  object: 'object',
+  array: 'any[]',
+  // the variable itself will actually store the path to the file since the file might not be easily
+  // storable in a string or buffer
+  file: 'string',
+  // the date that is returned/expected by inputs is a string which we currently just store instead of
+  // converting it to a Date object to allow inputs to handle it correctly
+  date: 'string',
+} as const;
+
 const allowedFormats = ['email', 'url'] as const;
 type AllowedFormat = (typeof allowedFormats)[number];
 export const textFormatMap: Record<AllowedFormat, string> = {

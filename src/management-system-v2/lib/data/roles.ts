@@ -85,30 +85,28 @@ export async function handleFolderRoleChanges(
       const parentRole = await getRoleWithMembersById(parentRoleId, ability, false, trx);
       if (!parentRole) throw new Error('The role to update does not exist');
 
-      await asyncForEach(toRemove, async (id) => {
-        await deleteRole(id, ability, trx);
-      });
+      await Promise.all([
+        ...toRemove.map((id) => deleteRole(id, ability, trx)),
+        ...toUpdate.map(({ roleId, permissions }) =>
+          _updateRole(roleId, { permissions }, ability, trx),
+        ),
+        ...toAdd.map(async (input) => {
+          const added = await _addRole(
+            { ...input, expiration: parentRole.expiration },
+            ability,
+            trx,
+            true,
+          );
 
-      await asyncForEach(toUpdate, async ({ roleId, permissions }) => {
-        await _updateRole(roleId, { permissions }, ability, trx);
-      });
+          const roleMappings = parentRole.members.map(({ id }) => ({
+            environmentId,
+            roleId: added.id,
+            userId: id,
+          }));
 
-      await asyncForEach(toAdd, async (input) => {
-        const added = await _addRole(
-          { ...input, expiration: parentRole.expiration },
-          ability,
-          trx,
-          true,
-        );
-
-        const roleMappings = parentRole.members.map(({ id }) => ({
-          environmentId,
-          roleId: added.id,
-          userId: id,
-        }));
-
-        await addRoleMappings(roleMappings, ability, trx);
-      });
+          await addRoleMappings(roleMappings, ability, trx);
+        }),
+      ]);
     });
   } catch (e) {
     if (e instanceof UnauthorizedError) {

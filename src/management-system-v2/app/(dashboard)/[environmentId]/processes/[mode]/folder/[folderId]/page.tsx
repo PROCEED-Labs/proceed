@@ -40,12 +40,12 @@ const ProcessesPage = async (props: {
 
   const folderContentsFiltered = isListView
     ? folderContents.filter(
-      (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
-    )
+        (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
+      )
     : folderContents.filter(
-      (entry) =>
-        entry.type === 'folder' || ability.can('update', toCaslResource('Process', entry)),
-    );
+        (entry) =>
+          entry.type === 'folder' || ability.can('update', toCaslResource('Process', entry)),
+      );
 
   const hasNoReleasedProcesses = isListView
     ? folderContentsFiltered.every((item) => item.type === 'folder')

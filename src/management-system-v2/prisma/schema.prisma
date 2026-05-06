@@ -229,6 +229,9 @@ model Role {
   lastEditedOn  DateTime  @updatedAt
   parentId      String?
   parentFolder  Folder?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parentRoleId  String?
+  parentRole    Role?      @relation("roleHierarchy", fields: [parentRoleId], references: [id], onDelete: Cascade)
+  children      Role[]    @relation("roleHierarchy")
 
   organigramTeam       UserOrganigram[] @relation("teamRole")
   organigramBackOffice UserOrganigram[] @relation("backOfficeRole")

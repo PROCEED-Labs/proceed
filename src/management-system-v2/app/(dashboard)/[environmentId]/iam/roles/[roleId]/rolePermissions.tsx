@@ -1,20 +1,24 @@
 'use client';
 
-import { Divider, Form, Row, Space, Switch, Typography, App, Button } from 'antd';
+import { Form, App, Button, Flex } from 'antd';
 import { ResourceActionType, ResourceType } from '@/lib/ability/caslAbility';
-import { FC, Fragment, use, useState } from 'react';
-import { switchChecked, switchDisabled, togglePermission } from './role-permissions-helper';
-import { useAbilityStore } from '@/lib/abilityStore';
+import { FC, use, useMemo, useState } from 'react';
+import {
+  ResourcePermissionInputs,
+  formDataToPermissions,
+  permissionsToFormData,
+} from './role-permissions-helper';
 import { updateRole as serverUpdateRole } from '@/lib/data/roles';
 import { Role } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { UserErrorType } from '@/lib/user-error';
 import { EnvVarsContext } from '@/components/env-vars-context';
+import { useRouter } from 'next/navigation';
 
 type PermissionCategory = {
   key: string;
   title: string;
-  resource: ResourceType | ResourceType[];
+  resource: ResourceType;
   permissions: {
     key: string;
     title: string;
@@ -43,96 +47,6 @@ const basePermissionOptions: PermissionCategory[] = [
       },
     ],
   },
-  {
-    key: 'process',
-    title: 'PROCESSES',
-    resource: 'Process',
-    permissions: [
-      {
-        key: 'process_view',
-        title: 'View Processes',
-        description: 'Allows a user to view processes. (Enables the Processes view.)',
-        permission: 'view',
-      },
-      {
-        key: 'process_manage',
-        title: 'Manage Processes',
-        description: 'Allows a user to create, modify and delete processes.',
-        permission: 'manage',
-      },
-    ],
-  },
-  {
-    key: 'folder',
-    title: 'Folders',
-    resource: 'Folder',
-    permissions: [
-      {
-        key: 'folder_view',
-        title: 'View Folders',
-        description: 'Allows a user to view folders.',
-        permission: 'view',
-      },
-      {
-        key: 'folder_manage',
-        title: 'Manage Folders',
-        description: 'Allows a user to create, modify and delete folders.',
-        permission: 'manage',
-      },
-    ],
-  },
-  // NOTE: Currently not implemented
-  // {
-  //   key: 'projects',
-  //   title: 'PROJECTS',
-  //   resource: 'Project',
-  //   permissions: [
-  //     {
-  //       key: 'View projects',
-  //       title: 'View projects',
-  //       description: 'Allows a user to view projects. (Enables the Projects view.)',
-  //       permission: 'view',
-  //     },
-  //     {
-  //       key: 'Manage projects',
-  //       title: 'Manage projects',
-  //       description: 'Allows a user to create, modify and delete projects in the Projects view.',
-  //       permission: 'manage',
-  //     },
-  //     {
-  //       key: 'Administrate projects',
-  //       title: 'Administrate projects',
-  //       description: 'Allows a user to perform any action on projects.',
-  //       permission: 'admin',
-  //     },
-  //   ],
-  // },
-  // {
-  //   key: 'templates',
-  //   title: 'TEMPLATES',
-  //   resource: 'Template',
-  //   permissions: [
-  //     {
-  //       key: 'View templates',
-  //       title: 'View templates',
-  //       description: 'A,llows a user to view her or his templates. (Enables the Templates view.)',
-  //       permission: 'view',
-  //     },
-
-  //     {
-  //       key: 'Manage templates',
-  //       title: 'Manage templates',
-  //       description: 'A,llows a user to create, modify and delete templates in the Templates view.',
-  //       permission: 'manage',
-  //     },
-  //     {
-  //       key: 'Administrate templates',
-  //       title: 'Administrate templates',
-  //       description: 'A,llows a user to create, modify, delete and share all PROCEED templates.',
-  //       permission: 'admin',
-  //     },
-  //   ],
-  // },
   {
     key: 'tasks',
     title: 'TASKS',
@@ -167,38 +81,6 @@ const basePermissionOptions: PermissionCategory[] = [
       },
     ],
   },
-  {
-    key: 'executions',
-    title: 'EXECUTIONS',
-    resource: 'Execution',
-    permissions: [
-      {
-        key: 'View Executions',
-        title: 'View Executions',
-        description: 'Allows a user to view all executions. (Enables the Executions view.)',
-        permission: 'view',
-      },
-      {
-        key: 'Manage Executions',
-        title: 'Manage Executions',
-        description: 'Allows a user to start, modify and delete process executions.',
-        permission: 'manage',
-      },
-    ],
-  },
-  // {
-  //   key: 'roles',
-  //   title: 'ROLES',
-  //   resource: ['Role', 'RoleMapping'],
-  //   permissions: [
-  //     {
-  //       key: 'Manage Roles',
-  //       title: 'Manage Roles',
-  //       description: 'Allows a user to create, modify and delete roles.',
-  //       permission: 'manage',
-  //     },
-  //   ],
-  // },
   {
     key: 'users',
     title: 'USERS',
@@ -284,19 +166,22 @@ const basePermissionOptions: PermissionCategory[] = [
 ];
 
 const RolePermissions: FC<{ role: Role }> = ({ role }) => {
-  const ability = useAbilityStore((store) => store.ability);
   const environment = useEnvironment();
   const envVars = use(EnvVarsContext);
+
+  const router = useRouter();
 
   const { message } = App.useApp();
   const [form] = Form.useForm();
 
-  const [permissions, setPermissions] = useState(role.permissions);
   const [loading, setLoading] = useState(false);
 
   async function updateRole() {
     setLoading(true);
     try {
+      const values = await form.validateFields();
+      const permissions = formDataToPermissions(values);
+
       const result = await serverUpdateRole(environment.spaceId, role.id, {
         permissions,
       });
@@ -305,6 +190,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
       }
 
       message.open({ content: 'Role updated', type: 'success' });
+      router.refresh();
     } catch (e) {
       if (e instanceof Error && e.cause === UserErrorType.PermissionError)
         message.open({ content: 'Permission denied', type: 'error' });
@@ -313,77 +199,41 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
     setLoading(false);
   }
 
-  const options = basePermissionOptions.filter((permissionCategory) => {
-    if (
-      !envVars.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE &&
-      (permissionCategory.resource === 'Execution' ||
-        permissionCategory.resource === 'Task' ||
-        permissionCategory.resource === 'Machine')
-    ) {
-      return false;
-    } else {
-      return true;
-    }
-  });
-  return (
-    <Form form={form} onFinish={updateRole}>
-      {options.map((permissionCategory) => (
-        <Fragment key={permissionCategory.key}>
-          <Typography.Title type="secondary" level={5}>
-            {permissionCategory.title}
-          </Typography.Title>
-          {permissionCategory.permissions.map((permission, idx) => (
-            <Fragment key={permission.key}>
-              <Row align="top" justify="space-between" wrap={false}>
-                <Space orientation="vertical" size={0}>
-                  <Typography.Text strong>{permission.title}</Typography.Text>
-                  <Typography.Text type="secondary">{permission.description}</Typography.Text>
-                </Space>
-                <Form.Item name={`${permissionCategory.resource}-${permission.permission}`}>
-                  <Switch
-                    disabled={switchDisabled(
-                      permissions,
-                      permissionCategory.resource,
-                      permission.permission,
-                      ability,
-                    )}
-                    checked={switchChecked(
-                      permissions,
-                      permissionCategory.resource,
-                      permission.permission,
-                    )}
-                    onChange={() =>
-                      setPermissions(
-                        togglePermission(
-                          permissions,
-                          permissionCategory.resource,
-                          permission.permission,
-                        ),
-                      )
-                    }
-                  />
-                </Form.Item>
-              </Row>
-              {idx < permissionCategory.permissions.length - 1 && (
-                <Divider style={{ marginTop: '10px', marginBottom: '10px' }} />
-              )}
-            </Fragment>
-          ))}
-          <br />
-        </Fragment>
-      ))}
+  const options = useMemo(
+    () =>
+      basePermissionOptions.filter((permissionCategory) => {
+        // disable execution permissions if execution is not activated
+        return (
+          envVars.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE ||
+          (permissionCategory.resource !== 'Task' && permissionCategory.resource !== 'Machine')
+        );
+      }),
+    [envVars],
+  );
 
-      <Button
-        type="primary"
-        htmlType="submit"
-        loading={loading}
+  // map the permissions of the role to the datastructure we need to initialize the form
+  const formData = useMemo(
+    () => permissionsToFormData(options, role.permissions),
+    [options, role.permissions],
+  );
+
+  return (
+    <Form form={form} onFinish={updateRole} initialValues={formData}>
+      <ResourcePermissionInputs options={options} permissions={role.permissions} />
+
+      <Flex
         style={{
           position: 'sticky',
           bottom: 0,
         }}
+        justify="end"
+        gap={5}
       >
-        Update Role
-      </Button>
+        <Button onClick={() => form.resetFields()}>Cancel</Button>
+        <Button type="primary" htmlType="submit" loading={loading}>
+          Save
+        </Button>
+      </Flex>
     </Form>
   );
 };

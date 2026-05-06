@@ -76,21 +76,36 @@ const BaseVirtualParameterZod = BaseParameterZod.omit({
 
 export const ParameterZod: z.ZodType<Parameter> = BaseParameterZod.extend({
   subParameters: z.lazy(() =>
-    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+    z.array(
+      z.union([
+        VirtualUserInfoParameterZod,
+        VirtualUserRolesParameterZod,
+        VirtualOrganizationRolesParameterZod,
+        ParameterZod,
+        MetaParameterZod,
+      ]),
+    ),
   ),
 }).strict();
 
 export const MetaParameterZod: z.ZodType<Parameter> = BaseMetaParameterZod.extend({
   subParameters: z.lazy(() =>
-    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+    z.array(
+      z.union([
+        VirtualUserInfoParameterZod,
+        VirtualUserRolesParameterZod,
+        VirtualOrganizationRolesParameterZod,
+        ParameterZod,
+        MetaParameterZod,
+      ]),
+    ),
   ),
 });
 
-export const VirtualUserDataParameterZod: z.ZodType<Parameter> = BaseVirtualParameterZod.extend({
+export const VirtualUserInfoParameterZod: z.ZodType<Parameter> = BaseVirtualParameterZod.extend({
   userId: z.string(),
-  subParameters: z.lazy(() =>
-    z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
-  ),
+  virtualType: z.literal('user-info'),
+  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
 });
 // TODO to be added and tested when zod v4 is available:
 // .transform(async (userParameter) => {
@@ -106,6 +121,20 @@ export const VirtualUserDataParameterZod: z.ZodType<Parameter> = BaseVirtualPara
 //   delete parameter.userId;
 //   return parameter;
 // });
+
+export const VirtualUserRolesParameterZod: z.ZodType<Parameter> = BaseVirtualParameterZod.extend({
+  userId: z.string(),
+  environmentId: z.string(),
+  virtualType: z.literal('user-roles'),
+  subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
+});
+
+export const VirtualOrganizationRolesParameterZod: z.ZodType<Parameter> =
+  BaseVirtualParameterZod.extend({
+    environmentId: z.string(),
+    virtualType: z.literal('org-roles'),
+    subParameters: z.lazy(() => z.array(z.union([ParameterZod, MetaParameterZod]))),
+  });
 
 // ------------- config schema -------------
 
@@ -154,7 +183,15 @@ const ConfigBaseZod = z.object({
   name: MetaAttributeZod,
   description: MetaAttributeZod,
   category: MetaAttributeZod,
-  content: z.array(z.union([VirtualUserDataParameterZod, ParameterZod, MetaParameterZod])),
+  content: z.array(
+    z.union([
+      VirtualUserInfoParameterZod,
+      VirtualUserRolesParameterZod,
+      VirtualOrganizationRolesParameterZod,
+      ParameterZod,
+      MetaParameterZod,
+    ]),
+  ),
   folderId: z.string().optional(),
   latestVersionNumber: z.number().int().optional(),
   hasChanges: z.boolean(),
@@ -215,17 +252,42 @@ export type LinkedParameter = z.infer<typeof LinkedParameterZod>;
 export type ConfigMetadata = z.infer<typeof ConfigMetadataZod>;
 
 export type Parameter = z.infer<typeof BaseParameterZod> & {
-  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
+  subParameters: (
+    | Parameter
+    | MetaParameter
+    | VirtualUserInfoParameter
+    | VirtualUserRolesParameter
+    | VirtualOrganizationRolesParameter
+  )[];
 };
 
 export type MetaParameter = z.infer<typeof BaseMetaParameterZod> & {
-  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
+  subParameters: (
+    | Parameter
+    | MetaParameter
+    | VirtualUserInfoParameter
+    | VirtualUserRolesParameter
+    | VirtualOrganizationRolesParameter
+  )[];
 };
 
-// export type VirtualUserParameter = z.infer<typeof VirtualUserDataParameterZod>;
-export type VirtualUserParameter = z.infer<typeof BaseVirtualParameterZod> & {
+export type VirtualUserInfoParameter = z.infer<typeof BaseVirtualParameterZod> & {
   userId: string;
-  subParameters: (Parameter | MetaParameter | VirtualUserParameter)[];
+  virtualType: 'user-info';
+  subParameters: (Parameter | MetaParameter)[];
+};
+
+export type VirtualUserRolesParameter = z.infer<typeof BaseVirtualParameterZod> & {
+  userId: string;
+  environmentId: string;
+  virtualType: 'user-roles';
+  subParameters: (Parameter | MetaParameter)[];
+};
+
+export type VirtualOrganizationRolesParameter = z.infer<typeof BaseVirtualParameterZod> & {
+  environmentId: string;
+  virtualType: 'org-roles';
+  subParameters: (Parameter | MetaParameter)[];
 };
 
 // export type Config = Prettify<z.infer<typeof ConfigZod> & Metadata & NamelessVersionedObject>;

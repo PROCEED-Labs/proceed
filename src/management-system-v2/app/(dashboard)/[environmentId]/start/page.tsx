@@ -88,7 +88,9 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
         <ProcessSection
           key="process"
           tiles={[
-            documentationSettings?.editor?.active !== false && <ProcessEditorTile key="editor" />,
+            documentationSettings?.editor?.active !== false && ability.can('manage', 'Process') && (
+              <ProcessEditorTile key="editor" />
+            ),
             documentationSettings?.list?.active !== false && <ProcessListTile key="list" />,
           ]}
         />

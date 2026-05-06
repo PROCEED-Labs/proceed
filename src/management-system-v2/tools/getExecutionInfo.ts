@@ -113,9 +113,9 @@ export default async function getExecutionInfo({
           : undefined,
         potentialPerformers: input.performers
           ? {
-            user: input.performers.user.map(idToUser).filter(truthyFilter),
-            roles: input.performers.roles.map(idToRole).filter(truthyFilter),
-          }
+              user: input.performers.user.map(idToUser).filter(truthyFilter),
+              roles: input.performers.roles.map(idToRole).filter(truthyFilter),
+            }
           : undefined,
       };
     };
@@ -149,9 +149,9 @@ export default async function getExecutionInfo({
         actualPerformers: l.actualOwner ? l.actualOwner.map(idToUser) : undefined,
         potentialPerformers: l.performers
           ? {
-            user: l.performers.user.map(idToUser),
-            roles: l.performers.roles.map(idToRole),
-          }
+              user: l.performers.user.map(idToUser),
+              roles: l.performers.roles.map(idToRole),
+            }
           : undefined,
       })),
       // remove execution information needed by the engine
@@ -174,7 +174,7 @@ export default async function getExecutionInfo({
             try {
               const { user, roles } = JSON.parse(r.resourceAssignmentExpression.expression.body);
               return [...user.map(idToUser), ...roles.map(idToRole)];
-            } catch (err) { }
+            } catch (err) {}
 
             return undefined;
           })

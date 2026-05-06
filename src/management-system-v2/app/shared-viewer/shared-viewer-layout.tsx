@@ -81,7 +81,12 @@ const SharedViewerLayout: React.FC<SharedViewerLayoutProps> = ({
           <Space>
             <Button
               size="large"
-              onClick={() => router.push(activeSpaceId ? `/${activeSpaceId}/start` : '/')}
+              onClick={() => {
+                const isMemberOfActiveSpace = userWorkspaces?.some((w) => w.id === activeSpaceId);
+                router.push(
+                  isMemberOfActiveSpace && activeSpaceId ? `/${activeSpaceId}/start` : '/',
+                );
+              }}
             >
               Go to PROCEED
             </Button>

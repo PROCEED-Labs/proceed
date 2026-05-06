@@ -151,9 +151,10 @@ const TableOfContents: React.FC<TableOfContentProps> = ({
     const directChildren = tableOfContents.children || [];
     delete tableOfContents.children;
     if (extraRootItems.length > 0) {
-      // extraRootItems defines the full structure
+      // when extraRootItems is provided it defines the full TOC structure
       tableOfContents = [...extraRootItems];
     } else {
+      // when not provided, the TOC is built automatically from the processHierarchy.
       tableOfContents = [tableOfContents, ...directChildren];
     }
   }

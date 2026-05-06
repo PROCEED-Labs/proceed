@@ -1,16 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import {
-  getProcess,
-  getProcessWithBpmnForAuthenticatedUser,
-  getSharedProcessWithBpmn,
-} from '@/lib/data/processes';
-import {
-  getProcesses,
-  getProcessVersionBpmn,
-  getProcessBpmn,
-  getProcessNameById,
-} from '@/lib/data/db/process';
+import { getProcess, getSharedProcessWithBpmn } from '@/lib/data/processes';
+import { getProcessVersionBpmn, getProcessBpmn } from '@/lib/data/db/process';
 import { TokenPayload } from '@/lib/sharing/process-sharing';
 import { redirect } from 'next/navigation';
 import ProcessDocumentationPage from '@/app/shared-viewer/process-documentation-page';
@@ -23,7 +14,7 @@ import styles from './page.module.scss';
 import Layout from '@/app/(dashboard)/[environmentId]/layout-client';
 import { Environment } from '@/lib/data/environment-schema';
 import { getEnvironmentById } from '@/lib/data/db/iam/environments';
-import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/memberships';
 
 import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-helper';
 
@@ -35,6 +26,8 @@ import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/execut
 import InstanceDocumentationPage from './instance-documentation-page';
 import { Metadata } from 'next';
 import { getUserById } from '@/lib/data/db/iam/users';
+import { toCaslResource } from '@/lib/ability/caslAbility';
+import db from '@/lib/data/db';
 
 interface PageProps {
   searchParams: Promise<{
@@ -59,46 +52,27 @@ const getProcessInfo = async (
   isImport: boolean,
   versionId?: string,
 ) => {
-  const { session, userId } = await getCurrentUser();
+  const { session } = await getCurrentUser();
 
   let spaceId = '';
-  let isOwner = false;
+  let canView = false;
   let processData;
 
   // check if there is a session (=> the user is already logged in)
   if (session) {
-    // Check active environment first
-    const { ability, activeEnvironment } = await getCurrentEnvironment(session?.user.id);
-    ({ spaceId } = activeEnvironment);
-    // get all the processes the user has access to
-    const ownedProcesses = await getProcesses(spaceId, ability);
-    // check if the current user is the owner of the process(/has access to the process) => if yes give access regardless of sharing status
-    isOwner = ownedProcesses.some((process) => process.id === definitionId);
+    const process = await db.process.findUnique({ where: { id: definitionId } });
 
-    // If not found in active environment, check all other environments
-    if (!isOwner) {
-      const personalEnv = await getEnvironmentById(userId);
-      const orgEnvIds = await getUserOrganizationEnvironments(userId);
-      const allEnvIds = [personalEnv?.id, ...orgEnvIds].filter(
-        (id): id is string => !!id && id !== spaceId,
-      );
+    if (process && (await isMember(process.environmentId, session.user.id))) {
+      const { ability } = await getCurrentEnvironment(process.environmentId);
 
-      for (const envId of allEnvIds) {
-        try {
-          const envProcesses = await getProcesses(envId, ability);
-          if (envProcesses.some((process) => process.id === definitionId)) {
-            isOwner = true;
-            spaceId = envId;
-            break;
-          }
-        } catch {
-          // env not accessible, skip
-        }
+      if (ability.can('view', toCaslResource('Process', process))) {
+        canView = true;
+        spaceId = process.environmentId;
       }
     }
   }
 
-  if (isOwner) {
+  if (canView) {
     // the user has access to the process so just get the necessary data from the appropriate/regular api
     const processMetaData = await getProcess(definitionId, spaceId!);
 
@@ -109,13 +83,6 @@ const getProcessInfo = async (
 
       processData = { ...processMetaData, bpmn };
     }
-  } else if (session) {
-    // any authenticated user can view documentation
-    const res = await getProcessWithBpmnForAuthenticatedUser(definitionId, versionId);
-    if ('error' in res) {
-      return <ErrorMessage message={res.error.message as string} />;
-    }
-    processData = res;
   } else {
     // the user has no regular access to the process so get the process data from the sharing api
     const res = await getSharedProcessWithBpmn(definitionId, versionId);
@@ -135,8 +102,8 @@ const getProcessInfo = async (
     }
   }
 
-  return { isOwner, processData, spaceId } as {
-    isOwner: boolean;
+  return { canView, processData, spaceId } as {
+    canView: boolean;
     processData: Process;
     spaceId?: string;
   };
@@ -159,7 +126,7 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
       const processInfo = await getProcessInfo(definitionId, 0, false, true, versionId);
 
       // check if the return value is a valid process info (might also be a react component that signals an error => no isOwner)
-      if ('isOwner' in processInfo && processInfo.processData) {
+      if ('canView' in processInfo && processInfo.processData) {
         const { bpmn: importBpmn } = processInfo.processData;
 
         if (!knownInfos[definitionId]) knownInfos[definitionId] = {};
@@ -172,7 +139,11 @@ const getImportInfos = async (bpmn: string, knownInfos: ImportsInfo) => {
   }
 };
 
-// generate the file name which will be saved as pdf
+/**
+ * Next.js reserved export — called implicitly by the framework to set the page <title>.
+ * This title is used as the filename when printing/saving as PDF.
+ * Access rights are checked by verifying the token before returning process data.
+ */
 export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const searchParams = await props.searchParams;
   const { token, version } = searchParams;
@@ -181,11 +152,23 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
 
   try {
     const key = env.SHARING_ENCRYPTION_SECRET;
-    const { processId } = jwt.verify(token, key!) as TokenPayload;
+    const { processId, timestamp, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
     const versionId = version as string | undefined;
     const versionLabel = versionId ?? 'Latest';
 
-    const processName = await getProcessNameById(processId as string);
+    // Check access rights same as getProcessInfo
+    const processInfo = await getProcessInfo(
+      processId as string,
+      timestamp,
+      embeddedMode || false,
+      false,
+      versionId,
+    );
+
+    // If processInfo is a React element it means there was an error (no access)
+    if (!('processData' in processInfo)) return {};
+
+    const processName = processInfo.processData?.name;
     if (!processName) return { title: `PROCEED - Version ${versionLabel}` };
 
     return {
@@ -236,6 +219,7 @@ const SharedViewer = async (props: PageProps) => {
   let isOwner = false;
   let activeSpaceId = userId || '';
   let activeIsOrg = false;
+  let processSpaceId = '';
 
   const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
@@ -251,12 +235,6 @@ const SharedViewer = async (props: PageProps) => {
 
     const versionId = version as string | undefined;
 
-    // Use spaceId from token if available to go back to the correct space
-    if (tokenSpaceId) {
-      activeSpaceId = tokenSpaceId;
-      activeIsOrg = userEnvironments.find((e) => e.id === tokenSpaceId)?.isOrganization ?? false;
-    }
-
     const processInfo = await getProcessInfo(
       processId as string,
       timestamp,
@@ -266,14 +244,19 @@ const SharedViewer = async (props: PageProps) => {
     );
 
     // the return value of getProcessInfo might be an error that should just be returned to the user
-    if (!('isOwner' in processInfo)) {
+    if (!('canView' in processInfo)) {
       return processInfo;
     }
 
-    ({ isOwner, processData } = processInfo);
+    ({ canView: isOwner, processData } = processInfo);
+    processSpaceId = processInfo.spaceId || '';
 
-    // If token do not have spaceId, fall back to where process was found
-    if (!tokenSpaceId && processInfo.spaceId) {
+    // Use spaceId from token if available only if  user is actually a member of that space to go back to the correct space
+    if (tokenSpaceId && userEnvironments.some((e) => e.id === tokenSpaceId)) {
+      activeSpaceId = tokenSpaceId;
+      activeIsOrg = userEnvironments.find((e) => e.id === tokenSpaceId)?.isOrganization ?? false;
+    } else if (processInfo.spaceId) {
+      // Fall back to where process was found
       activeSpaceId = processInfo.spaceId;
       activeIsOrg =
         userEnvironments.find((e) => e.id === processInfo.spaceId)?.isOrganization ?? false;
@@ -312,7 +295,7 @@ const SharedViewer = async (props: PageProps) => {
   let instanceData = undefined;
   if (typeof instanceId === 'string' && processData) {
     try {
-      const deployment = await getDeployment(processData?.creatorId ?? '', processData.id);
+      const deployment = await getDeployment(processSpaceId || '', processData.id);
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
     } catch (err) {
       console.error('Failed to fetch instance data:', err);

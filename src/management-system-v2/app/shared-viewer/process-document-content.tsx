@@ -481,30 +481,26 @@ const ProcessDocumentContent: React.FC<ProcessDocumentContentProps> = ({
                 <Title style={{ marginTop: 0 }}>{processData.name}</Title>
               </div>
               <div className={styles.TitleInfos}>
-                <div style={{ fontSize: '14px' }}>Owner: {(processData as any).ownerName}</div>
+                <div>Owner: {(processData as any).ownerName}</div>
                 {version.id ? (
                   <>
-                    <div style={{ fontSize: '14px' }}>Version: {version.name || version.id}</div>
+                    <div>Version: {version.name || version.id}</div>
                     {version.description ? (
-                      <div style={{ fontSize: '14px' }}>
-                        Version Description: {version.description}
-                      </div>
+                      <div>Version Description: {version.description}</div>
                     ) : null}
                   </>
                 ) : (
-                  <div style={{ fontSize: '14px' }}>Version: Latest</div>
+                  <div>Version: Latest</div>
                 )}
                 {version.id ? (
-                  <div style={{ fontSize: '14px' }}>
+                  <div>
                     Version Created On:{' '}
                     {version.versionCreatedOn
                       ? generateDateString(fromCustomUTCString(version.versionCreatedOn), true)
                       : 'Unknown'}
                   </div>
                 ) : (
-                  <div style={{ fontSize: '14px' }}>
-                    Last Edit: {generateDateString(processData.lastEditedOn, true)}
-                  </div>
+                  <div>Last Edit: {generateDateString(processData.lastEditedOn, true)}</div>
                 )}
               </div>
             </div>

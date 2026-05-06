@@ -354,7 +354,6 @@ export async function getSVGWithInstanceColoring(
       if (pointMatches.length < 2) continue;
 
       const last = pointMatches[pointMatches.length - 1];
-      const secondLast = pointMatches[pointMatches.length - 2];
       const lx = parseFloat(last[1]);
       const ly = parseFloat(last[2]);
 
@@ -397,16 +396,6 @@ export async function getSVGWithInstanceColoring(
 
   return new XMLSerializer().serializeToString(svgRoot);
 }
-
-export const markdownEditor: Promise<ToastEditorType> =
-  typeof window !== 'undefined'
-    ? import('@toast-ui/editor')
-        .then((mod) => mod.Editor)
-        .then((Editor) => {
-          const div = document.createElement('div');
-          return new Editor({ el: div });
-        })
-    : (Promise.resolve(null) as any);
 
 // get element <Type: Name> or <Type: ID> label
 export function getElementTypeLabel(node: ElementInfo): string {
@@ -509,14 +498,6 @@ export function sortChildrenByFlow(el: any, children: ElementInfo[]): ElementInf
         if (targetBpmn) queue.push(targetBpmn);
       }
     }
-  }
-
-  // Append any disconnected non-end elements in original order
-  if (sorted.length < nonEndBpmn.length) {
-    const sortedIds = new Set(sorted.map((n) => n.id));
-    children
-      .filter((n) => n.elementType !== 'bpmn:EndEvent' && !sortedIds.has(n.id))
-      .forEach((n) => sorted.push(n));
   }
 
   // End events always last

@@ -54,6 +54,195 @@ const InstanceDocumentContent: React.FC<Props> = ({
   const [detailedPages, setDetailedPages] = useState<React.JSX.Element[]>([]);
 
   useEffect(() => {
+    async function renderSubprocessSection(node: ElementInfo, pages: React.JSX.Element[]) {
+      const subLabel = getSubprocessLabel(node);
+
+      pages.push(
+        <div
+          key={`subprocess_${node.id}_section`}
+          className={cn(styles.ElementPage, styles.ContainerPage)}
+        >
+          <Title id={`subprocess_${node.id}_page`} level={2}>
+            {subLabel}
+          </Title>
+
+          {/* Summary */}
+          {node.description && (
+            <div className={styles.MetaInformation}>
+              <Title level={3} id={`subprocess_${node.id}_description_page`}>
+                Summary
+              </Title>
+              <div
+                className="toastui-editor-contents"
+                dangerouslySetInnerHTML={{ __html: node.description }}
+              />
+            </div>
+          )}
+
+          {/* Full subprocess diagram */}
+          <div className={styles.MetaInformation}>
+            <Title level={3} id={`subprocess_${node.id}_diagram_page`}>
+              Process Diagram
+            </Title>
+            <div
+              className={styles.ElementCanvas}
+              style={{ display: 'flex', justifyContent: 'center' }}
+              dangerouslySetInnerHTML={{
+                __html: node.nestedSubprocess?.planeSvg || node.svg,
+              }}
+            />
+          </div>
+
+          {/* Element Details heading */}
+          {node.children?.length ? (
+            <div className={styles.MetaInformation}>
+              <Title level={3} id={`subprocess_${node.id}_elements_page`}>
+                {`${subLabel} — Element Details`}
+              </Title>
+            </div>
+          ) : null}
+        </div>,
+      );
+
+      // Render each child element with full execution log
+      if (node.children?.length) {
+        for (const child of node.children) {
+          await renderDetailedElement(child, pages, true);
+        }
+      }
+    }
+    /**
+     * Renders one BPMN element as a Detailed Execution Log entry
+     * Recurses into subprocess children.
+     */
+    async function renderDetailedElement(
+      node: ElementInfo,
+      pages: React.JSX.Element[],
+      isInsideSubprocess = false,
+    ) {
+      const { token, logEntries } = node.instanceStatus || {};
+      const hasLog = !!logEntries?.length;
+      const hasToken = !!token;
+
+      // Skip if nothing to show
+      if (!settings.showEmpty && isInstanceElementEmpty(node)) return;
+
+      const changedVariables = settings.showInstanceVariables
+        ? getVariablesForElement(instance, node.id)
+        : [];
+
+      const resolvedImageUrl = await resolveElementImageUrl(
+        node.image,
+        processData.id,
+        environment.spaceId,
+        shareToken,
+        getImage,
+      );
+
+      const label = getElementTypeLabel(node);
+      /**
+       * Build log rows from both token and log entries to show a consistent table
+       */
+      const logRows: {
+        key: string;
+        executionState: string;
+        startTime?: number;
+        endTime?: number;
+        machine?: InstanceInfo['log'][number]['machine'];
+      }[] = [];
+
+      if (hasLog) {
+        logEntries!.forEach((row) => {
+          logRows.push({
+            key: `${row.flowElementId}-${row.startTime}`,
+            executionState: row.executionState,
+            startTime: row.startTime,
+            endTime: row.endTime,
+            machine: row.machine,
+          });
+        });
+      } else if (hasToken) {
+        // if element is currently active then show token state in log table
+        logRows.push({
+          key: token!.tokenId,
+          executionState: token!.currentFlowNodeState,
+          startTime: token!.currentFlowElementStartTime,
+          endTime: undefined,
+          machine: undefined,
+        });
+      }
+
+      pages.push(
+        <div
+          key={`element_${node.id}_page`}
+          className={cn(styles.ElementPage, { [styles.SubprocessChild]: isInsideSubprocess })}
+        >
+          {/* Element heading: level 3 as child of Detailed Execution Log (level 2) */}
+          <Title id={`${node.id}_page`} level={isInsideSubprocess ? 4 : 3}>
+            {label}
+          </Title>
+
+          {/* Diagram Element */}
+          <ElementSections
+            node={node}
+            settings={settings}
+            resolvedImageUrl={resolvedImageUrl}
+            headingLevel={isInsideSubprocess ? 5 : 4}
+          />
+
+          {/* Execution Log */}
+          {settings.showInstanceStatus && (
+            <div className={styles.MetaInformation}>
+              <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_execution_log_page`}>
+                Execution Log
+              </Title>
+              <ExecutionLogTable rows={logRows} />
+            </div>
+          )}
+
+          {/* Variable Changes if happened */}
+          {changedVariables.length > 0 && (
+            <div className={styles.MetaInformation}>
+              <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_variable_changes_page`}>
+                Variable Changes
+              </Title>
+              <Table
+                pagination={false}
+                rowKey="name"
+                columns={[
+                  { title: 'Variable', dataIndex: 'name', key: 'name' },
+                  {
+                    title: 'Old Value',
+                    dataIndex: 'oldValue',
+                    key: 'oldValue',
+                    render: (v: string | undefined) => v ?? '—',
+                  },
+                  { title: 'New Value', dataIndex: 'value', key: 'value' },
+                  {
+                    title: 'Changed At',
+                    dataIndex: 'changedTime',
+                    key: 'changedTime',
+                    render: (t: number) => generateDateString(new Date(t), true),
+                  },
+                ]}
+                dataSource={changedVariables}
+              />
+            </div>
+          )}
+          {/* Boundary events shown under parent element attached with it */}
+          {node.boundaryEvents?.map((be) => (
+            <ElementSections
+              key={`boundary_${be.id}`}
+              node={be}
+              settings={{ ...settings, showElementSVG: false }}
+              headingLevel={isInsideSubprocess ? 5 : 4}
+              labelPrefix={getElementTypeLabel(be)}
+            />
+          ))}
+        </div>,
+      );
+    }
+
     const buildPages = async () => {
       const mainPages: React.JSX.Element[] = [];
       const subPages: React.JSX.Element[] = [];
@@ -82,198 +271,6 @@ const InstanceDocumentContent: React.FC<Props> = ({
     buildPages();
   }, [processHierarchy, settings, instance]);
 
-  async function renderSubprocessSection(node: ElementInfo, pages: React.JSX.Element[]) {
-    const subLabel = getSubprocessLabel(node);
-
-    pages.push(
-      <div
-        key={`subprocess_${node.id}_section`}
-        className={cn(styles.ElementPage, styles.ContainerPage)}
-      >
-        <Title id={`subprocess_${node.id}_page`} level={2}>
-          {subLabel}
-        </Title>
-
-        {/* Summary */}
-        {node.description && (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`subprocess_${node.id}_description_page`}>
-              Summary
-            </Title>
-            <div
-              className="toastui-editor-contents"
-              dangerouslySetInnerHTML={{ __html: node.description }}
-            />
-          </div>
-        )}
-
-        {/* Full subprocess diagram */}
-        <div className={styles.MetaInformation}>
-          <Title level={3} id={`subprocess_${node.id}_diagram_page`}>
-            Process Diagram
-          </Title>
-          <div
-            className={styles.ElementCanvas}
-            style={{ display: 'flex', justifyContent: 'center' }}
-            dangerouslySetInnerHTML={{
-              __html: node.nestedSubprocess?.planeSvg || node.svg,
-            }}
-          />
-        </div>
-
-        {/* Element Details heading */}
-        {node.children?.length ? (
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`subprocess_${node.id}_elements_page`}>
-              {`${subLabel} — Element Details`}
-            </Title>
-          </div>
-        ) : null}
-      </div>,
-    );
-
-    // Render each child element with full execution log
-    if (node.children?.length) {
-      for (const child of node.children) {
-        await renderDetailedElement(child, pages, true);
-      }
-    }
-  }
-  /**
-   * Renders one BPMN element as a Detailed Execution Log entry
-   * Recurses into subprocess children.
-   */
-  async function renderDetailedElement(
-    node: ElementInfo,
-    pages: React.JSX.Element[],
-    isInsideSubprocess = false,
-  ) {
-    const { token, logEntries } = node.instanceStatus || {};
-    const hasLog = !!logEntries?.length;
-    const hasToken = !!token;
-
-    // Skip if nothing to show
-    if (!settings.showEmpty && isInstanceElementEmpty(node)) return;
-
-    // Get timing for variable matching
-    const startTime = logEntries?.[0]?.startTime ?? token?.currentFlowElementStartTime;
-    const endTime = logEntries?.[logEntries.length - 1]?.endTime;
-    const changedVariables = settings.showInstanceVariables
-      ? getVariablesForElement(instance, node.id)
-      : [];
-
-    const resolvedImageUrl = await resolveElementImageUrl(
-      node.image,
-      processData.id,
-      environment.spaceId,
-      shareToken,
-      getImage,
-    );
-
-    const label = getElementTypeLabel(node);
-    /**
-     * Build log rows from both token and log entries to show a consistent table
-     */
-    const logRows: {
-      key: string;
-      executionState: string;
-      startTime?: number;
-      endTime?: number;
-      machine?: InstanceInfo['log'][number]['machine'];
-    }[] = [];
-
-    if (hasLog) {
-      logEntries!.forEach((row) => {
-        logRows.push({
-          key: `${row.flowElementId}-${row.startTime}`,
-          executionState: row.executionState,
-          startTime: row.startTime,
-          endTime: row.endTime,
-          machine: row.machine,
-        });
-      });
-    } else if (hasToken) {
-      // if element is currently active then show token state in log table
-      logRows.push({
-        key: token!.tokenId,
-        executionState: token!.currentFlowNodeState,
-        startTime: token!.currentFlowElementStartTime,
-        endTime: undefined,
-        machine: undefined,
-      });
-    }
-
-    pages.push(
-      <div
-        key={`element_${node.id}_page`}
-        className={cn(styles.ElementPage, isInsideSubprocess ? styles.SubprocessChild : undefined)}
-      >
-        {/* Element heading: level 3 as child of Detailed Execution Log (level 2) */}
-        <Title id={`${node.id}_page`} level={isInsideSubprocess ? 4 : 3}>
-          {label}
-        </Title>
-
-        {/* Diagram Element */}
-        <ElementSections
-          node={node}
-          settings={settings}
-          resolvedImageUrl={resolvedImageUrl}
-          headingLevel={isInsideSubprocess ? 5 : 4}
-        />
-
-        {/* Execution Log */}
-        {settings.showInstanceStatus && (
-          <div className={styles.MetaInformation}>
-            <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_execution_log_page`}>
-              Execution Log
-            </Title>
-            <ExecutionLogTable rows={logRows} />
-          </div>
-        )}
-
-        {/* Variable Changes if happened */}
-        {changedVariables.length > 0 && (
-          <div className={styles.MetaInformation}>
-            <Title level={isInsideSubprocess ? 5 : 4} id={`${node.id}_variable_changes_page`}>
-              Variable Changes
-            </Title>
-            <Table
-              pagination={false}
-              rowKey="name"
-              columns={[
-                { title: 'Variable', dataIndex: 'name', key: 'name' },
-                {
-                  title: 'Old Value',
-                  dataIndex: 'oldValue',
-                  key: 'oldValue',
-                  render: (v: string | undefined) => v ?? '—',
-                },
-                { title: 'New Value', dataIndex: 'value', key: 'value' },
-                {
-                  title: 'Changed At',
-                  dataIndex: 'changedTime',
-                  key: 'changedTime',
-                  render: (t: number) => generateDateString(new Date(t), true),
-                },
-              ]}
-              dataSource={changedVariables}
-            />
-          </div>
-        )}
-        {/* Boundary events shown under parent element attached with it */}
-        {node.boundaryEvents?.map((be) => (
-          <ElementSections
-            key={`boundary_${be.id}`}
-            node={be}
-            settings={{ ...settings, showElementSVG: false }}
-            headingLevel={isInsideSubprocess ? 5 : 4}
-            labelPrefix={getElementTypeLabel(be)}
-          />
-        ))}
-      </div>,
-    );
-  }
-
   return (
     <div className={styles.ProcessDocument}>
       {/* Document header (logo + title page) */}
@@ -290,20 +287,14 @@ const InstanceDocumentContent: React.FC<Props> = ({
             <Title style={{ marginTop: 0 }}>{processData.name}</Title>
           </div>
           <div className={styles.TitleInfos}>
-            <div style={{ fontSize: '14px' }}>
-              Initiated By: {(processData as any).processInitiatorName}
-            </div>
+            <div>Initiated By: {(processData as any).processInitiatorName}</div>
             {versionInfo.id ? (
               <>
-                <div style={{ fontSize: '14px' }}>
-                  Version: {versionInfo.name || versionInfo.id}
-                </div>
+                <div>Version: {versionInfo.name || versionInfo.id}</div>
                 {versionInfo.description && (
-                  <div style={{ fontSize: '14px' }}>
-                    Version Description: {versionInfo.description}
-                  </div>
+                  <div>Version Description: {versionInfo.description}</div>
                 )}
-                <div style={{ fontSize: '14px' }}>
+                <div>
                   Version Created On:{' '}
                   {versionInfo.versionCreatedOn
                     ? generateDateString(fromCustomUTCString(versionInfo.versionCreatedOn), true)
@@ -311,18 +302,16 @@ const InstanceDocumentContent: React.FC<Props> = ({
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: '14px' }}>Version: Latest</div>
+              <div>Version: Latest</div>
             )}
-            <div style={{ fontSize: '14px' }}>Execution ID: {instance.processInstanceId}</div>
-            <div style={{ fontSize: '14px' }}>
-              Started: {generateDateString(new Date(instance.globalStartTime), true)}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+            <div>Execution ID: {instance.processInstanceId}</div>
+            <div>Started: {generateDateString(new Date(instance.globalStartTime), true)}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>State:</span>
               <Alert
                 style={{ padding: '0 4px', fontSize: '7.5px' }}
                 type={statusToType(instance.instanceState[0])}
-                message={instance.instanceState[0]}
+                title={instance.instanceState[0]}
                 showIcon
               />
             </div>
@@ -443,7 +432,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                       <Alert
                         style={{ display: 'inline-flex', fontSize: '14px' }}
                         type={statusToType(instance.instanceState[0])}
-                        message={instance.instanceState[0]}
+                        title={instance.instanceState[0]}
                         showIcon
                       />
                     ),

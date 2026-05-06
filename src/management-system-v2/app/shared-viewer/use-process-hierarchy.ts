@@ -7,13 +7,13 @@ import { getSVGFromBPMN } from '@/lib/process-export/util';
 import { getProcess } from '@/lib/data/db/process';
 import { ElementInfo } from './table-of-content';
 import { VersionInfo } from './process-document-content';
+import type { Editor as ToastEditorType } from '@toast-ui/editor';
 import {
   getTitle,
   getMetaDataFromBpmnElement,
   getChildElements,
   getViewer,
   getElementSVG,
-  markdownEditor,
   ImportsInfo,
   sortChildrenByFlow,
   makeSvgResponsive,
@@ -25,15 +25,20 @@ type UseProcessHierarchyOptions = {
   availableImports: ImportsInfo;
   // If provided, used as the SVG for the root element instead of the plain export.
   getRootSvg?: (bpmn: string) => Promise<string>;
-  // If provided, called after transforming each element to attach extra data.
-  enrichElement?: (el: any, node: Omit<ElementInfo, 'instanceStatus'>) => ElementInfo;
 };
-
+const markdownEditor: Promise<ToastEditorType> =
+  typeof window !== 'undefined'
+    ? import('@toast-ui/editor')
+        .then((mod) => mod.Editor)
+        .then((Editor) => {
+          const div = document.createElement('div');
+          return new Editor({ el: div });
+        })
+    : (Promise.resolve(null) as any);
 export function useProcessHierarchy({
   processData,
   availableImports,
   getRootSvg,
-  enrichElement,
 }: UseProcessHierarchyOptions) {
   const mdEditor = use(markdownEditor);
   const [processHierarchy, setProcessHierarchy] = useState<ElementInfo>();
@@ -74,8 +79,7 @@ export function useProcessHierarchy({
       for (const childEl of getChildElements(el)) {
         children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
       }
-      const grouped = groupBoundaryEvents(children);
-      children.splice(0, children.length, ...sortChildrenByFlow(el, grouped));
+      const sortedChildren = sortChildrenByFlow(el, groupBoundaryEvents(children));
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
 
       const node: ElementInfo = {
@@ -87,7 +91,7 @@ export function useProcessHierarchy({
         milestones,
         importedProcess,
         nestedSubprocess,
-        children,
+        children: sortedChildren,
         image,
         elementType: el.$type,
         isEventTriggeredSubprocess: el.triggeredByEvent === true,
@@ -95,7 +99,7 @@ export function useProcessHierarchy({
       };
 
       // Let callers attach extra data without forking transform
-      return enrichElement ? enrichElement(el, node) : node;
+      return node;
     }
 
     async function loadHierarchy() {
@@ -119,7 +123,7 @@ export function useProcessHierarchy({
     }
 
     loadHierarchy();
-  }, [mdEditor, processData, availableImports, getRootSvg, enrichElement]);
+  }, [mdEditor, processData, availableImports, getRootSvg]);
 
   return { processHierarchy, versionInfo };
 }

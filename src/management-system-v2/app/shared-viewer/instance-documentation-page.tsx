@@ -49,24 +49,29 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
     [instance, coloring],
   );
 
-  const enrichElement = useCallback(
-    (el: any, node: Omit<ElementInfo, 'instanceStatus'>): ElementInfo => ({
-      ...node,
-      instanceStatus: {
-        token: instance.tokens.find((t) => t.currentFlowElementId === el.id),
-        logEntries: instance.log.filter((l) => l.flowElementId === el.id),
-      },
-    }),
-    [instance],
-  );
-
-  const { processHierarchy, versionInfo } = useProcessHierarchy({
+  const { processHierarchy: rawHierarchy, versionInfo } = useProcessHierarchy({
     processData,
     availableImports,
     getRootSvg,
-    enrichElement,
   });
 
+  const processHierarchy = useMemo(() => {
+    if (!rawHierarchy) return undefined;
+
+    function enrichNode(node: ElementInfo): ElementInfo {
+      return {
+        ...node,
+        instanceStatus: {
+          token: instance.tokens.find((t) => t.currentFlowElementId === node.id),
+          logEntries: instance.log.filter((l) => l.flowElementId === node.id),
+        },
+        children: node.children?.map(enrichNode),
+        boundaryEvents: node.boundaryEvents?.map(enrichNode),
+      };
+    }
+
+    return enrichNode(rawHierarchy);
+  }, [rawHierarchy, instance]);
   useEffect(() => {
     if (processHierarchy && defaultSettings) {
       setTimeout(window.print, 100);
@@ -93,7 +98,7 @@ const InstanceDocumentationPage: React.FC<InstanceDocumentationPageProps> = ({
       onSettingsConfirm={setCheckedSettings}
       availableSettings={instanceSettings}
       activeSettings={activeSettings}
-      title={`${processData.name} — Instance …${shortInstanceId}`}
+      title={`${processData.name} — Execution ...${shortInstanceId}`}
       extraRootItems={extraRootItems}
     >
       {!processHierarchy ? (

@@ -769,11 +769,28 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
   }
 }
 
+// all connected users are sharing this information
+const global = globalThis as any;
+// flag that indicates if an update triggered by another user is currently running
+global.isRefetchingDeployments =
+  global.isRefetchingDeployments || (global.isRefetchingDeployments = false);
+// value that indicates the time the last update finished to ensure that we have 10 seconds timeout
+// between updates
+global.lastDeploymentsRefetchTime =
+  global.lastDeploymentsRefetchTime || (global.lastDeploymentsRefetchTime = 0);
+
 /**
  * Fetches the deployments information from all engine that are expected to have a deployed process
  * from this MS
  **/
 export async function refetchDeployments() {
+  // allow only one refetch for all users every 10 seconds
+  if (global.isRefetchingDeployments || Date.now() - global.lastDeploymentsRefetchTime < 10000) {
+    return;
+  }
+  // prevent other users from triggering additional updates
+  global.isRefetchingDeployments = true;
+
   try {
     console.log(`\n\n\nRefetching Deployments: (${new Date().toLocaleTimeString()})\n\n\n`);
 
@@ -1187,11 +1204,7 @@ export async function refetchDeployments() {
     console.error('Error fetching deployment information: ', err);
   }
 
-  setTimeout(refetchDeployments, 10000);
-}
-
-const global = globalThis as any;
-if (!global.deploymentFetchLoopActive) {
-  global.deploymentFetchLoopActive = true;
-  refetchDeployments();
+  // allow the next update to happen in 10 seconds from now
+  global.isRefetchingDeployments = false;
+  global.lastDeploymentsRefetchTime = Date.now();
 }

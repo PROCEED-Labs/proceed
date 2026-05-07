@@ -2,6 +2,7 @@ import { getEnv, getUser } from '@/lib/data/db/machine-config';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { getDefinitionsInfos, getDefinitionsName, toBpmnObject } from '@proceed/bpmn-helper';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import jsonToCsvExport from 'json-to-csv-export';
@@ -170,29 +171,29 @@ export async function exportInstanceData(
   versionInfo: VersionInfo[],
 ) {
   const objectOrderTemplate = {
-    processId: null, //rename ProzessId
+    ProzessId: null,
     ProcessName: null,
     ProcessShortName: null,
-    processVersion: null, //rename ProcessVersionId
+    ProcessVersionId: null,
     ProcessVersionName: null,
     ProcessVersionDescription: null,
     ProcessVersionCreatedOn: null,
     ProcessVersionBasedOn: null,
-    processInstanceId: null, //rename ProcessInstanceId
-    processInitiator: null, //rename ProcessInstanceInitiatorId
+    ProcessInstanceId: null,
+    ProcessInstanceInitiatorId: null,
     ProcessInstanceInitiatorFullName: null,
     ProcessInstanceInitiatorUsername: null,
-    spaceIdOfProcessInitiator: null, //rename ProcessInstanceInitiatorSpaceId
+    ProcessInstanceInitiatorSpaceId: null,
     ProcessInstanceInitiatorSpaceName: null,
-    globalStartTime: null, //rename InstanceStartTime
-    flowElementId: null, //rename ProcessStepId
+    InstanceStartTime: null,
+    ProcessStepId: null,
     ProcessStepName: null, //tofind
     ProcessStepType: null, //tofind
-    executionState: null, //rename ProcessStepStatus
-    startTime: null, //rename ProcessStepStartTime
-    endTime: null, //rename ProcessStepEndTime
+    ProcessStepStatus: null,
+    ProcessStepStartTime: null,
+    ProcessStepEndTime: null,
     PreviousProcessStepId: null, //tofind
-    tokenId: null, //rename ProcessStepTokenId
+    ProcessStepTokenId: null,
     ActualPerformerId: null, //tofind
     ActualPerformerName: null, //tofind
     ActualPerformerUsername: null, //tofind
@@ -210,15 +211,17 @@ export async function exportInstanceData(
         const parser = new DOMParser();
         const bpmn = parser.parseFromString(correspondingVersion?.bpmn || '', 'text/xml');
         const bpmnDefinitions = bpmn.getElementsByTagName('definitions')[0];
+        const bpmnObj = await toBpmnObject(correspondingVersion?.bpmn || '');
 
         const initiator = await getUser(instance.processInitiator!);
+        // TODO change that! it's current Env
         const initiatorSpace = await getEnv(instance.spaceIdOfProcessInitiator!);
-        console.log(initiatorSpace);
+        const definitionInfos = await getDefinitionsInfos(bpmnObj);
 
         return {
           ...instance,
-          ProcessName: bpmnDefinitions.getAttribute('name'),
-          ProcessShortName: bpmnDefinitions.getAttribute('proceed:userDefinedId'),
+          ProcessName: definitionInfos.name,
+          ProcessShortName: definitionInfos.userDefinedId,
           ProcessVersionName: correspondingVersion?.versionName,
           ProcessVersionDescription: correspondingVersion?.versionDescription,
           ProcessVersionCreatedOn: correspondingVersion?.deploymentDate,
@@ -241,14 +244,38 @@ export async function exportInstanceData(
     instance ? instance.log.map((eventEntry) => ({ ...instance, ...eventEntry })) : [],
   );
 
-  // console.log(selectedInstances);
-  // console.log(versionInfo);
-  console.log(instanceEvents);
+  // renaming
+  const keyMap: Record<string, string> = {
+    processId: 'ProzessId',
+    processVersion: 'ProcessVersionId',
+    processInstanceId: 'ProcessInstanceId',
+    processInitiator: 'ProcessInstanceInitiatorId',
+    spaceIdOfProcessInitiator: 'ProcessInstanceInitiatorSpaceId',
+    globalStartTime: 'InstanceStartTime',
+    flowElementId: 'ProcessStepId',
+    executionState: 'ProcessStepStatus',
+    startTime: 'ProcessStepStartTime',
+    endTime: 'ProcessStepEndTime',
+    tokenId: 'ProcessStepTokenId',
+  };
+  const renamedInstanceEvents = instanceEvents.map((instance) =>
+    Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
+  );
 
-  const structuredInstanceEvents = instanceEvents.map((instance) => ({
-    ...objectOrderTemplate,
-    ...instance,
-  }));
+  // reordering
+  const structuredInstanceEvents = renamedInstanceEvents.map((instance) => {
+    Object.entries(instance).reduce(
+      (acc, [key, value]) => {
+        if (key in acc) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      { ...objectOrderTemplate } as Record<string, any>,
+    );
+  });
+
+  console.log(structuredInstanceEvents);
 
   return jsonToCsvExport({
     data: structuredInstanceEvents,

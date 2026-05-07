@@ -265,7 +265,9 @@ export type VersionInfo = {
   versionId: string;
   versionName: string;
   versionDescription: string;
+  basedOnVersion?: string;
 };
+
 export type InstanceInfo = {
   processId: string;
   processInstanceId: string;

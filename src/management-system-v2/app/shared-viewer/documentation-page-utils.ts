@@ -9,10 +9,6 @@ import {
   getTokenColor,
   getTokenPosition,
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-tokens';
-import {
-  getTimeInfo,
-  getPlanDelays,
-} from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 
 import Canvas from 'diagram-js/lib/core/Canvas';
 import { isAny, is as isType } from 'bpmn-js/lib/util/ModelUtil';
@@ -35,8 +31,7 @@ import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/in
 import { generateNumberString } from '@/lib/utils';
 import {
   ColorOptions,
-  getExecutionColor,
-  progressToColor,
+  flowElementsStyling,
 } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import { ElementInfo } from './table-of-content';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
@@ -272,6 +267,7 @@ export async function getSVGWithInstanceColoring(
 
   const viewerRef = {
     getElement: (id: string) => elementRegistry.get(id),
+    getAllElements: () => elementRegistry.getAll(),
   };
 
   const tokenPositions = instance.tokens.map((token) => ({
@@ -280,62 +276,19 @@ export async function getSVGWithInstanceColoring(
     position: getTokenPosition(token, viewerRef),
   }));
 
+  // Apply coloring using existing flowElementsStyling on the live canvas
+  if (coloring !== 'processColors') {
+    const styling = flowElementsStyling(viewerRef as BPMNCanvasRef, instance, coloring);
+    const canvas = viewer.get<Canvas>('canvas');
+    for (const { elementId, color } of styling) canvas.addMarker(elementId, color);
+  }
+
   const svg = await getSVGFromBPMN(viewer);
   viewer.destroy();
 
   const parser = new DOMParser();
   const doc = parser.parseFromString(svg, 'image/svg+xml');
   const svgRoot = doc.documentElement;
-
-  // Build elementId, color map
-  if (coloring !== 'processColors') {
-    const colorMap: Record<string, string> = {};
-
-    for (const logEntry of instance.log) {
-      const id = logEntry.flowElementId;
-      const token = instance.tokens.find((t) => t.currentFlowElementId === id);
-
-      let color: string;
-      switch (coloring) {
-        case 'noColors':
-          color = 'white';
-          break;
-        case 'executionColors':
-          color = getExecutionColor(logEntry.executionState, !!logEntry.executionWasInterrupted);
-          break;
-        case 'timeColors': {
-          const timeInfo = getTimeInfo({
-            element: { id, type: '', businessObject: {} } as any,
-            logInfo: logEntry,
-            token,
-            instance,
-          });
-          const planInfo = getPlanDelays({ elementMetaData: {}, ...timeInfo });
-          color = progressToColor(timeInfo, planInfo);
-          break;
-        }
-        default:
-          color = 'white';
-      }
-
-      colorMap[id] = color;
-    }
-
-    for (const [elementId, color] of Object.entries(colorMap)) {
-      const el = doc.querySelector(`[data-element-id="${elementId}"]`);
-      if (!el) continue;
-      const shape = el.querySelector(
-        '.djs-visual rect, .djs-visual circle, .djs-visual polygon, .djs-visual path',
-      );
-      if (!shape) continue;
-      const cleaned = (shape.getAttribute('style') || '')
-        .replace(/fill:[^;]+;?/g, '')
-        .replace(/fill-opacity:[^;]+;?/g, '')
-        .trimEnd();
-      shape.setAttribute('style', `${cleaned}; fill: ${color}; fill-opacity: 0.5;`);
-    }
-  }
-
   // Draw tokens using positions
   for (const { token, color, position } of tokenPositions) {
     const targetEl = doc.querySelector(`[data-element-id="${position.targetElementId}"]`);

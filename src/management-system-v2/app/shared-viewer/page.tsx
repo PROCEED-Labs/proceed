@@ -102,10 +102,9 @@ const getProcessInfo = async (
     }
   }
 
-  return { canView, processData, spaceId } as {
+  return { canView, processData } as {
     canView: boolean;
     processData: Process;
-    spaceId?: string;
   };
 };
 
@@ -219,19 +218,13 @@ const SharedViewer = async (props: PageProps) => {
   let isOwner = false;
   let activeSpaceId = userId || '';
   let activeIsOrg = false;
-  let processSpaceId = '';
 
   const key = env.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
   try {
-    const {
-      processId,
-      embeddedMode,
-      timestamp,
-      spaceId: tokenSpaceId,
-    } = jwt.verify(token, key!) as TokenPayload;
+    const { processId, embeddedMode, timestamp } = jwt.verify(token, key!) as TokenPayload;
 
     const versionId = version as string | undefined;
 
@@ -248,23 +241,15 @@ const SharedViewer = async (props: PageProps) => {
       return processInfo;
     }
 
-    ({ canView: isOwner, processData } = processInfo);
-    processSpaceId = processInfo.spaceId || '';
-
-    // Use spaceId from token if available only if  user is actually a member of that space to go back to the correct space
-    if (tokenSpaceId && userEnvironments.some((e) => e.id === tokenSpaceId)) {
-      activeSpaceId = tokenSpaceId;
-      activeIsOrg = userEnvironments.find((e) => e.id === tokenSpaceId)?.isOrganization ?? false;
-    } else if (processInfo.spaceId) {
-      // Fall back to where process was found
-      activeSpaceId = processInfo.spaceId;
-      activeIsOrg =
-        userEnvironments.find((e) => e.id === processInfo.spaceId)?.isOrganization ?? false;
-    }
-
+    ({ processData } = processInfo);
     if (!processData) {
       return <ErrorMessage message="Process no longer exists!" />;
     }
+
+    isOwner = processData.creatorId === userId;
+    // Use processData.environmentId as the active space since it defines the process's space
+    activeSpaceId = processData.environmentId;
+    activeIsOrg = userEnvironments.find((e) => e.id === activeSpaceId)?.isOrganization ?? false;
 
     iframeMode = embeddedMode;
   } catch (err) {
@@ -295,7 +280,7 @@ const SharedViewer = async (props: PageProps) => {
   let instanceData = undefined;
   if (typeof instanceId === 'string' && processData) {
     try {
-      const deployment = await getDeployment(processSpaceId || '', processData.id);
+      const deployment = await getDeployment(processData.environmentId, processData.id);
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
     } catch (err) {
       console.error('Failed to fetch instance data:', err);

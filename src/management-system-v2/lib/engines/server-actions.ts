@@ -932,7 +932,7 @@ export async function refetchDeployments() {
 
         // get the information that has updated for known instances
         const instances = d.instances.map((i) => {
-          const fetchedInstance = fetchedProcess.instances[i.id];
+          const fetchedInstance = fetchedProcess?.instances[i.id];
           // same as for the deployment: if the machine is reachable but did not return the instance
           // information we expect the instance to have been removed from the machine
 

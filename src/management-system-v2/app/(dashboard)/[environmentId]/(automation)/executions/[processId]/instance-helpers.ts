@@ -2,7 +2,12 @@ import { getEnv, getUser } from '@/lib/data/db/machine-config';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { getDefinitionsInfos, getDefinitionsName, toBpmnObject } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsInfos,
+  getDefinitionsName,
+  getElementById,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import jsonToCsvExport from 'json-to-csv-export';
@@ -208,11 +213,7 @@ export async function exportInstanceData(
         const correspondingVersion = versionInfo.find(
           (e) => e.versionId == instance.processVersion,
         );
-        const parser = new DOMParser();
-        const bpmn = parser.parseFromString(correspondingVersion?.bpmn || '', 'text/xml');
-        const bpmnDefinitions = bpmn.getElementsByTagName('definitions')[0];
         const bpmnObj = await toBpmnObject(correspondingVersion?.bpmn || '');
-
         const initiator = await getUser(instance.processInitiator!);
         // TODO change that! it's current Env
         const initiatorSpace = await getEnv(instance.spaceIdOfProcessInitiator!);
@@ -233,6 +234,7 @@ export async function exportInstanceData(
           ProcessInstanceInitiatorSpaceName: initiatorSpace.isOrganization
             ? initiatorSpace.name
             : 'no organization',
+          correspondingVersion,
         };
       } else {
         return undefined;
@@ -240,9 +242,27 @@ export async function exportInstanceData(
     })
   ).filter(truthyFilter);
 
-  const instanceEvents = instancesWithVersionData.flatMap((instance) =>
-    instance ? instance.log.map((eventEntry) => ({ ...instance, ...eventEntry })) : [],
-  );
+  // retrieve and flatten event data
+  const instanceEvents = (
+    await asyncMap(instancesWithVersionData, async (instance) => {
+      const bpmnObj = await toBpmnObject(instance.correspondingVersion?.bpmn || '');
+
+      return instance
+        ? instance.log.map((eventEntry) => {
+            const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
+              $type?: string;
+              name?: string;
+            };
+            return {
+              ...instance,
+              ...eventEntry,
+              ProcessStepName: eventElement?.name,
+              ProcessStepType: eventElement?.$type?.split(':')[1],
+            };
+          })
+        : [];
+    })
+  ).flat();
 
   // renaming
   const keyMap: Record<string, string> = {
@@ -258,12 +278,21 @@ export async function exportInstanceData(
     endTime: 'ProcessStepEndTime',
     tokenId: 'ProcessStepTokenId',
   };
-  const renamedInstanceEvents = instanceEvents.map((instance) =>
+  const renamedInstanceEvents: Record<string, any>[] = instanceEvents.map((instance) =>
     Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
   );
 
+  // converting dates
+  const datedInstanceEvents = renamedInstanceEvents.map((instance) => ({
+    ...instance,
+    InstanceStartTime: new Date(instance.InstanceStartTime).toISOString(),
+    ProcessStepEndTime: new Date(instance.ProcessStepEndTime).toISOString(),
+    ProcessStepStartTime: new Date(instance.ProcessStepStartTime).toISOString(),
+    ProcessVersionCreatedOn: new Date(instance.ProcessVersionCreatedOn).toISOString(),
+  }));
+
   // reordering
-  const structuredInstanceEvents = renamedInstanceEvents.map((instance) =>
+  const structuredInstanceEvents = datedInstanceEvents.map((instance) =>
     Object.entries(instance).reduce(
       (acc, [key, value]) => {
         if (key in acc) {

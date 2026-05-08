@@ -207,6 +207,7 @@ export async function exportInstanceData(
     Log: null, //tofind
   };
 
+  // pasting metadata from VersionInfo
   const instancesWithVersionData = (
     await asyncMap(selectedInstances, async (instance) => {
       if (instance) {
@@ -243,24 +244,44 @@ export async function exportInstanceData(
   ).filter(truthyFilter);
 
   // retrieve and flatten event data
-  const instanceEvents = (
-    await asyncMap(instancesWithVersionData, async (instance) => {
-      const bpmnObj = await toBpmnObject(instance.correspondingVersion?.bpmn || '');
+  const instanceEvents = await asyncMap(instancesWithVersionData, async (instance) => {
+    const bpmnObj = await toBpmnObject(instance.correspondingVersion?.bpmn || '');
 
-      return instance
-        ? instance.log.map((eventEntry) => {
-            const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
-              $type?: string;
-              name?: string;
-            };
-            return {
-              ...instance,
-              ...eventEntry,
-              ProcessStepName: eventElement?.name,
-              ProcessStepType: eventElement?.$type?.split(':')[1],
-            };
-          })
-        : [];
+    return instance
+      ? instance.log.map((eventEntry) => {
+          const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
+            $type?: string;
+            name?: string;
+            outgoing?: any;
+            incoming?: any;
+          };
+          return {
+            ...instance,
+            ...eventEntry,
+            ProcessStepName: eventElement?.name,
+            ProcessStepType: eventElement?.$type?.split(':')[1],
+            outgoing: eventElement.outgoing,
+            incoming: eventElement.incoming,
+          };
+        })
+      : [];
+  });
+
+  // mapping outgoing / incoming flows to PreviousStepId
+  const instanceEventsWithPredecessors = (
+    await asyncMap(instanceEvents, async (instance) => {
+      console.log(instance);
+      return instance.map((event) => {
+        let PreviousProcessStepId = [];
+        if (event.incoming) {
+          PreviousProcessStepId = event.incoming.map(
+            (inFlow: { id: string }) =>
+              instance.find((e) => e.outgoing.find((f: { id: string }) => f.id == inFlow.id))
+                ?.flowElementId,
+          );
+        }
+        return { ...event, PreviousProcessStepId };
+      });
     })
   ).flat();
 
@@ -278,8 +299,8 @@ export async function exportInstanceData(
     endTime: 'ProcessStepEndTime',
     tokenId: 'ProcessStepTokenId',
   };
-  const renamedInstanceEvents: Record<string, any>[] = instanceEvents.map((instance) =>
-    Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
+  const renamedInstanceEvents: Record<string, any>[] = instanceEventsWithPredecessors.map(
+    (instance) => Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
   );
 
   // converting dates

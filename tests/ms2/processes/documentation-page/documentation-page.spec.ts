@@ -28,8 +28,7 @@ test('show process information', async ({ page, processListPage }) => {
   documentationPage.locator;
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(1);
-
+  await expect(elementSectionsLocator).toHaveCount(5);
   const elementSections = await elementSectionsLocator.all();
 
   // check if the process overview is shown and the bpmn is correct
@@ -72,7 +71,7 @@ test('show content of collapsed subprocesses in a separate section', async ({
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(2);
+  await expect(elementSectionsLocator).toHaveCount(9);
 
   const elementSections = await elementSectionsLocator.all();
 
@@ -121,7 +120,7 @@ test('show version information', async ({ page, processListPage, processModelerP
   await expect(infoSection.getByText('Owner:')).toBeVisible();
   await expect(infoSection.getByText('Version: Version 1')).toBeVisible();
   await expect(infoSection.getByText('Version Description: First Version')).toBeVisible();
-  await expect(infoSection.getByText(/^Creation Time: .+$/)).toBeVisible();
+  await expect(infoSection.getByText(/^Version Created On: .+$/)).toBeVisible();
 });
 
 test('show meta data of a process element', async ({ page, processListPage }) => {
@@ -141,7 +140,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(3);
+  await expect(elementSectionsLocator).toHaveCount(11);
 
   const elementSections = await elementSectionsLocator.all();
 
@@ -275,7 +274,7 @@ test('recursively show information about imports', async ({
 
   const elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
   // wait for all sections to be visible
-  await expect(elementSectionsLocator).toHaveCount(5);
+  await expect(elementSectionsLocator).toHaveCount(4);
 
   const elementSections = await elementSectionsLocator.all();
 
@@ -486,7 +485,7 @@ test('a setting allows to show the subprocess element instead of its content', a
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(3);
+  await expect(elementSectionsLocator).toHaveCount(11);
 
   let elementSections = await elementSectionsLocator.all();
 
@@ -617,7 +616,7 @@ test('a setting allows to show a call activity instead of the imported process',
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(5);
+  await expect(elementSectionsLocator).toHaveCount(4);
 
   // check that the visualisation of a call activity can be set to show the call activity element instead of the imported process
   // which also removes all contained elements from the page
@@ -696,7 +695,7 @@ test('a setting allows to show elements that have no meta data which are not sho
   let elementSections = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSections).toHaveCount(3);
+  await expect(elementSections).toHaveCount(11);
 
   // check that the option to show elements that have no meta data and contain no other elements works as well (here in combination with the previously deselected options)
   const settingsModal = await openModal(documentationPage, () =>
@@ -785,7 +784,7 @@ test('the page shows only imported processes that are shared themselves to other
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible to the owner are visible
-  await expect(elementSectionsLocator).toHaveCount(5);
+  await expect(elementSectionsLocator).toHaveCount(4);
 
   const elementSections = await elementSectionsLocator.all();
 

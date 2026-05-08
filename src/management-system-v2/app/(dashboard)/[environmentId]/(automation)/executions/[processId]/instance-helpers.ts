@@ -263,7 +263,7 @@ export async function exportInstanceData(
   );
 
   // reordering
-  const structuredInstanceEvents = renamedInstanceEvents.map((instance) => {
+  const structuredInstanceEvents = renamedInstanceEvents.map((instance) =>
     Object.entries(instance).reduce(
       (acc, [key, value]) => {
         if (key in acc) {
@@ -272,8 +272,8 @@ export async function exportInstanceData(
         return acc;
       },
       { ...objectOrderTemplate } as Record<string, any>,
-    );
-  });
+    ),
+  );
 
   console.log(structuredInstanceEvents);
 

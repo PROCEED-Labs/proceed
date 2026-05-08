@@ -1,9 +1,9 @@
 import { Engine, HttpEngine, MqttEngine, isHttpEngine, isMqttEngine } from './machines';
 import { useCallback } from 'react';
-import { getCorrectTargetEngines } from './server-actions';
 import { useQuery } from '@tanstack/react-query';
 import { asyncFilter } from '../helpers/javascriptHelpers';
 import { truthyFilter } from '../typescript-utils';
+import { getAvailableSpaceMachines } from '../data/db/engines';
 
 function useEngines(
   space: { spaceId: string; isOrganization: boolean },
@@ -14,7 +14,7 @@ function useEngines(
 ) {
   const queryFn = useCallback(async () => {
     if (space.spaceId) {
-      let res = await getCorrectTargetEngines(space.spaceId);
+      let res = await getAvailableSpaceMachines(space.spaceId);
       const knownEngines: Record<string, { http?: HttpEngine; mqtt?: MqttEngine }> = {};
 
       res = await asyncFilter(res, filter.fn);

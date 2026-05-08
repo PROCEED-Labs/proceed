@@ -40,6 +40,14 @@ export const userError = (
   return { error: { message, type } as UserError };
 };
 
+export const permissionDenied = () => {
+  return userError('Permission denied', UserErrorType.PermissionError);
+};
+
+export const schemaValidationError = () => {
+  return userError('Schema validation failed', UserErrorType.SchemaValidationError);
+};
+
 export function isUserError(value: any): value is UserError {
   return (
     value &&

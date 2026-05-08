@@ -1,13 +1,13 @@
 'use server';
 
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { Engine } from '@/lib/engines/machines';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
-import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
 import { Prisma, SystemAdmin } from '@prisma/client';
-import { cacheLife, cacheTag, updateTag } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 
 /**
  * Function that returns stored engines extended with the reachable machines they reference
@@ -72,21 +72,7 @@ export async function getEngineWithMachinesById(
   return engine;
 }
 
-export async function getAvailableMachines(
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  let engines = await getSavedEnginesWithMachines(environmentId);
-
-  engines = ability ? ability.filter('view', 'Machine', engines) : engines;
-
-  const machines = engines.flatMap((e) => e.machines);
-
+function getUniqueMachines(machines: Engine[]) {
   // some machines might occur multiple times
   // (e.g. they are reachable through a saved HTTP engine and over a saved MQTT broker)
   const uniqueMachines = machines.reduce(
@@ -106,33 +92,50 @@ export async function getAvailableMachines(
   return Object.values(uniqueMachines);
 }
 
-async function getDbEngineById(
-  engineId: string,
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  const engine = await db.engine.findUnique({
-    where: {
-      environmentId: environmentId,
-      id: engineId,
-    },
-  });
-
-  if (!engine) return undefined;
-
-  if (
-    ability &&
-    !ability.can('view', toCaslResource('Machine', engine), { environmentId: environmentId! })
-  ) {
-    throw new UnauthorizedError();
+/**
+ * Returns the currently reachable machines for the engines stored in the PROCEED admin dashboard
+ *
+ * @param [dontCheck=false] flag that tells the function to skip checking if the user is an admin
+ **/
+export async function getAvailableAdminMachines(dontCheck = false) {
+  if (!dontCheck) {
+    const { systemAdmin } = await getCurrentUser();
+    if (!systemAdmin) throw new UnauthorizedError();
   }
 
-  return engine;
+  let engines = await getSavedEnginesWithMachines(null);
+  return getUniqueMachines(engines.flatMap((e) => e.machines));
+}
+
+export async function getAvailableSpaceMachines(environmentId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
+
+  let engines = await getSavedEnginesWithMachines(environmentId);
+
+  engines = ability ? ability.filter('view', 'Machine', engines) : engines;
+  return getUniqueMachines(engines.flatMap((e) => e.machines));
+}
+
+export async function getAllAvailableMachines(environmentId: string) {
+  const { ability } = await getCurrentEnvironment(environmentId);
+
+  let [proceedEngines, spaceEngines] = await Promise.all([
+    getSavedEnginesWithMachines(null),
+    getSavedEnginesWithMachines(environmentId),
+  ]);
+
+  spaceEngines = ability.filter('view', 'Machine', spaceEngines);
+
+  return getUniqueMachines([
+    ...proceedEngines.flatMap((e) => e.machines),
+    ...spaceEngines.flatMap((e) => e.machines),
+  ]);
+}
+
+export async function getMachineIfAvailable(environmentId: string, machineId: string) {
+  const { ability } = await getCurrentEnvironment(environmentId);
+  const machines = await getAvailableSpaceMachines(environmentId, ability);
+  return machines.find((m) => m.id === machineId);
 }
 
 export async function getDbEngineByAddress(
@@ -166,107 +169,4 @@ export async function getDbEngineByAddress(
     throw new UnauthorizedError();
 
   return engine;
-}
-
-const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
-export async function addDbEngines(
-  enginesInput: SpaceEngineInput[],
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  const newEngines = SpaceEngineArraySchema.parse(enginesInput);
-
-  if (ability && !ability.can('create', 'Machine')) throw new UnauthorizedError();
-
-  const res = await db.engine.createMany({
-    data: newEngines.map((e) => ({ ...e, environmentId: environmentId ?? null })),
-  });
-
-  if (environmentId) {
-    updateTag(`space/${environmentId}/engines`);
-  } else {
-    updateTag('ms/engines');
-  }
-
-  return res;
-}
-
-const PartialSpaceEngineInputSchema = SpaceEngineInputSchema.partial();
-export async function updateDbEngine(
-  engineId: string,
-  engineInput: Partial<SpaceEngineInput>,
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  const newEngineData = PartialSpaceEngineInputSchema.parse(engineInput);
-
-  if (ability) {
-    const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) throw new Error('Engine not found');
-    if (
-      !ability.can('update', toCaslResource('Machine', engine), { environmentId: environmentId! })
-    )
-      throw new UnauthorizedError();
-  }
-
-  const res = await db.engine.update({
-    data: newEngineData,
-    where: {
-      environmentId,
-      id: engineId,
-    },
-  });
-
-  if (environmentId) {
-    updateTag(`space/${environmentId}/engines`);
-  } else {
-    updateTag('ms/engines');
-  }
-
-  return res;
-}
-
-export async function deleteSpaceEngine(
-  engineId: string,
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  if (ability) {
-    const engine = await getDbEngineById(engineId, environmentId, ability, systemAdmin);
-    if (!engine) throw new Error('Engine not found');
-    if (
-      !ability.can('delete', toCaslResource('Machine', engine), { environmentId: environmentId! })
-    )
-      throw new UnauthorizedError();
-  }
-
-  const res = await db.engine.delete({
-    where: {
-      environmentId: environmentId,
-      id: engineId,
-    },
-  });
-
-  if (environmentId) {
-    updateTag(`space/${environmentId}/engines`);
-  } else {
-    updateTag('ms/engines');
-  }
-
-  return res;
 }

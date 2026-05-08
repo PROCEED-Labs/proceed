@@ -20,7 +20,12 @@ import { Engine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { enableUseDB } from 'FeatureFlags';
-import { getDbEngineByAddress, getAvailableMachines } from '@/lib/data/db/engines';
+import {
+  getDbEngineByAddress,
+  getMachineIfAvailable,
+  getAvailableAdminMachines,
+  getAllAvailableMachines,
+} from '@/lib/data/db/engines';
 import { asyncFilter, asyncMap, asyncForEach, AsyncArray } from '../helpers/javascriptHelpers';
 
 import db from '@/lib/data/db';
@@ -46,7 +51,6 @@ import { getUserTaskById, updateUserTask } from '../data/user-tasks';
 import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { Variable } from '@proceed/bpmn-helper/src/getters';
-import Ability from '../ability/abilityHelper';
 import {
   addDeployment,
   getInstance as getStoredInstance,
@@ -58,35 +62,6 @@ import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/
 import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { revalidateTag } from 'next/cache';
 
-// TODO: still needed?
-export async function getCorrectTargetEngines(
-  spaceId: string,
-  onlyProceedEngines = false,
-  validatorFunc?: (engine: Engine) => Promise<boolean>,
-  ability?: Ability,
-) {
-  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
-
-  let engines: Engine[] = [];
-  if (onlyProceedEngines) {
-    // force that only proceed engines are supposed to be used
-    engines = await getAvailableMachines(null, undefined, 'dont-check');
-  } else {
-    // use all available engines
-    const [proceedEngines, spaceEngines] = await Promise.all([
-      getAvailableMachines(null, undefined, 'dont-check'),
-      getAvailableMachines(spaceId, ability),
-    ]);
-
-    engines = proceedEngines;
-    engines = engines.concat(spaceEngines);
-  }
-
-  if (validatorFunc) engines = await asyncFilter(engines, validatorFunc);
-
-  return engines;
-}
-
 export async function deployProcess(
   definitionId: string,
   versionId: string,
@@ -96,20 +71,19 @@ export async function deployProcess(
 ) {
   try {
     // TODO: manage permissions for deploying a process
-
-    if (!enableUseDB) throw new Error('deployProcess only available with enableUseDB');
-
     const { userId } = await getCurrentUser();
 
     let engines: Engine[];
-    if (_forceEngine && _forceEngine !== 'PROCEED') {
+    if (_forceEngine === 'PROCEED') {
+      // force that only proceed engines are supposed to be used
+      engines = await getAvailableAdminMachines(true);
+    } else if (_forceEngine) {
       // forcing a specific engine
-      const { ability } = await getCurrentEnvironment(spaceId);
-
       async function resolveEngines(engines: Engine[]) {
         const addresses = engines.map((engine) =>
           engine.type === 'http' ? engine.address : engine.brokerAddress,
         );
+        const { ability } = await getCurrentEnvironment(spaceId);
         // TODO: can this be changed?
         const spaceEngines = await db.$transaction(async () => {
           return await asyncMap(addresses, async (address) =>
@@ -134,7 +108,8 @@ export async function deployProcess(
         if (!engines.length) throw new Error("Engine couldn't be reached");
       }
     } else {
-      engines = await getCorrectTargetEngines(spaceId, _forceEngine === 'PROCEED');
+      // use all available engines
+      engines = await getAllAvailableMachines(spaceId);
     }
 
     if (!engines.length) throw new UserFacingError('No fitting engine found.');
@@ -209,7 +184,7 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     const deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 
-    const engines = await getCorrectTargetEngines(spaceId, false);
+    const engines = await getAllAvailableMachines(spaceId);
 
     await asyncForEach(deployments, async (deployment) => {
       const stillDeployedOn = await asyncMap(deployment.machineIds, async (machineId) => {
@@ -249,7 +224,7 @@ export async function changeDeploymentActivation(
   value: boolean,
 ) {
   try {
-    const engines = await getCorrectTargetEngines(spaceId, false);
+    const engines = await getAllAvailableMachines(spaceId);
     const deployments = await getProcessDeployments(spaceId, definitionId);
 
     if (isUserErrorResponse(deployments)) return deployments;
@@ -357,8 +332,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
       let activated = true;
       if (storedUserTask.instanceID && storedUserTask.machineId) {
         try {
-          const engines = await getAvailableMachines(spaceId);
-          const engine = engines.find((e) => e.id === storedUserTask.machineId);
+          const engine = await getMachineIfAvailable(spaceId, storedUserTask.machineId);
           if (engine) {
             console.log(
               engine,
@@ -455,8 +429,7 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
 
       if (storedUserTask.instanceID) {
         const { machineId } = storedUserTask;
-        const engines = await getAvailableMachines(spaceId);
-        const engine = machineId && engines.find((e) => e.id === machineId);
+        const engine = machineId && (await getMachineIfAvailable(spaceId, machineId));
 
         if (!engine) {
           return userError('Could not find the engine this user task is running on.');
@@ -496,8 +469,7 @@ export async function setTasklistEntryVariableValues(
 
     if (storedUserTask.instanceID) {
       const { machineId } = storedUserTask;
-      const engines = await getAvailableMachines(spaceId);
-      const engine = machineId && engines.find((e) => e.id === machineId);
+      const engine = machineId && (await getMachineIfAvailable(spaceId, machineId));
 
       if (!engine) {
         return userError('Could not find the engine this user task is running on.');
@@ -534,8 +506,7 @@ export async function setTasklistMilestoneValues(
 
     if (storedUserTask.instanceID) {
       const { machineId } = storedUserTask;
-      const engines = await getAvailableMachines(spaceId);
-      const engine = machineId && engines.find((e) => e.id === machineId);
+      const engine = machineId && (await getMachineIfAvailable(spaceId, machineId));
 
       if (!engine) {
         return userError('Could not find the engine this user task is running on.');
@@ -570,8 +541,7 @@ export async function completeTasklistEntry(
 
     if (storedUserTask.instanceID) {
       const { machineId } = storedUserTask;
-      const engines = await getAvailableMachines(spaceId);
-      const engine = machineId && engines.find((e) => e.id === machineId);
+      const engine = machineId && (await getMachineIfAvailable(spaceId, machineId));
 
       if (!engine) {
         return userError('Could not find the engine this user task is running on.');
@@ -623,7 +593,7 @@ export async function updateVariables(
     if (!instance) return userError('Could not find the instance to change.');
 
     // find the engine the instance is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+    const engines = await AsyncArray.from(getAllAvailableMachines(spaceId)).filter((engine) => {
       return instance.machineIds.includes(engine.id);
     });
 
@@ -652,8 +622,7 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
     }
 
     const { machineId } = storedUserTask;
-    const engines = await getAvailableMachines(spaceId);
-    const engine = machineId && engines.find((e) => e.id === machineId);
+    const engine = machineId && (await getMachineIfAvailable(spaceId, machineId));
 
     if (!engine) {
       return userError('Could not find the engine this user task is running on.');
@@ -695,8 +664,6 @@ export async function getFile(
   instanceId: string,
   fileName: string,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
-
   const instance = await getStoredInstance(spaceId, instanceId);
 
   if (isUserErrorResponse(instance)) return instance;
@@ -712,11 +679,9 @@ export async function getFile(
 
   try {
     // find the engine the instance is running on
-    let engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
+    const engines = await AsyncArray.from(getAllAvailableMachines(spaceId)).filter((engine) => {
       return instance.machineIds.includes(engine.id);
     });
-
-    engines = ability ? ability.filter('view', 'Machine', engines) : engines;
 
     if (!engines.length) {
       throw new UserFacingError('Failed to find the engine the instance is running on!');
@@ -751,13 +716,17 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
   try {
     if (!enableUseDB) throw new Error('getProcessImage only available with enableUseDB');
 
-    // find the engine the instance is running on
-    const engines = await getCorrectTargetEngines(spaceId, false, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
+    const deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
 
+    const machinesToCheck = deployments.flatMap((d) => d.machineIds);
+
+    // TODO: test this
+    // TODO: get the image from the local process data
+    const engines = await AsyncArray.from(getAllAvailableMachines(spaceId)).filter((engine) => {
       // TODO: when we start to have assignments of processes to multiple machines we need to check
       // if the deployment on the machine actually contains the image
-      return deployments.some((deployment) => deployment.definitionId === definitionId);
+      return machinesToCheck.includes(engine.id);
     });
 
     if (!engines.length) throw new Error('Failed to an engine the process was deployed to!');

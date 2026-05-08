@@ -26,10 +26,10 @@ import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { Engine, SpaceEngine } from '@/lib/engines/machines';
+import { Engine } from '@/lib/engines/machines';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
-import { getAvailableMachines } from '@/lib/data/db/engines';
+import { getAvailableSpaceMachines } from '@/lib/data/db/engines';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -82,7 +82,7 @@ const EngineSelection = ({ onEngine }: { onEngine: (args?: Engine | 'PROCEED') =
   const space = useEnvironment();
   const { isLoading, error, data } = useQuery({
     queryFn: async () => {
-      const response = await getAvailableMachines(space.spaceId);
+      const response = await getAvailableSpaceMachines(space.spaceId);
       if (isUserErrorResponse(response)) throw response.error;
       return response;
     },

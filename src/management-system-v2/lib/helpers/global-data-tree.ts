@@ -1,6 +1,6 @@
 import type { DataNode } from 'antd/es/tree';
 
-// The scope filters for global data objects
+/** The scope filters for global data objects */
 export type ScopeFilter = '@worker' | '@process-initiator' | '@organization';
 
 /**
@@ -15,12 +15,11 @@ export function buildTreeNodes(params: any[], pathPrefix: string, depth: number)
 
     // The 'data' node at the top level is a structural container, not selectable
     const isDataNode = param.name === 'data' && depth === 0;
-    const isSelectable = !isDataNode;
 
     return {
       key: currentPath,
       title: param.displayName?.find((d: any) => d.language === 'en')?.text || param.name,
-      selectable: isSelectable,
+      selectable: !isDataNode,
       children: hasChildren
         ? buildTreeNodes(param.subParameters, currentPath, depth + 1)
         : undefined,
@@ -29,14 +28,47 @@ export function buildTreeNodes(params: any[], pathPrefix: string, depth: number)
 }
 
 /**
+ * Builds tree nodes for a user-scoped filter (@worker or @process-initiator).
+ * Both scopes show the same data (common-user-data + userInfo) but with different path prefixes.
+ */
+function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[] {
+  const nodes: DataNode[] = [];
+
+  const commonUserData = iamTopLevel.subParameters.find((p: any) => p.name === 'common-user-data');
+
+  // Non-selectable "Data" parent for common-user-data
+  if (commonUserData) {
+    nodes.push({
+      key: `${scopePrefix}.data`,
+      title: 'Data',
+      selectable: false,
+      children: buildTreeNodes(commonUserData.subParameters, `${scopePrefix}.data`, 1),
+    });
+  }
+
+  // Non-selectable "User Info" parent
+  const userSection = iamTopLevel.subParameters.find((p: any) => p.name === 'user');
+  const anyUser = userSection?.subParameters?.[0];
+  const userInfo = anyUser?.subParameters?.find((p: any) => p.name === 'userInfo');
+
+  if (userInfo?.subParameters) {
+    nodes.push({
+      key: `${scopePrefix}.userInfo`,
+      title: 'User Info',
+      selectable: false,
+      children: buildTreeNodes(userInfo.subParameters, `${scopePrefix}.userInfo`, 1),
+    });
+  }
+
+  return nodes;
+}
+
+/**
  * Builds a scoped tree of global data objects from the raw config response.
  *
- * - '@organization' reads from the 'organization' top-level node
- * - '@worker' reads from 'common-user-data' + 'userInfo', paths prefixed with '@global.@worker'
- * - '@process-initiator' same structure as worker but with '@global.@process-initiator'
- *
- * Both worker and process-initiator display the same data structure (common-user-data + userInfo) but
- * generate different path prefixes so the correct modifier is used in the final token.
+ * '@organization' reads from the 'organization' top-level node
+ * '@worker' reads from 'common-user-data' + 'userInfo', paths prefixed with '@global.@worker'
+ * '@process-initiator' same structure as worker but with '@global.@process-initiator'
  */
 export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
   const content = config.content ?? [];
@@ -45,87 +77,15 @@ export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
   for (const topLevel of content) {
     if (topLevel.name === 'organization') {
       if (scope !== '@organization') continue;
-      const children = buildTreeNodes(topLevel.subParameters, '@global.@organization', 0);
-      nodes.push(...children);
+      nodes.push(...buildTreeNodes(topLevel.subParameters, '@global.@organization', 0));
     } else if (topLevel.name === 'identity-and-access-management') {
-      const commonUserData = topLevel.subParameters.find((p: any) => p.name === 'common-user-data');
-
-      // Worker scope: show common-user-data with @worker prefix
-      if (commonUserData && scope === '@worker') {
-        // non-selectable "Data" parent for common-user-data
-        const dataChildren = buildTreeNodes(
-          commonUserData.subParameters,
-          '@global.@worker.data',
-          1,
-        );
-        nodes.push({
-          key: '@global.@worker.data',
-          title: 'Data',
-          selectable: false,
-          children: dataChildren,
-        });
-
-        // Create non-selectable "User Info" parent for userInfo
-        const userSection = topLevel.subParameters.find((p: any) => p.name === 'user');
-        if (userSection && userSection.subParameters) {
-          const anyUser = userSection.subParameters[0];
-          if (anyUser) {
-            const userInfo = anyUser.subParameters?.find((p: any) => p.name === 'userInfo');
-            if (userInfo && userInfo.subParameters) {
-              const userInfoChildren = buildTreeNodes(
-                userInfo.subParameters,
-                '@global.@worker.userInfo',
-                1,
-              );
-              nodes.push({
-                key: '@global.@worker.userInfo',
-                title: 'User Info',
-                selectable: false,
-                children: userInfoChildren,
-              });
-            }
-          }
-        }
-      }
-
-      // Process-initiator scope: same data as worker but different prefix
-      if (commonUserData && scope === '@process-initiator') {
-        // non-selectable "Data" parent for common-user-data
-        const dataChildren = buildTreeNodes(
-          commonUserData.subParameters,
-          '@global.@process-initiator.data',
-          1,
-        );
-        nodes.push({
-          key: '@global.@process-initiator.data',
-          title: 'Data',
-          selectable: false,
-          children: dataChildren,
-        });
-
-        // non-selectable "User Info" parent for userInfo
-        const userSection = topLevel.subParameters.find((p: any) => p.name === 'user');
-        if (userSection && userSection.subParameters) {
-          const anyUser = userSection.subParameters[0];
-          if (anyUser) {
-            const userInfo = anyUser.subParameters?.find((p: any) => p.name === 'userInfo');
-            if (userInfo && userInfo.subParameters) {
-              const userInfoChildren = buildTreeNodes(
-                userInfo.subParameters,
-                '@global.@process-initiator.userInfo',
-                1,
-              );
-              nodes.push({
-                key: '@global.@process-initiator.userInfo',
-                title: 'User Info',
-                selectable: false,
-                children: userInfoChildren,
-              });
-            }
-          }
-        }
+      if (scope === '@worker') {
+        nodes.push(...buildUserScopedNodes(topLevel, '@global.@worker'));
+      } else if (scope === '@process-initiator') {
+        nodes.push(...buildUserScopedNodes(topLevel, '@global.@process-initiator'));
       }
     }
   }
+
   return nodes;
 }

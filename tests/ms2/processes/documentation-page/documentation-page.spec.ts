@@ -314,7 +314,6 @@ test('recursively show information about imports', async ({
   let metaInformation = processOverview.locator('[class*=MetaInformation]');
   await expect(metaInformation.getByText('Summary')).toBeVisible();
   await expect(metaInformation.getByText('A process importing two other processes')).toBeVisible();
-
 });
 
 test('a setting allows to show the subprocess element instead of its content', async ({

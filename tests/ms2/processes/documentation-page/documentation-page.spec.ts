@@ -832,7 +832,7 @@ test('the page shows only imported processes that are shared themselves to other
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
-// check that the imported processes that are not shared are not visible to a non-owner
+  // check that the imported processes that are not shared are not visible to a non-owner
 
   // check that the process imported by the "Import 1" Call-Activity is not visible since it is not shared
   await expect(newPage.getByText('Imported Process: Import 1')).not.toBeVisible();

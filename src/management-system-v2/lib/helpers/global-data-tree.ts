@@ -29,7 +29,7 @@ export function buildTreeNodes(params: any[], pathPrefix: string, depth: number)
 
 /**
  * Builds tree nodes for a user-scoped filter (@worker or @process-initiator).
- * Both scopes show the same data (common-user-data + userInfo) but with different path prefixes.
+ * Both scopes show the same data (common-user-data + user-info) but with different path prefixes.
  */
 function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[] {
   const nodes: DataNode[] = [];
@@ -49,14 +49,14 @@ function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[]
   // Non-selectable "User Info" parent
   const userSection = iamTopLevel.subParameters.find((p: any) => p.name === 'user');
   const anyUser = userSection?.subParameters?.[0];
-  const userInfo = anyUser?.subParameters?.find((p: any) => p.name === 'userInfo');
+  const userInfo = anyUser?.subParameters?.find((p: any) => p.name === 'user-info');
 
   if (userInfo?.subParameters) {
     nodes.push({
-      key: `${scopePrefix}.userInfo`,
+      key: `${scopePrefix}.user-info`,
       title: 'User Info',
       selectable: false,
-      children: buildTreeNodes(userInfo.subParameters, `${scopePrefix}.userInfo`, 1),
+      children: buildTreeNodes(userInfo.subParameters, `${scopePrefix}.user-info`, 1),
     });
   }
 
@@ -67,7 +67,7 @@ function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[]
  * Builds a scoped tree of global data objects from the raw config response.
  *
  * '@organization' reads from the 'organization' top-level node
- * '@worker' reads from 'common-user-data' + 'userInfo', paths prefixed with '@global.@worker'
+ * '@worker' reads from 'common-user-data' + 'user-info', paths prefixed with '@global.@worker'
  * '@process-initiator' same structure as worker but with '@global.@process-initiator'
  */
 export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {

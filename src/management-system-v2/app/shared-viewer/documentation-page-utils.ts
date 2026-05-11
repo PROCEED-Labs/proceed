@@ -633,35 +633,39 @@ function buildBoundaryEventTocItems(
 }
 
 /**
- * Builds TOC items for the process documentation page.
- * Used in both the sidebar TOC and the printed TOC.
+ * Filters children for main element list (excludes subprocesses with own sections)
  */
-export function buildProcessTocItems(
-  hierarchy: ElementInfo,
+function filterMainChildren(
+  children: ElementInfo[],
   settings: Record<string, boolean>,
-  linksDisabled = false,
-): AnchorLinkItemProps[] {
-  const href = (id: string) => (linksDisabled ? '' : id);
-
-  const allChildren = hierarchy.children || [];
-
-  // Main list: exclude event-triggered and expanded subprocesses
-  // Keep collapsed subprocesses (nestedSubprocess) in main list
-  const mainChildren = allChildren.filter(
-    (child) =>
-      !isExcludedFromMainList(child) && (settings.showEmpty || !isProcessElementEmpty(child)),
+  isEmptyFn: (node: ElementInfo) => boolean,
+): ElementInfo[] {
+  return children.filter(
+    (child) => !isExcludedFromMainList(child) && (settings.showEmpty || !isEmptyFn(child)),
   );
+}
 
-  // Subprocess sections: expanded subprocesses and event-triggered subprocesses
-  // expanded subprocesses would be displayed first, then event-triggered
-  const subprocessChildren = [
-    ...allChildren.filter(
-      (child) => isSubprocessWithOwnSection(child) && !isEventTriggeredSubprocess(child),
-    ),
-    ...allChildren.filter((child) => isEventTriggeredSubprocess(child)),
-  ];
-
-  const subprocessSections: AnchorLinkItemProps[] = subprocessChildren.map((sub) => ({
+/**
+ * Gets subprocess children separated by type (regular first, then event-triggered)
+ */
+function getSubprocessChildren(children: ElementInfo[]): ElementInfo[] {
+  const regular = children.filter(
+    (c) => isSubprocessWithOwnSection(c) && !isEventTriggeredSubprocess(c),
+  );
+  const eventTriggered = children.filter((c) => isEventTriggeredSubprocess(c));
+  return [...regular, ...eventTriggered];
+}
+/**
+ * Builds TOC items for a subprocess section (shared between process and instance)
+ */
+function buildSubprocessTocSection(
+  sub: ElementInfo,
+  href: (id: string) => string,
+  settings: Record<string, boolean>,
+  buildElementChildrenFn: (node: ElementInfo) => AnchorLinkItemProps[],
+  isEmptyFn: (node: ElementInfo) => boolean,
+): AnchorLinkItemProps {
+  return {
     key: `subprocess_${sub.id}`,
     href: href(`#subprocess_${sub.id}_page`),
     title: getSubprocessLabel(sub),
@@ -687,17 +691,114 @@ export function buildProcessTocItems(
               href: href(`#subprocess_${sub.id}_elements_page`),
               title: 'Element Details',
               children: (sub.children || [])
-                .filter((child) => settings.showEmpty || !isProcessElementEmpty(child))
-                .map((child) => ({
-                  key: child.id,
-                  href: href(`#${child.id}_page`),
-                  title: getElementTypeLabel(child),
+                .filter((c) => settings.showEmpty || !isEmptyFn(c))
+                .map((c) => ({
+                  key: c.id,
+                  href: href(`#${c.id}_page`),
+                  title: getElementTypeLabel(c),
+                  children: buildElementChildrenFn(c),
                 })),
             },
           ]
         : []),
     ],
-  }));
+  };
+}
+
+/**
+ * Builds TOC items for imported process (shared between process and instance)
+ */
+function buildImportedProcessSection(
+  child: ElementInfo,
+  href: (id: string) => string,
+  settings: Record<string, boolean>,
+  buildElementChildrenFn: (node: ElementInfo) => AnchorLinkItemProps[],
+  isEmptyFn: (node: ElementInfo) => boolean,
+): AnchorLinkItemProps {
+  const importLabel = child.importedProcess!.name!;
+  const allChildren = child.children || [];
+
+  const mainChildren = filterMainChildren(allChildren, settings, isEmptyFn);
+  const subprocessChildren = getSubprocessChildren(allChildren);
+
+  const subprocessSections = subprocessChildren.map(
+    (sub) => buildSubprocessTocSection(sub, href, settings, buildElementChildrenFn, isEmptyFn), // ✅ NO PREFIX - keeps nested subprocesses as-is
+  );
+
+  return {
+    key: `imported_${child.id}`,
+    href: href(`#subprocess_${child.id}_page`),
+    title: importLabel,
+    children: [
+      ...(child.importedProcess!.description
+        ? [
+            {
+              key: `imported_${child.id}_summary`,
+              href: href(`#subprocess_${child.id}_description_page`),
+              title: 'Summary',
+            },
+          ]
+        : []),
+      {
+        key: `imported_${child.id}_diagram`,
+        href: href(`#subprocess_${child.id}_diagram_page`),
+        title: 'Process Diagram',
+      },
+      ...(mainChildren.length
+        ? [
+            {
+              key: `imported_${child.id}_elements`,
+              href: href(`#subprocess_${child.id}_elements_page`),
+              title: `${importLabel} — Element Details`,
+              children: mainChildren.map((c) => ({
+                key: c.id,
+                href: href(`#${c.id}_page`),
+                title: getElementTypeLabel(c),
+                children: buildElementChildrenFn(c),
+              })),
+            },
+          ]
+        : []),
+      ...subprocessSections,
+    ],
+  };
+}
+
+/**
+ * Builds TOC items for the process documentation page.
+ * Used in both the sidebar TOC and the printed TOC.
+ */
+export function buildProcessTocItems(
+  hierarchy: ElementInfo,
+  settings: Record<string, boolean>,
+  linksDisabled = false,
+): AnchorLinkItemProps[] {
+  const href = (id: string) => (linksDisabled ? '' : id);
+
+  const allChildren = hierarchy.children || [];
+  const mainChildren = filterMainChildren(allChildren, settings, isProcessElementEmpty);
+  const subprocessChildren = getSubprocessChildren(allChildren);
+
+  const buildElementChildren = (child: ElementInfo) => [
+    ...buildBaseElementTocChildren(child, href, !!settings.showElementSVG),
+    ...buildBoundaryEventTocItems(child, href),
+  ];
+
+  const subprocessSections = subprocessChildren.map((sub) =>
+    buildSubprocessTocSection(sub, href, settings, buildElementChildren, isProcessElementEmpty),
+  );
+
+  const importedProcessSections = mainChildren
+    .filter((child) => child.importedProcess && settings.importedProcesses)
+    .map((child) =>
+      buildImportedProcessSection(
+        child,
+        href,
+        settings,
+        buildElementChildren,
+        isProcessElementEmpty,
+      ),
+    );
 
   return [
     {
@@ -724,13 +825,11 @@ export function buildProcessTocItems(
         key: child.id,
         href: href(`#${child.id}_page`),
         title: getElementTypeLabel(child),
-        children: [
-          ...buildBaseElementTocChildren(child, href, !!settings.showElementSVG),
-          ...buildBoundaryEventTocItems(child, href),
-        ],
+        children: buildElementChildren(child),
       })),
     },
     ...subprocessSections,
+    ...importedProcessSections,
   ];
 }
 
@@ -787,53 +886,27 @@ export function buildInstanceTocItems(
           title: getElementTypeLabel(node),
           children: buildElementChildren(node),
         });
+        if (node.importedProcess && settings.importedProcesses && node.children?.length) {
+          result.push(
+            buildImportedProcessSection(
+              node,
+              href,
+              settings,
+              buildElementChildren,
+              isInstanceElementEmpty,
+            ),
+          );
+        }
       });
 
     return result;
   }
 
-  function buildSubprocessTocItems(nodes: ElementInfo[]): AnchorLinkItemProps[] {
-    return nodes
-      .filter((node) => isSubprocessWithOwnSection(node))
-      .map((sub) => ({
-        key: `subprocess_${sub.id}`,
-        href: href(`#subprocess_${sub.id}_page`),
-        title: getSubprocessLabel(sub),
-        children: [
-          ...(sub.description
-            ? [
-                {
-                  key: `subprocess_${sub.id}_summary`,
-                  href: href(`#subprocess_${sub.id}_description_page`),
-                  title: 'Summary',
-                },
-              ]
-            : []),
-          {
-            key: `subprocess_${sub.id}_diagram`,
-            href: href(`#subprocess_${sub.id}_diagram_page`),
-            title: 'Process Diagram',
-          },
-          ...(sub.children?.length
-            ? [
-                {
-                  key: `subprocess_${sub.id}_elements`,
-                  href: href(`#subprocess_${sub.id}_elements_page`),
-                  title: 'Element Details',
-                  children: (sub.children || [])
-                    .filter((child) => settings.showEmpty || !isInstanceElementEmpty(child))
-                    .map((child) => ({
-                      key: child.id,
-                      href: href(`#${child.id}_page`),
-                      title: getElementTypeLabel(child),
-                      children: buildElementChildren(child),
-                    })),
-                },
-              ]
-            : []),
-        ],
-      }));
-  }
+  const allChildren = hierarchy.children || [];
+  const subprocessChildren = getSubprocessChildren(allChildren);
+  const subprocessSections = subprocessChildren.map((sub) =>
+    buildSubprocessTocSection(sub, href, settings, buildElementChildren, isInstanceElementEmpty),
+  );
 
   return [
     {
@@ -869,9 +942,9 @@ export function buildInstanceTocItems(
       key: 'detailed_execution_log',
       href: href('#detailed_execution_log_page'),
       title: 'Detailed Execution Log',
-      children: buildDetailedLogItems(hierarchy.children || []),
+      children: buildDetailedLogItems(allChildren),
     },
-    ...buildSubprocessTocItems(hierarchy.children || []),
+    ...subprocessSections,
   ];
 }
 /**
@@ -922,8 +995,8 @@ export function isExcludedFromMainList(node: ElementInfo): boolean {
 export function getSubprocessLabel(node: ElementInfo): string {
   const name = node.name && !node.name.startsWith('<') ? node.name : node.id;
   if (node.isEventTriggeredSubprocess) return `Event-Triggered Subprocess: ${name}`;
-  if (isCollapsedSubprocess(node)) return `Subprocess: ${name}`;
-  return `Subprocess: ${name}`;
+  if (isCollapsedSubprocess(node)) return `Sub Process: ${name}`;
+  return `Sub Process: ${name}`;
 }
 
 /**

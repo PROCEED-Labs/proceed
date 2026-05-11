@@ -75,7 +75,7 @@ test('show content of collapsed subprocesses in a separate section', async ({
 
   // check if the overview of the subprocess is shown and the bpmn is correct
   const subprocessOverview = documentationPage.locator('[class*=ContainerPage]').filter({
-    hasText: /Subprocess:\s*<Activity_1iz0b2a>/,
+    hasText: 'Activity_1iz0b2a',
   });
   await expect(subprocessOverview).toBeVisible();
   await expect(
@@ -145,11 +145,11 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   // locate subprocess overview instead of using index
   const subprocessOverview = elementSectionsLocator
     .filter({
-      hasText: /Subprocess:\s*A/,
+      hasText: 'Sub Process: A',
     })
     .first();
 
-  await expect(subprocessOverview.getByText(/Subprocess:\s*A/)).toBeVisible();
+  await expect(subprocessOverview.getByText('Sub Process: A')).toBeVisible();
 
   // check that there is no meta data for the subprocess
   await expect(subprocessOverview.locator('[class*=MetaInformation]')).toBeVisible();
@@ -283,7 +283,7 @@ test('recursively show information about imports', async ({
 
   const elementSectionsLocator = documentationPage.locator('[class*=ElementPage]');
   // wait for all sections to be visible
-  await expect(elementSectionsLocator).toHaveCount(4);
+  await expect(elementSectionsLocator).toHaveCount(22);
 
   // check if the process overview is shown and the bpmn is correct
   const processOverview = elementSectionsLocator.first();
@@ -314,6 +314,183 @@ test('recursively show information about imports', async ({
   let metaInformation = processOverview.locator('[class*=MetaInformation]');
   await expect(metaInformation.getByText('Summary')).toBeVisible();
   await expect(metaInformation.getByText('A process importing two other processes')).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  const import1Overview = documentationPage
+    .locator('[class*=ContainerPage]')
+    .filter({ hasText: 'Imported Process: Import 1' })
+    .first();
+  await expect(
+    import1Overview.getByRole('heading', { name: 'Imported Process: Import 1', exact: true }),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-connection[data-element-id="Flow_0khcvxi"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-shape[data-element-id="Activity_1qnnqlx"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-connection[data-element-id="Flow_11ramgm"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-shape[data-element-id="Activity_0h021fd"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-connection[data-element-id="Flow_07y98js"]'),
+  ).toBeVisible();
+  await expect(
+    import1Overview.locator('.djs-shape[data-element-id="Event_1dwf3dy"]'),
+  ).toBeVisible();
+
+  // check if the overview of the subprocess in the first import is shown and the bpmn is correct
+  const import1SubprocessOverview = documentationPage
+    .locator('[class*=ContainerPage]')
+    .filter({ hasText: 'Sub Process: A' })
+    .first();
+  await expect(
+    import1SubprocessOverview.getByRole('heading', { name: 'Sub Process: A', exact: true }),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-shape[data-element-id="Event_0dadznn"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-connection[data-element-id="Flow_1uie0do"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-shape[data-element-id="Activity_1vyrvs7"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-connection[data-element-id="Flow_16djkfc"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-shape[data-element-id="Activity_0d80j9z"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-connection[data-element-id="Flow_1olixk3"]'),
+  ).toBeVisible();
+  await expect(
+    import1SubprocessOverview.locator('.djs-shape[data-element-id="Event_1ney7ih"]'),
+  ).toBeVisible();
+
+  // check that the user task in the subprocess in the import that has meta data is shown
+  const subprocessMilestoneTask = elementSectionsLocator
+    .filter({
+      has: documentationPage.getByRole('heading', { name: 'User Task: A.A' }),
+    })
+    .first();
+  await expect(
+    subprocessMilestoneTask.getByRole('heading', { name: 'User Task: A.A' }),
+  ).toBeVisible();
+  // the elements of the subprocess that contains the task which are not related to the task should not be visible
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-shape[data-element-id="Event_0dadznn"]')
+      .getAttribute('style'),
+  ).resolves.toMatch(/display: none/);
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-shape[data-element-id="Activity_0d80j9z"]')
+      .getAttribute('style'),
+  ).resolves.toMatch(/display: none/);
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-connection[data-element-id="Flow_1olixk3"]')
+      .getAttribute('style'),
+  ).resolves.toMatch(/display: none/);
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-shape[data-element-id="Event_1ney7ih"]')
+      .getAttribute('style'),
+  ).resolves.toMatch(/display: none/);
+  // instead the task and its incoming and outgoing sequence flows should be visible
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-connection[data-element-id="Flow_1uie0do"]')
+      .getAttribute('style'),
+  ).resolves.not.toMatch(/display: none/);
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-shape[data-element-id="Activity_1vyrvs7"]')
+      .getAttribute('style'),
+  ).resolves.not.toMatch(/display: none/);
+  await expect(
+    subprocessMilestoneTask
+      .locator('.djs-connection[data-element-id="Flow_16djkfc"]')
+      .getAttribute('style'),
+  ).resolves.not.toMatch(/display: none/);
+
+  // check if the meta data is shown
+  metaInformation = subprocessMilestoneTask.locator('css=[class*=MetaInformation]');
+  await expect(metaInformation.getByText('Meta Data')).toBeVisible();
+  await expect(metaInformation.getByRole('row', { name: 'costsPlanned' })).toBeVisible();
+  await expect(
+    metaInformation
+      .getByRole('row', { name: 'costsPlanned' })
+      .getByRole('cell', { name: /123(,|\.)00/ }),
+  ).toBeVisible();
+  await expect(metaInformation.getByRole('row', { name: 'prop1' })).toBeVisible();
+  await expect(
+    metaInformation.getByRole('row', { name: 'prop1' }).getByRole('cell', { name: 'test123' }),
+  ).toBeVisible();
+  await expect(metaInformation.getByText('Milestones')).toBeVisible();
+  await expect(metaInformation.getByRole('row', { name: 'MS-1' })).toBeVisible();
+  await expect(
+    metaInformation.getByRole('row', { name: 'MS-1' }).getByRole('cell', { name: 'Milestone 1' }),
+  ).toBeVisible();
+  await expect(
+    metaInformation
+      .getByRole('row', { name: 'MS-1' })
+      .getByRole('cell', { name: 'First Milestone' }),
+  ).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  const import2Overview = documentationPage
+    .locator('[class*=ContainerPage]')
+    .filter({ hasText: 'Imported Process: Import 2' })
+    .first();
+  await expect(
+    import2Overview.getByRole('heading', { name: 'Imported Process: Import 2', exact: true }),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-shape[data-element-id="StartEvent_11c5e5n"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-connection[data-element-id="Flow_14wofxg"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-shape[data-element-id="Activity_0car07j"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-connection[data-element-id="Flow_1rm9mx3"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-shape[data-element-id="Activity_013wagm"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-connection[data-element-id="Flow_1j401tl"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-shape[data-element-id="Activity_1r1rpgl"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-connection[data-element-id="Flow_0s9fl5z"]'),
+  ).toBeVisible();
+  await expect(
+    import2Overview.locator('.djs-shape[data-element-id="Event_0gy99s6"]'),
+  ).toBeVisible();
+
+  // check if the meta data of the import 2 process is shown
+  const import2ElementPage = elementSectionsLocator
+    .filter({ hasText: 'Imported Process: Import 2' })
+    .first();
+  metaInformation = import2ElementPage.locator('css=[class*=MetaInformation]');
+  await expect(metaInformation.getByText('Diagram Element')).toBeVisible();
+  await expect(metaInformation.getByText('Version Information')).toBeVisible();
+  await expect(metaInformation.getByText('Version: Version 2')).toBeVisible();
+  await expect(metaInformation.getByText('Version Description: Second Version')).toBeVisible();
 });
 
 test('a setting allows to show the subprocess element instead of its content', async ({
@@ -342,7 +519,7 @@ test('a setting allows to show the subprocess element instead of its content', a
 
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[3];
-  await expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
+  await expect(subprocessOverview.getByText('Sub Process: A')).toBeVisible();
   // check that there is meta data for the subprocess
   await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeVisible();
 
@@ -366,9 +543,9 @@ test('a setting allows to show the subprocess element instead of its content', a
   // check if the bpmn shown for the (collapsed) subprocess is the subprocess element instead of the subrocess content
   const import1SubprocessElementView = documentationPage
     .locator('[class*=ElementPage]')
-    .filter({ hasText: /Subprocess:\s*A/ })
+    .filter({ hasText: 'Sub Process: A' })
     .first();
-  await expect(import1SubprocessElementView.getByText(/Subprocess:\s*A/)).toBeVisible();
+  await expect(import1SubprocessElementView.getByText('Sub Process: A')).toBeVisible();
   // the start event inside the subprocess should not be visible
   await expect(
     import1SubprocessElementView.locator('.djs-shape[data-element-id="Event_0dadznn"]'),
@@ -468,7 +645,7 @@ test('a setting allows to show a call activity instead of the imported process',
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
   // check that the elements that should be visible are visible
-  await expect(elementSectionsLocator).toHaveCount(4);
+  await expect(elementSectionsLocator).toHaveCount(22);
 
   // check that the visualisation of a call activity can be set to show the call activity element instead of the imported process
   // which also removes all contained elements from the page
@@ -478,7 +655,7 @@ test('a setting allows to show a call activity instead of the imported process',
   await settingsModal.getByLabel('Imported Processes').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  await expect(elementSectionsLocator).toHaveCount(4);
+  await expect(elementSectionsLocator).toHaveCount(6);
 
   const elementSections = await elementSectionsLocator.all();
 
@@ -567,7 +744,7 @@ test('a setting to hide elements that have no meta data which are shown by defau
   // there should be sections for all the elements in the root process including the start and end event
   // but there should not be sections for sequence flows
   expect(elementSection.first().getByText('Process Diagram')).toBeVisible();
-  expect(elementSection.getByText('Subprocess: A').first()).toBeVisible();
+  expect(elementSection.getByText('Sub Process: A').first()).toBeVisible();
   expect(elementSection.getByRole('heading', { name: 'A.A' })).toBeVisible();
 });
 
@@ -628,8 +805,31 @@ test('the page shows only imported processes that are shared themselves to other
 
   let elementSectionsLocator = documentationPage.locator('css=[class*=ElementPage]');
 
-  // check if the process overview is shown
-  await expect(documentationPage.getByRole('heading', { name: 'Process Overview' })).toBeVisible();
+  // check that the elements that should be visible to the owner are visible
+  await expect(elementSectionsLocator).toHaveCount(22);
+
+  // check if the process overview is shown and the bpmn is correct
+  await expect(elementSectionsLocator.filter({ hasText: 'Process Diagram' }).first()).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  await expect(
+    elementSectionsLocator.filter({ hasText: 'Imported Process: Import 1' }).first(),
+  ).toBeVisible();
+
+  // check if the overview of the subprocess in the first import is shown and the bpmn is correct
+  await expect(elementSectionsLocator.filter({ hasText: 'Sub Process: A' }).first()).toBeVisible();
+
+  // check that the user task in the subprocess in the import that has meta data is shown
+  await expect(
+    elementSectionsLocator
+      .filter({ has: documentationPage.getByRole('heading', { name: 'User Task: A.A' }) })
+      .first(),
+  ).toBeVisible();
+
+  // check if the overview of the first import is shown and the bpmn is correct
+  await expect(
+    elementSectionsLocator.filter({ hasText: 'Imported Process: Import 2' }).first(),
+  ).toBeVisible();
 
   // share process with link
   await openModal(page, () => page.getByRole('button', { name: 'share-alt', exact: true }).click());
@@ -653,8 +853,17 @@ test('the page shows only imported processes that are shared themselves to other
   await newPage.goto(`${clipboardData}`);
   await newPage.waitForURL(`${clipboardData}`);
 
-  // check that the shared page loads for non-owners
-  await expect(newPage.getByRole('heading', { name: 'Process Overview' })).toBeVisible();
+  // check that the imported processes that are not shared are not visible to an non-owner
+  const sharedElementSections = newPage.locator('css=[class*=ElementPage]');
+
+  // check that the process imported by the "Import 1" Call-Activity is not visible since it is not owned by the user and also not shared
+  await expect(sharedElementSections).toHaveCount(12);
+  await expect(sharedElementSections.filter({ hasText: 'Process Diagram' }).first()).toBeVisible();
+  // the process imported by the "Import 2" Call-Activity should be visible since it is shared
+  await expect(
+    sharedElementSections.filter({ hasText: 'Imported Process: Import 2' }).first(),
+  ).toBeVisible();
+  await expect(newPage.getByText('Imported Process: Import 1')).not.toBeVisible();
 });
 
 test('allow a different user that was given the share link to import the shared process', async ({

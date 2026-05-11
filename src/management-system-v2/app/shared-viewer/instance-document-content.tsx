@@ -241,6 +241,62 @@ const InstanceDocumentContent: React.FC<Props> = ({
           ))}
         </div>,
       );
+
+      // Imported process: show its elements as a separate section
+      if (settings.importedProcesses && node.importedProcess && node.children?.length) {
+        const importLabel = node.importedProcess.name!;
+        const importedMainPages: React.JSX.Element[] = [];
+        const importedSubPages: React.JSX.Element[] = [];
+        const { mainChildren, subprocessChildren } = separateChildren(node.children);
+
+        for (const child of mainChildren) {
+          await renderDetailedElement(child, importedMainPages, true);
+        }
+        for (const sub of subprocessChildren) {
+          await renderSubprocessSection(sub, importedSubPages);
+        }
+
+        pages.push(
+          <div
+            key={`imported_${node.id}_section`}
+            className={cn(styles.ElementPage, styles.ContainerPage)}
+          >
+            <Title id={`subprocess_${node.id}_page`} level={2}>
+              {importLabel}
+            </Title>
+            {node.importedProcess.description && (
+              <div className={styles.MetaInformation}>
+                <Title level={3} id={`subprocess_${node.id}_description_page`}>
+                  Summary
+                </Title>
+                <div
+                  className="toastui-editor-contents"
+                  dangerouslySetInnerHTML={{ __html: node.importedProcess.description }}
+                />
+              </div>
+            )}
+            <div className={styles.MetaInformation}>
+              <Title level={3} id={`subprocess_${node.id}_diagram_page`}>
+                Process Diagram
+              </Title>
+              <div
+                className={styles.ElementCanvas}
+                style={{ display: 'flex', justifyContent: 'center' }}
+                dangerouslySetInnerHTML={{ __html: node.importedProcess.planeSvg }}
+              />
+            </div>
+            {node.children?.length ? (
+              <div className={styles.MetaInformation}>
+                <Title level={3} id={`subprocess_${node.id}_elements_page`}>
+                  {`${importLabel} — Element Details`}
+                </Title>
+              </div>
+            ) : null}
+          </div>,
+          ...importedMainPages,
+          ...importedSubPages,
+        );
+      }
     }
 
     const buildPages = async () => {

@@ -60,6 +60,7 @@ export function useProcessHierarchy({
       let oldBpmn: string | undefined;
 
       const isRoot = isType(el, 'bpmn:Collaboration') || isType(el, 'bpmn:Process');
+      const originalEl = el;
 
       if (isRoot) {
         svg = getRootSvg ? await getRootSvg(processData.bpmn!) : await getSVGFromBPMN(bpmnViewer);
@@ -76,15 +77,16 @@ export function useProcessHierarchy({
       }
 
       const children: ElementInfo[] = [];
-      for (const childEl of getChildElements(el)) {
+      const childSource = importedProcess ? el : originalEl;
+      for (const childEl of getChildElements(childSource)) {
         children.push(await transform(bpmnViewer, childEl, definitions, currentRootId));
       }
-      const sortedChildren = sortChildrenByFlow(el, groupBoundaryEvents(children));
+      const sortedChildren = sortChildrenByFlow(childSource, groupBoundaryEvents(children));
       if (oldBpmn) await bpmnViewer.importXML(oldBpmn);
 
       const node: ElementInfo = {
         svg: makeSvgResponsive(svg, isRoot),
-        id: el.id,
+        id: originalEl.id,
         name,
         description,
         meta,
@@ -93,9 +95,9 @@ export function useProcessHierarchy({
         nestedSubprocess,
         children: sortedChildren,
         image,
-        elementType: el.$type,
-        isEventTriggeredSubprocess: el.triggeredByEvent === true,
-        attachedToElementId: el.attachedToRef?.id,
+        elementType: originalEl.$type,
+        isEventTriggeredSubprocess: originalEl.triggeredByEvent === true,
+        attachedToElementId: originalEl.attachedToRef?.id,
       };
 
       // Let callers attach extra data without forking transform

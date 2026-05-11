@@ -921,8 +921,9 @@ export function isExcludedFromMainList(node: ElementInfo): boolean {
  */
 export function getSubprocessLabel(node: ElementInfo): string {
   const name = node.name && !node.name.startsWith('<') ? node.name : node.id;
-  if (node.isEventTriggeredSubprocess) return `Event-Triggered ${name}`;
-  return name;
+  if (node.isEventTriggeredSubprocess) return `Event-Triggered Subprocess: ${name}`;
+  if (isCollapsedSubprocess(node)) return `Subprocess: ${name}`;
+  return `Subprocess: ${name}`;
 }
 
 /**

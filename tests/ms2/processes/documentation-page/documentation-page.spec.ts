@@ -485,7 +485,7 @@ test('a setting allows to show a call activity instead of the imported process',
   // check if the bpmn shown for the call activities is the call activity elements instead of the imported process
   const callActivity1View = elementSections[2];
 
-  // the start event of the imported process should not be visible
+  // the start event of the imported process should be visible
   await expect(
     callActivity1View.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]'),
   ).not.toBeVisible();

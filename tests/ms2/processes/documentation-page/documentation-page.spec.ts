@@ -343,7 +343,7 @@ test('a setting allows to show the subprocess element instead of its content', a
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[3];
   await expect(subprocessOverview.getByText('Subprocess: A')).toBeVisible();
-  // check that there is no meta data for the subprocess
+  // check that there is meta data for the subprocess
   await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeVisible();
 
   // check that the user task that has meta data is shown

@@ -43,15 +43,9 @@ export function getTitle(el: any) {
 
   if (isAny(el, ['bpmn:Collaboration', 'bpmn:Process'])) {
     return 'Process Diagram';
-  } else if (isType(el, 'bpmn:Participant')) {
-    return 'Pool: ' + name;
-  } else if (isType(el, 'bpmn:SubProcess')) {
-    return 'Subprocess: ' + name;
-  } else if (isType(el, 'bpmn:CallActivity')) {
-    return 'Call Activity: ' + name;
+  } else {
+    return name;
   }
-
-  return name;
 }
 
 /**

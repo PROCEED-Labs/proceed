@@ -508,7 +508,7 @@ test('a setting allows to show a call activity instead of the imported process',
   await expect(
     callActivity1View.locator('.djs-shape[data-element-id="Event_05hheu3"]').getAttribute('style'),
   ).resolves.toMatch(/display: none/);
-  // instead the subprocess element and its incoming and outgoing sequence flow should be visible
+  // instead the subprocess element and its incoming and outgoing sequence flow should not be visible
   await expect(
     callActivity1View
       .locator('.djs-connection[data-element-id="Flow_11v1suu"]')

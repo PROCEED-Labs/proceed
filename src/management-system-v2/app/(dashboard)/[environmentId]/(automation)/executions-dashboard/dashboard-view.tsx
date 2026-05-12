@@ -21,10 +21,12 @@ const DashboardView: React.FC = () => {
 
   const { data } = useQuery({
     queryFn: async () => {
-      const deployments = await getDeployments(space.spaceId);
+      let deployments = await getDeployments(space.spaceId);
 
       if (isUserErrorResponse(deployments))
         return { deployedProcesses: [] as string[], instances: [] };
+
+      deployments = deployments.filter((d) => !d.deleted);
 
       const deployedProcessIds = new Set<string>();
       const instanceIds = new Set<string>();

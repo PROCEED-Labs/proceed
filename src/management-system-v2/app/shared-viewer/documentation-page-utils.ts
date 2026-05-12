@@ -851,7 +851,7 @@ export function buildInstanceTocItems(
 
     return [
       ...buildBaseElementTocChildren(node, href, !!settings.showElementSVG),
-      ...((hasLog || hasToken) && settings.showInstanceStatus
+      ...(settings.showInstanceStatus
         ? [
             {
               key: `${node.id}_execution_log`,

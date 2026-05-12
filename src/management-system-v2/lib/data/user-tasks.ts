@@ -1,15 +1,13 @@
 'use server';
 
-import { z } from 'zod';
-import { enableUseDB } from 'FeatureFlags';
-import {
-  getUserTaskById as _getUserTaskById,
-  addUserTasks as _addUserTasks,
-  updateUserTask as _updateUserTask,
-} from './db/user-tasks';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
-import { UserTaskInput, UserTask, ExtendedTaskListEntry } from '../user-task-schema';
+import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
+import {
+  UserTaskInput,
+  UserTask,
+  ExtendedTaskListEntry,
+  UserTaskInputSchema,
+} from '../user-task-schema';
 import { cacheLife, cacheTag, updateTag } from 'next/cache';
 import db from '@/lib/data/db';
 import { getCurrentEnvironment } from '@/components/auth';
@@ -17,8 +15,6 @@ import { User } from '@prisma/client';
 import { truthyFilter } from '../typescript-utils';
 
 export async function getUserTasks(spaceId: string) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   const {
     activeEnvironment: { isOrganization },
   } = await getCurrentEnvironment(spaceId);
@@ -28,8 +24,6 @@ export async function getUserTasks(spaceId: string) {
       'use cache';
       cacheTag(`space/${spaceId}/userTasks`);
       cacheLife({ stale: 10, revalidate: 10, expire: 15 });
-
-      console.log('Fetching tasks for ', spaceId);
 
       const userTasks = (await db.userTask.findMany({
         where: {
@@ -78,13 +72,11 @@ export async function getUserTasks(spaceId: string) {
   }
 }
 
-// TODO: add spaceId as parameter and use the cached data from "getUserTasks" and then remove
-// "getUserTaskById" from the db/user-tasks.ts file
-export async function getUserTaskById(userTaskId: string) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
+export async function getUserTaskById(spaceId: string, userTaskId: string) {
   try {
-    return await _getUserTaskById(userTaskId);
+    const spaceTasks = await getUserTasks(spaceId);
+    if (isUserErrorResponse(spaceTasks)) return spaceTasks;
+    return spaceTasks.find((t) => t.id === userTaskId);
   } catch (err) {
     if (err instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);
@@ -93,16 +85,20 @@ export async function getUserTaskById(userTaskId: string) {
 }
 
 export async function addUserTasks(userTasks: UserTaskInput[]) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
-    return await _addUserTasks(userTasks);
-  } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
+    const newUserTasks = UserTaskInputSchema.array().safeParse(userTasks);
+
+    if (!newUserTasks.success) {
       return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting user task');
+    }
+
+    // TODO: maybe check if the user can work on/add user tasks
+
+    return await db.userTask.createMany({
+      data: newUserTasks.data,
+    });
+  } catch (e) {
+    return userError('Error getting user task');
   }
 }
 
@@ -111,19 +107,26 @@ export async function updateUserTask(
   userTaskId: string,
   userTaskInput: Partial<UserTaskInput>,
 ) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
-    const res = await _updateUserTask(userTaskId, userTaskInput);
+    const newUserTaskData = UserTaskInputSchema.partial().safeParse(userTaskInput);
+
+    if (!newUserTaskData.success) {
+      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
+    }
+
+    // TODO: maybe check if a user is allowed to edit a user task
+
+    const res = await db.userTask.update({
+      data: newUserTaskData.data,
+      where: {
+        id: userTaskId,
+      },
+    });
 
     updateTag(`space/${spaceId}/userTasks`);
 
     return res;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
-      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting updating user task');
+    return userError('Error getting updating user task');
   }
 }

@@ -1,5 +1,5 @@
-import { StoredDeployment } from '@/lib/data/db/deployment';
-import { StoredInstance } from '@/lib/data/db/instances';
+import { StoredDeployment } from '@/lib/data/deployment';
+import { StoredInstance } from '@/lib/data/instance';
 import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';

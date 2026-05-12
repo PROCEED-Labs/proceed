@@ -10,6 +10,7 @@ import {
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
+  getDeployment as fetchDeployment,
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
@@ -19,13 +20,11 @@ import {
 import { Engine } from './machines';
 import { savedEnginesToEngines } from './saved-engines-helpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { enableUseDB } from 'FeatureFlags';
 import {
-  getDbEngineByAddress,
   getMachineIfAvailable,
   getAvailableAdminMachines,
   getAllAvailableMachines,
-} from '@/lib/data/db/engines';
+} from '@/lib/data/engines';
 import { asyncFilter, asyncMap, asyncForEach, AsyncArray } from '../helpers/javascriptHelpers';
 
 import db from '@/lib/data/db';
@@ -48,16 +47,33 @@ import {
 } from '@proceed/user-task-helper';
 
 import { getUserTaskById, updateUserTask } from '../data/user-tasks';
-import { getFileFromMachine, submitFileToMachine, updateVariablesOnMachine } from './instances';
-import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
-import { Variable } from '@proceed/bpmn-helper/src/getters';
 import {
-  addDeployment,
+  getFileFromMachine,
+  pauseInstanceOnMachine,
+  resumeInstanceOnMachine,
+  startInstanceOnMachine,
+  stopInstanceOnMachine,
+  submitFileToMachine,
+  updateVariablesOnMachine,
+} from './instances';
+import {
+  getProcessIds,
+  getStartFormFileNameMapping,
+  getVariablesFromElementById,
+} from '@proceed/bpmn-helper';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
+import { addDeployment, updateDeployment, getProcessDeployments } from '../data/deployment';
+import {
+  addInstance,
+  getInstance,
   getInstance as getStoredInstance,
-  updateDeployment,
-  getProcessDeployments,
-} from '../data/deployment';
-import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
+  updateInstance,
+} from '../data/instance';
+import {
+  getProcessBPMN,
+  getProcessHtmlFormHTML,
+  getProcessImage as getStoredProcessImage,
+} from '../data/processes';
 import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { revalidateTag } from 'next/cache';
@@ -67,7 +83,7 @@ export async function deployProcess(
   versionId: string,
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
-  _forceEngine?: Engine | Engine[] | 'PROCEED',
+  _forceEngine?: Engine | 'PROCEED',
 ) {
   try {
     // TODO: manage permissions for deploying a process
@@ -77,39 +93,15 @@ export async function deployProcess(
     if (_forceEngine === 'PROCEED') {
       // force that only proceed engines are supposed to be used
       engines = await getAvailableAdminMachines(true);
-    } else if (_forceEngine) {
-      // forcing a specific engine
-      async function resolveEngines(engines: Engine[]) {
-        const addresses = engines.map((engine) =>
-          engine.type === 'http' ? engine.address : engine.brokerAddress,
-        );
-        const { ability } = await getCurrentEnvironment(spaceId);
-        // TODO: can this be changed?
-        const spaceEngines = await db.$transaction(async () => {
-          return await asyncMap(addresses, async (address) =>
-            getDbEngineByAddress(address, spaceId, ability),
-          );
-        });
-        if (spaceEngines.some((spaceEngine) => !spaceEngine)) {
-          throw new Error('No matching space engine found');
-        }
-        return await AsyncArray.from(
-          savedEnginesToEngines(spaceEngines as NonNullable<(typeof spaceEngines)[number]>[]),
-        )
-          .map(({ machines }) => machines)
-          .flatten();
-      }
+    } else {
+      // get all available engines
+      engines = await getAllAvailableMachines(spaceId);
 
-      if (Array.isArray(_forceEngine)) {
-        engines = await resolveEngines(_forceEngine);
-        if (!engines.length) throw new Error('Could not reach any engine.');
-      } else {
-        engines = await resolveEngines([_forceEngine]);
+      if (_forceEngine) {
+        // force a specific engine if it is available
+        engines = engines.filter((e) => e.id === _forceEngine.id);
         if (!engines.length) throw new Error("Engine couldn't be reached");
       }
-    } else {
-      // use all available engines
-      engines = await getAllAvailableMachines(spaceId);
     }
 
     if (!engines.length) throw new UserFacingError('No fitting engine found.');
@@ -174,8 +166,6 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
-    if (!enableUseDB) throw new Error('removeDeployment only available with enableUseDB');
-
     const { ability } = await getCurrentEnvironment(spaceId);
 
     if (!ability.can('manage', 'Execution'))
@@ -195,12 +185,9 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
           if (!machine) return machineId;
 
           // remove the deployment from the engine
-          // this will also affect other deployments of the same process but since this function
-          // is aimed at removing all deployments of the process, this should not be a problem
           await removeDeploymentFromMachines([machine], deployment.processId);
         } catch (err) {
-          // could not remove the deployment so we keep the machine as still having the
-          // deployment
+          // could not remove the deployment so we keep the machine to remove the deployment later
           return machineId;
         }
       }).nonNullable();
@@ -249,7 +236,7 @@ export async function changeDeploymentActivation(
           const machine = engines.find((e) => e.id === machineId);
           if (machine) {
             try {
-              // change the activation on a single machine so we do not spawn new instances on multiple machines at once
+              // activate the process on a single machine so we do not spawn new instances on multiple machines at once
               await _changeDeploymentActivation(machine, definitionId, version, true);
               await updateDeployment(spaceId, definitionId, deployment.id, { active: true });
               activated = true;
@@ -317,10 +304,7 @@ export async function getGlobalVariablesForHTML(
 
 export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) {
   try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
@@ -334,12 +318,6 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
         try {
           const engine = await getMachineIfAvailable(spaceId, storedUserTask.machineId);
           if (engine) {
-            console.log(
-              engine,
-              storedUserTask.instanceID,
-              userTaskId,
-              storedUserTask.startTime.getTime(),
-            );
             await activateUserTask(
               engine,
               storedUserTask.instanceID,
@@ -409,12 +387,13 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
   }
 }
 
-export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
+export async function addOwnerToTaskListEntry(
+  spaceId: string,
+  userTaskId: string,
+  ownerId: string,
+) {
   try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
@@ -422,9 +401,9 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
 
     let { actualOwner } = storedUserTask;
 
-    if (!actualOwner.includes(owner)) {
+    if (!actualOwner.some((owner) => owner.id === ownerId)) {
       await updateUserTask(spaceId, userTaskId, {
-        actualOwner: [...actualOwner, owner],
+        actualOwner: [...actualOwner.map((aO) => aO.id), ownerId],
       });
 
       if (storedUserTask.instanceID) {
@@ -437,7 +416,7 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
 
         const [taskId, instanceId] = userTaskId.split('|');
 
-        return await addOwnerToTaskListEntryOnMachine(engine, instanceId, taskId, owner);
+        return await addOwnerToTaskListEntryOnMachine(engine, instanceId, taskId, ownerId);
       }
     }
 
@@ -454,10 +433,7 @@ export async function setTasklistEntryVariableValues(
   variables: { [key: string]: any },
 ) {
   try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
@@ -491,10 +467,7 @@ export async function setTasklistMilestoneValues(
   milestones: { [key: string]: any },
 ) {
   try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
@@ -528,10 +501,7 @@ export async function completeTasklistEntry(
   variables: { [key: string]: any },
 ) {
   try {
-    if (!enableUseDB)
-      throw new Error('getAvailableTaskListEntries only available with enableUseDB');
-
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
@@ -570,6 +540,7 @@ export async function completeTasklistEntry(
     await updateUserTask(spaceId, userTaskId, {
       variableChanges: { ...variableChanges, ...variables },
       state: 'COMPLETED',
+      endTime: !storedUserTask.instanceID ? new Date() : undefined,
     });
   } catch (e) {
     const message = getErrorMessage(e);
@@ -584,8 +555,6 @@ export async function updateVariables(
   variables: Record<string, any>,
 ) {
   try {
-    if (!enableUseDB) throw new Error('updateVariables only available with enableUseDB');
-
     const instance = await getStoredInstance(spaceId, instanceId);
 
     if (isUserErrorResponse(instance)) return instance;
@@ -603,6 +572,15 @@ export async function updateVariables(
       engines,
       async (engine) => await updateVariablesOnMachine(definitionId, instanceId, engine, variables),
     );
+
+    await new Promise((res) => setTimeout(res, 1000));
+
+    // TODO: handle that we need to merge data if the instance exists on multiple machines
+    const newData = await fetchDeployment(engines[0], definitionId, 'instances');
+
+    const newInstanceData = newData.instances.find((i) => i.processInstanceId === instanceId);
+
+    await updateInstance(spaceId, instanceId, { state: newInstanceData });
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);
@@ -611,7 +589,7 @@ export async function updateVariables(
 
 export async function submitFile(spaceId: string, userTaskId: string, formData: FormData) {
   try {
-    const storedUserTask = await getUserTaskById(userTaskId);
+    const storedUserTask = await getUserTaskById(spaceId, userTaskId);
 
     if (!storedUserTask || 'error' in storedUserTask) {
       throw new Error('Failed to get stored user task data.');
@@ -636,8 +614,6 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
     const [_, instanceId] = userTaskId.split('|');
     const [definitionId] = instanceId.split('-_');
 
-    // TODO: implement file storing for user tasks in the MS to allow files to be stored for local
-    // user tasks and also for user tasks that are cached in the MS
     if (!engine) throw new Error('Could not find the engine to submit the file to');
 
     const res = await submitFileToMachine(
@@ -649,7 +625,13 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
       Array.from(new Uint8Array(await file.arrayBuffer())),
     );
 
-    // TODO: store the file locally as well
+    await saveInstanceArtifact(
+      spaceId,
+      instanceId,
+      fileName,
+      file.type,
+      Buffer.from(await file.arrayBuffer()),
+    );
 
     return res;
   } catch (err) {
@@ -712,30 +694,217 @@ export async function getFile(
   }
 }
 
-export async function getProcessImage(spaceId: string, definitionId: string, fileName: string) {
+export async function getProcessImage(spaceId: string, instanceId: string, fileName: string) {
   try {
-    if (!enableUseDB) throw new Error('getProcessImage only available with enableUseDB');
+    const instance = await getInstance(spaceId, instanceId);
+    if (isUserErrorResponse(instance)) return instance;
+    if (!instance) return userError('Unknown instance');
 
-    const deployments = await getProcessDeployments(spaceId, definitionId);
-    if (isUserErrorResponse(deployments)) return deployments;
+    // try to get the image locally
+    const image = await getStoredProcessImage(instance.state.processId, fileName, spaceId);
 
-    const machinesToCheck = deployments.flatMap((d) => d.machineIds);
+    if (!isUserErrorResponse(image)) {
+      return new Blob([image]);
+    }
 
-    // TODO: test this
-    // TODO: get the image from the local process data
+    // if the image is not found locally try to get it from the engines that are executing the
+    // process
     const engines = await AsyncArray.from(getAllAvailableMachines(spaceId)).filter((engine) => {
-      // TODO: when we start to have assignments of processes to multiple machines we need to check
-      // if the deployment on the machine actually contains the image
-      return machinesToCheck.includes(engine.id);
+      return instance.machineIds.includes(engine.id);
     });
 
-    if (!engines.length) throw new Error('Failed to an engine the process was deployed to!');
+    if (!engines.length) throw new Error('Failed to get an engine the process was deployed to!');
 
-    return await getProcessImageFromMachine(engines[0], definitionId, fileName);
+    return await getProcessImageFromMachine(engines[0], instance.state.processId, fileName);
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);
   }
+}
+
+export async function getProcessStartForm(
+  spaceId: string,
+  definitionId: string,
+  versionId: string,
+) {
+  try {
+    const bpmn = await getProcessBPMN(definitionId, spaceId, versionId);
+    const [startForm] = Object.values(await getStartFormFileNameMapping(bpmn)).filter(truthyFilter);
+    if (!startForm) return '';
+
+    return getProcessHtmlFormHTML(definitionId, startForm, spaceId);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function startInstance(
+  spaceId: string,
+  definitionId: string,
+  versionId: string,
+  variables: { [key: string]: any } = {},
+) {
+  const machines = await getAllAvailableMachines(spaceId);
+  const machineMap = machines.reduce(
+    (acc, curr) => {
+      acc[curr.id] = curr;
+      return acc;
+    },
+    {} as Record<string, Engine>,
+  );
+  const deployments = await getProcessDeployments(spaceId, definitionId);
+  const { userId } = await getCurrentUser();
+
+  if (isUserErrorResponse(deployments)) return deployments;
+
+  const versionDeployments = deployments.filter((d) => {
+    return d.versionId === versionId && d.machineIds.some((id) => !!machineMap[id]);
+  });
+
+  // TODO: automatically deploy the version if possible
+  if (!versionDeployments.length) return userError('This process version is not deployed.');
+
+  for (const deployment of deployments) {
+    const availableMachines = deployment.machineIds.map((id) => machineMap[id]).filter((m) => !!m);
+
+    for (const machine of availableMachines) {
+      // TODO: maybe have the engine return the complete instance information instead of just the id on
+      // instance creation
+      const result = await startInstanceOnMachine(definitionId, versionId, machine, variables, {
+        processInitiator: userId,
+        spaceIdOfProcessInitiator: spaceId,
+      });
+
+      if (isUserErrorResponse(result)) continue;
+
+      const engineDeploymentInfo = await fetchDeployment(machine, definitionId);
+      const instance = engineDeploymentInfo.instances.find((i) => i.processInstanceId === result);
+
+      if (!instance) return userError('Failed to fetch the newly created instance');
+
+      await addInstance(spaceId, {
+        id: result,
+        versionId,
+        deploymentId: versionDeployments[0].id,
+        machineIds: [machine.id],
+        initiatorId: userId,
+        state: instance,
+      });
+
+      return result;
+    }
+  }
+
+  return userError('Failed to start an instance.');
+}
+
+const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+async function changeInstanceState(
+  spaceId: string,
+  definitionId: string,
+  instanceId: string,
+  stateValidator: (state: InstanceInfo['instanceState']) => boolean,
+  stateChangeFunction: typeof resumeInstanceOnMachine,
+) {
+  const instance = await getStoredInstance(spaceId, instanceId);
+
+  if (isUserErrorResponse(instance)) return instance;
+  if (!instance) return userError('Unknown instance!', UserErrorType.NotFoundError);
+
+  if (!instance.machineIds.length) return userError('The instance is not being executed anymore.');
+
+  try {
+    // TODO: how do we handle this correctly if some engines are reachable but others aren't?
+    const machines = await getAllAvailableMachines(spaceId);
+    const machineMap = machines.reduce(
+      (acc, curr) => {
+        acc[curr.id] = curr;
+        return acc;
+      },
+      {} as Record<string, Engine>,
+    );
+
+    const instanceMachines = await asyncMap(instance.machineIds, async (id) => {
+      const machine = machineMap[id];
+      if (!machine) return false;
+
+      try {
+        const deployment = await fetchDeployment(machine, definitionId);
+
+        const instance = deployment.instances.find(
+          (instance) => instance.processInstanceId === instanceId,
+        );
+
+        if (!instance) return 'Instance not found';
+
+        const hasState = !stateValidator(instance.instanceState);
+
+        if (hasState) return false;
+
+        return machine;
+      } catch (err) {
+        return false;
+      }
+    }).filter((res) => !!res);
+
+    console.log(instanceMachines);
+    if (instanceMachines.some((res) => typeof res === 'string')) {
+      return userError('Instance information was lost from one of the executing engines.');
+    }
+
+    await asyncForEach(instanceMachines as Engine[], async (machine) => {
+      await stateChangeFunction(definitionId, instanceId, machine);
+
+      // TODO: handle this better (the engine should only return after the state change has
+      // completed
+      await new Promise((res) => setTimeout(res, 1000));
+      // TODO: actually handle that the instance might exist on multiple engines
+      const newDeploymentData = await fetchDeployment(machine, definitionId);
+      const newInstanceData = newDeploymentData.instances.find(
+        (instance) => instance.processInstanceId === instanceId,
+      );
+      await updateInstance(spaceId, instanceId, { state: newInstanceData });
+    });
+  } catch (e) {
+    console.log(e);
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+export async function resumeInstance(spaceId: string, definitionId: string, instanceId: string) {
+  // TODO: manage permissions for starting an instance
+  return await changeInstanceState(
+    spaceId,
+    definitionId,
+    instanceId,
+    (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
+    resumeInstanceOnMachine,
+  );
+}
+
+export async function pauseInstance(spaceId: string, definitionId: string, instanceId: string) {
+  // TODO: manage permissions for starting an instance
+  return await changeInstanceState(
+    spaceId,
+    definitionId,
+    instanceId,
+    (tokenStates) =>
+      tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
+    pauseInstanceOnMachine,
+  );
+}
+
+export async function stopInstance(spaceId: string, definitionId: string, instanceId: string) {
+  // TODO: manage permissions for starting an instance
+  return await changeInstanceState(
+    spaceId,
+    definitionId,
+    instanceId,
+    (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
+    stopInstanceOnMachine,
+  );
 }
 
 // all connected users are sharing this information
@@ -963,7 +1132,11 @@ export async function refetchDeployments() {
         (i) =>
           [
             i.id,
-            { deploymentId: u.deployment.id, machineIds: i.machineIds, state: i.state },
+            {
+              deploymentId: u.deployment.id,
+              machineIds: i.machineIds,
+              state: { ...i.state, machines: undefined },
+            },
           ] as const,
       ),
     );

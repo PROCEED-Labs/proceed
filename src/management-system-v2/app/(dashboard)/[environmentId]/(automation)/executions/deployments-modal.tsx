@@ -29,7 +29,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import { Engine } from '@/lib/engines/machines';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
-import { getAvailableSpaceMachines } from '@/lib/data/db/engines';
+import { getAvailableSpaceMachines } from '@/lib/data/engines';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;

@@ -8,7 +8,6 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
-  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -68,9 +67,8 @@ import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
 import Ability from '../ability/abilityHelper';
 import { asyncForEach } from '../helpers/javascriptHelpers';
-import { setRemovedOnProcessDeployments } from './db/deployment';
+import { setRemovedOnProcessDeployments } from './deployment';
 import { isDummyFolderProcess } from '../process-export/export-preparation';
-import { skip } from 'node:test';
 
 // Import necessary functions from processModule
 

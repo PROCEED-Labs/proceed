@@ -6,7 +6,7 @@ import { deployProcess } from '@/lib/engines/deployment';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getAvailableSpaceMachines } from '@/lib/data/db/engines';
+import { getAvailableSpaceMachines } from '@/lib/data/engines';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({

@@ -1,17 +1,35 @@
 'use server';
 
 import { getCurrentEnvironment } from '@/components/auth';
-import {
-  getDeployedProcesses,
-  getProcessDeployments as _getProcessDeployments,
-  addProcessDeployment as _addProcessDeployment,
-  updateProcessDeployment,
-} from './db/deployment';
-import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
-import { DeploymentInput, InstanceInput } from '../deployments-schema';
-import { addProcessInstance, updateProcessInstance, getProcessInstance } from './db/instances';
-import { AsyncArray, asyncMap } from '../helpers/javascriptHelpers';
+import { UserErrorType, userError } from '../user-error';
+import { DeploymentInput, DeploymentInputSchema } from '../deployments-schema';
+import { AsyncArray } from '../helpers/javascriptHelpers';
 import Ability from '../ability/abilityHelper';
+import { cacheLife, cacheTag, updateTag } from 'next/cache';
+
+import db from '@/lib/data/db';
+
+async function _getProcessDeployments(spaceId: string, processId: string) {
+  'use cache';
+  cacheLife({ stale: 5, revalidate: 10, expire: 15 });
+  cacheTag(`deployment/process/${processId}`);
+
+  const deployments = await db.processDeployment.findMany({
+    where: { version: { processId, process: { environmentId: spaceId } } },
+    include: {
+      version: { select: { id: true, name: true, processId: true } },
+      instances: { select: { id: true } },
+    },
+  });
+
+  return deployments.map((d) => ({
+    ...d,
+    instances: d.instances.map((i) => i.id),
+    processId: d.version.processId,
+  }));
+}
+
+export type StoredDeployment = Awaited<ReturnType<typeof _getProcessDeployments>>[number];
 
 export async function getDeployments(spaceId: string, skipAbilityCheck = false) {
   const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
@@ -20,7 +38,23 @@ export async function getDeployments(spaceId: string, skipAbilityCheck = false) 
     return userError('Invalid Permissions', UserErrorType.PermissionError);
   }
 
-  const deployments = await AsyncArray.from(getDeployedProcesses(spaceId))
+  async function getFromDBOrCache(environmentId: string) {
+    'use cache';
+    cacheLife({ stale: 10, revalidate: 10 });
+    cacheTag(`deployments/${environmentId}`);
+    console.log('Getting deployed processes ', environmentId, '\n\n');
+
+    const deployments = AsyncArray.from(
+      db.processDeployment.findMany({
+        where: { version: { process: { environmentId } } },
+        select: { version: { select: { processId: true } } },
+      }),
+    );
+
+    return deployments.map((d) => d.version.processId).deduplicate((pId) => pId);
+  }
+
+  const deployments = await AsyncArray.from(getFromDBOrCache(spaceId))
     .map((processId) => _getProcessDeployments(activeEnvironment.spaceId, processId))
     .flatten();
 
@@ -47,7 +81,14 @@ export async function addDeployment(spaceId: string, processId: string, input: D
   if (!ability.can('create', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  return _addProcessDeployment(activeEnvironment.spaceId, processId, { ...input });
+  const data = DeploymentInputSchema.parse(input);
+
+  const result = await db.processDeployment.create({ data });
+
+  updateTag(`deployments/${activeEnvironment.spaceId}`);
+  updateTag(`deployment/process/${processId}`);
+
+  return result;
 }
 
 export async function updateDeployment(
@@ -61,80 +102,29 @@ export async function updateDeployment(
   if (!skipAbilityCheck) {
     if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
-    if (!ability.can('create', 'Execution'))
+    if (!ability.can('update', 'Execution'))
       return userError('Invalid Permissions', UserErrorType.PermissionError);
   }
 
-  return updateProcessDeployment(processId, deploymentId, input);
+  const data = DeploymentInputSchema.partial().strict().parse(input);
+
+  const result = await db.processDeployment.update({
+    where: { id: deploymentId },
+    data,
+  });
+
+  updateTag(`deployment/process/${processId}`);
+
+  return result;
 }
 
-export async function getInstance(spaceId: string, instanceId: string) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function setRemovedOnProcessDeployments(processId: string) {
+  // TODO: handle setting all deployments of a process that is being deleted with prisma instead
+  // (see the second prisma migration for an example that was done for artifacts)
+  await db.processDeployment.updateMany({
+    where: { version: { processId } },
+    data: { deleted: true, active: false },
+  });
 
-  if (!ability.can('view', 'Execution'))
-    return userError('Invalid Permissions', UserErrorType.PermissionError);
-
-  return getProcessInstance(instanceId);
-}
-
-export async function getProcessInstances(
-  spaceId: string,
-  processId: string,
-  allowDeletedDeployments = false,
-) {
-  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
-
-  if (!ability.can('view', 'Execution'))
-    return userError('Invalid Permissions', UserErrorType.PermissionError);
-
-  const deployments = await getProcessDeployments(activeEnvironment.spaceId, processId);
-  if (isUserErrorResponse(deployments)) return null;
-
-  const availableDeployments = deployments.filter((d) => allowDeletedDeployments || !d.deleted);
-
-  return AsyncArray.from(availableDeployments)
-    .map(async (d) => {
-      type InstanceRes = Awaited<ReturnType<typeof getInstance>>;
-      function isNotAnError(
-        instanceRes: InstanceRes,
-      ): instanceRes is Exclude<NonNullable<InstanceRes>, { error: any }> {
-        return !!instanceRes && !('error' in instanceRes);
-      }
-
-      return (await asyncMap(d.instances, async (iId) => await getProcessInstance(iId))).filter(
-        isNotAnError,
-      );
-    })
-    .flatten();
-}
-
-export async function addInstance(
-  spaceId: string,
-  instance: InstanceInput,
-  skipAbilityCheck = false,
-) {
-  if (!skipAbilityCheck) {
-    const { ability } = await getCurrentEnvironment(spaceId);
-
-    if (!ability.can('create', 'Execution'))
-      return userError('Invalid Permissions', UserErrorType.PermissionError);
-  }
-
-  return addProcessInstance(instance);
-}
-
-export async function updateInstance(
-  spaceId: string,
-  instanceId: string,
-  input: Partial<InstanceInput>,
-  skipAbilityCheck = false,
-) {
-  if (!skipAbilityCheck) {
-    const { ability } = await getCurrentEnvironment(spaceId);
-
-    if (!ability.can('create', 'Execution'))
-      return userError('Invalid Permissions', UserErrorType.PermissionError);
-  }
-
-  return updateProcessInstance(instanceId, input);
+  updateTag(`deployment/process/${processId}`);
 }

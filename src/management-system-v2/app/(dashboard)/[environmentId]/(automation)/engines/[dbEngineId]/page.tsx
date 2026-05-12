@@ -4,13 +4,10 @@ import { Button, Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
-import { type Engine } from '@/lib/engines/machines';
-import { getEngineWithMachinesById } from '@/lib/data/db/engines';
+import { getEngineWithMachinesById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';
-
-export type TableEngine = Engine & { id: string };
 
 export default async function EnginesPage(props: {
   params: Promise<{ dbEngineId: string; environmentId: string }>;
@@ -25,7 +22,7 @@ export default async function EnginesPage(props: {
   const engineId = decodeURIComponent(searchParams.engineId || '');
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const engineWithMachines = await getEngineWithMachinesById(
+  const dbEngineWithEngines = await getEngineWithMachinesById(
     dbEngineId,
     activeEnvironment.spaceId,
     ability,
@@ -40,7 +37,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        engineWithMachines={engineWithMachines}
+        dbEngineWithEngines={dbEngineWithEngines}
         engineId={engineId}
         backButton={
           <SpaceLink href="/engines">

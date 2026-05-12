@@ -6,7 +6,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
 import { type Engine } from '@/lib/engines/machines';
-import { getEngineWithMachinesById } from '@/lib/data/db/engines';
+import { getEngineWithMachinesById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 
@@ -26,7 +26,7 @@ export default async function EnginesPage(props: {
 
   const dbEngineId = decodeURIComponent(params.dbEngineId);
   const engineId = decodeURIComponent(searchParams.engineId || '');
-  const engineWithMachines = await getEngineWithMachinesById(
+  const dbEngineWithEngines = await getEngineWithMachinesById(
     dbEngineId,
     null,
     undefined,
@@ -42,7 +42,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        engineWithMachines={engineWithMachines}
+        dbEngineWithEngines={dbEngineWithEngines}
         engineId={engineId}
         backButton={
           <Link href="/admin/engines">

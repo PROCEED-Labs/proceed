@@ -11,15 +11,15 @@ export type TableEngine = Engine & { id: string };
 /** Make sure that the user requesting the page has permission to view the engine, this component
  * doesn't check view permissions */
 export default async function EngineDashboard({
-  engineWithMachines,
+  dbEngineWithEngines,
   engineId,
   backButton,
 }: {
-  engineWithMachines?: DBEngine & { machines: Engine[] };
+  dbEngineWithEngines?: DBEngine & { machines: Engine[] };
   engineId?: string;
   backButton?: ReactNode;
 }) {
-  if (!engineWithMachines) {
+  if (!dbEngineWithEngines) {
     return (
       <Content title={backButton}>
         <Result status="404" title="Error" subTitle="Couldn't find engine" />
@@ -27,8 +27,8 @@ export default async function EngineDashboard({
     );
   }
 
-  let engine: Engine | undefined = engineWithMachines.machines[0];
-  if (engineId) engine = engineWithMachines.machines.find((e) => e.id === engineId);
+  let engine: Engine | undefined = dbEngineWithEngines.machines[0];
+  if (engineId) engine = dbEngineWithEngines.machines.find((e) => e.id === engineId);
 
   if (!engine) {
     return (

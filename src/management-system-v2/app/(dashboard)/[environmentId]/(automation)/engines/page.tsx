@@ -2,7 +2,7 @@ import Content from '@/components/content';
 import { Skeleton, Spin } from 'antd';
 import { notFound } from 'next/navigation';
 import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
-import { getEnginesWithMachines } from '@/lib/data/db/engines';
+import { getEnginesWithMachines } from '@/lib/data/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
@@ -38,11 +38,11 @@ const EnginesPage = async ({ environmentId }: { environmentId: string }) => {
   }
 
   const engines = await getEnginesWithMachines(activeEnvironment.spaceId, ability);
-  console.log(engines);
 
   const enginesWithStatus = engines.map((engine) => {
     return {
       ...engine,
+      machines: undefined,
       status: (
         <Suspense fallback={<Spin spinning />}>
           <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />

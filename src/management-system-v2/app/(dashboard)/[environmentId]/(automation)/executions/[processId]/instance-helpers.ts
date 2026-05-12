@@ -334,8 +334,6 @@ export async function exportInstanceData(
     ),
   );
 
-  console.log(structuredInstanceEvents);
-
   return jsonToCsvExport({
     data: structuredInstanceEvents,
   });

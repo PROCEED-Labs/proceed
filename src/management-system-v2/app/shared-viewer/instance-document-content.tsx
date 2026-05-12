@@ -54,7 +54,11 @@ const InstanceDocumentContent: React.FC<Props> = ({
   const [detailedPages, setDetailedPages] = useState<React.JSX.Element[]>([]);
 
   useEffect(() => {
-    async function renderSubprocessSection(node: ElementInfo, pages: React.JSX.Element[]) {
+    async function renderSubprocessSection(
+      node: ElementInfo,
+      pages: React.JSX.Element[],
+      importedPages: React.JSX.Element[],
+    ) {
       const subLabel = getSubprocessLabel(node);
 
       pages.push(
@@ -107,7 +111,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
       // Render each child element with full execution log
       if (node.children?.length) {
         for (const child of node.children) {
-          await renderDetailedElement(child, pages, true);
+          await renderDetailedElement(child, pages, importedPages, true);
         }
       }
     }
@@ -118,6 +122,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
     async function renderDetailedElement(
       node: ElementInfo,
       pages: React.JSX.Element[],
+      importedPages: React.JSX.Element[],
       isInsideSubprocess = false,
     ) {
       const { token, logEntries } = node.instanceStatus || {};
@@ -242,7 +247,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
         </div>,
       );
 
-      // Imported process: show its elements as a separate section
+      // Imported process: collect into importedPages so it appears at the end
       if (settings.importedProcesses && node.importedProcess && node.children?.length) {
         const importLabel = node.importedProcess.name!;
         const importedMainPages: React.JSX.Element[] = [];
@@ -250,13 +255,13 @@ const InstanceDocumentContent: React.FC<Props> = ({
         const { mainChildren, subprocessChildren } = separateChildren(node.children);
 
         for (const child of mainChildren) {
-          await renderDetailedElement(child, importedMainPages, true);
+          await renderDetailedElement(child, importedMainPages, importedPages, true);
         }
         for (const sub of subprocessChildren) {
-          await renderSubprocessSection(sub, importedSubPages);
+          await renderSubprocessSection(sub, importedSubPages, importedPages);
         }
 
-        pages.push(
+        importedPages.push(
           <div
             key={`imported_${node.id}_section`}
             className={cn(styles.ElementPage, styles.ContainerPage)}
@@ -302,27 +307,28 @@ const InstanceDocumentContent: React.FC<Props> = ({
     const buildPages = async () => {
       const mainPages: React.JSX.Element[] = [];
       const subPages: React.JSX.Element[] = [];
+      const importedPages: React.JSX.Element[] = [];
       const sorted = processHierarchy.children || [];
 
       const { mainChildren, subprocessChildren } = separateChildren(sorted);
 
       // Render main elements and collapsed subprocesses in main log
       for (const child of mainChildren) {
-        await renderDetailedElement(child, mainPages);
+        await renderDetailedElement(child, mainPages, importedPages);
       }
       // Collapsed subprocesses also appear in main log
       for (const child of subprocessChildren) {
         if (child.nestedSubprocess) {
-          await renderDetailedElement(child, mainPages);
+          await renderDetailedElement(child, mainPages, importedPages);
         }
       }
 
       // All subprocess sections at the end
       for (const child of subprocessChildren) {
-        await renderSubprocessSection(child, subPages);
+        await renderSubprocessSection(child, subPages, importedPages);
       }
 
-      setDetailedPages([...mainPages, ...subPages]);
+      setDetailedPages([...mainPages, ...subPages, ...importedPages]);
     };
     buildPages();
   }, [processHierarchy, settings, instance]);
@@ -510,7 +516,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
                   The following table lists the final states of the process variables for the
                   executed process.
                 </Paragraph>
-                <FinalVariablesTable instance={instance} processHierarchy={processHierarchy} />{' '}
+                <FinalVariablesTable instance={instance} processHierarchy={processHierarchy} />
                 <Paragraph style={{ marginTop: '1rem', fontStyle: 'italic' }}>
                   To view the complete history of changes to the variables throughout the process,
                   please refer to the detailed list of process elements below.

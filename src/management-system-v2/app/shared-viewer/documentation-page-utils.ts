@@ -886,17 +886,6 @@ export function buildInstanceTocItems(
           title: getElementTypeLabel(node),
           children: buildElementChildren(node),
         });
-        if (node.importedProcess && settings.importedProcesses && node.children?.length) {
-          result.push(
-            buildImportedProcessSection(
-              node,
-              href,
-              settings,
-              buildElementChildren,
-              isInstanceElementEmpty,
-            ),
-          );
-        }
       });
 
     return result;
@@ -907,6 +896,22 @@ export function buildInstanceTocItems(
   const subprocessSections = subprocessChildren.map((sub) =>
     buildSubprocessTocSection(sub, href, settings, buildElementChildren, isInstanceElementEmpty),
   );
+
+  // Collect imported process sections from main children (call activities)
+  const mainChildren = filterMainChildren(allChildren, settings, isInstanceElementEmpty);
+  const importedProcessSections = mainChildren
+    .filter(
+      (child) => child.importedProcess && settings.importedProcesses && child.children?.length,
+    )
+    .map((child) =>
+      buildImportedProcessSection(
+        child,
+        href,
+        settings,
+        buildElementChildren,
+        isInstanceElementEmpty,
+      ),
+    );
 
   return [
     {
@@ -945,6 +950,7 @@ export function buildInstanceTocItems(
       children: buildDetailedLogItems(allChildren),
     },
     ...subprocessSections,
+    ...importedProcessSections,
   ];
 }
 /**

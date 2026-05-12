@@ -49,7 +49,7 @@ import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
 import { z, ZodError } from 'zod';
 import { getUserById } from './iam/users';
-import { getMembers } from './iam/memberships';
+import { getMembers, getUsersInSpace } from './iam/memberships';
 import { Membership } from '@prisma/client';
 import { truthyFilter } from '@/lib/typescript-utils';
 import {
@@ -4950,14 +4950,6 @@ export async function syncSpaceConfigs() {
   }
 }
 
-export async function getUser(userId: string) {
-  return await getUserById(userId);
-}
-
-export async function getEnv(envId: string) {
-  return await getEnvironmentById(envId);
-}
-
 async function checkSiblingNames(siblings: string[], name: string) {
   for (const id of siblings) {
     let childParameterResult = await db.configParameter.findUnique({
@@ -4967,4 +4959,17 @@ async function checkSiblingNames(siblings: string[], name: string) {
     if (childParameter.name == name) return true;
   }
   return false;
+}
+
+// fetch helpers TO BE REMOVED IN THE FUTURE
+export async function getUser(userId: string) {
+  return await getUserById(userId);
+}
+
+export async function getSpaceUsers(envId: string) {
+  return await getUsersInSpace(envId);
+}
+
+export async function getEnv(envId: string) {
+  return await getEnvironmentById(envId);
 }

@@ -1,4 +1,4 @@
-import { getEnv, getUser } from '@/lib/data/db/machine-config';
+import { getEnv, getSpaceUsers, getUser } from '@/lib/data/db/machine-config';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
@@ -174,6 +174,7 @@ export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
 export async function exportInstanceData(
   selectedInstances: (InstanceInfo | undefined)[],
   versionInfo: VersionInfo[],
+  spaceId: string,
 ) {
   const objectOrderTemplate = {
     ProzessId: null,
@@ -192,20 +193,23 @@ export async function exportInstanceData(
     ProcessInstanceInitiatorSpaceName: null,
     InstanceStartTime: null,
     ProcessStepId: null,
-    ProcessStepName: null, //tofind
-    ProcessStepType: null, //tofind
+    ProcessStepName: null,
+    ProcessStepType: null,
     ProcessStepStatus: null,
     ProcessStepStartTime: null,
     ProcessStepEndTime: null,
-    PreviousProcessStepId: null, //tofind
+    PreviousProcessStepId: null,
     ProcessStepTokenId: null,
-    ActualPerformerId: null, //tofind
-    ActualPerformerName: null, //tofind
-    ActualPerformerUsername: null, //tofind
-    ProcessEngineId: null, //tofind
+    ActualPerformerId: null,
+    ActualPerformerName: null,
+    ActualPerformerUsername: null,
+    ProcessEngineId: null,
     ProcessEngineName: null, //tofind
-    Log: null, //tofind
+    Log: null,
   };
+
+  const spaceUsers = await getSpaceUsers(spaceId);
+  const space = await getEnv(spaceId);
 
   // pasting metadata from VersionInfo
   const instancesWithVersionData = (
@@ -215,9 +219,7 @@ export async function exportInstanceData(
           (e) => e.versionId == instance.processVersion,
         );
         const bpmnObj = await toBpmnObject(correspondingVersion?.bpmn || '');
-        const initiator = await getUser(instance.processInitiator!);
-        // TODO change that! it's current Env
-        const initiatorSpace = await getEnv(instance.spaceIdOfProcessInitiator!);
+        const initiator = spaceUsers.find((user) => user.id == instance.processInitiator);
         const definitionInfos = await getDefinitionsInfos(bpmnObj);
 
         return {
@@ -228,13 +230,14 @@ export async function exportInstanceData(
           ProcessVersionDescription: correspondingVersion?.versionDescription,
           ProcessVersionCreatedOn: correspondingVersion?.deploymentDate,
           ProcessVersionBasedOn: correspondingVersion?.basedOnVersion,
-          ProcessInstanceInitiatorFullName: !initiator.isGuest
-            ? `${initiator.firstName} ${initiator.lastName}`
-            : 'Guest',
-          ProcessInstanceInitiatorUsername: !initiator.isGuest ? initiator.username : 'Guest',
-          ProcessInstanceInitiatorSpaceName: initiatorSpace.isOrganization
-            ? initiatorSpace.name
-            : 'no organization',
+          ProcessInstanceInitiatorFullName:
+            initiator && !initiator.isGuest
+              ? `${initiator.firstName} ${initiator.lastName}`
+              : 'Guest',
+          ProcessInstanceInitiatorUsername:
+            initiator && !initiator.isGuest ? initiator.username : 'Guest',
+          ProcessInstanceInitiatorSpaceName: space.isOrganization ? space.name : 'no organization',
+          ProcessEngineId: instance.log[0].machine.id,
           correspondingVersion,
         };
       } else {
@@ -255,11 +258,17 @@ export async function exportInstanceData(
             outgoing?: any;
             incoming?: any;
           };
+          const ActualPerformerId = eventEntry.actualOwner?.[0];
+          const user = spaceUsers.find((user) => user.id == ActualPerformerId);
           return {
             ...instance,
             ...eventEntry,
             ProcessStepName: eventElement?.name,
             ProcessStepType: eventElement?.$type?.split(':')[1],
+            ActualPerformerId,
+            ActualPerformerName: user ? `${user.firstName} ${user.lastName}` : undefined,
+            ActualPerformerUsername: user ? user.username : undefined,
+            Log: JSON.stringify(eventEntry.variableChanges),
             outgoing: eventElement.outgoing,
             incoming: eventElement.incoming,
           };
@@ -270,7 +279,6 @@ export async function exportInstanceData(
   // mapping outgoing / incoming flows to PreviousStepId
   const instanceEventsWithPredecessors = (
     await asyncMap(instanceEvents, async (instance) => {
-      console.log(instance);
       return instance.map((event) => {
         let PreviousProcessStepId = [];
         if (event.incoming) {
@@ -299,6 +307,7 @@ export async function exportInstanceData(
     endTime: 'ProcessStepEndTime',
     tokenId: 'ProcessStepTokenId',
   };
+
   const renamedInstanceEvents: Record<string, any>[] = instanceEventsWithPredecessors.map(
     (instance) => Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
   );

@@ -496,7 +496,9 @@ export default function ProcessDeploymentView({
               <ToolbarGroup>
                 <Tooltip title={'Export data of this selected instance as a csv file'}>
                   <Button
-                    onClick={() => exportInstanceData([selectedInstance], deploymentInfo.versions)}
+                    onClick={() =>
+                      exportInstanceData([selectedInstance], deploymentInfo.versions, spaceId)
+                    }
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <ExportOutlined style={{ fontSize: '18px' }} />
@@ -509,7 +511,7 @@ export default function ProcessDeploymentView({
                 <Tooltip title={'Export data of all instances to this process as a csv file'}>
                   <Button
                     onClick={() =>
-                      exportInstanceData(deploymentInfo.instances, deploymentInfo.versions)
+                      exportInstanceData(deploymentInfo.instances, deploymentInfo.versions, spaceId)
                     }
                   >
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

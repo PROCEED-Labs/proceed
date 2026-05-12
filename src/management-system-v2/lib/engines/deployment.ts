@@ -298,6 +298,7 @@ export type InstanceInfo = {
     };
   };
   log: {
+    actualOwner: string[];
     flowElementId: string;
     tokenId: string;
     executionState: string;

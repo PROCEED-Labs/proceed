@@ -37,15 +37,15 @@ import { getProcessBPMN } from '@/lib/data/processes';
 import { useEnvironment } from '@/components/auth-can';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
+import { changeDeploymentActivation } from '@/lib/executions/deployment-server-actions';
 import {
-  changeDeploymentActivation,
-  getGlobalVariablesForHTML,
   getProcessStartForm,
+  startInstance,
   pauseInstance,
   resumeInstance,
-  startInstance,
   stopInstance,
-} from '@/lib/engines/server-actions';
+} from '@/lib/executions/instance-server-actions';
+import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { getProcessDeployments } from '@/lib/data/deployment';
 import { AsyncArray } from '@/lib/helpers/javascriptHelpers';

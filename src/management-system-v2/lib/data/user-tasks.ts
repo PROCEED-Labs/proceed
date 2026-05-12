@@ -114,8 +114,6 @@ export async function updateUserTask(
       return userError('Schema validation failed', UserErrorType.SchemaValidationError);
     }
 
-    // TODO: maybe check if a user is allowed to edit a user task
-
     const res = await db.userTask.update({
       data: newUserTaskData.data,
       where: {

@@ -14,13 +14,13 @@ import styles from './user-task-view.module.scss';
 import { App, Skeleton } from 'antd';
 import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 import {
-  addOwnerToTaskListEntry,
-  completeTasklistEntry,
   getTasklistEntryHTML,
+  addOwnerToTaskListEntry,
   setTasklistEntryVariableValues,
-  setTasklistMilestoneValues,
   submitFile,
-} from '@/lib/engines/server-actions';
+  setTasklistMilestoneValues,
+  completeTasklistEntry,
+} from '@/lib/tasks/server-actions';
 
 type UserTaskFormProps = {
   html?: string;

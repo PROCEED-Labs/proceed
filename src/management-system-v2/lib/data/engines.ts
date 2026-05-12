@@ -111,23 +111,24 @@ export async function getAvailableAdminMachines(dontCheck = false) {
 }
 
 export async function getAvailableSpaceMachines(environmentId: string, ability?: Ability) {
-  if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
-
   let engines = await getSavedEnginesWithMachines(environmentId);
 
+  if (!ability) ({ ability } = await getCurrentEnvironment(environmentId));
   engines = ability.filter('view', 'Machine', engines);
+
   return getUniqueMachines(engines.flatMap((e) => e.machines));
 }
 
-export async function getAllAvailableMachines(environmentId: string) {
-  const { ability } = await getCurrentEnvironment(environmentId);
-
+export async function getAllAvailableMachines(environmentId: string, skipAbilityCheck = false) {
   let [proceedEngines, spaceEngines] = await Promise.all([
     getSavedEnginesWithMachines(null),
     getSavedEnginesWithMachines(environmentId),
   ]);
 
-  spaceEngines = ability.filter('view', 'Machine', spaceEngines);
+  if (!skipAbilityCheck) {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    spaceEngines = ability.filter('view', 'Machine', spaceEngines);
+  }
 
   return getUniqueMachines([
     ...proceedEngines.flatMap((e) => e.machines),

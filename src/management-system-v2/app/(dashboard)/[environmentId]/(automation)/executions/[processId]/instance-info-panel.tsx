@@ -1,14 +1,15 @@
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
+import { DeployedProcessInfo, VersionInfo } from '@/lib/engines/deployment';
 import { Drawer, Grid, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export type RelevantInstanceInfo = {
-  instance?: InstanceInfo;
+  instance?: ExtendedInstanceInfo;
   process: DeployedProcessInfo;
   element: ElementLike;
   version: VersionInfo;
@@ -49,7 +50,7 @@ export default function InstanceInfoPanel({
   open: boolean;
   processId: string;
   version: { bpmn: string };
-  instance?: InstanceInfo;
+  instance?: ExtendedInstanceInfo;
   element?: ElementLike;
   refetch: () => void;
 }) {

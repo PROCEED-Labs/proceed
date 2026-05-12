@@ -1,7 +1,7 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result, Avatar } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -12,6 +12,7 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  WarningTwoTone,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -172,16 +173,19 @@ export default function ProcessDeploymentView({
       const instance = await getInstance(spaceId, selectedInstanceId);
 
       if (isUserErrorResponse(instance)) return null;
+      if (!instance) return null;
 
-      return instance?.state;
+      return { ...instance.state, machines: instance.machines };
     },
     enabled: !!selectedInstanceId,
+    refetchInterval: 1000,
   });
 
-  const { instanceIsRunning, instanceIsPausing, instanceIsPaused } = useMemo(() => {
+  const { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline } = useMemo(() => {
     let instanceIsRunning = false;
     let instanceIsPausing = false;
     let instanceIsPaused = false;
+    let offline = false;
 
     const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
 
@@ -191,9 +195,11 @@ export default function ProcessDeploymentView({
       );
       instanceIsPausing = currentInstance.instanceState.some((state) => state === 'PAUSING');
       instanceIsPaused = currentInstance.instanceState.some((state) => state === 'PAUSED');
+
+      offline = currentInstance.machines.some((m) => m.online === false);
     }
 
-    return { instanceIsRunning, instanceIsPausing, instanceIsPaused };
+    return { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline };
   }, [currentInstance]);
 
   const isProcessActivated = useMemo(() => {
@@ -300,6 +306,21 @@ export default function ProcessDeploymentView({
                   if (open) refetchInstances();
                 }}
               />
+
+              {offline && (
+                <Tooltip title="Some of the engines this process is executed on are not reachable!">
+                  <Avatar
+                    icon={
+                      <WarningTwoTone
+                        twoToneColor="orange"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    }
+                    size={40}
+                    style={{ backgroundColor: 'inherit' }}
+                  />
+                </Tooltip>
+              )}
 
               <Tooltip title="Filter by version">
                 <Dropdown
@@ -481,6 +502,7 @@ export default function ProcessDeploymentView({
                       <Button
                         className={styles.PlayIcon}
                         icon={<CaretRightOutlined />}
+                        disabled={offline}
                         loading={resumingInstance}
                         onClick={async () => {
                           setResumingInstance(true);
@@ -500,7 +522,7 @@ export default function ProcessDeploymentView({
                         className={styles.PauseIcon}
                         icon={<PauseOutlined />}
                         loading={pausingInstance}
-                        disabled={!instanceIsRunning}
+                        disabled={offline || !instanceIsRunning}
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
@@ -519,7 +541,7 @@ export default function ProcessDeploymentView({
                       className={styles.StopIcon}
                       icon={<StopOutlined />}
                       loading={stoppingInstance}
-                      disabled={!instanceIsRunning}
+                      disabled={offline || !instanceIsRunning}
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({

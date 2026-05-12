@@ -1,5 +1,5 @@
 import { StoredDeployment } from '@/lib/data/deployment';
-import { StoredInstance } from '@/lib/data/instance';
+import { ExtendedInstanceInfo, StoredInstance } from '@/lib/data/instance';
 import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
@@ -48,10 +48,10 @@ export function getTimeInfo({
 }: {
   element: ElementLike;
   /** Log entry for element in instance information */
-  logInfo?: InstanceInfo['log'][number];
+  logInfo?: ExtendedInstanceInfo['log'][number];
   /** Token where currentFlowElementId is the element   */
-  token?: InstanceInfo['tokens'][number];
-  instance?: InstanceInfo;
+  token?: ExtendedInstanceInfo['tokens'][number];
+  instance?: ExtendedInstanceInfo;
 }) {
   if (!instance) return { start: undefined, end: undefined, duration: undefined };
 

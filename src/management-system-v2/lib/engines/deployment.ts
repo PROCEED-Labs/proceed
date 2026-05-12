@@ -288,6 +288,11 @@ export type InstanceInfo = {
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
   }[];
   variables: {
     [key: string]: {
@@ -314,6 +319,11 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
     variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];

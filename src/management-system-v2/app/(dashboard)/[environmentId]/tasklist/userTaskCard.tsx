@@ -106,7 +106,7 @@ const UserTaskCard = ({
             <span>{userTaskData.name}</span>
             <Progress type="circle" percent={userTaskData.progress} size={30} />
           </div>
-          {userTaskData.offline && !userTaskData.endTime && (
+          {userTaskData.offline && !userTaskData.endTime?.getTime() && (
             <Tooltip title="The engine this user task is running on is currently not reachable!">
               <Typography.Text style={{ fontSize: '0.9em' }} italic type="warning">
                 Offline

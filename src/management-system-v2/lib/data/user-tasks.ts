@@ -11,8 +11,9 @@ import {
 import { cacheLife, cacheTag, updateTag } from 'next/cache';
 import db from '@/lib/data/db';
 import { getCurrentEnvironment } from '@/components/auth';
-import { User } from '@prisma/client';
 import { truthyFilter } from '../typescript-utils';
+import { getSpaceUsers } from './db/iam/users';
+import { getAllAvailableMachines } from './engines';
 
 export async function getUserTasks(spaceId: string) {
   const {
@@ -36,21 +37,17 @@ export async function getUserTasks(spaceId: string) {
         },
       })) as UserTask[];
 
-      let users: User[];
-      // get the users for the current space
-      if (isOrganization) {
-        users = await db.user.findMany({
-          where: { memberIn: { some: { environmentId: spaceId } } },
-        });
-      } else {
-        const user = await db.user.findUnique({ where: { id: spaceId } });
-        users = user ? [user] : [];
-      }
+      const users = await getSpaceUsers(spaceId, isOrganization);
+      const reachableMachines = await getAllAvailableMachines(spaceId, true);
 
       // map the ids in the actualOwner array to the users of the current space so the frontend can
       // show richer information about who is working on the task
       return userTasks.map((uT) => ({
         ...uT,
+        offline:
+          uT.machineId === 'ms-local' || reachableMachines.some((m) => m.id === uT.machineId)
+            ? false
+            : true,
         actualOwner: uT.actualOwner
           .map((id) => {
             const user = users.find((u) => u.id === id);

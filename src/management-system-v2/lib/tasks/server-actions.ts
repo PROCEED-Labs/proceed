@@ -1,7 +1,14 @@
 'use server';
 
 import { getCurrentUser } from '@/components/auth';
-import { getGlobalVariables, inlineUserTaskData } from '@proceed/user-task-helper';
+import {
+  InstanceInfo,
+  getCorrectMilestoneState,
+  getCorrectVariableState,
+  getGlobalVariables,
+  inlineScript,
+  inlineUserTaskData,
+} from '@proceed/user-task-helper';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
 import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 import { getUserTaskById, updateUserTask } from '../data/user-tasks';
@@ -10,12 +17,21 @@ import {
   activateUserTask,
   addOwnerToTaskListEntryOnMachine,
   completeTasklistEntryOnMachine,
+  getTaskListFromMachine,
   setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
 } from '../engines/tasklist';
 import { getInstance as getStoredInstance } from '../data/instance';
 import { submitFileToMachine } from '../engines/instances';
 import { saveInstanceArtifact } from '../data/file-manager-facade';
+
+import db from '@/lib/data/db';
+import { AsyncArray, asyncForEach, asyncMap } from '../helpers/javascriptHelpers';
+import { truthyFilter } from '../typescript-utils';
+import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
+import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
+import { Engine } from '../engines/machines';
+import { Variable } from '@proceed/bpmn-helper/src/getters';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -346,4 +362,170 @@ export async function completeTasklistEntry(
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+
+export async function updateTaskInfo(
+  reachableEngines: Engine[],
+  reachableWithDeployments: Engine[],
+  allKnownDeployments: {
+    id: string;
+    version: { id: string; processId: string; process: { environmentId: string } };
+  }[],
+  knownInstances: Record<string, { instanceId: string; deploymentId: string; state: InstanceInfo }>,
+) {
+  // get all users tasks that belong to instances (they were not created in the task editor)
+  const knownUserTasks = await db.userTask.findMany({ where: { NOT: { instanceID: null } } });
+
+  const reachableWithUserTasks = reachableEngines.filter((e) =>
+    knownUserTasks.some((uT) => uT.machineId === e.id),
+  );
+
+  const reachableWithDeploymentsAndUserTasks = await AsyncArray.from(
+    reachableWithDeployments.concat(reachableWithUserTasks),
+  ).deduplicate((e) => e.id);
+
+  const fetchedUserTasks = Object.fromEntries(
+    await asyncMap(reachableWithDeploymentsAndUserTasks, async (e) => {
+      const tasklist = await getTaskListFromMachine(e);
+
+      return tasklist.map((entry) => ({ ...entry, machineId: e.id }));
+    })
+      .flatten()
+      .filter((uT) => !!knownInstances[uT.instanceID])
+      .map((uT) => [`${uT.id}|${uT.instanceID}|${uT.startTime}`, uT]),
+  );
+
+  const removedUserTasks = knownUserTasks.filter((uT) => {
+    return (
+      // get all user tasks that should be on a reachable engine but that were not returned when
+      // we fetched for new user task information
+      uT.machineId &&
+      reachableWithDeploymentsAndUserTasks.some((e) => e.id === uT.machineId) &&
+      !fetchedUserTasks[uT.id]
+    );
+  });
+
+  const addedUserTasks = (
+    await AsyncArray.from(Object.entries(fetchedUserTasks))
+      .filter(([id]) => {
+        return !knownUserTasks.some((kUT) => kUT.id === id);
+      })
+      .map(async ([id, task]) => {
+        const relatedInstanceInfo = knownInstances[task.instanceID];
+        const relatedDeploymentId = relatedInstanceInfo?.deploymentId;
+        const relatedDeployment =
+          relatedDeploymentId && allKnownDeployments.find((d) => d.id === relatedDeploymentId);
+
+        if (!relatedDeployment) return;
+
+        const machine = reachableEngines.find((e) => e.id === task.machineId);
+        if (!machine) return;
+
+        try {
+          const definitionId = relatedDeployment.version.processId;
+          const spaceId = relatedDeployment.version.process.environmentId;
+          const bpmn = await getProcessBPMN(
+            definitionId,
+            spaceId,
+            relatedDeployment.version.id,
+            undefined,
+            true,
+          );
+
+          if (isUserErrorResponse(bpmn)) return;
+
+          const initialVariables = getCorrectVariableState(task, relatedInstanceInfo.state);
+          const milestones = await getCorrectMilestoneState(bpmn, task, relatedInstanceInfo.state);
+
+          const fileName = task.attrs['proceed:fileName'];
+          const htmlForm = await getProcessHtmlFormHTML(
+            definitionId,
+            fileName,
+            spaceId,
+            undefined,
+            true,
+          );
+
+          if (isUserErrorResponse(htmlForm)) return;
+
+          let html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
+            const path = match.split('/');
+            return `/api/private/${spaceId}/engine/resources/process/${task.instanceID}/images/${path.pop()}`;
+          });
+
+          const processIds = await getProcessIds(bpmn);
+          let variableDefinitions: undefined | Variable[];
+          if (processIds.length) {
+            const [processId] = processIds;
+            variableDefinitions = await getVariablesFromElementById(bpmn, processId);
+          }
+
+          html = inlineScript(html, task.instanceID, id, variableDefinitions);
+
+          return {
+            ...task,
+            attrs: undefined,
+            performers: undefined,
+            id,
+            taskId: task.id,
+            fileName,
+            potentialOwners: task.performers,
+            startTime: task.startTime,
+            environmentId: relatedDeployment.version.process.environmentId,
+            initialVariables,
+            variableChanges: {},
+            milestones,
+            milestonesChanges: {},
+            html,
+          };
+        } catch (err) {
+          console.error('Error', err);
+        }
+      })
+  ).filter(truthyFilter);
+
+  const updatedUserTasks = Object.entries(fetchedUserTasks)
+    .filter(([id]) => {
+      return knownUserTasks.some((kUT) => kUT.id === id);
+    })
+    .map(
+      ([id, data]) =>
+        [
+          id,
+          {
+            actualOwner: data.actualOwner,
+            state: data.state,
+            status: data.status,
+            priority: data.priority,
+            progress: data.progress,
+            endTime: data.endTime,
+            machineId: data.machineId,
+          },
+        ] as const,
+    );
+
+  await db.$transaction(async (tx) => {
+    await tx.userTask.updateMany({
+      where: { OR: removedUserTasks.map((uT) => ({ id: uT.id })) },
+      data: { machineId: '' },
+    });
+
+    await tx.userTask.createMany({
+      data: addedUserTasks.map((uT) => ({
+        ...uT,
+        startTime: new Date(uT.startTime),
+        endTime: new Date(uT.endTime),
+      })),
+    });
+
+    await asyncForEach(updatedUserTasks, async ([id, data]) => {
+      await tx.userTask.update({
+        where: { id },
+        data: {
+          ...data,
+          endTime: new Date(data.endTime),
+        },
+      });
+    });
+  });
 }

@@ -29,21 +29,12 @@ export async function getInstance(spaceId: string, instanceId: string) {
     cacheTag(`instance/${instanceId}`);
 
     const users = await getSpaceUsers(spaceId, isOrganization);
-    const knownUsers = users.reduce(
-      (acc, curr) => {
-        acc[curr.id] = curr;
-        return acc;
-      },
-      {} as Record<string, User>,
-    );
+    const knownUsers = Object.fromEntries(users.map((user) => [user.id, user]));
 
     let knownRoles: Record<string, Role> = {};
     if (isOrganization) {
       const roles = await getRoles(spaceId);
-      knownRoles = roles.reduce((acc, curr) => {
-        acc[curr.id] = curr;
-        return acc;
-      }, knownRoles);
+      knownRoles = Object.fromEntries(roles.map((role) => [role.id, role]));
     }
 
     const reachableMachines = await getAllAvailableMachines(spaceId, true);

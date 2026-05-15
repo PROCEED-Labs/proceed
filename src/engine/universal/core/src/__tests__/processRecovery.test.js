@@ -106,15 +106,29 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     it('will create an execution engine for a process that has interrupted instances and load the correct process versions', async () => {
       distribution.db.getAllProcesses.mockResolvedValue(['Process 1']);
       distribution.db.getArchivedInstances.mockResolvedValue({
-        instance1: { processVersion: 123, tokens: [], instanceState: ['ENDED'], some: 'data' },
+        instance1: {
+          processInstanceId: 'instance1',
+          processVersion: 123,
+          tokens: [],
+          instanceState: ['ENDED'],
+          some: 'data',
+        },
         instance2: {
+          processInstanceId: 'instance2',
           processVersion: 123,
           tokens: [],
           instanceState: ['RUNNING'],
           isCurrentlyExecutedInBpmnEngine: true,
         },
-        instance3: { processVersion: 456, tokens: [], instanceState: ['TERMINATED'], some: 'data' },
+        instance3: {
+          processInstanceId: 'instance3',
+          processVersion: 456,
+          tokens: [],
+          instanceState: ['TERMINATED'],
+          some: 'data',
+        },
         instance4: {
+          processInstanceId: 'instance4',
           processVersion: 789,
           tokens: [],
           instanceState: ['DEPLOYMENT-WAITING'],
@@ -133,12 +147,12 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       await management.restoreInterruptedInstances();
 
       expect(ensureExecutionEngine).toBeCalledTimes(2);
-      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 123);
-      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 789);
+      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 123, false);
+      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 789, false);
 
       expect(deployVersionInEngine).toBeCalledTimes(2);
-      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 123);
-      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 789);
+      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 123, false);
+      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 789, false);
 
       expect(management.getAllEngines().length).toBe(1);
 
@@ -296,6 +310,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       expect(instanceInformation).toEqual({
         ...archivedState,
         instanceState: ['ENDED'],
+        extras: {},
         tokens: [
           {
             ...archivedState.tokens[0],
@@ -524,6 +539,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             },
           ],
           userTasks: [],
+          extras: {},
           isCurrentlyExecutedInBpmnEngine: undefined,
         },
       );
@@ -1154,6 +1170,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             },
           ],
           userTasks: [],
+          extras: {},
           isCurrentlyExecutedInBpmnEngine: undefined,
         },
       );

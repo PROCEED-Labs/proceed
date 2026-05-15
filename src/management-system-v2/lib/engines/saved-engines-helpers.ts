@@ -9,6 +9,7 @@ import {
 } from './endpoints/mqtt-endpoints';
 import endpointBuilder from './endpoints/endpoint-builder';
 import { httpRequest } from './endpoints/http-endpoints';
+import { engineRequest } from './endpoints';
 
 const mqttTimeout = 2000;
 
@@ -17,53 +18,74 @@ const mqttTimeout = 2000;
  * -----------------------------------------------------------------------------------------------*/
 
 // TODO: find a better more standardized way to do this
-async function getMqttEngines(engine: SavedEngine): Promise<MqttEngine[]> {
-  const client = await getClient(engine.address, !engine.environmentId);
+async function getMqttEngines(
+  engine: SavedEngine,
+): Promise<SavedEngine & { machines: MqttEngine[] }> {
+  try {
+    const client = await getClient(engine.address, !engine.environmentId);
 
-  if (!engine.environmentId) {
-    const collectedEngines = await getCollectedProceedMqttEngines(engine.address, mqttTimeout);
-    if (collectedEngines) return collectedEngines;
-  }
+    if (!engine.environmentId) {
+      const collectedEngines = await getCollectedProceedMqttEngines(engine.address, mqttTimeout);
+      if (collectedEngines) return { ...engine, machines: collectedEngines };
+    }
 
-  const engineMap = new Map();
-  await collectEnginesStatus({
-    client,
-    brokerAddress: engine.address,
-    engineMap,
-  });
-  await new Promise((res) => setTimeout(res, mqttTimeout));
-
-  // NOTE: not awaiting this could be a problem if hosted on vercel
-  client.endAsync();
-
-  return Array.from(engineMap.values())
-    .filter((v) => v.running)
-    .map((e) => ({
-      id: e.id,
-      type: 'mqtt',
-      spaceEngine: true,
+    const engineMap = new Map();
+    await collectEnginesStatus({
+      client,
       brokerAddress: engine.address,
-    }));
+      engineMap,
+    });
+    await new Promise((res) => setTimeout(res, mqttTimeout));
+
+    // NOTE: not awaiting this could be a problem if hosted on vercel
+    client.endAsync();
+
+    return {
+      ...engine,
+      machines: Array.from(engineMap.values())
+        .filter((v) => v.running)
+        .map((e) => ({
+          id: e.id,
+          type: 'mqtt',
+          spaceEngine: true,
+          brokerAddress: engine.address,
+        })),
+    };
+  } catch (err) {
+    console.error('Error', err);
+    return { ...engine, machines: [] };
+  }
 }
 
-async function getHttpEngine(engine: SavedEngine): Promise<[HttpEngine]> {
-  const { id } = await httpRequest(
-    engine.address,
-    endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
-    'GET',
-  );
+async function getHttpEngine(
+  engine: SavedEngine,
+): Promise<SavedEngine & { machines: HttpEngine[] }> {
+  try {
+    const { id } = await httpRequest(
+      engine.address,
+      endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
+      'GET',
+    );
 
-  return [
-    {
-      type: 'http',
-      id,
-      address: engine.address,
-      spaceEngine: true,
-    },
-  ];
+    return {
+      ...engine,
+      machines: [
+        {
+          type: 'http',
+          id,
+          address: engine.address,
+          spaceEngine: true,
+        },
+      ],
+    };
+  } catch (err) {
+    return { ...engine, machines: [] };
+  }
 }
 
-export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promise<Engine[]> {
+export async function savedEnginesToEngines(
+  spaceEngines: SavedEngine[],
+): Promise<(SavedEngine & { machines: Engine[] })[]> {
   const enginesRequests = [];
   for (const savedEngine of spaceEngines) {
     if (savedEngine.address.startsWith('http')) enginesRequests.push(getHttpEngine(savedEngine));
@@ -71,11 +93,7 @@ export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promis
       enginesRequests.push(getMqttEngines(savedEngine));
   }
 
-  const engines = [];
-  for (const request of await Promise.allSettled(enginesRequests))
-    if (request.status === 'fulfilled') engines.push(...request.value);
-
-  return engines;
+  return Promise.all(enginesRequests);
 }
 
 /* -------------------------------------------------------------------------------------------------

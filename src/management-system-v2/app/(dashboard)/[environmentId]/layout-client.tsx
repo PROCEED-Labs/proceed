@@ -30,6 +30,7 @@ import ChangeUserPasswordModal from './profile/change-password-modal';
 import useMSLogo from '@/lib/use-ms-logo';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { MenuItemType } from 'antd/es/menu/interface';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 export const useLayoutMobileDrawer = create<{ open: boolean; set: (open: boolean) => void }>(
   (set) => ({
@@ -102,6 +103,22 @@ const Layout: FC<
       (item) => !(item && 'type' in item && item.type === 'divider'),
     );
   }
+
+  useEffect(() => {
+    // as long as as user is connected they will trigger the backend to keep the deployment
+    // information up to date
+    let keepRunning = true;
+    async function refetchCycle() {
+      if (!keepRunning) return;
+      await refetchDeployments();
+
+      setTimeout(refetchCycle, 10000);
+    }
+
+    refetchCycle();
+
+    () => (keepRunning = false);
+  }, []);
 
   // The space id needs to be set here, because the hook is outside of the SpaceContext.Provider
   const { imageSource } = useMSLogo(customLogo, { spaceId: activeSpace.spaceId });

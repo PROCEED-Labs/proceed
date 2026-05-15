@@ -32,7 +32,11 @@
         "entries": true
       }
     },
-    "/process/:definitionId": {},
+    "/process/:definitionId": {
+      "queryParams": {
+        "entries": true
+      }
+    },
     "/process/:definitionId/versions": {},
     "/process/:definitionId/versions/:version": {},
     "/process/:definitionId/instance": {},

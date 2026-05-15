@@ -7,7 +7,6 @@ import {
   SystemAdminUpdateInput,
   SystemAdminUpdateInputSchema,
 } from '../../system-admin-schema';
-import { enableUseDB } from 'FeatureFlags';
 import db from '@/lib/data/db';
 import { Prisma } from '@prisma/client';
 

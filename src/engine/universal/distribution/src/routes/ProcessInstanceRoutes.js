@@ -287,6 +287,8 @@ module.exports = (path, management) => {
           `Updating the variables in the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`,
         );
       }
+
+      return { response: '', mimeType: 'text' };
     },
   );
 

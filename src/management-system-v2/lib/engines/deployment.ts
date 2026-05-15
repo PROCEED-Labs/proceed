@@ -288,6 +288,11 @@ export type InstanceInfo = {
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
   }[];
   variables: {
     [key: string]: {
@@ -314,6 +319,11 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
     variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];
@@ -351,12 +361,15 @@ export async function getDeployments(engines: Engine[], entries?: string) {
   return deployments as DeployedProcessInfo[];
 }
 
-export async function getDeployment(engine: Engine, definitionId: string) {
+export async function getDeployment(engine: Engine, definitionId: string, entries?: string) {
   const deployment = await engineRequest({
     method: 'get',
     endpoint: '/process/:definitionId',
     engine,
     pathParams: { definitionId },
+    queryParams: {
+      entries,
+    },
   });
 
   return deployment as DeployedProcessInfo;
@@ -385,20 +398,6 @@ export async function changeDeploymentActivation(
       body: { active: value },
     });
   }
-}
-
-export async function getDeploymentActivation(
-  engine: Engine,
-  definitionId: string,
-  version: string,
-): Promise<boolean> {
-  const result = await engineRequest({
-    method: 'get',
-    endpoint: '/process/:definitionId/versions/:version/active',
-    engine,
-    pathParams: { definitionId, version },
-  });
-  return result.active;
 }
 
 export async function getProcessImageFromMachine(

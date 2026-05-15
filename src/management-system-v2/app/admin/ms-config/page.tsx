@@ -344,5 +344,3 @@ export default function Page() {
     </Content>
   );
 }
-
-export const dynamic = 'force-dynamic';

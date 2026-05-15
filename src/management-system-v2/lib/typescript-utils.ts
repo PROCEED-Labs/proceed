@@ -71,3 +71,31 @@ export const truthyFilter = <T>(x: T | false | undefined | null | '' | 0): x is 
 export type UnionAwareOmit<TObj extends Record<string, any>, TKeys extends keyof TObj> = Prettify<
   TObj extends any ? Omit<TObj, TKeys> : never
 >;
+
+type MapNestedTypeRecord<
+  Object extends Record<string, any>,
+  Path extends string,
+  NewType,
+> = Path extends `${infer Start}/${infer Rest}`
+  ? Omit<Object, Start> & { [key in Start]: MapNestedType<Object[Start], Rest, NewType> }
+  : Omit<Object, Path> & { [key in Path]: NewType };
+
+type MapNestedTypeRecordArray<Object extends Record<string, any>[], Path extends string, NewType> =
+  Object extends Array<infer EntryType>
+    ? EntryType extends Record<string, any> | Array<Record<string, any>>
+      ? MapNestedType<EntryType, Path, NewType>[]
+      : never
+    : never;
+
+/**
+ * Replaces the type of a nested entry in an object with another type
+ *
+ * the second argument is the path to the nested entry with '/' used as delimiters
+ */
+export type MapNestedType<
+  Object extends Record<string, any> | Array<Record<string, any>>,
+  Path extends string,
+  NewType,
+> = Object extends Record<string, any>[]
+  ? MapNestedTypeRecordArray<Object, Path, NewType>
+  : MapNestedTypeRecord<Object, Path, NewType>;

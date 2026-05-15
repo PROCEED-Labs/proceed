@@ -31,28 +31,22 @@ const isContentTypeAllowed = (mimeType: string): boolean => {
   return ALLOWED_CONTENT_TYPES.includes(mimeType);
 };
 
-interface SaveArtifactOptions {
-  saveWithoutSavingReference?: boolean;
-  processId: string;
-}
-
 export const saveArtifactToDB = async (
   fileName: string,
   filePath: string,
   artifactType: ArtifactType,
-  options: SaveArtifactOptions,
+  options?: Omit<
+    Partial<Parameters<typeof db.artifact.create>[0]['data']>,
+    'id' | 'fileName' | 'filePath' | 'artifactType'
+  >,
 ) => {
   try {
-    const { saveWithoutSavingReference, processId } = options;
     const data: Prisma.ArtifactCreateArgs['data'] = {
+      ...options,
       fileName,
       filePath,
       artifactType,
     };
-
-    if (!saveWithoutSavingReference) {
-      data['processReferences'] = { create: { processId } };
-    }
 
     const artifact = await db.artifact.create({ data });
 
@@ -141,6 +135,7 @@ export async function saveEntityFileOrGetPresignedUrl(
         return saveSpaceLogo(entityId, fileName, mimeType, fileContent);
       case EntityType.PROFILE_PICTURE:
         return saveProfilePicture(entityId, fileName, mimeType, fileContent);
+
       // Extend for other entity types if needed
       default:
         throw new UserFacingError(`Unsupported entity type: ${entityType}`);
@@ -244,10 +239,11 @@ export async function saveProcessArtifact(
       return { presignedUrl, status };
     }
 
+    const saveReference = !saveWithoutSavingReference && !versionCreatedOn;
+
     if (useDefaultArtifactsTable) {
       await saveArtifactToDB(newFileName, filePath, artifactType, {
-        processId,
-        saveWithoutSavingReference: saveWithoutSavingReference || !!versionCreatedOn,
+        processReferences: saveReference ? { create: { processId } } : undefined,
       });
     }
 
@@ -303,6 +299,58 @@ export async function deleteProcessArtifact(
   }
 
   return true;
+}
+
+export async function saveInstanceArtifact(
+  spaceId: string,
+  instanceId: string,
+  fileName: string,
+  mimeType: string,
+  fileContent?: Buffer | Uint8Array,
+) {
+  const newFileName = getNewFileName(fileName);
+  const artifactType = getFileCategory(fileName, mimeType);
+  const filePath = `spaces/${spaceId}/instances/${instanceId}/${newFileName}`;
+  const usePresignedUrl = ['images', 'others'].includes(artifactType);
+
+  try {
+    // Save the file (local or presigned URL)
+    const { presignedUrl, status } = await saveFile(
+      filePath,
+      mimeType,
+      fileContent,
+      usePresignedUrl,
+    );
+
+    // TODO: set the refcounter to 0 when the instance is deleted
+    // (should be done similar to processArtifact/versionArtifacts)
+
+    await saveArtifactToDB(newFileName, filePath, artifactType, {
+      instanceReferences: { create: { instanceId, originalName: fileName, mimeType } },
+      refCounter: 1,
+    });
+
+    return { presignedUrl, filePath };
+  } catch (error) {
+    console.error(
+      `Failed to save instance artifact (${artifactType}, ${fileName}) for instance ${instanceId}:`,
+      error,
+    );
+    return { presignedUrl: null, filePath: null };
+  }
+}
+
+export async function getInstanceFile(instanceId: string, fileName: string) {
+  const artifactRef = await db.artifactInstanceReference.findFirst({
+    where: { instanceId, originalName: fileName },
+    include: { artifact: true },
+  });
+
+  if (!artifactRef) return undefined;
+
+  const file = await retrieveFile(artifactRef.artifact.filePath);
+
+  return new Blob([file], { type: artifactRef.mimeType });
 }
 
 // Functionality for handling organization logo files
@@ -648,8 +696,7 @@ async function copyArtifactFile(
     // Create database entry for the new artifact
     const artifactType = getFileCategory(newFileNameWithExt, mimeType);
     await saveArtifactToDB(newFileNameWithExt, destinationFilePath, artifactType, {
-      processId,
-      saveWithoutSavingReference: false,
+      processReferences: { create: { processId } },
     });
 
     return true;
@@ -762,8 +809,7 @@ export async function handleUserTaskCopy(
 
           // Create database entry
           await saveArtifactToDB(newImageNameWithExt, destinationFilePath, 'images', {
-            processId,
-            saveWithoutSavingReference: false,
+            processReferences: { create: { processId } },
           });
 
           imageMapping[imagePath] = destinationFilePath;

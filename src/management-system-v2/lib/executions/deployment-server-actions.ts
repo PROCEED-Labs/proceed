@@ -28,6 +28,7 @@ import { MapNestedType, Prettify, truthyFilter } from '../typescript-utils';
 import { addDeployment, updateDeployment, getProcessDeployments } from '../data/deployment';
 import { revalidateTag } from 'next/cache';
 import { updateTaskInfo } from '../tasks/server-actions';
+import { reach } from 'yup';
 
 export async function deployProcess(
   definitionId: string,
@@ -366,9 +367,9 @@ export async function refetchDeployments() {
           fetchedVersion.machines = await asyncFilter(fetchedVersion.machines, async (m) => {
             try {
               await removeDeploymentFromMachines([m], d.version.processId);
-              return true;
-            } catch (err) {
               return false;
+            } catch (err) {
+              return true;
             }
           });
         }

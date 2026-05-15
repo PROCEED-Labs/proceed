@@ -6,6 +6,12 @@ import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
+import styles from './element-status.module.scss';
+
+type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
+const EntryText = (props: EntryTextProps) => (
+  <Typography.Text className={styles.ElementText} {...props} />
+);
 
 export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const statusEntries: ReactNode[][] = [];
@@ -167,78 +173,60 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   statusEntries.push([
     <Space key="started">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Started:
-      </Typography.Text>
-      <Typography.Text>{generateDateString(start, true)}</Typography.Text>
+      <EntryText strong>Started:</EntryText>
+      <EntryText>{generateDateString(start, true)}</EntryText>
     </Space>,
     <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Planned Start:
-      </Typography.Text>
-      <Typography.Text>{generateDateString(plan.start, true) || ''}</Typography.Text>
+      <EntryText strong>Planned Start:</EntryText>
+      <EntryText>{generateDateString(plan.start, true) || ''}</EntryText>
     </Space>,
     <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Delay:
-      </Typography.Text>
-      <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
+      <EntryText strong>Delay:</EntryText>
+      <EntryText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.start)}
-      </Typography.Text>
+      </EntryText>
     </Space>,
   ]);
 
   statusEntries.push([
     <Space key="duration">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Duration:
-      </Typography.Text>
-      <Typography.Text>{generateDurationString(duration)}</Typography.Text>
+      <EntryText strong>Duration:</EntryText>
+      <EntryText>{generateDurationString(duration)}</EntryText>
     </Space>,
     <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Planned Duration:
-      </Typography.Text>
-      <Typography.Text>{generateDurationString(plan.duration)}</Typography.Text>
+      <EntryText strong>Planned Duration:</EntryText>
+      <EntryText>{generateDurationString(plan.duration)}</EntryText>
     </Space>,
     <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Delay:
-      </Typography.Text>
-      <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
+      <EntryText strong>Delay:</EntryText>
+      <EntryText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.duration)}
-      </Typography.Text>
+      </EntryText>
     </Space>,
   ]);
 
   statusEntries.push([
     <Space key="end">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Ended:
-      </Typography.Text>
-      <Typography.Text>{generateDateString(end, true)}</Typography.Text>
+      <EntryText strong>Ended:</EntryText>
+      <EntryText>{generateDateString(end, true)}</EntryText>
     </Space>,
     <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Planned End:
-      </Typography.Text>
-      <Typography.Text>{generateDateString(plan.end, true) || ''}</Typography.Text>
+      <EntryText strong>Planned End:</EntryText>
+      <EntryText>{generateDateString(plan.end, true) || ''}</EntryText>
     </Space>,
     <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
-      <Typography.Text strong style={{ wordBreak: 'normal' }}>
-        Delay:
-      </Typography.Text>
-      <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
+      <EntryText strong>Delay:</EntryText>
+      <EntryText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.end)}
-      </Typography.Text>
+      </EntryText>
     </Space>,
   ]);
 

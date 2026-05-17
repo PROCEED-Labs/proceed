@@ -1,11 +1,10 @@
 'use client';
 
-import { Card, Typography, Tooltip, Progress, Button } from 'antd';
+import { Button } from 'antd';
 import {
   FileOutlined,
   ClockCircleOutlined,
   ShareAltOutlined,
-  QuestionCircleOutlined,
   FolderOutlined,
   EditOutlined,
   RocketOutlined,
@@ -15,8 +14,7 @@ import {
 import { useMemo, useRef, useState, useEffect } from 'react';
 import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
-
-const { Text } = Typography;
+import AnalyticsCard from '../process-analytics-card';
 
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -106,7 +104,7 @@ const ProcessAnalyticsCards = ({
       (p) => p.lastEditedOn && new Date(p.lastEditedOn) > sevenDaysAgo,
     ).length;
 
-    // Count processes modified MORE THAN 2 MINUTES after last version
+    // Count processes modified more than 2 minutes after last version
     const unversionedInFolder = processesInFolder.filter((p) => {
       if (!p.versions || p.versions.length === 0) {
         return false;
@@ -202,328 +200,103 @@ const ProcessAnalyticsCards = ({
         }}
       >
         {/* Total Processes Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>
-              Total Processes
-            </Text>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#1890ff', fontSize: '24px' }}>
-                <FileOutlined />
-              </div>
-              <span style={{ color: '#1890ff', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}>
-                {isRootFolder ? analytics.totalProcessesGlobal : analytics.processesInFolder}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '8px' }}>
-            <Progress
-              percent={100}
-              success={{
-                percent:
-                  analytics.processesInFolder > 0
-                    ? (analytics.releasedInFolder / analytics.processesInFolder) * 100
-                    : 0,
-                strokeColor: '#13c2c2',
-              }}
-              strokeColor="#eb2f96"
-              trailColor="#f0f0f0"
-              showInfo={false}
-              strokeWidth={8}
-            />
-          </div>
-
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '2px',
-                  background: '#13c2c2',
-                }}
-              />
-              <Text style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                Released: {analytics.releasedInFolder}
-              </Text>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div
-                style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '2px',
-                  background: '#eb2f96',
-                }}
-              />
-              <Text style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                Drafts: {analytics.draftsInFolder}
-              </Text>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '8px' }}>
-            <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-              {isRootFolder ? 'Across all folders' : 'In this folder'}
-            </Text>
-          </div>
-        </Card>
+        <AnalyticsCard
+          title="Total Processes"
+          icon={<FileOutlined />}
+          iconColor="#1890ff"
+          mainValue={isRootFolder ? analytics.totalProcessesGlobal : analytics.processesInFolder}
+          showProgress={true}
+          progressPercent={100}
+          successPercent={
+            analytics.processesInFolder > 0
+              ? (analytics.releasedInFolder / analytics.processesInFolder) * 100
+              : 0
+          }
+          successColor="#13c2c2"
+          progressColor="#eb2f96"
+          legend={[
+            { color: '#13c2c2', label: 'Released', value: analytics.releasedInFolder },
+            { color: '#eb2f96', label: 'Drafts', value: analytics.draftsInFolder },
+          ]}
+          subtitle={isRootFolder ? 'Across all folders' : 'In this folder'}
+        />
 
         {/* Executable Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>Executable</Text>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#7cb305', fontSize: '24px' }}>
-                <RocketOutlined />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span
-                  style={{ color: '#7cb305', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}
-                >
-                  {analytics.executableInFolder}
-                </span>
-                <span style={{ color: '#bfbfbf', fontSize: '20px', fontWeight: 400 }}>
-                  / {analytics.processesInFolder}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <Progress
-              percent={
-                analytics.processesInFolder > 0
-                  ? (analytics.executableInFolder / analytics.processesInFolder) * 100
-                  : 0
-              }
-              strokeColor="#7cb305"
-              trailColor="#f0f0f0"
-              showInfo={false}
-              strokeWidth={8}
-            />
-          </div>
-
-          <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-            {isRootFolder ? 'Ready for execution' : 'In this folder'}
-          </Text>
-        </Card>
+        <AnalyticsCard
+          title="Executable"
+          icon={<RocketOutlined />}
+          iconColor="#7cb305"
+          mainValue={analytics.executableInFolder}
+          secondaryValue={analytics.processesInFolder}
+          showProgress={true}
+          progressPercent={
+            analytics.processesInFolder > 0
+              ? (analytics.executableInFolder / analytics.processesInFolder) * 100
+              : 0
+          }
+          progressColor="#7cb305"
+          subtitle={isRootFolder ? 'Ready for Automation' : 'Ready for Automation (In this folder)'}
+        />
 
         {/* Needs Release Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>
-              Needs Release
-            </Text>
-            <Tooltip title="Processes with unreleased changes. They were modified after their last version was created.">
-              <QuestionCircleOutlined
-                style={{ color: '#bfbfbf', fontSize: '14px', cursor: 'help' }}
-              />
-            </Tooltip>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#fa8c16', fontSize: '24px' }}>
-                <EditOutlined />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span
-                  style={{ color: '#fa8c16', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}
-                >
-                  {analytics.unversionedInFolder}
-                </span>
-                <span style={{ color: '#bfbfbf', fontSize: '20px', fontWeight: 400 }}>
-                  / {analytics.releasedInFolder}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <Progress
-              percent={
-                analytics.releasedInFolder > 0
-                  ? (analytics.unversionedInFolder / analytics.releasedInFolder) * 100
-                  : 0
-              }
-              strokeColor="#fa8c16"
-              trailColor="#f0f0f0"
-              showInfo={false}
-              strokeWidth={8}
-            />
-          </div>
-
-          <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-            {isRootFolder ? 'With unreleased changes' : 'In this folder'}
-          </Text>
-        </Card>
+        <AnalyticsCard
+          title="Needs Release"
+          icon={<EditOutlined />}
+          iconColor="#fa8c16"
+          mainValue={analytics.unversionedInFolder}
+          secondaryValue={analytics.releasedInFolder}
+          showProgress={true}
+          progressPercent={
+            analytics.releasedInFolder > 0
+              ? (analytics.unversionedInFolder / analytics.releasedInFolder) * 100
+              : 0
+          }
+          progressColor="#fa8c16"
+          tooltip="Processes with unreleased changes. They were modified after their last version was created."
+          subtitle={
+            isRootFolder
+              ? 'Number of Process with unreleased changes'
+              : 'Number of Process with unreleased changes (In this folder)'
+          }
+        />
 
         {/* Folders Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>
-              {isRootFolder ? 'Folders' : 'In This Folder'}
-            </Text>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#52c41a', fontSize: '24px' }}>
-                <FolderOutlined />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span
-                  style={{ color: '#52c41a', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}
-                >
-                  {isRootFolder ? analytics.totalFolders : analytics.processesInFolder}
-                </span>
-                {!isRootFolder && (
-                  <span style={{ color: '#bfbfbf', fontSize: '20px', fontWeight: 400 }}>
-                    / {analytics.totalProcessesGlobal}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-            {isRootFolder
+        <AnalyticsCard
+          title={isRootFolder ? 'Folders' : 'In This Folder'}
+          icon={<FolderOutlined />}
+          iconColor="#52c41a"
+          mainValue={isRootFolder ? analytics.totalFolders : analytics.processesInFolder}
+          secondaryValue={!isRootFolder ? analytics.totalProcessesGlobal : undefined}
+          subtitle={
+            isRootFolder
               ? 'Organization structure'
-              : `Out of ${analytics.totalProcessesGlobal} total`}
-          </Text>
-        </Card>
+              : `Out of ${analytics.totalProcessesGlobal} total`
+          }
+        />
 
         {/* Recent Activity Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>
-              Recent Activity
-            </Text>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#722ed1', fontSize: '24px' }}>
-                <ClockCircleOutlined />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span
-                  style={{ color: '#722ed1', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}
-                >
-                  {analytics.recentlyEditedInFolder}
-                </span>
-                {!isRootFolder && (
-                  <span style={{ color: '#bfbfbf', fontSize: '20px', fontWeight: 400 }}>
-                    / {analytics.processesInFolder}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-            {isRootFolder ? 'Edited in last 7 days' : 'In this folder (7 days)'}
-          </Text>
-        </Card>
+        <AnalyticsCard
+          title="Recent Activity"
+          icon={<ClockCircleOutlined />}
+          iconColor="#722ed1"
+          mainValue={analytics.recentlyEditedInFolder}
+          secondaryValue={!isRootFolder ? analytics.processesInFolder : undefined}
+          subtitle={
+            isRootFolder
+              ? 'Number of processes edited in the last 7 days'
+              : 'Number of processes edited in the last 7 days (In this folder)'
+          }
+        />
 
         {/* Shared Card */}
-        <Card
-          bordered={false}
-          style={{
-            width: '280px',
-            minWidth: '280px',
-            flexShrink: 0,
-            boxShadow:
-              '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
-          }}
-          bodyStyle={{ padding: '24px' }}
-        >
-          <div style={{ marginBottom: '16px' }}>
-            <Text style={{ color: '#8c8c8c', fontSize: '14px', fontWeight: 500 }}>Shared</Text>
-          </div>
-
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ color: '#096dd9', fontSize: '24px' }}>
-                <ShareAltOutlined />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-                <span
-                  style={{ color: '#096dd9', fontSize: '32px', fontWeight: 600, lineHeight: 1 }}
-                >
-                  {analytics.sharedInFolder}
-                </span>
-                {!isRootFolder && (
-                  <span style={{ color: '#bfbfbf', fontSize: '20px', fontWeight: 400 }}>
-                    / {analytics.processesInFolder}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Text style={{ color: '#bfbfbf', fontSize: '13px' }}>
-            {isRootFolder ? 'Public or shared' : 'In this folder'}
-          </Text>
-        </Card>
+        <AnalyticsCard
+          title="Shared"
+          icon={<ShareAltOutlined />}
+          iconColor="#096dd9"
+          mainValue={analytics.sharedInFolder}
+          secondaryValue={!isRootFolder ? analytics.processesInFolder : undefined}
+          subtitle={isRootFolder ? 'Public or shared' : 'Public or shared (In this folder)'}
+        />
       </div>
     </div>
   );

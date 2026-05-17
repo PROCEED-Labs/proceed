@@ -217,35 +217,32 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
       {/* Time Range Selector */}
       <div
         style={{
-          marginBottom: '24px',
+          marginBottom: '10px',
           display: 'flex',
           justifyContent: 'flex-end',
           alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
         }}
       >
-        <Space>
-          <Select
-            value={timeRange}
-            onChange={handleTimeRangeChange}
-            style={{ width: 150 }}
-            options={[
-              { label: 'Last Week', value: 'week' },
-              { label: 'Last Month', value: 'month' },
-              { label: 'Last Year', value: 'year' },
-              { label: 'Custom Range', value: 'custom' },
-            ]}
+        {timeRange === 'custom' && (
+          <RangePicker
+            value={customDateRange}
+            onChange={handleDateRangeChange}
+            format="YYYY-MM-DD"
+            placeholder={['Start Date', 'End Date']}
+            style={{ marginRight: '12px' }}
           />
-          {timeRange === 'custom' && (
-            <RangePicker
-              value={customDateRange}
-              onChange={handleDateRangeChange}
-              format="YYYY-MM-DD"
-              placeholder={['Start Date', 'End Date']}
-            />
-          )}
-        </Space>
+        )}
+        <Select
+          value={timeRange}
+          onChange={handleTimeRangeChange}
+          style={{ width: 150 }}
+          options={[
+            { label: 'Last Week', value: 'week' },
+            { label: 'Last Month', value: 'month' },
+            { label: 'Last Year', value: 'year' },
+            { label: 'Custom Range', value: 'custom' },
+          ]}
+        />
       </div>
 
       {/* Tabs */}

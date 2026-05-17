@@ -62,7 +62,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
   return (
     <>
       {/* Process Initiator Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '24px' }}>
+      <Title level={4} style={{ marginBottom: '16px' }}>
         <HiUser style={{ marginRight: '8px' }} /> Your Processes (As Initiator)
       </Title>
 
@@ -312,7 +312,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
       </Row>
 
       {/* Participant Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '48px' }}>
+      <Title level={4} style={{ marginBottom: '16px', marginTop: '40px' }}>
         <HiUserGroup style={{ marginRight: '8px' }} /> Your Tasks (As Participant)
       </Title>
 

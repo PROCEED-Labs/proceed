@@ -1,9 +1,7 @@
 // utility functions for calculating instance statistics from deployed processes
 
 interface DeployedProcess {
-  id: string;
-  name: string;
-  versions: any[];
+  definitionId: string;
   instances: any[];
 }
 
@@ -81,6 +79,7 @@ export function filterInstancesByDateRange(
   return deployedProcesses.map((process) => ({
     ...process,
     instances: process.instances.filter((instance) => {
+      if (!instance.globalStartTime) return true;
       const instanceDate = new Date(instance.globalStartTime);
       return instanceDate >= startDate && instanceDate <= endDate;
     }),

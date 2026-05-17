@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Select, Space, DatePicker, Tabs } from 'antd';
+import { Select, Space, DatePicker, Tabs, Skeleton } from 'antd';
 import { HiUser, HiUserGroup, HiShieldCheck } from 'react-icons/hi';
 import type { Dayjs } from 'dayjs';
+import useDeployments from './use-deployments';
 import {
   filterInstancesByDateRange,
   calculateInstanceStats,
@@ -19,16 +20,7 @@ const { RangePicker } = DatePicker;
 
 type TimeRange = 'week' | 'month' | 'year' | 'custom';
 
-interface DeployedProcess {
-  id: string;
-  name: string;
-  versions: any[];
-  instances: any[];
-}
-
 interface DashboardProps {
-  deployedProcesses: DeployedProcess[];
-  engines: any[];
   userRole: 'user' | 'manager' | 'admin';
   userId: string;
   spaceId: string;
@@ -42,19 +34,17 @@ const COLORS = {
   gray: '#8c8c8c',
 };
 
-const DashboardView: React.FC<DashboardProps> = ({
-  deployedProcesses,
-  engines,
-  userRole,
-  userId,
-  spaceId,
-}) => {
+const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState<string>('user');
 
   const isManager = userRole === 'manager' || userRole === 'admin';
   const isAdmin = userRole === 'admin';
+
+  const { engines, deployments, isLoading } = useDeployments(
+    'definitionId,instances(processInstanceId,instanceState,globalStartTime)',
+  );
 
   // calculate date range based on selection
   const dateRange = useMemo(() => {
@@ -85,11 +75,14 @@ const DashboardView: React.FC<DashboardProps> = ({
 
   // filter deployed processes by date range
   const filteredDeployedProcesses = useMemo(() => {
-    return filterInstancesByDateRange(deployedProcesses, dateRange.start, dateRange.end);
-  }, [deployedProcesses, dateRange]);
+    if (!deployments) return [];
+    return filterInstancesByDateRange(deployments, dateRange.start, dateRange.end);
+  }, [deployments, dateRange]);
 
   // calculate stats from filtered data
   const stats = useMemo(() => {
+    if (!engines || !deployments) return null;
+
     const baseStats = calculateInstanceStats(filteredDeployedProcesses);
     const hasRealData = baseStats.totalInstances > 0;
 
@@ -110,28 +103,28 @@ const DashboardView: React.FC<DashboardProps> = ({
       adminStats,
       hasRealData,
     };
-  }, [filteredDeployedProcesses, engines]);
+  }, [engines, filteredDeployedProcesses, deployments]);
 
   // chart data
-  const instanceDistributionData = useMemo(
-    () => [
+  const instanceDistributionData = useMemo(() => {
+    if (!stats) return [];
+    return [
       { name: 'Completed', value: Math.max(stats.completedInstances, 0), color: COLORS.blue },
       { name: 'Running', value: Math.max(stats.runningInstances, 0), color: COLORS.green },
       { name: 'Paused', value: Math.max(stats.pausedInstances, 0), color: COLORS.orange },
       { name: 'Stopped', value: Math.max(stats.stoppedInstances, 0), color: COLORS.gray },
       { name: 'Failed', value: Math.max(stats.failedInstances, 0), color: COLORS.red },
-    ],
-    [stats],
-  );
+    ];
+  }, [stats]);
 
-  const processTimelineData = useMemo(
-    () => [
+  const processTimelineData = useMemo(() => {
+    if (!stats) return [];
+    return [
       { name: 'On Schedule', value: stats.userStats.onSchedule, color: COLORS.green },
       { name: 'Close to Exceed', value: stats.userStats.closeToExceed, color: COLORS.orange },
       { name: 'Exceeded', value: stats.userStats.exceededTime, color: COLORS.red },
-    ],
-    [stats],
-  );
+    ];
+  }, [stats]);
 
   // dummy weekly trend data
   const weeklyTrendData = useMemo(
@@ -160,6 +153,10 @@ const DashboardView: React.FC<DashboardProps> = ({
       setTimeRange('custom');
     }
   };
+
+  if (isLoading || !stats) {
+    return <Skeleton active />;
+  }
 
   // build tabs based on user role
   const tabItems = [

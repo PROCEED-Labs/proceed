@@ -17,6 +17,7 @@ import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
 import ProcessAnalyticsCards from '@/components/processes/process-analytics-cards';
+import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 // Helper function to get all processes from a folder and its subfolders
@@ -62,7 +63,10 @@ const ProcessesPage = async (props: {
     ? folderContents.filter(
         (folderContent) => folderContent.type === 'folder' || folderContent.versions.length > 0,
       )
-    : folderContents;
+    : folderContents.filter(
+        (entry) =>
+          entry.type === 'folder' || ability.can('update', toCaslResource('Process', entry)),
+      );
 
   const hasNoReleasedProcesses = isListView
     ? folderContentsFiltered.every((item) => item.type === 'folder')

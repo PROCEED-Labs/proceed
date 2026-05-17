@@ -15,8 +15,8 @@ import cn from 'classnames';
 import styles from './favorite-processes-section.module.scss';
 
 const CARD_WIDTH = 225;
-const CARD_GAP = 16;
-const PADDING_LEFT = 70;
+const CARD_GAP = 20;
+const PADDING_LEFT = 60;
 const RIGHT_BUTTON_SPACE = 40;
 
 type FavoriteProcess = {
@@ -216,83 +216,74 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     return null;
   }
 
-  const actualCardCount = Math.min(visibleCardCount, displayedProcesses.length);
-  const listWidth = actualCardCount * CARD_WIDTH + (actualCardCount - 1) * CARD_GAP;
-
   return (
     <div
-      ref={containerRef}
       className={styles.FavoritesSection}
       style={{
         paddingLeft: `${PADDING_LEFT}px`,
-        paddingRight: `${RIGHT_BUTTON_SPACE}px`,
+        paddingRight: `${PADDING_LEFT}px`,
       }}
     >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
+        <h2 style={{ margin: 0, whiteSpace: 'nowrap' }}>
+          <StarOutlined style={{ marginRight: '8px' }} />
+          My Favorite Processes
+        </h2>
+        {displayedProcesses.length >= 2 && (
+          <Space size="small" style={{ flexShrink: 0 }}>
+            {sortTypes.map((type) => (
+              <Button
+                key={type.name}
+                type={sortType === type.name ? 'primary' : 'default'}
+                onClick={() => setSortType(type.name)}
+                size="small"
+              >
+                {type.label}
+              </Button>
+            ))}
+          </Space>
+        )}
+      </div>
       <div style={{ position: 'relative' }}>
+        {showLeftArrow && (
+          <Button
+            shape="circle"
+            icon={<DoubleLeftOutlined />}
+            onClick={() => scroll('left')}
+            className={`${styles.CarouselButton} ${styles.NavigationButton}`}
+            style={{ left: '-35px' }}
+          />
+        )}
         <div
+          ref={scrollContainerRef}
+          className="Hide-Scroll-Bar"
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '1rem',
-            width: `${listWidth}px`,
-            minWidth: 'fit-content',
+            gap: `${CARD_GAP}px`,
+            overflowX: 'auto',
+            paddingBottom: '8px',
           }}
         >
-          <h2 style={{ margin: 0, whiteSpace: 'nowrap' }}>
-            <StarOutlined style={{ marginRight: '8px' }} />
-            My Favorite Processes
-          </h2>
-          {displayedProcesses.length >= 2 && (
-            <Space size="small" style={{ flexShrink: 0 }}>
-              {sortTypes.map((type) => (
-                <Button
-                  key={type.name}
-                  type={sortType === type.name ? 'primary' : 'default'}
-                  onClick={() => setSortType(type.name)}
-                  size="small"
-                >
-                  {type.label}
-                </Button>
-              ))}
-            </Space>
-          )}
+          {displayedProcesses.map((process) => (
+            <ProcessCard key={process.id} process={process} space={space} router={router} />
+          ))}
         </div>
-        <div className={styles.Carousel}>
-          {showLeftArrow && (
-            <Button
-              shape="circle"
-              icon={<DoubleLeftOutlined />}
-              onClick={() => scroll('left')}
-              className={styles.CarouselButton}
-              style={{ left: `-${PADDING_LEFT / 2 + 16}px` }}
-            />
-          )}
-          <div
-            ref={scrollContainerRef}
-            className="Hide-Scroll-Bar"
-            style={{
-              display: 'flex',
-              gap: `${CARD_GAP}px`,
-              overflowX: 'auto',
-              paddingBottom: '8px',
-              width: `${listWidth}px`,
-            }}
-          >
-            {displayedProcesses.map((process) => (
-              <ProcessCard key={process.id} process={process} space={space} router={router} />
-            ))}
-          </div>
-          {showRightArrow && (
-            <Button
-              shape="circle"
-              icon={<DoubleRightOutlined />}
-              onClick={() => scroll('right')}
-              className={styles.CarouselButton}
-              style={{ left: `${listWidth + 20}px` }}
-            />
-          )}
-        </div>
+        {showRightArrow && (
+          <Button
+            shape="circle"
+            icon={<DoubleRightOutlined />}
+            onClick={() => scroll('right')}
+            className={`${styles.CarouselButton} ${styles.NavigationButton}`}
+            style={{ right: '-35px' }}
+          />
+        )}
       </div>
     </div>
   );

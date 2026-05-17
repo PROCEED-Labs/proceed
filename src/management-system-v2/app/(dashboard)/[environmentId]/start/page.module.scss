@@ -1,8 +1,38 @@
 .wrapper {
   h1 {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2.5rem;
     text-align: left;
-    padding-left: 70px;
+    padding-left: 40px;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.03em;
+    position: relative;
+    padding-bottom: 0.3rem;
+    // bottom accent line
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 40px;
+      width: 120px;
+      height: 4px;
+      background: linear-gradient(
+        90deg,
+        #1890ff 0%,
+        #40a9ff 70%,
+        transparent 100%
+      );
+      border-radius: 2px;
+    }
+
+    // text gradient on PROCEED
+    background: linear-gradient(135deg, #1a1a1a 0%, #262626 50%, #1890ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% auto;
+    animation: shimmer 8s ease-in-out infinite;
   }
 
   :global(.ant-layout-content) {
@@ -14,5 +44,18 @@
 
 .gridContainer {
   display: grid;
-  gap: 1.5rem;
+  column-gap: 7.5em;
+  padding-right: 60px;
+  padding-left: 60px;
+}
+
+// shimmer animation for the heading
+@keyframes shimmer {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
 }

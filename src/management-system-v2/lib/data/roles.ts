@@ -16,8 +16,8 @@ import { Role } from './role-schema';
 import db from '@/lib/data/db';
 import { addRoleMappings } from './db/iam/role-mappings';
 
-export async function deleteRoles(envitonmentId: string, roleIds: string[]) {
-  const { ability } = await getCurrentEnvironment(envitonmentId);
+export async function deleteRoles(environmentId: string, roleIds: string[]) {
+  const { ability } = await getCurrentEnvironment(environmentId);
 
   try {
     for (const roleId of roleIds) {

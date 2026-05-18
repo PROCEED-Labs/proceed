@@ -27,6 +27,7 @@ import {
 } from '@lexical/list';
 
 import {
+  $createTextNode,
   $getSelection,
   $isRangeSelection,
   CAN_REDO_COMMAND,
@@ -42,6 +43,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { VariableSetting } from '../elements/utils';
 
 import { tokenize } from '@proceed/user-task-helper/src/tokenize';
+import DataObjectSelectionModal from './DataObjectSelectionModal';
 
 const LowPriority = 1;
 
@@ -58,6 +60,17 @@ export default function ToolbarPlugin() {
   const [linkType, setLinkType] = useState<'url' | 'variable'>('url');
   const [isOrderedList, setIsOrderedList] = useState(false);
   const [isUnorderedList, setIsUnorderedList] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const insertGlobalVariable = (path: string) => {
+    editor.update(() => {
+      const selection = $getSelection();
+      if ($isRangeSelection(selection)) {
+        const textNode = $createTextNode(`{%${path}%}`);
+        selection.insertNodes([textNode]);
+      }
+    });
+  };
 
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
@@ -301,6 +314,30 @@ export default function ToolbarPlugin() {
           onClick={() => editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, 'right')}
         />
       </div>
+      <Divider orientation="vertical" />
+      <Button
+        className="toolbar-item spaced"
+        type="text"
+        style={{ fontSize: '11px', fontWeight: 600 }}
+        onClick={() => setModalOpen(true)}
+      >
+        Add Variable
+      </Button>
+
+      <DataObjectSelectionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSelect={(variable, isGlobal) => {
+          editor.update(() => {
+            const selection = $getSelection();
+            if ($isRangeSelection(selection)) {
+              const token = isGlobal ? `{%${variable}%}` : `{%${variable}%}`;
+              const textNode = $createTextNode(token);
+              selection.insertNodes([textNode]);
+            }
+          });
+        }}
+      />
       {isLink && (
         <div style={{ margin: '5px' }}>
           Link:

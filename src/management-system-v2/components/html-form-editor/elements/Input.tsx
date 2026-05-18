@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select } from 'antd';
+import { Button, Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
@@ -9,6 +9,7 @@ import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteButton } from '../DeleteButton';
+import DataObjectSelectionModal from '../_utils/DataObjectSelectionModal';
 
 type InputProps = {
   label?: string;
@@ -16,6 +17,7 @@ type InputProps = {
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
+  globalVariable?: string;
 };
 
 export const ExportInput: UserComponent<InputProps> = ({
@@ -24,20 +26,21 @@ export const ExportInput: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
+  globalVariable,
 }) => {
   const inputId = useId();
 
-  if (!variable) variable = `__anonymous_variable_${inputId}__`;
+  const effectiveName = globalVariable || variable || `__anonymous_variable_${inputId}__`;
 
-  const value = defaultValue || `{%${variable}%}`;
+  const value = defaultValue || `{%${effectiveName}%}`;
 
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       type={type}
       defaultValue={value}
-      name={variable}
+      name={effectiveName}
     />
   );
 
@@ -93,6 +96,7 @@ const Input: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
+  globalVariable,
 }) => {
   const {
     connectors: { connect },
@@ -120,14 +124,16 @@ const Input: UserComponent<InputProps> = ({
     }
   }, [inputId, editingDefault]);
 
+  const effectiveName = globalVariable || variable;
+
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       disabled={!editingEnabled}
       type={type}
       value={defaultValue}
-      name={variable}
+      name={effectiveName}
       onClick={() => {
         if (!editingEnabled) return;
         setEditingDefault(true);
@@ -208,10 +214,28 @@ export const InputSettings = () => {
     actions: { setProp },
     labelPosition,
     variable,
+    globalVariable,
   } = useNode((node) => ({
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
+    globalVariable: node.data.props.globalVariable,
   }));
+
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Determine display text for the button
+  const getDisplayText = () => {
+    if (globalVariable) {
+      return globalVariable;
+    }
+    if (variable) {
+      return variable;
+    }
+    return 'Select Variable';
+  };
+
+  const displayText = getDisplayText();
+  const hasVariable = !!(globalVariable || variable);
 
   return (
     <>
@@ -235,33 +259,78 @@ export const InputSettings = () => {
         }
       />
 
-      <VariableSetting
-        variable={variable}
-        allowedTypes={['string', 'number', 'file', 'date']}
-        onChange={(newVariable, newVariableType, newVariableTextFormat) =>
+      <Setting
+        label="Variable"
+        control={
+          <Button
+            style={{
+              display: 'flex',
+              width: '100%',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            onClick={() => setModalOpen(true)}
+            type={hasVariable ? 'default' : 'dashed'}
+            title={hasVariable ? displayText : 'Click to select a variable'}
+          >
+            <span
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                textAlign: 'left',
+              }}
+            >
+              {displayText}
+            </span>
+            <EditOutlined style={{ marginLeft: 8, flexShrink: 0 }} />
+          </Button>
+        }
+      />
+
+      <DataObjectSelectionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSelect={(selected, isGlobal, variableType, variableTextFormat) => {
           setProp((props: InputProps) => {
-            props.variable = newVariable;
-            if (newVariableTextFormat) props.type = newVariableTextFormat;
-            else {
-              switch (newVariableType) {
-                case 'string':
-                  props.type = 'text';
-                  break;
-                case 'number':
-                  props.type = 'number';
-                  break;
-                case 'file':
-                  props.type = 'file';
-                  break;
-                case 'date':
-                  props.type = 'date';
-                  break;
-                default:
-                  props.type = 'text';
+            if (isGlobal) {
+              props.globalVariable = selected;
+              props.variable = undefined;
+              props.type = 'text'; // global variables are always text for now
+            } else {
+              props.variable = selected;
+              props.globalVariable = undefined;
+              if (variableTextFormat) {
+                props.type = variableTextFormat as
+                  | 'text'
+                  | 'number'
+                  | 'email'
+                  | 'url'
+                  | 'file'
+                  | 'date'
+                  | undefined;
+              } else {
+                switch (variableType) {
+                  case 'string':
+                    props.type = 'text';
+                    break;
+                  case 'number':
+                    props.type = 'number';
+                    break;
+                  case 'file':
+                    props.type = 'file';
+                    break;
+                  case 'date':
+                    props.type = 'date';
+                    break;
+                  default:
+                    props.type = 'text';
+                }
               }
             }
-          })
-        }
+          });
+        }}
       />
     </>
   );
@@ -280,6 +349,7 @@ Input.craft = {
     defaultValue: '',
     labelPosition: 'top',
     variable: undefined,
+    globalVariable: undefined,
   },
 };
 

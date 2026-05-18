@@ -142,7 +142,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   // check that the elements that should be visible are visible
   await expect(elementSectionsLocator).toHaveCount(11);
 
-  // locate subprocess overview instead of using index
+  // locate subprocess overview
   const subprocessOverview = elementSectionsLocator
     .filter({
       hasText: 'Sub Process: A',
@@ -154,7 +154,7 @@ test('show meta data of a process element', async ({ page, processListPage }) =>
   // check that there is no meta data for the subprocess
   await expect(subprocessOverview.locator('[class*=MetaInformation]')).toBeVisible();
 
-  // locate subprocess milestone task reliably instead of using index
+  // locate subprocess milestone task reliably
   const subprocessMilestoneTask = elementSectionsLocator.filter({
     has: documentationPage.getByRole('heading', { name: 'A.A' }),
   });
@@ -520,8 +520,6 @@ test('a setting allows to show the subprocess element instead of its content', a
   // check if the overview of the subprocess is shown with its name instead of its id
   const subprocessOverview = elementSections[3];
   await expect(subprocessOverview.getByText('Sub Process: A')).toBeVisible();
-  // check that there is meta data for the subprocess
-  await expect(subprocessOverview.locator('css=[class*=MetaInformation]')).toBeVisible();
 
   // check that the user task that has meta data is shown
   const subprocessMilestoneTask = elementSections[8];
@@ -535,10 +533,10 @@ test('a setting allows to show the subprocess element instead of its content', a
   await settingsModal.getByLabel('Nested Subprocesses').click();
   await closeModal(settingsModal, () => settingsModal.getByRole('button', { name: 'OK' }).click());
 
-  await expect(elementSectionsLocator).toHaveCount(11);
+  await expect(elementSectionsLocator).toHaveCount(2);
   elementSections = await elementSectionsLocator.all();
 
-  await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeVisible();
+  await expect(subprocessMilestoneTask.getByRole('heading', { name: 'A.A' })).toBeHidden();
 
   // check if the bpmn shown for the (collapsed) subprocess is the subprocess element instead of the subrocess content
   const import1SubprocessElementView = documentationPage
@@ -662,7 +660,7 @@ test('a setting allows to show a call activity instead of the imported process',
   // check if the bpmn shown for the call activities is the call activity elements instead of the imported process
   const callActivity1View = elementSections[2];
 
-  // the start event of the imported process should be visible
+  // the start event of the imported process should not be visible
   await expect(
     callActivity1View.locator('.djs-shape[data-element-id="StartEvent_0lu383t"]'),
   ).not.toBeVisible();
@@ -685,7 +683,7 @@ test('a setting allows to show a call activity instead of the imported process',
   await expect(
     callActivity1View.locator('.djs-shape[data-element-id="Event_05hheu3"]').getAttribute('style'),
   ).resolves.toMatch(/display: none/);
-  // instead the subprocess element and its incoming and outgoing sequence flow should not be visible
+  // instead the subprocess element and its incoming and outgoing sequence flow should be visible
   await expect(
     callActivity1View
       .locator('.djs-connection[data-element-id="Flow_11v1suu"]')

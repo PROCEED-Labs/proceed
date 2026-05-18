@@ -649,11 +649,10 @@ function filterMainChildren(
  * Gets subprocess children separated by type (regular first, then event-triggered)
  */
 function getSubprocessChildren(children: ElementInfo[]): ElementInfo[] {
-  const regular = children.filter(
-    (c) => isSubprocessWithOwnSection(c) && !isEventTriggeredSubprocess(c),
-  );
-  const eventTriggered = children.filter((c) => isEventTriggeredSubprocess(c));
-  return [...regular, ...eventTriggered];
+  return [
+    ...children.filter((c) => isSubprocessWithOwnSection(c) && !isEventTriggeredSubprocess(c)),
+    ...children.filter((c) => isEventTriggeredSubprocess(c)),
+  ];
 }
 /**
  * Builds TOC items for a subprocess section (shared between process and instance)
@@ -719,10 +718,11 @@ function buildImportedProcessSection(
   const allChildren = child.children || [];
 
   const mainChildren = filterMainChildren(allChildren, settings, isEmptyFn);
-  const subprocessChildren = getSubprocessChildren(allChildren);
-
-  const subprocessSections = subprocessChildren.map(
-    (sub) => buildSubprocessTocSection(sub, href, settings, buildElementChildrenFn, isEmptyFn), // ✅ NO PREFIX - keeps nested subprocesses as-is
+  const subprocessChildren = getSubprocessChildren(allChildren).filter(
+    (child) => !isCollapsedSubprocess(child) || settings.nestedSubprocesses,
+  );
+  const subprocessSections = subprocessChildren.map((sub) =>
+    buildSubprocessTocSection(sub, href, settings, buildElementChildrenFn, isEmptyFn),
   );
 
   return {
@@ -777,8 +777,9 @@ export function buildProcessTocItems(
 
   const allChildren = hierarchy.children || [];
   const mainChildren = filterMainChildren(allChildren, settings, isProcessElementEmpty);
-  const subprocessChildren = getSubprocessChildren(allChildren);
-
+  const subprocessChildren = getSubprocessChildren(allChildren).filter(
+    (child) => !isCollapsedSubprocess(child) || settings.nestedSubprocesses,
+  );
   const buildElementChildren = (child: ElementInfo) => [
     ...buildBaseElementTocChildren(child, href, !!settings.showElementSVG),
     ...buildBoundaryEventTocItems(child, href),
@@ -846,9 +847,6 @@ export function buildInstanceTocItems(
   const href = (id: string) => (linksDisabled ? '' : id);
 
   function buildElementChildren(node: ElementInfo): AnchorLinkItemProps[] {
-    const hasLog = !!node.instanceStatus?.logEntries?.length;
-    const hasToken = !!node.instanceStatus?.token;
-
     return [
       ...buildBaseElementTocChildren(node, href, !!settings.showElementSVG),
       ...(settings.showInstanceStatus
@@ -892,7 +890,9 @@ export function buildInstanceTocItems(
   }
 
   const allChildren = hierarchy.children || [];
-  const subprocessChildren = getSubprocessChildren(allChildren);
+  const subprocessChildren = getSubprocessChildren(allChildren).filter(
+    (child) => !isCollapsedSubprocess(child) || settings.nestedSubprocesses,
+  );
   const subprocessSections = subprocessChildren.map((sub) =>
     buildSubprocessTocSection(sub, href, settings, buildElementChildren, isInstanceElementEmpty),
   );
@@ -1001,7 +1001,6 @@ export function isExcludedFromMainList(node: ElementInfo): boolean {
 export function getSubprocessLabel(node: ElementInfo): string {
   const name = node.name && !node.name.startsWith('<') ? node.name : node.id;
   if (node.isEventTriggeredSubprocess) return `Event-Triggered Subprocess: ${name}`;
-  if (isCollapsedSubprocess(node)) return `Sub Process: ${name}`;
   return `Sub Process: ${name}`;
 }
 

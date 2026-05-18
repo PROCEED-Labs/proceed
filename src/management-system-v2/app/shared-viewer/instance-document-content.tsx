@@ -21,6 +21,7 @@ import {
   getSubprocessLabel,
   resolveElementImageUrl,
   separateChildren,
+  isCollapsedSubprocess,
 } from './documentation-page-utils';
 import TableOfContents from './table-of-content';
 import { fromCustomUTCString } from '@/lib/helpers/timeHelper';
@@ -28,6 +29,7 @@ import ProcessDetailsTable from '@/components/doc-process-details-table';
 import ElementSections from '@/components/doc-element-sections';
 import ExecutionLogTable from '../../components/instance-doc-tables/execution-log-table';
 import FinalVariablesTable from '../../components/instance-doc-tables/final-variables-table';
+import ImportedProcessSectionHeader from '@/components/doc-imported-process-header';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -258,46 +260,19 @@ const InstanceDocumentContent: React.FC<Props> = ({
           await renderDetailedElement(child, importedMainPages, importedPages, true);
         }
         for (const sub of subprocessChildren) {
+          if (isCollapsedSubprocess(sub) && !settings.nestedSubprocesses) continue;
           await renderSubprocessSection(sub, importedSubPages, importedPages);
         }
 
         importedPages.push(
-          <div
+          <ImportedProcessSectionHeader
             key={`imported_${node.id}_section`}
-            className={cn(styles.ElementPage, styles.ContainerPage)}
-          >
-            <Title id={`subprocess_${node.id}_page`} level={2}>
-              {importLabel}
-            </Title>
-            {node.importedProcess.description && (
-              <div className={styles.MetaInformation}>
-                <Title level={3} id={`subprocess_${node.id}_description_page`}>
-                  Summary
-                </Title>
-                <div
-                  className="toastui-editor-contents"
-                  dangerouslySetInnerHTML={{ __html: node.importedProcess.description }}
-                />
-              </div>
-            )}
-            <div className={styles.MetaInformation}>
-              <Title level={3} id={`subprocess_${node.id}_diagram_page`}>
-                Process Diagram
-              </Title>
-              <div
-                className={styles.ElementCanvas}
-                style={{ display: 'flex', justifyContent: 'center' }}
-                dangerouslySetInnerHTML={{ __html: node.importedProcess.planeSvg }}
-              />
-            </div>
-            {node.children?.length ? (
-              <div className={styles.MetaInformation}>
-                <Title level={3} id={`subprocess_${node.id}_elements_page`}>
-                  {`${importLabel} — Element Details`}
-                </Title>
-              </div>
-            ) : null}
-          </div>,
+            id={node.id}
+            importLabel={importLabel}
+            description={node.importedProcess.description}
+            planeSvg={node.importedProcess.planeSvg}
+            hasChildren={!!node.children?.length}
+          />,
           ...importedMainPages,
           ...importedSubPages,
         );
@@ -316,15 +291,11 @@ const InstanceDocumentContent: React.FC<Props> = ({
       for (const child of mainChildren) {
         await renderDetailedElement(child, mainPages, importedPages);
       }
-      // Collapsed subprocesses also appear in main log
-      for (const child of subprocessChildren) {
-        if (child.nestedSubprocess) {
-          await renderDetailedElement(child, mainPages, importedPages);
-        }
-      }
 
       // All subprocess sections at the end
       for (const child of subprocessChildren) {
+        // collapsed subprocesses only get their own section when nestedSubprocesses is ON
+        if (isCollapsedSubprocess(child) && !settings.nestedSubprocesses) continue;
         await renderSubprocessSection(child, subPages, importedPages);
       }
 

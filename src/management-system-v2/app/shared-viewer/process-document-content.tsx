@@ -31,6 +31,7 @@ import {
   resolveElementImageUrl,
   separateChildren,
 } from './documentation-page-utils';
+import ImportedProcessSectionHeader from '@/components/doc-imported-process-header';
 
 type ProcessDocumentContentProps = {
   processData: Awaited<ReturnType<typeof getProcess>>;
@@ -341,45 +342,6 @@ async function getContent(
       hierarchyElement.children?.length
     ) {
       const importLabel = hierarchyElement.importedProcess.name!;
-      subprocessPages.push(
-        <div
-          key={`imported_${hierarchyElement.id}_section`}
-          className={cn(styles.ElementPage, styles.ContainerPage)}
-        >
-          <Title id={`subprocess_${hierarchyElement.id}_page`} level={2}>
-            {importLabel}
-          </Title>
-          {hierarchyElement.importedProcess.description && (
-            <div className={styles.MetaInformation}>
-              <Title level={3} id={`subprocess_${hierarchyElement.id}_description_page`}>
-                Summary
-              </Title>
-              <div
-                className="toastui-editor-contents"
-                dangerouslySetInnerHTML={{ __html: hierarchyElement.importedProcess.description }}
-              />
-            </div>
-          )}
-          <div className={styles.MetaInformation}>
-            <Title level={3} id={`subprocess_${hierarchyElement.id}_diagram_page`}>
-              Process Diagram
-            </Title>
-            <div
-              className={styles.ElementCanvas}
-              style={{ display: 'flex', justifyContent: 'center' }}
-              dangerouslySetInnerHTML={{ __html: hierarchyElement.importedProcess.planeSvg }}
-            />
-          </div>
-          {hierarchyElement.children?.length ? (
-            <div className={styles.MetaInformation}>
-              <Title level={3} id={`subprocess_${hierarchyElement.id}_elements_page`}>
-                {`${importLabel} — Element Details`}
-              </Title>
-            </div>
-          ) : null}
-        </div>,
-      );
-
       const importedMainPages: React.JSX.Element[] = [];
       const importedSubprocessPages: React.JSX.Element[] = [];
       const { mainChildren, subprocessChildren } = separateChildren(hierarchyElement.children);
@@ -394,13 +356,22 @@ async function getContent(
         }
       }
 
-      // Push main elements first then subprocess sections
-      subprocessPages.push(...importedMainPages);
-      subprocessPages.push(...importedSubprocessPages);
+      subprocessPages.push(
+        <ImportedProcessSectionHeader
+          key={`imported_${hierarchyElement.id}_section`}
+          id={hierarchyElement.id}
+          importLabel={importLabel}
+          description={hierarchyElement.importedProcess.description}
+          planeSvg={hierarchyElement.importedProcess.planeSvg}
+          hasChildren={!!hierarchyElement.children?.length}
+        />,
+        ...importedMainPages,
+        ...importedSubprocessPages,
+      );
     }
   }
-  // Collapsed subprocesses also get their own section in addition to appearing in main list
-  if (isCollapsedSubprocess(hierarchyElement) && !isRoot) {
+  // Collapsed subprocesses get their own section only when nestedSubprocesses setting is ON
+  if (isCollapsedSubprocess(hierarchyElement) && !isRoot && settings.nestedSubprocesses) {
     const subLabel = getSubprocessLabel(hierarchyElement);
     subprocessPages.push(
       <div

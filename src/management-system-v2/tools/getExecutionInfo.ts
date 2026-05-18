@@ -120,6 +120,8 @@ export default async function getExecutionInfo({
       };
     };
 
+    console.log(JSON.stringify(instance, null, 2));
+
     // extend the instance information object with data that might be useful to the user and the LLM
     // the most significant changes are mapping from user/role ids to actual user/role information
     // insertions of process element names alongside process element ids
@@ -173,7 +175,7 @@ export default async function getExecutionInfo({
         fileName: uT.attrs?.['proceed:fileName'],
         // map engine internal information about potential owners to user readable information
         potentialPerformers: uT.resources
-          ?.map((r: any) => {
+          ?.flatMap((r: any) => {
             try {
               const { user, roles } = JSON.parse(r.resourceAssignmentExpression.expression.body);
               return [...user.map(idToUser), ...roles.map(idToRole)];
@@ -181,8 +183,7 @@ export default async function getExecutionInfo({
 
             return undefined;
           })
-          .filter(truthyFilter)
-          .flat(),
+          .filter(truthyFilter),
       })),
     };
 

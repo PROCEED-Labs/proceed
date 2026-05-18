@@ -4,8 +4,9 @@ import { getRoles } from '@/lib/data/roles';
 export default function useOrganizationRoles(spaceId: string, type?: 'team' | 'back-office') {
   const { data, ...query } = useQuery({
     queryFn: async () => {
-      const roles = await getRoles(spaceId);
+      let roles = await getRoles(spaceId);
       if ('error' in roles) throw new Error();
+      roles = roles.filter((r) => !r.parentRoleId);
       return roles;
     },
     queryKey: ['roles', spaceId],

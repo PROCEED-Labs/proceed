@@ -413,7 +413,7 @@ const Processes = ({
   };
 
   const viewDocumentation = (item: ProcessListProcess) => {
-    handleOpenDocumentation(item.id);
+    handleOpenDocumentation(item.id, space.spaceId);
   };
 
   const openEditor = (item: ProcessListProcess) => {
@@ -553,7 +553,7 @@ const Processes = ({
                                     type="text"
                                     icon={<GrDocumentUser className={styles.Icon} />}
                                     onClick={() => {
-                                      handleOpenDocumentation(selectedRowKeys[0]);
+                                      handleOpenDocumentation(selectedRowKeys[0], space.spaceId);
                                     }}
                                   />
                                 </Tooltip>

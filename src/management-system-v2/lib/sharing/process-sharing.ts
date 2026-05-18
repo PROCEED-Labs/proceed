@@ -15,6 +15,7 @@ export interface TokenPayload {
   processId: string | string[];
   embeddedMode?: boolean;
   timestamp: number;
+  spaceId?: string; // used for navigation (to remain in same space)
 }
 
 export interface ProcessGuestAccessRights {
@@ -47,6 +48,8 @@ export async function generateSharedViewerUrl(
   payload: TokenPayload,
   version?: string,
   settings?: string[],
+  instanceId?: string,
+  coloring?: string,
 ) {
   try {
     if (payload.embeddedMode && !version)
@@ -65,6 +68,12 @@ export async function generateSharedViewerUrl(
       url += `&version=${version}`;
     }
 
+    if (instanceId) {
+      url += `&instance=${instanceId}`;
+    }
+    if (coloring) {
+      url += `&coloring=${coloring}`;
+    }
     if (settings?.length) {
       settings.forEach((option) => {
         url += `&settings=${option}`;

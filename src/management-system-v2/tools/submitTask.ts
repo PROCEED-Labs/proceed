@@ -123,7 +123,7 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
           .map((varName) => {
             const definition = variableDefinitions.find((v) => v.name === varName);
 
-            const stringTypes = ['string', 'data'];
+            const stringTypes = ['string', 'date'];
 
             if (definition) {
               switch (typeof mappedVariables[varName]) {

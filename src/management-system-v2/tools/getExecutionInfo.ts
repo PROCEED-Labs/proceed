@@ -113,12 +113,14 @@ export default async function getExecutionInfo({
           : undefined,
         potentialPerformers: input.performers
           ? {
-            user: input.performers.user.map(idToUser).filter(truthyFilter),
-            roles: input.performers.roles.map(idToRole).filter(truthyFilter),
-          }
+              user: input.performers.user.map(idToUser).filter(truthyFilter),
+              roles: input.performers.roles.map(idToRole).filter(truthyFilter),
+            }
           : undefined,
       };
     };
+
+    console.log(JSON.stringify(instance, null, 2));
 
     // extend the instance information object with data that might be useful to the user and the LLM
     // the most significant changes are mapping from user/role ids to actual user/role information
@@ -138,7 +140,10 @@ export default async function getExecutionInfo({
           {
             ...info,
             // add the name so the llm can show it instead of the id
-            log: info.log.map((l) => ({ ...l, changedByElementName: idToName(l.changedBy) })),
+            log: info.log.map((l) => ({
+              ...l,
+              changedByElementName: l.changedBy && idToName(l.changedBy),
+            })),
           },
         ]),
       ),
@@ -149,9 +154,9 @@ export default async function getExecutionInfo({
         actualPerformers: l.actualOwner ? l.actualOwner.map(idToUser) : undefined,
         potentialPerformers: l.performers
           ? {
-            user: l.performers.user.map(idToUser),
-            roles: l.performers.roles.map(idToRole),
-          }
+              user: l.performers.user.map(idToUser),
+              roles: l.performers.roles.map(idToRole),
+            }
           : undefined,
       })),
       // remove execution information needed by the engine
@@ -170,16 +175,15 @@ export default async function getExecutionInfo({
         fileName: uT.attrs?.['proceed:fileName'],
         // map engine internal information about potential owners to user readable information
         potentialPerformers: uT.resources
-          ?.map((r: any) => {
+          ?.flatMap((r: any) => {
             try {
               const { user, roles } = JSON.parse(r.resourceAssignmentExpression.expression.body);
               return [...user.map(idToUser), ...roles.map(idToRole)];
-            } catch (err) { }
+            } catch (err) {}
 
             return undefined;
           })
-          .filter(truthyFilter)
-          .flat(),
+          .filter(truthyFilter),
       })),
     };
 

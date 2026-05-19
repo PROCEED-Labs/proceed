@@ -40,6 +40,7 @@ export function updateShare(
           processId,
           embeddedMode,
           timestamp,
+          spaceId,
         },
         versionId,
       );

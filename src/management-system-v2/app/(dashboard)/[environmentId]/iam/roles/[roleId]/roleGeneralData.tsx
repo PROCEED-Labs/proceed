@@ -1,10 +1,8 @@
 'use client';
 
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { Alert, App, Button, Form, Input, Modal, Select, Space, Tooltip } from 'antd';
-import { FC, useState } from 'react';
-// import dayjs from 'dayjs';
-// import germanLocale from 'antd/es/date-picker/locale/de_DE';
+import { Alert, App, Button, Flex, Form, Input, Select, Tooltip } from 'antd';
+import { FC } from 'react';
 import { useAbilityStore } from '@/lib/abilityStore';
 import { updateRole } from '@/lib/data/roles';
 import { useRouter } from 'next/navigation';
@@ -12,87 +10,13 @@ import { Role, RoleInputSchema } from '@/lib/data/role-schema';
 import { useEnvironment } from '@/components/auth-can';
 import useParseZodErrors, { antDesignInputProps } from '@/lib/useParseZodErrors';
 import FormSubmitButton from '@/components/form-submit-button';
-import { FolderTree } from '@/components/FolderTree';
-import { ProcessListItemIcon } from '@/components/process-list';
 import { Folder } from '@/lib/data/folder-schema';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const InputSchema = RoleInputSchema.omit({ environmentId: true, permissions: true });
 
-const FolderInput = ({
-  onChange,
-  defaultFolder,
-}: {
-  value?: string;
-  onChange?: (id: Role['parentId']) => void;
-  defaultFolder?: Folder;
-}) => {
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<
-    { type: string; name: string; id: string } | undefined
-  >(
-    () =>
-      defaultFolder && {
-        type: 'folder',
-        name: defaultFolder.parentId ? defaultFolder.name : '< root >',
-        id: defaultFolder.id,
-      },
-  );
-
-  return (
-    <>
-      <Modal
-        title="Choose a folder"
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        closeIcon={null}
-      >
-        <Space orientation="vertical" style={{ maxWidth: '100%' }}>
-          <Button
-            onClick={() => {
-              onChange?.(undefined);
-              setSelectedFolder(undefined);
-              setModalOpen(false);
-            }}
-            type="default"
-            danger
-          >
-            Clear folder
-          </Button>
-          <FolderTree<{ id: string; name: string; type: string }>
-            newChildrenHook={({ nodes }) => nodes.filter((node) => node.element.type === 'folder')}
-            onSelect={(element) => {
-              if (element?.type !== 'folder') return;
-
-              onChange?.(element.id);
-              setSelectedFolder(element);
-              setModalOpen(false);
-            }}
-            treeProps={{
-              selectedKeys: selectedFolder ? [selectedFolder.id] : [],
-            }}
-            showRootAsFolder
-          />
-        </Space>
-      </Modal>
-      <Button onClick={() => setModalOpen(true)}>
-        {selectedFolder ? (
-          <>
-            <ProcessListItemIcon item={selectedFolder as any} /> {selectedFolder.name}
-          </>
-        ) : (
-          'Select folder'
-        )}
-      </Button>
-    </>
-  );
-};
-
-const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
-  role: _role,
-  roleParentFolder,
-}) => {
+const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: _role }) => {
   const app = App.useApp();
   const ability = useAbilityStore((store) => store.ability);
   const [form] = Form.useForm();
@@ -179,23 +103,13 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({
           ]}
         />
       </Form.Item>
-      {/** <Form.Item label="Expiration" name="expirationDayJs">
-        <DatePicker
-          // Note german locale hard coded
-          locale={germanLocale}
-          allowClear={true}
-          disabled={!ability.can('update', role, { field: 'expiration' })}
-          defaultValue={role.expiration ? dayjs(new Date(role.expiration)) : undefined}
-        />
-      </Form.Item>*/}
 
-      <Form.Item label="Folder" name="parentId">
-        <FolderInput defaultFolder={roleParentFolder} />
-      </Form.Item>
-
-      <Form.Item>
-        <FormSubmitButton submitText="Update Role" isValidData={(values) => !!parseInput(values)} />
-      </Form.Item>
+      <Flex justify="end" gap={5}>
+        <Button onClick={() => form.resetFields()}>Cancel</Button>
+        <Form.Item>
+          <FormSubmitButton submitText="Save" isValidData={(values) => !!parseInput(values)} />
+        </Form.Item>
+      </Flex>
     </Form>
   );
 };

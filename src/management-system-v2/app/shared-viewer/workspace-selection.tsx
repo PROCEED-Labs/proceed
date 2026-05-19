@@ -8,7 +8,7 @@ import { copyProcesses } from '@/lib/data/processes';
 
 import { Environment } from '@/lib/data/environment-schema';
 import { getProcess } from '@/lib/data/db/process';
-import { VersionInfo } from './process-document';
+import { VersionInfo } from './process-document-content';
 
 import styles from './workspace-selection.module.scss';
 import { AiOutlineFolderOpen, AiOutlineFolder } from 'react-icons/ai';

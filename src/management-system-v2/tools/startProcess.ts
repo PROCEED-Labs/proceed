@@ -94,6 +94,10 @@ export default async function startProcess({
       engine,
       startParameters &&
         Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
+      {
+        processInitiator: userId,
+        spaceIdOfProcessInitiator: environmentId,
+      },
     );
 
     if (isUserErrorResponse(instanceId)) {

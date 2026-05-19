@@ -60,11 +60,13 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
     );
 
     const tools = {
+      'get-organization-data': true,
+      'get-user-data': true,
       'get-processes': canAccessProcesses,
       'get-process-info': canAccessProcesses,
       'start-process': canCreateInstances,
-      'get-organization-data': true,
-      'get-user-data': true,
+      'get-executions': canAccessInstances,
+      'get-execution-info': canAccessInstances,
     };
 
     const result = Object.entries(tools)

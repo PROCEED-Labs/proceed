@@ -177,7 +177,7 @@ export async function exportInstanceData(
   spaceId: string,
 ) {
   const objectOrderTemplate = {
-    ProzessId: null,
+    ProcessId: null,
     ProcessName: null,
     ProcessShortName: null,
     ProcessVersionId: null,
@@ -291,7 +291,7 @@ export async function exportInstanceData(
 
   // renaming
   const keyMap: Record<string, string> = {
-    processId: 'ProzessId',
+    processId: 'ProcessId',
     processVersion: 'ProcessVersionId',
     processInstanceId: 'ProcessInstanceId',
     processInitiator: 'ProcessInstanceInitiatorId',

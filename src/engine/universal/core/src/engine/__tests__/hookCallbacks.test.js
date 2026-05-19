@@ -56,7 +56,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
     };
 
     mockStateStream = {
-      subscribe: jest.fn().mockImplementation(function(cb) {
+      subscribe: jest.fn().mockImplementation(function (cb) {
         this.subscriber = cb;
       }),
       subscriber: null,
@@ -68,31 +68,31 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       logExecution: jest.fn(),
       updateLog: jest.fn(),
       completeActivity: jest.fn(),
-      getLog$: jest.fn().mockImplementation(function() {
+      getLog$: jest.fn().mockImplementation(function () {
         return { subscribe: (cb) => (this.logCallback = cb) };
       }),
-      onEnded: jest.fn().mockImplementation(function(cb) {
+      onEnded: jest.fn().mockImplementation(function (cb) {
         this.endedCallback = cb;
       }),
-      onAborted: jest.fn().mockImplementation(function(cb) {
+      onAborted: jest.fn().mockImplementation(function (cb) {
         this.abortedCallback = cb;
       }),
-      onUserTaskInterrupted: jest.fn().mockImplementation(function(cb) {
+      onUserTaskInterrupted: jest.fn().mockImplementation(function (cb) {
         this.userTaskInterruptedCallback = cb;
       }),
-      onCallActivityInterrupted: jest.fn().mockImplementation(function(cb) {
+      onCallActivityInterrupted: jest.fn().mockImplementation(function (cb) {
         this.callActivityInterruptedCallback = cb;
       }),
-      onScriptTaskError: jest.fn().mockImplementation(function(cb) {
+      onScriptTaskError: jest.fn().mockImplementation(function (cb) {
         this.scriptTaskErrorCallback = cb;
       }),
-      onTokenEnded: jest.fn().mockImplementation(function(cb) {
+      onTokenEnded: jest.fn().mockImplementation(function (cb) {
         this.tokenEndedCallback = cb;
       }),
-      onFlowNodeExecuted: jest.fn().mockImplementation(function(cb) {
+      onFlowNodeExecuted: jest.fn().mockImplementation(function (cb) {
         this.flowNodeExecutedCallback = cb;
       }),
-      onInstanceStateChange: jest.fn().mockImplementation(function(cb) {
+      onInstanceStateChange: jest.fn().mockImplementation(function (cb) {
         this.instanceStateChangeCallback = cb;
       }),
       logCallback: null,
@@ -105,31 +105,31 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       flowNodeExecutedCallback: null,
       instanceStateChangeCallback: null,
 
-      log: jest.fn().mockImplementation(function(log) {
+      log: jest.fn().mockImplementation(function (log) {
         this.logCallback(log);
       }),
-      ended: jest.fn().mockImplementation(async function() {
+      ended: jest.fn().mockImplementation(async function () {
         await this.endedCallback();
       }),
-      aborted: jest.fn().mockImplementation(function() {
+      aborted: jest.fn().mockImplementation(function () {
         this.abortedCallback();
       }),
-      scriptTaskError: jest.fn().mockImplementation(function(token) {
+      scriptTaskError: jest.fn().mockImplementation(function (token) {
         this.scriptTaskErrorCallback(token);
       }),
-      userTaskInterrupted: jest.fn().mockImplementation(function(token) {
+      userTaskInterrupted: jest.fn().mockImplementation(function (token) {
         this.userTaskInterruptedCallback(token);
       }),
-      callActivityInterrupted: jest.fn().mockImplementation(function(token) {
+      callActivityInterrupted: jest.fn().mockImplementation(function (token) {
         this.callActivityInterruptedCallback(token);
       }),
-      tokenEnded: jest.fn().mockImplementation(function(token) {
+      tokenEnded: jest.fn().mockImplementation(function (token) {
         this.tokenEndedCallback(token);
       }),
-      flowNodeExecuted: jest.fn().mockImplementation(function(execution) {
+      flowNodeExecuted: jest.fn().mockImplementation(function (execution) {
         this.flowNodeExecutedCallback(execution);
       }),
-      instanceStateChange: jest.fn().mockImplementation(function(state) {
+      instanceStateChange: jest.fn().mockImplementation(function (state) {
         this.instanceStateChangeCallback(state);
       }),
 

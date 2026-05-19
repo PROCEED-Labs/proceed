@@ -214,35 +214,31 @@ export async function exportInstanceData(
   // pasting metadata from VersionInfo
   const instancesWithVersionData = (
     await asyncMap(selectedInstances, async (instance) => {
-      if (instance) {
-        const correspondingVersion = versionInfo.find(
-          (e) => e.versionId == instance.processVersion,
-        );
-        const bpmnObj = await toBpmnObject(correspondingVersion?.bpmn || '');
-        const initiator = spaceUsers.find((user) => user.id == instance.processInitiator);
-        const definitionInfos = await getDefinitionsInfos(bpmnObj);
+      if (!instance) return undefined;
+      const correspondingVersion = versionInfo.find((e) => e.versionId == instance.processVersion);
+      if (!correspondingVersion) return undefined;
+      const bpmnObj = await toBpmnObject(correspondingVersion.bpmn);
+      const initiator = spaceUsers.find((user) => user.id == instance.processInitiator);
+      const definitionInfos = await getDefinitionsInfos(bpmnObj);
 
-        return {
-          ...instance,
-          ProcessName: definitionInfos.name,
-          ProcessShortName: definitionInfos.userDefinedId,
-          ProcessVersionName: correspondingVersion?.versionName,
-          ProcessVersionDescription: correspondingVersion?.versionDescription,
-          ProcessVersionCreatedOn: correspondingVersion?.deploymentDate,
-          ProcessVersionBasedOn: correspondingVersion?.basedOnVersion,
-          ProcessInstanceInitiatorFullName:
-            initiator && !initiator.isGuest
-              ? `${initiator.firstName} ${initiator.lastName}`
-              : 'Guest',
-          ProcessInstanceInitiatorUsername:
-            initiator && !initiator.isGuest ? initiator.username : 'Guest',
-          ProcessInstanceInitiatorSpaceName: space.isOrganization ? space.name : 'no organization',
-          ProcessEngineId: instance.log[0].machine.id,
-          correspondingVersion,
-        };
-      } else {
-        return undefined;
-      }
+      return {
+        ...instance,
+        ProcessName: definitionInfos.name,
+        ProcessShortName: definitionInfos.userDefinedId,
+        ProcessVersionName: correspondingVersion.versionName,
+        ProcessVersionDescription: correspondingVersion.versionDescription,
+        ProcessVersionCreatedOn: correspondingVersion.deploymentDate,
+        ProcessVersionBasedOn: correspondingVersion.basedOnVersion,
+        ProcessInstanceInitiatorFullName:
+          initiator && !initiator.isGuest
+            ? `${initiator.firstName} ${initiator.lastName}`
+            : 'Guest',
+        ProcessInstanceInitiatorUsername:
+          initiator && !initiator.isGuest ? initiator.username : 'Guest',
+        ProcessInstanceInitiatorSpaceName: space.isOrganization ? space.name : 'no organization',
+        ProcessEngineId: instance.log[0].machine.id,
+        correspondingVersion,
+      };
     })
   ).filter(truthyFilter);
 

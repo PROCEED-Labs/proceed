@@ -6,6 +6,7 @@ import { Drawer, Grid, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
+import { ElementInfo } from './element-info';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
@@ -58,6 +59,11 @@ export default function InstanceInfoPanel({
     <Tabs
       defaultActiveKey="1"
       items={[
+        {
+          key: 'Info',
+          label: 'Info',
+          children: <ElementInfo info={info} />,
+        },
         {
           key: 'Status',
           label: 'Status',

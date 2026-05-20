@@ -45,8 +45,6 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
-  //feature to switch to prisma from fs
-  enableUseDB: true,
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
   // -----------------------------------------------------------------------------
   // Chopping Block

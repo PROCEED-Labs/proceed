@@ -60,13 +60,8 @@ export default function InstanceInfoPanel({
       defaultActiveKey="1"
       items={[
         {
-          key: 'Info',
-          label: 'Info',
-          children: <ElementInfo info={info} />,
-        },
-        {
-          key: 'Status',
-          label: 'Status',
+          key: 'Overview',
+          label: 'Overview',
           children: <ElementStatus info={info} />,
         },
         {

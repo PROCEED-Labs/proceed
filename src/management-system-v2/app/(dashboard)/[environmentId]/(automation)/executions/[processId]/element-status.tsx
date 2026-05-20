@@ -13,6 +13,10 @@ const EntryText = (props: EntryTextProps) => (
   <Typography.Text className={styles.ElementText} {...props} />
 );
 
+const ClockSymbol = () => (
+  <ClockCircleFilled style={{ fontSize: '1.1rem', verticalAlign: 'middle' }} />
+);
+
 export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const statusEntries: ReactNode[][] = [];
 
@@ -20,6 +24,83 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const metaData = getMetaDataFromElement(info.element.businessObject);
   const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
   const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+
+  if (isRootElement) {
+    statusEntries.push([
+      <EntryText>Name</EntryText>,
+      <EntryText>Vacation Requests Automated</EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Short Name</EntryText>, <EntryText>Vac-Req-Aut</EntryText>]);
+    statusEntries.push([
+      <EntryText>ID</EntryText>,
+      <EntryText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Version Name</EntryText>, <EntryText>v1</EntryText>]);
+    statusEntries.push([
+      <EntryText>Version Description</EntryText>,
+      <EntryText>Version description, yes.</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Version Based on</EntryText>,
+      <EntryText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Version Created on</EntryText>,
+      <EntryText>2026-05-18T11:39:54.943Z</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Instance ID</EntryText>,
+      <EntryText>
+        _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
+      </EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Initiator Name</EntryText>, <EntryText>Timmy Test</EntryText>]);
+    statusEntries.push([
+      <EntryText>Initiator ID</EntryText>,
+      <EntryText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Initiator Username</EntryText>, <EntryText>timtes</EntryText>]);
+    statusEntries.push([<EntryText>Initiator Space</EntryText>, <EntryText>org1</EntryText>]);
+    statusEntries.push([
+      <EntryText>Initiator Space ID</EntryText>,
+      <EntryText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Start Time</EntryText>,
+      <EntryText>5/20/2026, 12:39 PM</EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Engine</EntryText>, <EntryText>engine1</EntryText>]);
+    statusEntries.push([
+      <EntryText>Engine ID</EntryText>,
+      <EntryText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryText>,
+    ]);
+  } else {
+    statusEntries.push([
+      <EntryText>{'Step ID (or "Event ID"?)'}</EntryText>,
+      <EntryText>Activity_0309v8x</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Step Name</EntryText>,
+      <EntryText>Check vacation application</EntryText>,
+    ]);
+    statusEntries.push([<EntryText>Step Type</EntryText>, <EntryText>User Task</EntryText>]);
+    statusEntries.push([
+      <EntryText>Previous Step ID</EntryText>,
+      <EntryText>Check vacation application</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Actual Performer</EntryText>,
+      <EntryText>Sandra Sample</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Actual Performer Username</EntryText>,
+      <EntryText>sansam</EntryText>,
+    ]);
+    statusEntries.push([
+      <EntryText>Actual Performer ID</EntryText>,
+      <EntryText>29880751-c190-4f58-b5cb-438754e9f02d</EntryText>,
+    ]);
+  }
 
   // Element image
   if (metaData.overviewImage)
@@ -135,10 +216,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     statusEntries.push(['Priority:', priority]);
   }
 
-  // Planned costs
+  // Budget
   const costs: { value: string; unit: string } | undefined = metaData['costsPlanned'];
   statusEntries.push([
-    'Planned Costs:',
+    'Budget:',
     costs &&
       generateNumberString(+costs.value, {
         style: 'currency',
@@ -169,20 +250,22 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
+  // adding an empty line for padding
+  statusEntries.push([]);
   // Activity time
   statusEntries.push([
     <Space key="started">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Started:</EntryText>
       <EntryText>{generateDateString(start, true)}</EntryText>
     </Space>,
     <Space key="planned-start">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Planned Start:</EntryText>
       <EntryText>{generateDateString(plan.start, true) || ''}</EntryText>
     </Space>,
     <Space key="start-delay">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Delay:</EntryText>
       <EntryText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.start)}
@@ -192,17 +275,17 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   statusEntries.push([
     <Space key="duration">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Duration:</EntryText>
       <EntryText>{generateDurationString(duration)}</EntryText>
     </Space>,
     <Space key="duration-planned">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Planned Duration:</EntryText>
       <EntryText>{generateDurationString(plan.duration)}</EntryText>
     </Space>,
     <Space key="duration-delay">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Delay:</EntryText>
       <EntryText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.duration)}
@@ -212,17 +295,17 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   statusEntries.push([
     <Space key="end">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Ended:</EntryText>
       <EntryText>{generateDateString(end, true)}</EntryText>
     </Space>,
     <Space key="end-planned">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Planned End:</EntryText>
       <EntryText>{generateDateString(plan.end, true) || ''}</EntryText>
     </Space>,
     <Space key="end-delay">
-      <ClockCircleFilled style={{ fontSize: '1rem' }} />
+      <ClockSymbol />
       <EntryText strong>Delay:</EntryText>
       <EntryText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
         {generateDurationString(delays.end)}

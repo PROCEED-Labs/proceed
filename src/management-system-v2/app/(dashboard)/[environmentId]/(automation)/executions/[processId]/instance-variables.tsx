@@ -144,7 +144,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
           wrapServerCall({
             fn: async () => {
               setSubmitting(true);
-              await updateVariables(
+              return await updateVariables(
                 spaceId,
                 info.process.definitionId,
                 info.instance!.processInstanceId,

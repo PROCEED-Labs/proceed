@@ -12,6 +12,7 @@ import {
   submitFile as _submitFile,
 } from './engines/server-actions';
 import { getUserRoles } from './data/roles';
+import { isUserErrorResponse } from './user-error';
 
 function useUserTasks(
   space: { spaceId: string; isOrganization: boolean },
@@ -31,7 +32,7 @@ function useUserTasks(
     if (engines) {
       let result = await getAvailableTaskListEntries(space.spaceId, engines);
 
-      if ('error' in result) return [];
+      if (isUserErrorResponse(result)) return [];
 
       return result;
     }

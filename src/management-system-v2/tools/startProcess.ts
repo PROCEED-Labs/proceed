@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getCorrectTargetEngines } from '@/lib/engines/server-actions';
 import { deployProcess } from '@/lib/engines/deployment';
 import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import { getAllAvailableEngines } from '@/lib/data/engines';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -71,7 +71,9 @@ export default async function startProcess({
     // we don't need to check if the variables that are required at startup are set since the engine
     // will do that for us and return an error if they aren't
 
-    const engines = await getCorrectTargetEngines(environmentId, false, undefined, ability);
+    const engines = await getAllAvailableEngines(environmentId, ability);
+
+    if (isUserErrorResponse(engines)) return `Error: ${engines}`;
 
     if (!engines.length) return 'Error: No fitting engine found';
 

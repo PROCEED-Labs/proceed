@@ -28,6 +28,7 @@ import { Metadata } from 'next';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 interface PageProps {
   searchParams: Promise<{
@@ -281,6 +282,9 @@ const SharedViewer = async (props: PageProps) => {
   if (typeof instanceId === 'string' && processData) {
     try {
       const deployment = await getDeployment(processData.environmentId, processData.id);
+      if (isUserErrorResponse(deployment)) {
+        return <ErrorMessage message={'Cannot fetch the requested data.'} />;
+      }
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
     } catch (err) {
       console.error('Failed to fetch instance data:', err);

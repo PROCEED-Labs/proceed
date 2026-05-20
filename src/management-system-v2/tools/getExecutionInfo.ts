@@ -57,6 +57,8 @@ export default async function getExecutionInfo({
 
     const deployment = await getDeployment(environmentId, definitionId, ability);
 
+    if (isUserErrorResponse(deployment)) return deployment;
+
     if (!deployment) return 'Could not find an execution with the given id.';
 
     const instance = deployment.instances.find((i) => i.processInstanceId === instanceId);

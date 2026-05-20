@@ -5,7 +5,7 @@ import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-sch
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getErrorMessage, permissionDenied, schemaValidationError, userError } from '../user-error';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
-import { Engine } from '../engines/types';
+import { Engine, SpaceEngine } from '../engines/types';
 import { SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';
@@ -91,7 +91,7 @@ export async function getAvailableSpaceEngines(spaceId: string) {
     const { ability } = await getCurrentEnvironment(spaceId);
     const spaceEngines = await getDbEngines(spaceId, ability);
     const engines = await savedEnginesToEngines(spaceEngines);
-    return getUniqueEngines(engines);
+    return getUniqueEngines(engines) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

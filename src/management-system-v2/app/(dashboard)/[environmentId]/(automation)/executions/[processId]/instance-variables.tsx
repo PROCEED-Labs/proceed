@@ -4,7 +4,7 @@ import { RelevantInstanceInfo } from './instance-info-panel';
 import { EditOutlined } from '@ant-design/icons';
 
 import { App, Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
-import { updateVariables } from '@/lib/engines/server-actions';
+import { updateVariables } from '@/lib/executions/instance-server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';

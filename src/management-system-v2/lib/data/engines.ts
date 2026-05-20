@@ -5,7 +5,7 @@ import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-sch
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getErrorMessage, permissionDenied, schemaValidationError, userError } from '../user-error';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
-import { Engine } from '../engines/machines';
+import { Engine } from '../engines/types';
 import { SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';

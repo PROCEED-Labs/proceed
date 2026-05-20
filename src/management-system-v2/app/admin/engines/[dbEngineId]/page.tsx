@@ -5,7 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
-import { type Engine } from '@/lib/engines/machines';
+import { type Engine } from '@/lib/engines/types';
 import { getDbEngineById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';

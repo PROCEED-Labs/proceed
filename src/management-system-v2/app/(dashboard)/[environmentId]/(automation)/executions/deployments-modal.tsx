@@ -27,7 +27,7 @@ import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getAvailableSpaceEngines } from '@/lib/data/engines';
-import { SpaceEngine } from '@/lib/engines/machines';
+import { SpaceEngine } from '@/lib/engines/types';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
 

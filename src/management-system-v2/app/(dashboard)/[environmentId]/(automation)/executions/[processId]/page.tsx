@@ -1,6 +1,6 @@
 import { Result, Skeleton } from 'antd';
 import Content from '@/components/content';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
 import { getCurrentEnvironment } from '@/components/auth';

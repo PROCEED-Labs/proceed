@@ -20,7 +20,7 @@ import { App, Badge, Button, Grid, Spin, TableColumnsType, TableProps } from 'an
 import ElementList from '@/components/item-list-view';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Engine as DBEngine } from '@prisma/client';
-import { Engine } from '@/lib/engines/machines';
+import { Engine } from '@/lib/engines/types';
 import { useUserPreferences } from '@/lib/user-preferences';
 import Link from 'next/link';
 

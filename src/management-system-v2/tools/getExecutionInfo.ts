@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import { omit, pick } from '@/lib/helpers/javascriptHelpers';
 import { getRoles } from '@/lib/data/roles';
 import { truthyFilter } from '@/lib/typescript-utils';

@@ -21,7 +21,7 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import InstanceDocumentationPage from './instance-documentation-page';
 import { Metadata } from 'next';

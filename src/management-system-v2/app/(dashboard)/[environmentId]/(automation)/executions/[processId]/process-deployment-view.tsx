@@ -35,10 +35,10 @@ import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
 import {
-  changeDeploymentActivation,
   getProcessActivationStatus,
-  getGlobalVariablesForHTML,
-} from '@/lib/engines/server-actions';
+  changeDeploymentActivation,
+} from '@/lib/executions/deployment-server-actions';
+import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
 

@@ -153,7 +153,7 @@ describe('Management', () => {
     distribution.db.isProcessVersionValid.mockResolvedValue(true);
     const instanceId = await management.createInstance('0', '123', {});
     expect(management.getEngineWithID(instanceId)).toBeInstanceOf(Engine);
-    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '123');
+    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '123', true);
     expect(Engine.prototype.startProcessVersion).toHaveBeenCalledWith(
       '123',
       {},
@@ -215,7 +215,7 @@ describe('Management', () => {
     // try to continue instance which was never started on this engine
     const engine = await management.continueInstance('0', instance);
     expect(engine).toBeInstanceOf(Engine);
-    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '789');
+    expect(Engine.prototype.deployProcessVersion).toHaveBeenCalledWith('0', '789', false);
     expect(Engine.prototype.startProcessVersion).toHaveBeenCalledWith(
       '789',
       {},

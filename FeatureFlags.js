@@ -31,7 +31,7 @@ module.exports = {
   // -----------------------------------------------------------------------------
 
   // Features needed for the recovery of instances that were interrupted unexpectedly (e.g. when the engine crashes and is restarted)
-  enableInterruptedInstanceRecovery: false,
+  enableInterruptedInstanceRecovery: true,
 
   // Features needed to send data to messaging servers (currently only using mqtt)
   enableMessaging: true,

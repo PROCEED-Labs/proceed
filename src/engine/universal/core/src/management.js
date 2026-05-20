@@ -49,13 +49,14 @@ const Management = {
    *
    * @param {String} definitionId
    * @param {Number} version
+   * @param {boolean} [active=true] defines if the version is allowed to spawn instances automatically
    * @returns {Promise<Engine>} the instance of
    */
-  async ensureProcessEngineWithVersion(definitionId, version) {
+  async ensureProcessEngineWithVersion(definitionId, version, active = true) {
     const engine = this.ensureProcessEngine(definitionId);
 
     // ensure that the version is deployed
-    await engine.deployProcessVersion(definitionId, version);
+    await engine.deployProcessVersion(definitionId, version, active);
 
     return engine;
   },
@@ -107,7 +108,7 @@ const Management = {
       }
     }
 
-    const engine = await this.ensureProcessEngineWithVersion(definitionId, version);
+    const engine = await this.ensureProcessEngineWithVersion(definitionId, version, true);
 
     return await engine.startProcessVersion(version, variables, activityID, onStarted, onEnded);
   },
@@ -158,7 +159,7 @@ const Management = {
 
       const { processVersion, importedInstance, extras } = this.importInstance(archivedInstance);
 
-      engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion, false);
 
       await engine.startProcessVersion(
         processVersion,
@@ -266,7 +267,7 @@ const Management = {
       const { processVersion, importedInstance, extras } =
         this.importInstance(startingInstanceInfo);
 
-      engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion, false);
 
       await engine.startProcessVersion(
         processVersion,
@@ -396,7 +397,7 @@ const Management = {
 
       const { processVersion, importedInstance } = this.importInstance(resumedInstanceInformation);
       /** @type {Engine} */
-      const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion);
+      const engine = await this.ensureProcessEngineWithVersion(definitionId, processVersion, false);
 
       engine.startProcessVersion(
         processVersion,
@@ -452,7 +453,11 @@ const Management = {
     }
 
     /** @type {Engine} */
-    const engine = await this.ensureProcessEngineWithVersion(definitionId, instance.processVersion);
+    const engine = await this.ensureProcessEngineWithVersion(
+      definitionId,
+      instance.processVersion,
+      false,
+    );
     // transform instance information into the form used by the neo-engine
     const { processVersion, importedInstance, extras } = this.importInstance(instance);
 

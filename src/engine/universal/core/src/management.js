@@ -510,7 +510,7 @@ const Management = {
       };
     });
 
-    const instanceId = await engine.startProcessVersion(
+    const recoveredInstance = await engine.startProcessVersion(
       processVersion,
       importedInstance.variables,
       importedInstance,
@@ -526,7 +526,7 @@ const Management = {
     // if the instance was in the process of being paused => make sure that it is paused again
     // (will lead to it being paused directly since no tasks have started yet)
     if (importedInstance.instanceState[0] === 'PAUSING') {
-      await engine.pauseInstance(instanceId);
+      await engine.pauseInstance(recoveredInstance.processInstanceId);
     }
 
     // allow waiting instances to be started (and give information about tokens being interrupted which is needed to check if called instances should run)

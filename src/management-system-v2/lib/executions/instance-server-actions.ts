@@ -18,6 +18,7 @@ import {
 } from '@/lib/engines/instances';
 import { Engine } from '../engines/types';
 import { getProcessDeployments } from '../data/deployment';
+import { addInstance } from '../data/instance';
 
 export async function startInstance(
   spaceId: string,
@@ -52,14 +53,26 @@ export async function startInstance(
     const engine = engineMap[deployment.engineId];
 
     if (engine) {
-      return await startInstanceOnMachine(definitionId, versionId, engine, variables, {
+      const result = await startInstanceOnMachine(definitionId, versionId, engine, variables, {
         processInitiator: userId,
         spaceIdOfProcessInitiator: spaceId,
       });
+
+      if (isUserErrorResponse(result)) continue;
+
+      await addInstance(spaceId, {
+        id: result.processInstanceId,
+        deploymentId: deployment.id,
+        engineIds: [engine.id],
+        initiatorId: userId,
+        state: result,
+      });
+
+      return result.processInstanceId;
     }
   }
 
-  return userError('Failed to start the instance.');
+  return userError('Failed to start an instance.');
 }
 
 export async function updateVariables(

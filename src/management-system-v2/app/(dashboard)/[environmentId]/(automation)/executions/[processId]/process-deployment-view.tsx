@@ -44,6 +44,7 @@ import { useEnvironment } from '@/components/auth-can';
 
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenDocumentation } from '../../../processes/processes-helper';
+import { startInstance } from '@/lib/executions/instance-server-actions';
 
 export default function ProcessDeploymentView({
   processId,
@@ -79,7 +80,6 @@ export default function ProcessDeploymentView({
   const {
     data: deploymentInfo,
     refetch,
-    startInstance,
     resumeInstance,
     pauseInstance,
     stopInstance,
@@ -370,7 +370,7 @@ export default function ProcessDeploymentView({
 
                             setStartForm(startForm);
                           } else {
-                            return startInstance(versionId);
+                            return startInstance(spaceId, processId, versionId);
                           }
                         },
                         onSuccess: async (instanceId) => {
@@ -547,7 +547,7 @@ export default function ProcessDeploymentView({
 
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () => startInstance(versionId, mappedVariables),
+              fn: () => startInstance(spaceId, processId, versionId, mappedVariables),
 
               onSuccess: async (instanceId) => {
                 await refetch();

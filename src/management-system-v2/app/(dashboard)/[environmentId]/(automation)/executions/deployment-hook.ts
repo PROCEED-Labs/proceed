@@ -1,4 +1,4 @@
-import { useEnvironment, useSession } from '@/components/auth-can';
+import { useEnvironment } from '@/components/auth-can';
 import {
   DeployedProcessInfo,
   InstanceInfo,
@@ -8,7 +8,6 @@ import {
 import {
   pauseInstanceOnMachine,
   resumeInstanceOnMachine,
-  startInstanceOnMachine,
   stopInstanceOnMachine,
 } from '@/lib/engines/instances';
 import { Engine } from '@/lib/engines/types';
@@ -89,7 +88,6 @@ const mergeDeployment = (
 
 function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
-  const { data: session } = useSession();
 
   const { data: engines } = useEngines(space, {
     key: [definitionId],
@@ -98,17 +96,6 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
       return deployments.some((d) => d.definitionId === definitionId);
     },
   });
-
-  const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (!engines?.length) return userError('No fitting engine found');
-
-    // TODO: in case of static deployment or different versions on different engines we will have
-    // to check if the engine can actually be used to start an instance
-    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-      processInitiator: session?.user.id,
-      spaceIdOfProcessInitiator: space.spaceId,
-    });
-  };
 
   const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
   async function changeInstanceState(
@@ -212,7 +199,7 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     },
   });
 
-  return { ...query, startInstance, resumeInstance, pauseInstance, stopInstance, getStartForm };
+  return { ...query, resumeInstance, pauseInstance, stopInstance, getStartForm };
 }
 
 export default useDeployment;

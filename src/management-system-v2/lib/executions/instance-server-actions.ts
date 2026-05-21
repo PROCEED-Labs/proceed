@@ -1,7 +1,7 @@
 'use server';
 
 import { asyncFilter, asyncForEach } from '@/lib/helpers/javascriptHelpers';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 
 import { getAllAvailableEngines } from '@/lib/data/engines';
@@ -11,7 +11,56 @@ import {
   getDeployments as fetchDeployments,
   changeDeploymentActivation as _changeDeploymentActivation,
 } from '@/lib/engines/deployment';
-import { getFileFromMachine, updateVariablesOnMachine } from '@/lib/engines/instances';
+import {
+  getFileFromMachine,
+  startInstanceOnMachine,
+  updateVariablesOnMachine,
+} from '@/lib/engines/instances';
+import { Engine } from '../engines/types';
+import { getProcessDeployments } from '../data/deployment';
+
+export async function startInstance(
+  spaceId: string,
+  definitionId: string,
+  versionId: string,
+  variables: { [key: string]: any } = {},
+) {
+  const engines = await getAllAvailableEngines(spaceId);
+  if (isUserErrorResponse(engines)) return engines;
+
+  const engineMap = engines.reduce(
+    (acc, curr) => {
+      acc[curr.id] = curr;
+      return acc;
+    },
+    {} as Record<string, Engine>,
+  );
+
+  const deployments = await getProcessDeployments(spaceId, definitionId);
+  if (isUserErrorResponse(deployments)) return deployments;
+
+  const { userId } = await getCurrentUser();
+
+  const versionDeployments = deployments.filter((d) => {
+    return d.versionId === versionId;
+  });
+
+  // TODO: automatically deploy the version if possible
+  if (!versionDeployments.length) return userError('This process version is not deployed.');
+
+  for (const deployment of deployments) {
+    const engine = engineMap[deployment.engineId];
+
+    if (engine) {
+      return await startInstanceOnMachine(definitionId, versionId, engine, variables, {
+        processInitiator: userId,
+        spaceIdOfProcessInitiator: spaceId,
+      });
+    }
+  }
+
+  return userError('Failed to start the instance.');
+}
 
 export async function updateVariables(
   spaceId: string,

@@ -1,6 +1,6 @@
 'use server';
 
-import { asyncFilter, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import Ability from '@/lib/ability/abilityHelper';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 
@@ -10,13 +10,18 @@ import { Engine, SpaceEngine } from '@/lib/engines/types';
 import {
   deployProcess as _deployProcess,
   getDeployments as fetchDeployments,
-  getDeployment as fetchDeployment,
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  DeployedProcessInfo,
   getDeploymentActivation,
 } from '../engines/deployment';
+import { getCurrentUser } from '@/components/auth';
+import {
+  addDeployment,
+  getProcessDeployments,
+  removeDeployment as removeStoredDeployment,
+  updateDeployment,
+} from '../data/deployment';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);
@@ -36,18 +41,23 @@ export async function deployProcess(
 ) {
   try {
     // TODO: manage permissions for deploying a process
+    const { userId } = await getCurrentUser();
 
-    let engines;
+    let engines: Engine[];
     if (_forceEngine === 'PROCEED') {
       // force that only proceed engines are supposed to be used
-      engines = await getAvailableAdminEngines();
+      const res = await getAvailableAdminEngines();
 
-      if (isUserErrorResponse(engines)) return engines;
+      if (isUserErrorResponse(res)) return res;
+
+      engines = res;
     } else {
       // get all available engines
-      engines = await getAllAvailableEngines(spaceId);
+      const res = await getAllAvailableEngines(spaceId);
 
-      if (isUserErrorResponse(engines)) return engines;
+      if (isUserErrorResponse(res)) return res;
+
+      engines = res;
 
       if (_forceEngine) {
         // force a specific engine if it is available
@@ -58,48 +68,43 @@ export async function deployProcess(
 
     if (!engines.length) throw new UserFacingError('No fitting engine found.');
 
-    const processAlreadyDeployedInfo = await asyncMap(engines, async (engine) => {
-      let deployment;
-      try {
-        deployment = await fetchDeployment(engine, definitionId);
-        // ignore not found errors on engines that don't have a deployment of the process
-      } catch (err) {
-        deployment = undefined;
-      }
-      return [engine, deployment] as const;
-    });
+    const alreadyDeployed = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(alreadyDeployed)) return alreadyDeployed;
 
-    function withDeployment(
-      info: (typeof processAlreadyDeployedInfo)[number],
-    ): info is readonly [Engine, DeployedProcessInfo] {
-      return !!info[1];
-    }
-    const enginesWithDeployment = processAlreadyDeployedInfo.filter(withDeployment);
+    const processAlreadyDeployedInfo = alreadyDeployed
+      .map((deployment) => ({
+        ...deployment,
+        engine: (engines as Engine[]).find((e) => e.id === deployment.engineId)!,
+      }))
+      .filter((d) => !!d.engine);
 
-    // check if the version is already deployed to some engine since we don't
+    // check if the version is already deployed to some reachable engine since we don't
     // need to redeploy it in that case
-    if (
-      !_forceEngine &&
-      enginesWithDeployment.some(([_, deployment]) =>
-        deployment.versions.some((version) => version.versionId === versionId),
-      )
-    ) {
+    if (processAlreadyDeployedInfo.some((i) => i.versionId === versionId)) {
       return;
     }
 
-    if (!_forceEngine && enginesWithDeployment.length) {
+    if (processAlreadyDeployedInfo.length) {
       // check if an engine already has another version in which case that engine is selected
-      engines = enginesWithDeployment.map(([engine]) => engine);
+      engines = processAlreadyDeployedInfo.map((i) => i.engine);
     }
 
     const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
 
+    await addDeployment(spaceId, {
+      versionId,
+      deployerId: userId,
+      deployTime: new Date(),
+      engineIds: deployedTo.map((engine) => engine.id),
+    });
+
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
     await Promise.allSettled(
-      enginesWithDeployment.map(async ([engine]) => {
-        if (!deployedTo.some((dE) => dE.id === engine.id)) {
-          await _changeDeploymentActivation(engine, definitionId, undefined, false);
+      processAlreadyDeployedInfo.map(async (deployment) => {
+        // TODO: consider all engines to deactivate deployments on machines that are not "forced" here
+        if (deployment.engine && !deployedTo.some((engine) => engine.id === deployment.engineId)) {
+          await _changeDeploymentActivation(deployment.engine, definitionId, undefined, false);
         }
       }),
     );
@@ -111,15 +116,25 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
+    const deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
+
     const availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    const engines = await asyncFilter(availableEngines, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
+    await asyncForEach(deployments, async (deployment) => {
+      try {
+        const engine = availableEngines.find((aE) => aE.id === deployment.engineId);
 
-      return deployments.some((deployment) => deployment.definitionId === definitionId);
+        if (engine) {
+          // TODO: we might have deployments of multiple versions of the same process to the same
+          // engine => we don't need to call this for every version but only once per engine per
+          // process
+          await removeDeploymentFromMachines([engine], deployment.processId);
+          await updateDeployment(spaceId, deployment.id, { removeTime: new Date() });
+          return;
+        }
+      } catch (err) {}
     });
-
-    await removeDeploymentFromMachines(engines, definitionId);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -132,20 +147,26 @@ export async function getProcessActivationStatus(
   version: string,
 ) {
   try {
+    let deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
+    deployments = deployments.filter((deployment) => deployment.versionId === version);
+
     const availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    const engines = await asyncFilter(availableEngines, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
-      return deployments.some(
-        (deployment) =>
-          deployment.definitionId === definitionId &&
-          deployment.versions.some((v) => v.versionId === version),
-      );
+
+    const res = await asyncMap(deployments, async (deployment) => {
+      try {
+        const engine = availableEngines.find((aE) => aE.id === deployment.engineId);
+
+        if (engine) {
+          return await getDeploymentActivation(engine, definitionId, version);
+        }
+      } catch (err) {}
+
+      return false;
     });
 
-    if (!engines.length) return false;
-
-    return await getDeploymentActivation(engines[0], definitionId, version);
+    return res.some((isActive) => isActive);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -159,22 +180,23 @@ export async function changeDeploymentActivation(
   value: boolean,
 ) {
   try {
-    const availableEngines = await getAllAvailableEngines(spaceId);
+    let deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
+    const versionDeployments = deployments.filter((deployment) => deployment.versionId === version);
+
+    if (!deployments.length) return userError('This version is not deployed');
+
+    let availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    const engines = await asyncFilter(availableEngines, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
 
-      return deployments.some(
-        (deployment) =>
-          deployment.definitionId === definitionId &&
-          deployment.versions.some((v) => v.versionId === version),
-      );
-    });
+    availableEngines = availableEngines.filter((e) =>
+      versionDeployments.some((d) => d.engineId === e.id),
+    );
 
-    if (!engines.length)
+    if (!availableEngines.length)
       throw new Error('There is no available engine with the requested process version.');
 
-    await _changeDeploymentActivation(engines[0], definitionId, version, value);
+    await _changeDeploymentActivation(availableEngines[0], definitionId, version, value);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -183,20 +205,23 @@ export async function changeDeploymentActivation(
 
 export async function getProcessImage(spaceId: string, definitionId: string, fileName: string) {
   try {
-    // find the engine the instance is running on
+    let deployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(deployments)) return deployments;
+
     const availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    let engines = await asyncFilter(availableEngines, async (engine) => {
-      const deployments = await fetchDeployments([engine]);
 
-      // TODO: when we start to have assignments of processes to multiple machines we need to check
-      // if the deployment on the machine actually contains the image
-      return deployments.some((deployment) => deployment.definitionId === definitionId);
-    });
+    for (const deployment of deployments) {
+      const engine = availableEngines.find((e) => e.id === deployment.engineId);
 
-    if (!engines.length) throw new Error('Failed to an engine the process was deployed to!');
+      if (engine) {
+        try {
+          return await getProcessImageFromMachine(engine, definitionId, fileName);
+        } catch (err) {}
+      }
+    }
 
-    return await getProcessImageFromMachine(engines[0], definitionId, fileName);
+    return userError('Failed to fetch the image from the engines the process is deployed to.');
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);

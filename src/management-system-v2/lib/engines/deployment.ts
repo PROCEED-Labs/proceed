@@ -10,7 +10,7 @@ import {
 // TODO: remove this ignore once the decider is typed
 // @ts-ignore
 // import decider from '@proceed/decider';
-import { Engine } from './machines';
+import { Engine } from './types';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';
@@ -288,6 +288,11 @@ export type InstanceInfo = {
     milestones: { [name: string]: number };
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
   }[];
   variables: {
     [key: string]: {
@@ -314,6 +319,11 @@ export type InstanceInfo = {
     executionWasInterrupted?: true;
     priority?: number;
     costsRealSetByOwner?: string;
+    performers?: {
+      user: string[];
+      roles: string[];
+    };
+    actualOwner?: string[];
     variableChanges?: Record<string, { changedTime: number; oldValue?: any; newValue: any }[]>;
   }[];
   adaptationLog: any[];

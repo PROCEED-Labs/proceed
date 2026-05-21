@@ -1,5 +1,5 @@
 import mqtt from 'mqtt';
-import { MqttEngine } from '../machines';
+import { MqttEngine } from '../types';
 
 const mqttTimeout = 10000;
 

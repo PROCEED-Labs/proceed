@@ -35,12 +35,15 @@ import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
 import {
-  changeDeploymentActivation,
   getProcessActivationStatus,
-  getGlobalVariablesForHTML,
-} from '@/lib/engines/server-actions';
+  changeDeploymentActivation,
+} from '@/lib/executions/deployment-server-actions';
+import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
+
+import { GrDocumentUser } from 'react-icons/gr';
+import { handleOpenDocumentation } from '../../../processes/processes-helper';
 
 export default function ProcessDeploymentView({
   processId,
@@ -488,6 +491,23 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
+                {selectedInstance && (
+                  <Tooltip title="View Instance Documentation">
+                    <Button
+                      aria-label="view-instance-documentation"
+                      icon={<GrDocumentUser />}
+                      onClick={() =>
+                        handleOpenDocumentation(
+                          processId,
+                          spaceId,
+                          selectedInstance.processVersion,
+                          selectedInstance.processInstanceId,
+                          selectedColoring,
+                        )
+                      }
+                    />
+                  </Tooltip>
+                )}
                 <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button
                     icon={<InfoCircleOutlined />}

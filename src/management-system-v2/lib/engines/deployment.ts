@@ -10,7 +10,7 @@ import {
 // TODO: remove this ignore once the decider is typed
 // @ts-ignore
 // import decider from '@proceed/decider';
-import { Engine } from './machines';
+import { Engine } from './types';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';

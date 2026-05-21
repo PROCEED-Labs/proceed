@@ -1,5 +1,5 @@
 import { Prettify } from '@/lib/typescript-utils';
-import { Engine } from '../machines';
+import { Engine } from '../types';
 import {
   Methods,
   AvailableEndpoints,

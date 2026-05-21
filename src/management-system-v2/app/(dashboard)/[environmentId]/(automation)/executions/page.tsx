@@ -6,7 +6,7 @@ import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
 import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDbEngines } from '@/lib/data/db/engines';
+import { getDbEngines } from '@/lib/data/engines';
 
 function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
   deployments: T[],

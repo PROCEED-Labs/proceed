@@ -1,109 +1,228 @@
 'use server';
 
-import { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { SpaceEngineInput } from '@/lib/space-engine-schema';
-import {
-  getDbEngines as _getDbEngines,
-  getDbEngineById as _getDbEngineById,
-  addDbEngines as _addDbEngines,
-  updateDbEngine as _updateDbEngine,
-  deleteSpaceEngine as _deleteDbEngine,
-} from '@/lib/data/db/engines';
+import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
-import { z } from 'zod';
-import { enableUseDB } from 'FeatureFlags';
+import { getErrorMessage, permissionDenied, schemaValidationError, userError } from '../user-error';
+import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
+import { Engine, SpaceEngine } from '../engines/types';
+import { SystemAdmin } from '@prisma/client';
 
-export async function getDbEngines(environmentId: string | null) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
+import db from '@/lib/data/db';
+import { toCaslResource } from '../ability/caslAbility';
 
-  let ability;
-  if (environmentId) ability = (await getCurrentEnvironment(environmentId)).ability;
-  const systemAdmin = (await getCurrentUser()).systemAdmin;
+export async function getDbEngines(
+  environmentId: string | null,
+  ability?: Ability,
+  systemAdmin?: SystemAdmin | 'dont-check',
+) {
+  // engines without an environmentId are PROCEED engines
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
 
+  const engines = await db.engine.findMany({
+    where: { environmentId: environmentId },
+  });
+
+  return ability ? ability.filter('view', 'Machine', engines) : engines;
+}
+
+export async function getDbEngineById(
+  engineId: string,
+  environmentId: string | null,
+  ability?: Ability,
+  systemAdmin?: SystemAdmin | 'dont-check',
+) {
+  // engines without an environmentId are PROCEED engines
+  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
+    throw new UnauthorizedError();
+
+  const engine = await db.engine.findUnique({
+    where: {
+      environmentId: environmentId,
+      id: engineId,
+    },
+  });
+
+  if (!engine) return undefined;
+
+  if (
+    ability &&
+    !ability.can('view', toCaslResource('Machine', engine), { environmentId: environmentId! })
+  ) {
+    throw new UnauthorizedError();
+  }
+
+  return engine;
+}
+
+function getUniqueEngines(engines: Engine[]) {
+  // some engines might occur multiple times
+  // (e.g. they are reachable through a saved HTTP engine and over a saved MQTT broker)
+  const uniqueEngines = engines.reduce(
+    (uniqueMap, engine) => {
+      if (!uniqueMap[engine.id]) {
+        uniqueMap[engine.id] = engine;
+      } else if (uniqueMap[engine.id].type === 'mqtt' && engine.type === 'http') {
+        // prefer http over mqtt since we can establish a more direct connection
+        uniqueMap[engine.id] = engine;
+      }
+      return uniqueMap;
+    },
+    {} as Record<string, Engine>,
+  );
+  return Object.values(uniqueEngines);
+}
+
+export async function getAvailableAdminEngines() {
   try {
-    return await _getDbEngines(environmentId ?? null, ability, systemAdmin);
+    const dbEngines = await getDbEngines(null, undefined, 'dont-check');
+    const engines = await savedEnginesToEngines(dbEngines);
+    return getUniqueEngines(engines);
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting space engines');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
-export async function getDbEngineById(engineId: string, environmentId: string | null) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
-  let ability;
-  if (environmentId) ability = (await getCurrentEnvironment(environmentId)).ability;
-  const systemAdmin = (await getCurrentUser()).systemAdmin;
-
+/** Returns space engines that are currently online */
+export async function getAvailableSpaceEngines(spaceId: string) {
   try {
-    return await _getDbEngineById(engineId, environmentId ?? null, ability, systemAdmin);
+    const { ability } = await getCurrentEnvironment(spaceId);
+    const spaceEngines = await getDbEngines(spaceId, ability);
+    const engines = await savedEnginesToEngines(spaceEngines);
+    return getUniqueEngines(engines) as SpaceEngine[];
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting space engines');
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }
 
+export async function getAllAvailableEngines(spaceId: string, ability?: Ability) {
+  try {
+    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+    let engines: Engine[] = [];
+    const [proceedEngines, spaceEngines] = await Promise.allSettled([
+      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
+      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
+    ]);
+
+    if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
+    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
+
+    return getUniqueEngines(engines);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
+}
+
+const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
 export async function addDbEngines(enginesInput: SpaceEngineInput[], environmentId: string | null) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
+  const newEngines = SpaceEngineArraySchema.safeParse(enginesInput);
 
-  let ability;
-  if (environmentId) ability = (await getCurrentEnvironment(environmentId)).ability;
-  const systemAdmin = (await getCurrentUser()).systemAdmin;
+  if (!newEngines.success) {
+    return schemaValidationError();
+  }
+
+  const user = await getCurrentUser();
+
+  if (environmentId) {
+    const { ability } = await getCurrentEnvironment(environmentId);
+    if (!ability.can('create', 'Machine')) return permissionDenied();
+  } else if (!user.systemAdmin) {
+    // engines without an environmentId are PROCEED engines
+    return permissionDenied();
+  }
 
   try {
-    return await _addDbEngines(enginesInput, environmentId ?? null, ability, systemAdmin);
+    const res = await db.engine.createMany({
+      data: newEngines.data.map((e) => ({ ...e, environmentId: environmentId ?? null })),
+    });
+
+    return res;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
-      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting space engines');
+    return userError('Error getting space engines');
   }
 }
 
+const PartialSpaceEngineInputSchema = SpaceEngineInputSchema.partial();
 export async function updateDbEngine(
   engineId: string,
   engineInput: Partial<SpaceEngineInput>,
   environmentId: string | null,
 ) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
+  const newEngineData = PartialSpaceEngineInputSchema.safeParse(engineInput);
 
-  let ability;
-  if (environmentId) ability = (await getCurrentEnvironment(environmentId)).ability;
-  const systemAdmin = (await getCurrentUser()).systemAdmin;
+  if (!newEngineData.success) {
+    return schemaValidationError();
+  }
+
+  const user = await getCurrentUser();
+
+  if (environmentId) {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    const engine = await getDbEngineById(engineId, environmentId);
+    if (!engine) return userError('Engine not found');
+
+    if (
+      !ability.can('update', toCaslResource('Machine', engine), { environmentId: environmentId! })
+    ) {
+      return permissionDenied();
+    }
+  } else if (!user.systemAdmin) {
+    // engines without an environmentId are PROCEED engines
+    return permissionDenied();
+  }
 
   try {
-    return await _updateDbEngine(
-      engineId,
-      engineInput,
-      environmentId ?? null,
-      ability,
-      systemAdmin,
-    );
+    const res = await db.engine.update({
+      data: newEngineData.data,
+      where: {
+        environmentId,
+        id: engineId,
+      },
+    });
+
+    return res;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
-      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting space engines');
+    return userError('Error getting space engines');
   }
 }
 
-export async function deleteSpaceEngine(engineId: string, environmentId: string | null) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
+export async function deleteDbEngine(engineId: string, environmentId: string | null) {
+  const user = await getCurrentUser();
 
-  let ability;
-  if (environmentId) ability = (await getCurrentEnvironment(environmentId)).ability;
-  const systemAdmin = (await getCurrentUser()).systemAdmin;
+  // engines without an environmentId are PROCEED engines
+  if (environmentId === null && !user.systemAdmin) {
+    return permissionDenied();
+  }
+
+  if (environmentId) {
+    const { ability } = await getCurrentEnvironment(environmentId);
+
+    const engine = await getDbEngineById(engineId, environmentId);
+    if (!engine) return userError('Engine not found');
+
+    if (
+      !ability.can('delete', toCaslResource('Machine', engine), { environmentId: environmentId! })
+    ) {
+      return permissionDenied();
+    }
+  }
 
   try {
-    return await _deleteDbEngine(engineId, environmentId ?? null, ability, systemAdmin);
+    const res = await db.engine.delete({
+      where: {
+        environmentId: environmentId,
+        id: engineId,
+      },
+    });
+
+    return res;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting space engines');
+    return userError('Error getting space engines');
   }
 }

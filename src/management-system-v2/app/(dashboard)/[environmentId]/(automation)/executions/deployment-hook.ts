@@ -11,7 +11,7 @@ import {
   startInstanceOnMachine,
   stopInstanceOnMachine,
 } from '@/lib/engines/instances';
-import { Engine } from '@/lib/engines/machines';
+import { Engine } from '@/lib/engines/types';
 import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
 import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';

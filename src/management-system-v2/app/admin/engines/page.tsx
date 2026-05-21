@@ -2,7 +2,7 @@ import Content from '@/components/content';
 import { Skeleton, Spin } from 'antd';
 import { notFound, redirect } from 'next/navigation';
 import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
-import { getDbEngines } from '@/lib/data/db/engines';
+import { getDbEngines } from '@/lib/data/engines';
 import { getCurrentUser } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';

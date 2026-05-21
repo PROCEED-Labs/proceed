@@ -21,13 +21,14 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import InstanceDocumentationPage from './instance-documentation-page';
 import { Metadata } from 'next';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 interface PageProps {
   searchParams: Promise<{
@@ -281,6 +282,9 @@ const SharedViewer = async (props: PageProps) => {
   if (typeof instanceId === 'string' && processData) {
     try {
       const deployment = await getDeployment(processData.environmentId, processData.id);
+      if (isUserErrorResponse(deployment)) {
+        return <ErrorMessage message={'Cannot fetch the requested data.'} />;
+      }
       instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
     } catch (err) {
       console.error('Failed to fetch instance data:', err);

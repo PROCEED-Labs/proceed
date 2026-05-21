@@ -1,8 +1,8 @@
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getCorrectTargetEngines } from '@/lib/engines/server-actions';
 import { getDeployments } from '@/lib/engines/deployment';
+import { getAllAvailableEngines } from '@/lib/data/engines';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -41,7 +41,9 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
     if (!accessible)
       return 'Error: The user cannot access execution information in this space. This might be due to a space wide setting or due to the user not having the permission to view execution information.';
 
-    const engines = await getCorrectTargetEngines(environmentId, undefined, undefined, ability);
+    const engines = await getAllAvailableEngines(environmentId, ability);
+
+    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
 
     const deployments = await getDeployments(engines, 'instances');
 

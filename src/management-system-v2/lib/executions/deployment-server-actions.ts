@@ -132,6 +132,9 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
           return;
         }
       } catch (err) {}
+
+      // if removing the deployment is currently not possible mark it for automatic removal
+      await updateDeployment(spaceId, deployment.id, { toRemove: true });
     });
   } catch (e) {
     const message = getErrorMessage(e);
@@ -255,6 +258,7 @@ export async function refetchDeployments() {
       select: {
         id: true,
         engineId: true,
+        toRemove: true,
         version: {
           select: { id: true, processId: true, process: { select: { environmentId: true } } },
         },
@@ -267,11 +271,11 @@ export async function refetchDeployments() {
     // get all (reachable) engines known to the MS
     const dbEngines = await db.engine.findMany();
     let engines = await savedEnginesToEngines(dbEngines);
-    const knownEngines: Record<string, true> = {};
+    const knownEngines: Record<string, Engine> = {};
     // deduplicate the engines (an engine might be reachable through multiple "dbEngines")
     engines = engines.filter((engine) => {
       if (knownEngines[engine.id]) return false;
-      knownEngines[engine.id] = true;
+      knownEngines[engine.id] = engine;
       return true;
     });
 
@@ -296,13 +300,21 @@ export async function refetchDeployments() {
       }),
     );
 
-    // check if deployment information has been unexpectedly lost on the engine
     const removedOnEngine = await asyncFilter(res, async (d) => {
       // we say the deployment still exists on the engine if the engine cannot be reached to check
-      // or if the deployed process version can still be found on the engine
       if (!engineDeployments[d.engineId]) return false;
 
-      return !engineDeployments[d.engineId][d.version.processId]?.versions[d.version.id];
+      if (d.toRemove) {
+        // remove the deployment from the engine if it is marked for automatic removal
+        try {
+          await removeDeploymentFromMachines([knownEngines[d.engineId]], d.version.processId);
+          return true;
+        } catch (err) {}
+        return false;
+      } else {
+        // check if deployment information has been unexpectedly lost on the engine
+        return !engineDeployments[d.engineId][d.version.processId]?.versions[d.version.id];
+      }
     });
 
     // update the deployment information in the db
@@ -311,7 +323,7 @@ export async function refetchDeployments() {
         ...removedOnEngine.map(async (deployment) => {
           await tx.processDeployment.update({
             where: { id: deployment.id },
-            data: { removeTime: new Date() },
+            data: { removeTime: new Date(), toRemove: false },
           });
         }),
       ]);

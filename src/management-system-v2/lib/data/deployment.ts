@@ -12,7 +12,7 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   const deployments = await db.processDeployment.findMany({
-    where: { AND: [{ version: { processId } }, { removeTime: null }] },
+    where: { AND: [{ version: { processId } }, { removeTime: null }, { toRemove: false }] },
     include: { version: { select: { processId: true } } },
   });
 

@@ -73,7 +73,7 @@ export default async function startProcess({
 
     const engines = await getAllAvailableEngines(environmentId, ability);
 
-    if (isUserErrorResponse(engines)) return `Error: ${engines}`;
+    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
 
     if (!engines.length) return 'Error: No fitting engine found';
 

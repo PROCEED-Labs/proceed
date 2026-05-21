@@ -43,7 +43,7 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
 
     const engines = await getAllAvailableEngines(environmentId, ability);
 
-    if (isUserErrorResponse(engines)) return `Error: ${engines.error}`;
+    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
 
     const deployments = await getDeployments(engines, 'instances');
 

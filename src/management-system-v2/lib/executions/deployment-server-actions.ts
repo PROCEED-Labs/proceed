@@ -16,12 +16,7 @@ import {
   getDeploymentActivation,
 } from '../engines/deployment';
 import { getCurrentUser } from '@/components/auth';
-import {
-  addDeployment,
-  getProcessDeployments,
-  removeDeployment as removeStoredDeployment,
-  updateDeployment,
-} from '../data/deployment';
+import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);

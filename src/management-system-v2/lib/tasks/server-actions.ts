@@ -40,6 +40,7 @@ import {
   setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
 } from '@/lib/engines/tasklist';
+import { getInstance } from '@/lib/data/instance';
 
 export async function getAvailableTaskListEntries(spaceId: string, engines: Engine[]) {
   try {
@@ -302,16 +303,12 @@ export async function getTasklistEntryHTML(
     let globalVars: Record<string, any> = {};
 
     if (storedUserTask.instanceID) {
-      if (!engine) throw new Error('Cannot retrieve the instance initiator information.');
-      const [definitionId] = storedUserTask.instanceID.split('-_');
-      const deployment = await fetchDeployment(engine, definitionId);
-      const instance = deployment.instances.find(
-        (i) => i.processInstanceId === storedUserTask.instanceID,
-      );
-      if (!instance) throw new Error('Unknown instance');
-      if (!instance.processInitiator) throw new Error('Missing initiator information');
+      const instance = await getInstance(spaceId, storedUserTask.instanceID);
+      if (isUserErrorResponse(instance)) return instance;
+      if (!instance) throw new Error('Cannot retrieve the instance initiator information.');
+      if (!instance.initiatorId) throw new Error('Missing initiator information');
 
-      globalVars = await getGlobalVariablesForHTML(spaceId, instance.processInitiator, html);
+      globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
     }
 
     variableChanges = { ...variableChanges, ...globalVars };

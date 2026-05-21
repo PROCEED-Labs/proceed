@@ -44,9 +44,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
     <Card
       bordered={false}
       style={{
-        width: '280px',
-        minWidth: '280px',
-        flexShrink: 0,
+        flex: '1 1 280px',
+        minWidth: '168px',
+        maxWidth: '100%',
         boxShadow:
           '0 1px 2px 0 rgba(0, 0, 0, 0.03), 0 1px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
       }}
@@ -107,7 +107,8 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
         <div
           style={{
             display: 'flex',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
+            gap: '6px',
             fontSize: '12px',
             marginBottom: '8px',
           }}

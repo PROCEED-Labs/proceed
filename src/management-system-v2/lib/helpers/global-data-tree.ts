@@ -1,4 +1,5 @@
 import type { DataNode } from 'antd/es/tree';
+import { Config, Parameter } from '../data/machine-config-schema';
 
 /** The scope filters for global data objects */
 export type ScopeFilter = '@worker' | '@process-initiator' | '@organization';
@@ -8,7 +9,7 @@ export type ScopeFilter = '@worker' | '@process-initiator' | '@organization';
  * The 'data' node at depth 0 is treated as a non-selectable expander
  * only its children and deeper nodes are selectable.
  */
-export function buildTreeNodes(params: any[], pathPrefix: string, depth: number): DataNode[] {
+function buildTreeNodes(params: Parameter[], pathPrefix: string, depth: number): DataNode[] {
   return params.map((param) => {
     const currentPath = pathPrefix ? `${pathPrefix}.${param.name}` : param.name;
     const hasChildren = param.subParameters?.length > 0;
@@ -31,10 +32,10 @@ export function buildTreeNodes(params: any[], pathPrefix: string, depth: number)
  * Builds tree nodes for a user-scoped filter (@worker or @process-initiator).
  * Both scopes show the same data (common-user-data + user-info) but with different path prefixes.
  */
-function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[] {
+function buildUserScopedNodes(iamTopLevel: Parameter, scopePrefix: string): DataNode[] {
   const nodes: DataNode[] = [];
 
-  const commonUserData = iamTopLevel.subParameters.find((p: any) => p.name === 'common-user-data');
+  const commonUserData = iamTopLevel.subParameters?.find((p) => p.name === 'common-user-data');
 
   // Non-selectable "Data" parent for common-user-data
   if (commonUserData) {
@@ -47,9 +48,9 @@ function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[]
   }
 
   // Non-selectable "User Info" parent
-  const userSection = iamTopLevel.subParameters.find((p: any) => p.name === 'user');
+  const userSection = iamTopLevel.subParameters?.find((p) => p.name === 'user');
   const anyUser = userSection?.subParameters?.[0];
-  const userInfo = anyUser?.subParameters?.find((p: any) => p.name === 'user-info');
+  const userInfo = anyUser?.subParameters?.find((p) => p.name === 'user-info');
 
   if (userInfo?.subParameters) {
     nodes.push({
@@ -70,20 +71,19 @@ function buildUserScopedNodes(iamTopLevel: any, scopePrefix: string): DataNode[]
  * '@worker' reads from 'common-user-data' + 'user-info', paths prefixed with '@global.@worker'
  * '@process-initiator' same structure as worker but with '@global.@process-initiator'
  */
-export function buildScopedTree(config: any, scope: ScopeFilter): DataNode[] {
+export function buildScopedTree(config: Config, scope: ScopeFilter): DataNode[] {
   const content = config.content ?? [];
   const nodes: DataNode[] = [];
 
-  for (const topLevel of content) {
-    if (topLevel.name === 'organization') {
-      if (scope !== '@organization') continue;
-      nodes.push(...buildTreeNodes(topLevel.subParameters, '@global.@organization', 0));
-    } else if (topLevel.name === 'identity-and-access-management') {
-      if (scope === '@worker') {
-        nodes.push(...buildUserScopedNodes(topLevel, '@global.@worker'));
-      } else if (scope === '@process-initiator') {
-        nodes.push(...buildUserScopedNodes(topLevel, '@global.@process-initiator'));
-      }
+  if (scope === '@organization') {
+    const data = content.find((el) => el.name === 'organization');
+    if (data) {
+      nodes.push(...buildTreeNodes(data.subParameters, '@global.@organization', 0));
+    }
+  } else {
+    const data = content.find((el) => el.name === 'identity-and-access-management');
+    if (data) {
+      nodes.push(...buildUserScopedNodes(data, `@global.${scope}`));
     }
   }
 

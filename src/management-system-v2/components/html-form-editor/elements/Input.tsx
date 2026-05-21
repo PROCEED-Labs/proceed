@@ -5,7 +5,7 @@ import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from './utils';
+import { ContextMenu, Overlay, Setting, useDeleteControl } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteButton } from '../DeleteButton';
@@ -17,7 +17,6 @@ type InputProps = {
   defaultValue?: string;
   labelPosition?: 'top' | 'left' | 'none';
   variable?: string;
-  globalVariable?: string;
 };
 
 export const ExportInput: UserComponent<InputProps> = ({
@@ -26,11 +25,10 @@ export const ExportInput: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
-  globalVariable,
 }) => {
   const inputId = useId();
 
-  const effectiveName = globalVariable || variable || `__anonymous_variable_${inputId}__`;
+  const effectiveName = variable || `__anonymous_variable_${inputId}__`;
 
   const value = defaultValue || `{%${effectiveName}%}`;
 
@@ -96,7 +94,6 @@ const Input: UserComponent<InputProps> = ({
   defaultValue = '',
   labelPosition = 'top',
   variable,
-  globalVariable,
 }) => {
   const {
     connectors: { connect },
@@ -124,7 +121,7 @@ const Input: UserComponent<InputProps> = ({
     }
   }, [inputId, editingDefault]);
 
-  const effectiveName = globalVariable || variable;
+  const effectiveName = variable;
 
   const input = (
     <input
@@ -214,20 +211,15 @@ export const InputSettings = () => {
     actions: { setProp },
     labelPosition,
     variable,
-    globalVariable,
   } = useNode((node) => ({
     labelPosition: node.data.props.labelPosition,
     variable: node.data.props.variable,
-    globalVariable: node.data.props.globalVariable,
   }));
 
   const [modalOpen, setModalOpen] = useState(false);
 
   // Determine display text for the button
   const getDisplayText = () => {
-    if (globalVariable) {
-      return globalVariable;
-    }
     if (variable) {
       return variable;
     }
@@ -235,7 +227,7 @@ export const InputSettings = () => {
   };
 
   const displayText = getDisplayText();
-  const hasVariable = !!(globalVariable || variable);
+  const hasVariable = !!variable;
 
   return (
     <>
@@ -292,15 +284,13 @@ export const InputSettings = () => {
       <DataObjectSelectionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
+        currentVariable={variable}
         onSelect={(selected, isGlobal, variableType, variableTextFormat) => {
           setProp((props: InputProps) => {
+            props.variable = selected;
             if (isGlobal) {
-              props.globalVariable = selected;
-              props.variable = undefined;
-              props.type = 'text'; // global variables are always text for now
+              props.type = 'text';
             } else {
-              props.variable = selected;
-              props.globalVariable = undefined;
               if (variableTextFormat) {
                 props.type = variableTextFormat as
                   | 'text'
@@ -349,7 +339,6 @@ Input.craft = {
     defaultValue: '',
     labelPosition: 'top',
     variable: undefined,
-    globalVariable: undefined,
   },
 };
 

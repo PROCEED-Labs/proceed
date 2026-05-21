@@ -7,6 +7,7 @@ import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mo
 import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
 import useEditorStateStore from '../use-editor-state-store';
 import { useEnvironment } from '@/components/auth-can';
+import { useQuery } from '@tanstack/react-query';
 
 type Props = {
   open: boolean;
@@ -17,27 +18,45 @@ type Props = {
     variableType?: string,
     variableTextFormat?: string,
   ) => void;
+  currentVariable?: string;
 };
 
-const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) => {
+const DataObjectSelectionModal: React.FC<Props> = ({
+  open,
+  onClose,
+  onSelect,
+  currentVariable,
+}) => {
   const environment = useEnvironment();
   const [scope, setScope] = useState<ScopeFilter>('@worker');
   const [treeData, setTreeData] = useState<DataNode[]>([]);
   const [selectedKey, setSelectedKey] = useState<string | undefined>();
-  const [config, setConfig] = useState<any>(null);
   const [showVariableForm, setShowVariableForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'process' | 'global'>('process');
   const [selectedProcessVar, setSelectedProcessVar] = useState<string | undefined>();
-  const { variables, updateVariables } = useEditorStateStore((state: any) => state);
+  const { variables, updateVariables } = useEditorStateStore((state) => state);
 
+  // fetch config
+  const { data: config } = useQuery({
+    queryKey: ['deepConfig', environment.spaceId],
+    queryFn: () => getDeepConfigurationById(environment.spaceId),
+    enabled: open,
+  });
+
+  // initialize with current variable on modal opening
   useEffect(() => {
-    if (!open) return;
-    getDeepConfigurationById(environment.spaceId).then((cfg) => {
-      setConfig(cfg);
-      setTreeData(buildScopedTree(cfg, '@worker')); // default to @worker
-    });
-  }, [open]);
+    if (open && currentVariable) {
+      if (currentVariable.startsWith('@global')) {
+        setActiveTab('global');
+        setSelectedKey(currentVariable);
+      } else {
+        setActiveTab('process');
+        setSelectedProcessVar(currentVariable);
+      }
+    }
+  }, [open, currentVariable]);
 
+  // update tree when scope or config changes
   useEffect(() => {
     if (!config) return;
     setTreeData(buildScopedTree(config, scope));
@@ -46,7 +65,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
 
   const handleOk = () => {
     if (activeTab === 'process' && selectedProcessVar) {
-      const variable = variables?.find((v: { name: string }) => v.name === selectedProcessVar);
+      const variable = variables?.find((v) => v.name === selectedProcessVar);
       onSelect(selectedProcessVar, false, variable?.dataType, variable?.textFormat);
     } else if (activeTab === 'global' && selectedKey) {
       onSelect(selectedKey, true);
@@ -56,7 +75,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
     setSelectedProcessVar(undefined);
   };
 
-  const scopeFilters: { label: string; value: ScopeFilter }[] = [
+  const scopeFilters: { label: ScopeFilter; value: ScopeFilter }[] = [
     { label: '@worker', value: '@worker' },
     { label: '@process-initiator', value: '@process-initiator' },
     { label: '@organization', value: '@organization' },
@@ -74,7 +93,6 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
         }}
         onOk={handleOk}
         okText="OK"
-        cancelText="Cancel"
         okButtonProps={{
           disabled:
             (activeTab === 'process' && !selectedProcessVar) ||
@@ -101,7 +119,10 @@ const DataObjectSelectionModal: React.FC<Props> = ({ open, onClose, onSelect }) 
                   <List
                     bordered
                     style={{ maxHeight: 300, overflowY: 'auto' }}
-                    dataSource={variables ?? []}
+                    dataSource={
+                      variables?.filter((v) => v.dataType !== 'array' && v.dataType !== 'object') ??
+                      []
+                    }
                     renderItem={(v: ProcessVariable) => (
                       <List.Item
                         style={{

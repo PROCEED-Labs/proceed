@@ -62,16 +62,6 @@ export default function ToolbarPlugin() {
   const [isUnorderedList, setIsUnorderedList] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const insertGlobalVariable = (path: string) => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        const textNode = $createTextNode(`{%${path}%}`);
-        selection.insertNodes([textNode]);
-      }
-    });
-  };
-
   const $updateToolbar = useCallback(() => {
     const selection = $getSelection();
     if ($isRangeSelection(selection)) {
@@ -327,11 +317,11 @@ export default function ToolbarPlugin() {
       <DataObjectSelectionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSelect={(variable, isGlobal) => {
+        onSelect={(variable) => {
           editor.update(() => {
             const selection = $getSelection();
             if ($isRangeSelection(selection)) {
-              const token = isGlobal ? `{%${variable}%}` : `{%${variable}%}`;
+              const token = `{%${variable}%}`;
               const textNode = $createTextNode(token);
               selection.insertNodes([textNode]);
             }

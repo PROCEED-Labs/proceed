@@ -49,6 +49,7 @@ model User {
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
+  deployments             ProcessDeployment[]
 
   @@map("user")
 }
@@ -210,6 +211,7 @@ model Version {
   createdOn                 DateTime                   @unique @updatedAt
   bpmnFilePath              String
   artifactVersionReferences ArtifactVersionReference[]
+  deployments               ProcessDeployment[]
 
   @@map("version")
 }
@@ -431,4 +433,20 @@ model UserOrganigram {
   backOfficeRole Role?       @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
 
   @@map("user_organigram")
+}
+
+model ProcessDeployment {
+  id            String     @id @default(uuid())
+  versionId     String
+  version       Version    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  deployerId    String
+  deployer      User?      @relation(fields: [deployerId], references: [id], onDelete: SetNull)
+  deployTime    DateTime   @default(now())
+  removeTime    DateTime?
+
+  // This is not the "Engine" which we store here in the DB but the actual engine the process is deployed on
+  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
+  engineId      String
+
+  @@map("process_deployment")
 }

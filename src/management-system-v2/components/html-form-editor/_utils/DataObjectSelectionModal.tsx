@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Button, List, Tag, Tree, Tabs } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import { buildScopedTree, ScopeFilter } from '@/lib/helpers/global-data-tree';
@@ -21,6 +21,18 @@ type Props = {
   currentVariable?: string;
 };
 
+const detectScope = (variable: string): ScopeFilter => {
+  if (variable.includes('@process-initiator')) {
+    return '@process-initiator';
+  }
+
+  if (variable.includes('@organization')) {
+    return '@organization';
+  }
+
+  return '@worker';
+};
+
 const DataObjectSelectionModal: React.FC<Props> = ({
   open,
   onClose,
@@ -29,11 +41,10 @@ const DataObjectSelectionModal: React.FC<Props> = ({
 }) => {
   const environment = useEnvironment();
   const [scope, setScope] = useState<ScopeFilter>('@worker');
-  const [treeData, setTreeData] = useState<DataNode[]>([]);
-  const [selectedKey, setSelectedKey] = useState<string | undefined>();
+  const [selectedKey, setSelectedKey] = useState<string>();
   const [showVariableForm, setShowVariableForm] = useState(false);
   const [activeTab, setActiveTab] = useState<'process' | 'global'>('process');
-  const [selectedProcessVar, setSelectedProcessVar] = useState<string | undefined>();
+  const [selectedProcessVar, setSelectedProcessVar] = useState<string>();
   const { variables, updateVariables } = useEditorStateStore((state) => state);
 
   // fetch config
@@ -45,23 +56,43 @@ const DataObjectSelectionModal: React.FC<Props> = ({
 
   // initialize with current variable on modal opening
   useEffect(() => {
-    if (open && currentVariable) {
-      if (currentVariable.startsWith('@global')) {
-        setActiveTab('global');
-        setSelectedKey(currentVariable);
-      } else {
-        setActiveTab('process');
-        setSelectedProcessVar(currentVariable);
-      }
+    if (!open) return;
+    if (currentVariable?.startsWith('@global')) {
+      const detectedScope = detectScope(currentVariable);
+
+      setActiveTab('global');
+      setScope(detectedScope);
+      setSelectedKey(currentVariable);
+      setSelectedProcessVar(undefined);
+    } else {
+      setActiveTab('process');
+      setSelectedProcessVar(currentVariable);
+      setSelectedKey(undefined);
     }
   }, [open, currentVariable]);
 
-  // update tree when scope or config changes
-  useEffect(() => {
-    if (!config) return;
-    setTreeData(buildScopedTree(config, scope));
+  const treeData: DataNode[] = useMemo(() => {
+    if (!config) return [];
+    return buildScopedTree(config, scope);
+  }, [config, scope]);
+
+  const resetState = () => {
     setSelectedKey(undefined);
-  }, [scope, config]);
+    setSelectedProcessVar(undefined);
+    setActiveTab('process');
+    setScope('@worker');
+  };
+
+  const getCurrentSelection = () => {
+    if (activeTab === 'process') {
+      return selectedProcessVar;
+    }
+    return selectedKey;
+  };
+
+  const isSelectionChanged = () => {
+    return getCurrentSelection() !== currentVariable;
+  };
 
   const handleOk = () => {
     if (activeTab === 'process' && selectedProcessVar) {
@@ -70,9 +101,13 @@ const DataObjectSelectionModal: React.FC<Props> = ({
     } else if (activeTab === 'global' && selectedKey) {
       onSelect(selectedKey, true);
     }
+    resetState();
     onClose();
-    setSelectedKey(undefined);
-    setSelectedProcessVar(undefined);
+  };
+
+  const handleCancel = () => {
+    resetState();
+    onClose();
   };
 
   const scopeFilters: { label: ScopeFilter; value: ScopeFilter }[] = [
@@ -86,17 +121,11 @@ const DataObjectSelectionModal: React.FC<Props> = ({
       <Modal
         title="Add Variable"
         open={open}
-        onCancel={() => {
-          onClose();
-          setSelectedKey(undefined);
-          setSelectedProcessVar(undefined);
-        }}
+        onCancel={handleCancel}
         onOk={handleOk}
         okText="OK"
         okButtonProps={{
-          disabled:
-            (activeTab === 'process' && !selectedProcessVar) ||
-            (activeTab === 'global' && !selectedKey),
+          disabled: !getCurrentSelection() || !isSelectionChanged(),
         }}
         width={500}
       >
@@ -104,8 +133,6 @@ const DataObjectSelectionModal: React.FC<Props> = ({
           activeKey={activeTab}
           onChange={(key) => {
             setActiveTab(key as 'process' | 'global');
-            setSelectedKey(undefined);
-            setSelectedProcessVar(undefined);
           }}
           items={[
             {
@@ -129,7 +156,11 @@ const DataObjectSelectionModal: React.FC<Props> = ({
                           cursor: 'pointer',
                           backgroundColor: selectedProcessVar === v.name ? '#e6f4ff' : undefined,
                         }}
-                        onClick={() => setSelectedProcessVar(v.name)}
+                        onClick={() => {
+                          setSelectedProcessVar(v.name);
+                          // clear global selection
+                          setSelectedKey(undefined);
+                        }}
                       >
                         <span>{v.name}</span>
                         <Tag style={{ marginLeft: 8 }}>{typeLabelMap[v.dataType]}</Tag>
@@ -170,6 +201,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({
                       selectedKeys={selectedKey ? [selectedKey] : []}
                       onSelect={(keys) => {
                         setSelectedKey(keys[0] as string | undefined);
+                        setSelectedProcessVar(undefined);
                       }}
                       defaultExpandAll
                     />

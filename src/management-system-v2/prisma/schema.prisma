@@ -50,6 +50,7 @@ model User {
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
   deployments             ProcessDeployment[]
+  instances               ProcessInstance[]
 
   @@map("user")
 }
@@ -448,5 +449,21 @@ model ProcessDeployment {
   // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
   engineId      String
 
+  instances     ProcessInstance[]
+
   @@map("process_deployment")
+}
+
+model ProcessInstance {
+  id                  String            @id
+  deploymentId        String
+  deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  initiatorId         String?
+  initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  // These are not the "Engines" which we store here in the DB but the actual engines the process is running on
+  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
+  engineIds           String[]
+  state               Json
+
+  @@map("process_instance")
 }

@@ -8,6 +8,7 @@ import App from '@/components/app';
 
 import classNames from 'classnames';
 import { getPublicMSConfig } from '@/lib/ms-config/ms-config';
+import DeploymentRefetchBoundary from './deployment-refetch-boundary';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 
@@ -25,7 +26,9 @@ const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>
-        <App env={publicEnv}>{children}</App>
+        <DeploymentRefetchBoundary>
+          <App env={publicEnv}>{children}</App>
+        </DeploymentRefetchBoundary>
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 'use server';
 
-import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import db from '@/lib/data/db';
+
+import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import Ability from '@/lib/ability/abilityHelper';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 
@@ -17,6 +19,7 @@ import {
 } from '../engines/deployment';
 import { getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
+import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);
@@ -97,7 +100,7 @@ export async function deployProcess(
     // new deployment
     await Promise.allSettled(
       processAlreadyDeployedInfo.map(async (deployment) => {
-        // TODO: consider all engines to deactivate deployments on machines that are not "forced" here
+        // TODO: consider all engines to deactivate deployments on engines that are not "forced" here
         if (deployment.engine && !deployedTo.some((engine) => engine.id === deployment.engineId)) {
           await _changeDeploymentActivation(deployment.engine, definitionId, undefined, false);
         }
@@ -221,4 +224,103 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
     const message = getErrorMessage(err);
     return userError(message);
   }
+}
+
+// all connected users are sharing this information
+const global = globalThis as any;
+// flag that indicates if an update triggered by another user is currently running
+global.isRefetchingDeployments =
+  global.isRefetchingDeployments || (global.isRefetchingDeployments = false);
+// value that indicates the time the last update finished to ensure that we have 10 seconds timeout
+// between updates
+global.lastDeploymentsRefetchTime =
+  global.lastDeploymentsRefetchTime || (global.lastDeploymentsRefetchTime = 0);
+
+/**
+ * Fetches the deployments information from all engine that are expected to have a deployed process
+ * from this MS
+ **/
+export async function refetchDeployments() {
+  // allow only one refetch for all users every 10 seconds
+  if (global.isRefetchingDeployments || Date.now() - global.lastDeploymentsRefetchTime < 5000) {
+    return;
+  }
+  // prevent other users from triggering additional updates
+  global.isRefetchingDeployments = true;
+
+  try {
+    // get all (non-removed) deployments known to the MS
+    const res = await db.processDeployment.findMany({
+      where: { removeTime: null },
+      select: {
+        id: true,
+        engineId: true,
+        version: {
+          select: { id: true, processId: true, process: { select: { environmentId: true } } },
+        },
+      },
+    });
+
+    // get unique ids of all known engines that have a deployment from this MS
+    const engineIdsWithDeployments = Object.fromEntries(res.map((d) => [d.engineId, true]));
+
+    // get all (reachable) engines known to the MS
+    const dbEngines = await db.engine.findMany();
+    let engines = await savedEnginesToEngines(dbEngines);
+    const knownEngines: Record<string, true> = {};
+    // deduplicate the engines (an engine might be reachable through multiple "dbEngines")
+    engines = engines.filter((engine) => {
+      if (knownEngines[engine.id]) return false;
+      knownEngines[engine.id] = true;
+      return true;
+    });
+
+    // create a list of all engines we need to fetch new information from
+    const reachableWithDeployments = engines.filter((e) => engineIdsWithDeployments[e.id]);
+
+    // fetch deployment data from the engines
+    const engineDeployments = Object.fromEntries(
+      await asyncMap(reachableWithDeployments, async (e) => {
+        const res = await fetchDeployments([e]);
+
+        const deployedProcesses = Object.fromEntries(
+          res.map((p) => [
+            p.definitionId,
+            {
+              versions: Object.fromEntries(p.versions.map((v) => [v.versionId, v])),
+            },
+          ]),
+        );
+
+        return [e.id, deployedProcesses];
+      }),
+    );
+
+    // check if deployment information has been unexpectedly lost on the engine
+    const removedOnEngine = await asyncFilter(res, async (d) => {
+      // we say the deployment still exists on the engine if the engine cannot be reached to check
+      // or if the deployed process version can still be found on the engine
+      if (!engineDeployments[d.engineId]) return false;
+
+      return !engineDeployments[d.engineId][d.version.processId]?.versions[d.version.id];
+    });
+
+    // update the deployment information in the db
+    await db.$transaction(async (tx) => {
+      await Promise.all([
+        ...removedOnEngine.map(async (deployment) => {
+          await tx.processDeployment.update({
+            where: { id: deployment.id },
+            data: { removeTime: new Date() },
+          });
+        }),
+      ]);
+    });
+  } catch (err) {
+    console.error('Error fetching deployment information: ', err);
+  }
+
+  // allow the next update to happen in 10 seconds from now
+  global.isRefetchingDeployments = false;
+  global.lastDeploymentsRefetchTime = Date.now();
 }

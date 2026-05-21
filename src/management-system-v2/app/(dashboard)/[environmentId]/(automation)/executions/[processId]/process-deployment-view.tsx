@@ -44,7 +44,13 @@ import { useEnvironment } from '@/components/auth-can';
 
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenDocumentation } from '../../../processes/processes-helper';
-import { startInstance } from '@/lib/executions/instance-server-actions';
+import {
+  getProcessStartForm,
+  pauseInstance,
+  resumeInstance,
+  startInstance,
+  stopInstance,
+} from '@/lib/executions/instance-server-actions';
 
 export default function ProcessDeploymentView({
   processId,
@@ -77,14 +83,7 @@ export default function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-  const {
-    data: deploymentInfo,
-    refetch,
-    resumeInstance,
-    pauseInstance,
-    stopInstance,
-    getStartForm,
-  } = useDeployment(processId, initialDeploymentInfo);
+  const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
 
   const {
     selectedVersion,
@@ -341,7 +340,7 @@ export default function ProcessDeploymentView({
                           const latestDeployment = getLatestDeployment(deploymentInfo);
                           const versionId = latestDeployment.versionId;
 
-                          let startForm = await getStartForm(versionId);
+                          let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
                           if (typeof startForm !== 'string') return startForm;
 
@@ -442,7 +441,12 @@ export default function ProcessDeploymentView({
                         onClick={async () => {
                           setResumingInstance(true);
                           await wrapServerCall({
-                            fn: () => resumeInstance(selectedInstance.processInstanceId),
+                            fn: () =>
+                              resumeInstance(
+                                spaceId,
+                                processId,
+                                selectedInstance.processInstanceId,
+                              ),
                             onSuccess: async () => await refetch(),
                           });
                           setResumingInstance(false);
@@ -460,7 +464,8 @@ export default function ProcessDeploymentView({
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
-                            fn: async () => pauseInstance(selectedInstance.processInstanceId),
+                            fn: async () =>
+                              pauseInstance(spaceId, processId, selectedInstance.processInstanceId),
                             onSuccess: async () => await refetch(),
                           });
                           setPausingInstance(false);
@@ -478,7 +483,8 @@ export default function ProcessDeploymentView({
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({
-                          fn: async () => stopInstance(selectedInstance.processInstanceId),
+                          fn: async () =>
+                            stopInstance(spaceId, processId, selectedInstance.processInstanceId),
                           onSuccess: async () => await refetch(),
                         });
                         setStoppingInstance(false);

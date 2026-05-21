@@ -164,13 +164,7 @@ export async function updateDbEngine(
   if (environmentId) {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const engine = await db.engine.findUnique({
-      where: {
-        environmentId: environmentId,
-        id: engineId,
-      },
-    });
-
+    const engine = await getDbEngineById(engineId, environmentId);
     if (!engine) return userError('Engine not found');
 
     if (
@@ -209,13 +203,7 @@ export async function deleteDbEngine(engineId: string, environmentId: string | n
   if (environmentId) {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const engine = await db.engine.findUnique({
-      where: {
-        environmentId: environmentId,
-        id: engineId,
-      },
-    });
-
+    const engine = await getDbEngineById(engineId, environmentId);
     if (!engine) return userError('Engine not found');
 
     if (

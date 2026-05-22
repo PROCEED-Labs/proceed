@@ -2,7 +2,7 @@
 
 import db from '@/lib/data/db';
 
-import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncFilter, asyncForEach, asyncMap, deepEquals } from '@/lib/helpers/javascriptHelpers';
 import Ability from '@/lib/ability/abilityHelper';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 
@@ -16,10 +16,12 @@ import {
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
   getDeploymentActivation,
+  InstanceInfo,
 } from '../engines/deployment';
 import { getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
+import { truthyFilter } from '../typescript-utils';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);
@@ -262,11 +264,30 @@ export async function refetchDeployments() {
         version: {
           select: { id: true, processId: true, process: { select: { environmentId: true } } },
         },
+        instances: true,
       },
     });
 
-    // get unique ids of all known engines that have a deployment from this MS
-    const engineIdsWithDeployments = Object.fromEntries(res.map((d) => [d.engineId, true]));
+    // get unique ids of all known engines that have a deployment from this MS with information
+    // about what we expect to be deployed on those engines
+    const engineIdsWithDeployments = res.reduce(
+      (acc, curr) => {
+        if (!acc[curr.engineId]) acc[curr.engineId] = {};
+        const engineDeploymentMap = acc[curr.engineId];
+        if (!engineDeploymentMap[curr.version.processId]) {
+          engineDeploymentMap[curr.version.processId] = {};
+        }
+        const processMap = engineDeploymentMap[curr.version.processId];
+        processMap[curr.version.id] = curr;
+
+        return acc;
+      },
+      {} as {
+        [engineId: string]: {
+          [definitionId: string]: { [versionId: string]: (typeof res)[number] };
+        };
+      },
+    );
 
     // get all (reachable) engines known to the MS
     const dbEngines = await db.engine.findMany();
@@ -280,7 +301,16 @@ export async function refetchDeployments() {
     });
 
     // create a list of all engines we need to fetch new information from
-    const reachableWithDeployments = engines.filter((e) => engineIdsWithDeployments[e.id]);
+    const reachableWithDeployments = engines.filter((e) => !!engineIdsWithDeployments[e.id]);
+
+    const newInstances: {
+      id: string;
+      deploymentId: string;
+      initiatorId: null;
+      engineIds: string[];
+      state: InstanceInfo;
+    }[] = [];
+    const instanceUpdates: { id: string; state: InstanceInfo }[] = [];
 
     // fetch deployment data from the engines
     const engineDeployments = Object.fromEntries(
@@ -295,6 +325,30 @@ export async function refetchDeployments() {
             },
           ]),
         );
+
+        // TODO: when we want to handle instances that move to other engines automatically, we
+        // will have to change this logic since it assumes that all available data of the instance
+        // can be found on the engine it was started on
+        res.forEach((p) => {
+          p.instances.forEach((i) => {
+            const deployment = engineIdsWithDeployments[e.id]?.[p.definitionId]?.[i.processVersion];
+            if (!deployment) return;
+            const existingInstance = deployment.instances.find(
+              (dI) => dI.id === i.processInstanceId,
+            );
+            if (!existingInstance) {
+              newInstances.push({
+                id: i.processInstanceId,
+                deploymentId: deployment.id,
+                initiatorId: null,
+                engineIds: [e.id],
+                state: i,
+              });
+            } else if (!deepEquals(i, existingInstance.state)) {
+              instanceUpdates.push({ id: i.processInstanceId, state: i });
+            }
+          });
+        });
 
         return [e.id, deployedProcesses];
       }),
@@ -326,6 +380,13 @@ export async function refetchDeployments() {
             data: { removeTime: new Date(), toRemove: false },
           });
         }),
+        ...instanceUpdates.map(async ({ id, state }) => {
+          await tx.processInstance.update({
+            where: { id },
+            data: { state },
+          });
+        }),
+        newInstances.length && tx.processInstance.createMany({ data: newInstances }),
       ]);
     });
   } catch (err) {

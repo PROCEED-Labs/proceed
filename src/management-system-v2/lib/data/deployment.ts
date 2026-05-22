@@ -5,6 +5,33 @@ import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { UserErrorType, userError } from '../user-error';
 
+export async function getDeployedProcesses(environmentId: string) {
+  const { ability } = await getCurrentEnvironment(environmentId);
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const deployedProcesses = await db.process.findMany({
+    where: {
+      AND: [
+        { environmentId },
+        {
+          versions: {
+            some: { deployments: { some: { AND: [{ removeTime: null }, { toRemove: false }] } } },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      versions: { include: { deployments: { include: { instances: { select: { id: true } } } } } },
+    },
+  });
+
+  return ability.filter('view', 'Process', deployedProcesses);
+}
+
 export async function getProcessDeployments(spaceId: string, processId: string) {
   const { ability } = await getCurrentEnvironment(spaceId);
 

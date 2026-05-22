@@ -2,7 +2,7 @@ import ResizableElement, { ResizableElementRefType } from '@/components/Resizabl
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { Drawer, Grid, Tabs } from 'antd';
+import { Drawer, Grid, Table, Tabs, Typography } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
@@ -18,14 +18,28 @@ export type RelevantInstanceInfo = {
 export function DisplayTable({ data }: { data: ReactNode[][] }) {
   // TODO: make this responsive
   return (
-    <table style={{ borderSpacing: '0 .5rem', borderCollapse: 'separate' }}>
+    <table
+      style={{
+        borderSpacing: '0 .5rem',
+        borderCollapse: 'separate',
+        width: '100%',
+        tableLayout: 'fixed',
+      }}
+    >
+      <colgroup>
+        <col style={{ width: 150 }} />
+        <col />
+      </colgroup>
       <tbody>
         {data.map((row, idx_row) => (
           <tr key={idx_row}>
             {row.map((cell, idx_cell) => (
               <td
                 key={`${idx_row}.${idx_cell}`}
-                style={{ paddingRight: idx_cell < row.length - 1 ? '1rem' : '' }}
+                style={{
+                  paddingRight: idx_cell < row.length - 1 ? '1rem' : '',
+                  backgroundColor: idx_row % 2 ? '#f8f8f8' : '#fff',
+                }}
               >
                 {cell}
               </td>

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
+import { Alert, Button, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
 import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
@@ -10,7 +10,7 @@ import styles from './element-status.module.scss';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryText = (props: EntryTextProps) => (
-  <Typography.Text className={styles.ElementText} {...props} />
+  <Typography.Text ellipsis={{ tooltip: { ...props } }} className={styles.ElementText} {...props} />
 );
 
 const ClockSymbol = () => (
@@ -24,6 +24,24 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const metaData = getMetaDataFromElement(info.element.businessObject);
   const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
   const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+
+  if (!info.instance) {
+    return (
+      <>
+        <Typography.Title style={{ marginBottom: 20, marginTop: 5 }}>
+          Let's select some instances!
+        </Typography.Title>
+        <Space.Compact orientation="vertical">
+          <Button style={{ justifyContent: 'left' }}>1. Instance: 5/22/2026, 4:11:49 PM</Button>
+          <Button style={{ justifyContent: 'left' }}>2. Instance: 5/22/2026, 4:10:34 PM</Button>
+          <Button style={{ justifyContent: 'left' }}>3. Instance: 5/22/2026, 4:07:23 PM</Button>
+          <Button style={{ justifyContent: 'left' }}>4. Instance: 5/22/2026, 3:51:33 PM</Button>
+          <Button style={{ justifyContent: 'left' }}>5. Instance: 5/21/2026, 8:41:49 PM</Button>
+          <Button style={{ justifyContent: 'left' }}>6. Instance: 5/22/2026, 7:11:49 PM</Button>
+        </Space.Compact>
+      </>
+    );
+  }
 
   if (isRootElement) {
     statusEntries.push([
@@ -253,65 +271,65 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   // adding an empty line for padding
   statusEntries.push([]);
   // Activity time
-  statusEntries.push([
-    <Space key="started">
-      <ClockSymbol />
-      <EntryText strong>Started:</EntryText>
-      <EntryText>{generateDateString(start, true)}</EntryText>
-    </Space>,
-    <Space key="planned-start">
-      <ClockSymbol />
-      <EntryText strong>Planned Start:</EntryText>
-      <EntryText>{generateDateString(plan.start, true) || ''}</EntryText>
-    </Space>,
-    <Space key="start-delay">
-      <ClockSymbol />
-      <EntryText strong>Delay:</EntryText>
-      <EntryText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.start)}
-      </EntryText>
-    </Space>,
-  ]);
+  // statusEntries.push([
+  //   <Space key="started">
+  //     <ClockSymbol />
+  //     <EntryText strong>Started:</EntryText>
+  //     <EntryText>{generateDateString(start, true)}</EntryText>
+  //   </Space>,
+  //   <Space key="planned-start">
+  //     <ClockSymbol />
+  //     <EntryText strong>Planned Start:</EntryText>
+  //     <EntryText>{generateDateString(plan.start, true) || ''}</EntryText>
+  //   </Space>,
+  //   <Space key="start-delay">
+  //     <ClockSymbol />
+  //     <EntryText strong>Delay:</EntryText>
+  //     <EntryText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
+  //       {generateDurationString(delays.start)}
+  //     </EntryText>
+  //   </Space>,
+  // ]);
 
-  statusEntries.push([
-    <Space key="duration">
-      <ClockSymbol />
-      <EntryText strong>Duration:</EntryText>
-      <EntryText>{generateDurationString(duration)}</EntryText>
-    </Space>,
-    <Space key="duration-planned">
-      <ClockSymbol />
-      <EntryText strong>Planned Duration:</EntryText>
-      <EntryText>{generateDurationString(plan.duration)}</EntryText>
-    </Space>,
-    <Space key="duration-delay">
-      <ClockSymbol />
-      <EntryText strong>Delay:</EntryText>
-      <EntryText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.duration)}
-      </EntryText>
-    </Space>,
-  ]);
+  // statusEntries.push([
+  //   <Space key="duration">
+  //     <ClockSymbol />
+  //     <EntryText strong>Duration:</EntryText>
+  //     <EntryText>{generateDurationString(duration)}</EntryText>
+  //   </Space>,
+  //   <Space key="duration-planned">
+  //     <ClockSymbol />
+  //     <EntryText strong>Planned Duration:</EntryText>
+  //     <EntryText>{generateDurationString(plan.duration)}</EntryText>
+  //   </Space>,
+  //   <Space key="duration-delay">
+  //     <ClockSymbol />
+  //     <EntryText strong>Delay:</EntryText>
+  //     <EntryText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
+  //       {generateDurationString(delays.duration)}
+  //     </EntryText>
+  //   </Space>,
+  // ]);
 
-  statusEntries.push([
-    <Space key="end">
-      <ClockSymbol />
-      <EntryText strong>Ended:</EntryText>
-      <EntryText>{generateDateString(end, true)}</EntryText>
-    </Space>,
-    <Space key="end-planned">
-      <ClockSymbol />
-      <EntryText strong>Planned End:</EntryText>
-      <EntryText>{generateDateString(plan.end, true) || ''}</EntryText>
-    </Space>,
-    <Space key="end-delay">
-      <ClockSymbol />
-      <EntryText strong>Delay:</EntryText>
-      <EntryText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.end)}
-      </EntryText>
-    </Space>,
-  ]);
+  // statusEntries.push([
+  //   <Space key="end">
+  //     <ClockSymbol />
+  //     <EntryText strong>Ended:</EntryText>
+  //     <EntryText>{generateDateString(end, true)}</EntryText>
+  //   </Space>,
+  //   <Space key="end-planned">
+  //     <ClockSymbol />
+  //     <EntryText strong>Planned End:</EntryText>
+  //     <EntryText>{generateDateString(plan.end, true) || ''}</EntryText>
+  //   </Space>,
+  //   <Space key="end-delay">
+  //     <ClockSymbol />
+  //     <EntryText strong>Delay:</EntryText>
+  //     <EntryText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
+  //       {generateDurationString(delays.end)}
+  //     </EntryText>
+  //   </Space>,
+  // ]);
 
   return <DisplayTable data={statusEntries} />;
 }

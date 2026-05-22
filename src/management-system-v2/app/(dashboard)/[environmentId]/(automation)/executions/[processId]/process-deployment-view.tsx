@@ -525,8 +525,6 @@ export default function ProcessDeploymentView({
                     </div>
                   </Button>
                 </Tooltip>
-              </ToolbarGroup>
-              <ToolbarGroup>
                 {selectedInstance && (
                   <Tooltip title="View Instance Documentation">
                     <Button

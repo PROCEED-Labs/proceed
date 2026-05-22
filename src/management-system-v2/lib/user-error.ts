@@ -27,6 +27,14 @@ export interface UserError {
   type: UserErrorType;
 }
 
+export const permissionDenied = () => {
+  return userError('Permission denied', UserErrorType.PermissionError);
+};
+
+export const schemaValidationError = () => {
+  return userError('Schema validation failed', UserErrorType.SchemaValidationError);
+};
+
 /**
  * Creates a new user error inside an object for server responses.
  *

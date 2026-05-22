@@ -1,7 +1,6 @@
 'use server';
 
 import { z } from 'zod';
-import { enableUseDB } from 'FeatureFlags';
 import {
   getUserTasks as _getUserTasks,
   getUserTaskById as _getUserTaskById,
@@ -14,8 +13,6 @@ import { UserErrorType, userError } from '../user-error';
 import { UserTaskInput } from '../user-task-schema';
 
 export async function getUserTasks() {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
     return await _getUserTasks();
   } catch (err) {
@@ -26,8 +23,6 @@ export async function getUserTasks() {
 }
 
 export async function getUserTaskById(userTaskId: string) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
     return await _getUserTaskById(userTaskId);
   } catch (err) {
@@ -38,8 +33,6 @@ export async function getUserTaskById(userTaskId: string) {
 }
 
 export async function addUserTasks(userTasks: UserTaskInput[]) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
     return await _addUserTasks(userTasks);
   } catch (e) {
@@ -52,8 +45,6 @@ export async function addUserTasks(userTasks: UserTaskInput[]) {
 }
 
 export async function updateUserTask(userTaskId: string, userTaskInput: Partial<UserTaskInput>) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
     return await _updateUserTask(userTaskId, userTaskInput);
   } catch (e) {
@@ -66,8 +57,6 @@ export async function updateUserTask(userTaskId: string, userTaskInput: Partial<
 }
 
 export async function deleteUserTask(userTaskId: string) {
-  if (!enableUseDB) throw new Error('Not implemented for enableUseDB=false');
-
   try {
     return await _deleteUserTask(userTaskId);
   } catch (e) {

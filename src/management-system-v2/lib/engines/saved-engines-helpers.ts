@@ -1,5 +1,5 @@
 import { Engine as SavedEngine } from '@prisma/client';
-import { Engine, HttpEngine, MqttEngine } from './machines';
+import { Engine, HttpEngine, MqttEngine } from './types';
 import { DeployedProcessInfo, getDeployments } from './deployment';
 import {
   collectEnginesStatus,

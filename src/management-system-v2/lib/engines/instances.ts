@@ -1,6 +1,6 @@
 'use server';
 
-import { Engine } from './machines';
+import { Engine } from './types';
 import { engineRequest } from './endpoints/index';
 import { userError } from '../user-error';
 import { env } from '../ms-config/env-vars';

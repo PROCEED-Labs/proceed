@@ -1,6 +1,6 @@
 import Content from '@/components/content';
 import { Result, Space } from 'antd';
-import { type Engine } from '@/lib/engines/machines';
+import { type Engine } from '@/lib/engines/types';
 import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
 import { engineRequest } from '@/lib/engines/endpoints/index';
 import ClientEngineDashboard from '@/components/engine-dashboard/dashboard';

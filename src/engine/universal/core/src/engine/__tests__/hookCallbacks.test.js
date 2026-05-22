@@ -44,6 +44,7 @@ describe('Test for the function that sets up callbacks for the different lifecyc
       _versionProcessMapping: {},
       _instanceIdProcessMapping: {},
       _versionBpmnMapping: {},
+      _instanceIdExtraInfoMapping: {},
       getInstanceInformation: jest.fn().mockReturnValue({}),
       instanceEventHandlers: { onStarted, onEnded, onTokenEnded },
       _management: {
@@ -260,6 +261,11 @@ describe('Test for the function that sets up callbacks for the different lifecyc
             some: 'data',
             other: 123,
           });
+          mockEngine._instanceIdExtraInfoMapping['newInstanceId'] = {
+            processInitiator: 'user-id',
+            spaceIdOfProcessInitiator: 'space-id',
+            managementSystemLocation: 'some-address',
+          };
           mockNewInstance.isEnded.mockReturnValue(false);
 
           mockStateStream.subscriber(mockEngine, mockNewInstance);
@@ -269,6 +275,11 @@ describe('Test for the function that sets up callbacks for the different lifecyc
           expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
             some: 'data',
             other: 123,
+            extras: {
+              processInitiator: 'user-id',
+              spaceIdOfProcessInitiator: 'space-id',
+              managementSystemLocation: 'some-address',
+            },
             isCurrentlyExecutedInBpmnEngine: true,
           });
         });
@@ -290,6 +301,11 @@ describe('Test for the function that sets up callbacks for the different lifecyc
         it('will archive the instance only with the latest state in case of fast consecutive state changes', async () => {
           mockNewInstance.isEnded.mockReturnValue(false);
 
+          mockEngine._instanceIdExtraInfoMapping['newInstanceId'] = {
+            processInitiator: 'user-id',
+            spaceIdOfProcessInitiator: 'space-id',
+            managementSystemLocation: 'some-address',
+          };
           mockEngine.getInstance.mockReturnValue(mockNewInstance);
           mockEngine.getInstanceInformation.mockReturnValue({
             some: 'data',
@@ -321,6 +337,11 @@ describe('Test for the function that sets up callbacks for the different lifecyc
           expect(db.archiveInstance).toHaveBeenCalledWith('processFile', 'newInstanceId', {
             some: 'data',
             other: 789,
+            extras: {
+              processInitiator: 'user-id',
+              spaceIdOfProcessInitiator: 'space-id',
+              managementSystemLocation: 'some-address',
+            },
             isCurrentlyExecutedInBpmnEngine: true,
           });
         });

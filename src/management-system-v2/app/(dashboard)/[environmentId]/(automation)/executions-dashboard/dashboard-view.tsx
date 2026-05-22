@@ -1,19 +1,58 @@
 'use client';
 
 import { useMemo, Fragment } from 'react';
-import useDeployments from './use-deployments';
 import { Card, Col, Row, Skeleton, Statistic } from 'antd';
+import { useEnvironment } from '@/components/auth-can';
+import { getAvailableSpaceEngines } from '@/lib/data/engines';
+import { useQuery } from '@tanstack/react-query';
+import { getDeployedProcesses } from '@/lib/data/deployment';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { getInstance } from '@/lib/data/instance';
+import { truthyFilter } from '@/lib/typescript-utils';
 
 const DashboardView: React.FC = () => {
-  const { engines, deployments } = useDeployments(
-    'definitionId,instances(processInstanceId,instanceState)',
-  );
+  const space = useEnvironment();
+
+  const { data: engines } = useQuery({
+    queryFn: async () => getAvailableSpaceEngines(space.spaceId),
+    refetchInterval: 1000,
+    queryKey: ['space', space.spaceId, 'engines'],
+  });
+
+  const { data } = useQuery({
+    queryFn: async () => {
+      let deployedProcesses = await getDeployedProcesses(space.spaceId);
+
+      if (isUserErrorResponse(deployedProcesses))
+        return { deployedProcesses: [] as string[], instances: [] };
+
+      const instanceIds = new Set<string>();
+      deployedProcesses.forEach((p) =>
+        p.versions.forEach((v) =>
+          v.deployments.forEach((d) => d.instances.forEach((i) => instanceIds.add(i.id))),
+        ),
+      );
+
+      const instances = (
+        await asyncMap([...instanceIds], async (id) => {
+          const instance = await getInstance(space.spaceId, id);
+          if (isUserErrorResponse(instance)) return undefined;
+          return instance;
+        })
+      ).filter(truthyFilter);
+
+      return { deployedProcesses: deployedProcesses.map((p) => p.id), instances };
+    },
+    refetchInterval: 1000,
+    queryKey: ['space', space.spaceId, 'deployments'],
+  });
 
   const stats = useMemo(() => {
-    if (!engines || !deployments) return;
+    if (!engines || !data) return;
     const stats = {
       numEngines: 0,
-      numDeployments: 0,
+      numDeployments: data.deployedProcesses.length,
       numInstances: 0,
       numRunningInstances: 0,
       numFailedInstances: 0,
@@ -35,30 +74,25 @@ const DashboardView: React.FC = () => {
     const knownDeployments: Record<string, boolean> = {};
     const knownInstances: Record<string, string[]> = {};
 
-    for (const { definitionId, instances } of deployments) {
-      if (!knownDeployments[definitionId]) {
-        stats.numDeployments++;
-        knownDeployments[definitionId] = true;
+    for (const {
+      state: { processInstanceId, instanceState },
+    } of data.instances) {
+      if (!knownDeployments[processInstanceId]) {
+        knownInstances[processInstanceId] = instanceState;
+      } else {
+        knownInstances[processInstanceId].push(...instanceState);
       }
+    }
 
-      for (const { processInstanceId, instanceState } of instances) {
-        if (!knownDeployments[processInstanceId]) {
-          knownInstances[processInstanceId] = instanceState;
-        } else {
-          knownInstances[processInstanceId].push(...instanceState);
-        }
-      }
+    for (const instanceState of Object.values(knownInstances)) {
+      stats.numInstances++;
 
-      for (const instanceState of Object.values(knownInstances)) {
-        stats.numInstances++;
-
-        if (instanceState.some((state) => activeStates.includes(state))) {
-          stats.numRunningInstances++;
-        } else if (instanceState.some((state) => failedStates.includes(state))) {
-          stats.numFailedInstances++;
-        } else {
-          stats.numCompletedInstances++;
-        }
+      if (instanceState.some((state) => activeStates.includes(state))) {
+        stats.numRunningInstances++;
+      } else if (instanceState.some((state) => failedStates.includes(state))) {
+        stats.numFailedInstances++;
+      } else {
+        stats.numCompletedInstances++;
       }
     }
 
@@ -90,7 +124,7 @@ const DashboardView: React.FC = () => {
         },
       ],
     };
-  }, [engines, deployments]);
+  }, [engines, data]);
 
   if (!stats) return <Skeleton active />;
 

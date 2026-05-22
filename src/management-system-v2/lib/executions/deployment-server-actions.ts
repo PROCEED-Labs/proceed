@@ -21,7 +21,6 @@ import {
 import { getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
-import { truthyFilter } from '../typescript-utils';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);

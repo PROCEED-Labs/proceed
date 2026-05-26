@@ -1,58 +1,39 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, Col, Row, Space, Typography, TreeSelect } from 'antd';
-import {
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  HourglassOutlined,
-  DollarOutlined,
-  FolderOutlined,
-} from '@ant-design/icons';
-import { MdPlayArrow, MdCheckCircle, MdPause } from 'react-icons/md';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { Col, Row, Space, Typography } from 'antd';
+import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
+import { HiUserGroup } from 'react-icons/hi';
+import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';
 import TimelinePerformanceCard from '@/components/dashboard-charts/timeline-performance-card';
 import StatCard from '@/components/stat-card';
+import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
+import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
+import { MdPlayArrow, MdCheckCircle, MdPause } from 'react-icons/md';
 
-const { Text } = Typography;
+const { Title } = Typography;
 
 const COLORS = {
-  success: '#52c41a',
-  warning: '#fa8c16',
-  error: '#f5222d',
   purple: '#722ed1',
   blue: '#1677ff',
   green: '#52c41a',
   orange: '#fa8c16',
+  red: '#f5222d',
+  gray: '#8c8c8c',
 };
 
 interface ManagerOverviewTabProps {
   managerStats: any;
+  instanceDistributionData: any[];
+  weeklyTrendData: any[];
+  totalInstances: number;
 }
 
-const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats }) => {
-  const [selectedFolder, setSelectedFolder] = useState<string>('root');
-
-  const folderTreeData = [
-    {
-      title: 'Root',
-      value: 'root',
-      children: [
-        { title: 'HR Processes', value: 'hr' },
-        { title: 'Finance Processes', value: 'finance' },
-        { title: 'Operations', value: 'operations' },
-      ],
-    },
-  ];
+const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
+  managerStats,
+  instanceDistributionData,
+  weeklyTrendData,
+  totalInstances,
+}) => {
 
   const monthlyData = [
     { month: 'Jan', completed: 45, failed: 3 },
@@ -64,19 +45,10 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats })
 
   return (
     <>
-      <div style={{ marginBottom: '24px' }}>
-        <Space>
-          <FolderOutlined />
-          <Text type="secondary">Folder:</Text>
-          <TreeSelect
-            value={selectedFolder}
-            onChange={setSelectedFolder}
-            treeData={folderTreeData}
-            style={{ width: 200 }}
-            placeholder="Select folder"
-          />
-        </Space>
-      </div>
+      {/* Team Overview Section */}
+      <Title level={4} style={{ marginBottom: '16px', marginTop: '0' }}>
+        <HiUserGroup style={{ marginRight: '8px' }} /> Team Overview
+      </Title>
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12} lg={6}>
@@ -113,7 +85,65 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats })
         </Col>
       </Row>
 
+      {/* Charts Row 1 */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+        <Col xs={24} lg={12}>
+          <RadialDistributionChart
+            title="Team Instance Distribution"
+            data={[
+              {
+                name: 'Failed',
+                value:
+                  totalInstances > 0
+                    ? ((instanceDistributionData.find((d) => d.name === 'Failed')?.value || 0) /
+                        totalInstances) *
+                      100
+                    : 0,
+                fill: COLORS.red,
+              },
+              {
+                name: 'Stopped',
+                value:
+                  totalInstances > 0
+                    ? ((instanceDistributionData.find((d) => d.name === 'Stopped')?.value || 0) /
+                        totalInstances) *
+                      100
+                    : 0,
+                fill: COLORS.gray,
+              },
+              {
+                name: 'Paused',
+                value:
+                  totalInstances > 0
+                    ? ((instanceDistributionData.find((d) => d.name === 'Paused')?.value || 1) /
+                        totalInstances) *
+                      100
+                    : 14.3,
+                fill: COLORS.orange,
+              },
+              {
+                name: 'Running',
+                value:
+                  totalInstances > 0
+                    ? ((instanceDistributionData.find((d) => d.name === 'Running')?.value || 1) /
+                        totalInstances) *
+                      100
+                    : 35.7,
+                fill: COLORS.green,
+              },
+              {
+                name: 'Completed',
+                value:
+                  totalInstances > 0
+                    ? ((instanceDistributionData.find((d) => d.name === 'Completed')?.value || 1) /
+                        totalInstances) *
+                      100
+                    : 50,
+                fill: COLORS.blue,
+              },
+            ]}
+          />
+        </Col>
         <Col xs={24} lg={12}>
           <TimelinePerformanceCard
             title="Team Timeline Performance"
@@ -123,43 +153,33 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats })
             runningProcesses={managerStats.runningProcesses}
           />
         </Col>
+      </Row>
+
+      {/* Charts Row 2 */}
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
-          <Card title="Team Process Activity" bordered={false}>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="completed"
-                  stroke={COLORS.success}
-                  strokeWidth={3}
-                  dot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="failed"
-                  stroke={COLORS.error}
-                  strokeWidth={3}
-                  dot={{ r: 5 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+          <ProcessActivityChart
+            title="Team Process Activity"
+            data={monthlyData}
+            dataKeys={{
+              x: 'month',
+              line1: { key: 'completed', name: 'Completed', color: COLORS.green },
+              line2: { key: 'failed', name: 'Failed', color: COLORS.red },
+            }}
+          />
+        </Col>
+        <Col xs={24} lg={12}>
+          <BudgetOverviewChart
+            title="Team Budget Overview"
+            plannedBudget={60000}
+            spentBudget={managerStats.spentBudget}
+          />
         </Col>
       </Row>
 
+      {/* Stats Row */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Team Avg. Open Time"
             value={managerStats.avgOpenTime}
@@ -169,7 +189,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats })
             precision={1}
           />
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Team Avg. Completed Time"
             value={managerStats.avgCompletedTime}
@@ -179,23 +199,14 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({ managerStats })
             precision={1}
           />
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Team Longest Running"
             value={managerStats.longestRunning}
             icon={<HourglassOutlined />}
-            color={COLORS.error}
+            color={COLORS.red}
             suffix="hrs"
             precision={1}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Team Budget Spent"
-            value={managerStats.spentBudget}
-            icon={<DollarOutlined />}
-            color={COLORS.purple}
-            prefix="$"
           />
         </Col>
       </Row>

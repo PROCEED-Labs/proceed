@@ -14,7 +14,8 @@ import {
 import { useMemo, useRef, useState, useEffect } from 'react';
 import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
-import AnalyticsCard from '../process-analytics-card';
+import AnalyticsCard from '@/components/analytics-card';
+
 
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -33,6 +34,7 @@ interface AnalyticsData {
   sharedInFolder: number;
   executableInFolder: number;
   totalFolders: number;
+  foldersInCurrentLevel: number;
   totalProcessesGlobal: number;
 }
 
@@ -85,6 +87,9 @@ const ProcessAnalyticsCards = ({
       ? allProcessesGlobal
       : (items.filter((item) => item.type === 'process') as ProcessMetadata[]);
 
+    // Count all folders from allProcesses
+    const allFoldersGlobal = allProcesses.filter((item) => item.type === 'folder');
+    // Count all folders on current level
     const foldersInCurrent = items.filter((item) => item.type === 'folder');
 
     const processesInFolderCount = processesInFolder.length;
@@ -133,7 +138,8 @@ const ProcessAnalyticsCards = ({
       recentlyEditedInFolder,
       sharedInFolder,
       executableInFolder,
-      totalFolders: foldersInCurrent.length,
+      totalFolders: allFoldersGlobal.length,
+      foldersInCurrentLevel: foldersInCurrent.length,
       totalProcessesGlobal,
     };
   }, [items, allProcesses, isRootFolder]);
@@ -191,10 +197,9 @@ const ProcessAnalyticsCards = ({
         ref={scrollRef}
         style={{
           display: 'flex',
-          gap: '16px',
+          gap: '10px',
           overflowX: 'auto',
           overflowY: 'hidden',
-          paddingBottom: '8px',
           scrollbarWidth: 'thin',
           scrollbarColor: '#d9d9d9 #f0f0f0',
         }}
@@ -203,7 +208,6 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Total Processes"
           icon={<FileOutlined />}
-          iconColor="#1890ff"
           mainValue={isRootFolder ? analytics.totalProcessesGlobal : analytics.processesInFolder}
           showProgress={true}
           progressPercent={100}
@@ -212,11 +216,17 @@ const ProcessAnalyticsCards = ({
               ? (analytics.releasedInFolder / analytics.processesInFolder) * 100
               : 0
           }
-          successColor="#13c2c2"
-          progressColor="#eb2f96"
           legend={[
-            { color: '#13c2c2', label: 'Released', value: analytics.releasedInFolder },
-            { color: '#eb2f96', label: 'Drafts', value: analytics.draftsInFolder },
+            {
+              label: 'Released',
+              value: analytics.releasedInFolder,
+              tooltip: 'Processes that have at least one released version and are ready for use',
+            },
+            {
+              label: 'Drafts',
+              value: analytics.draftsInFolder,
+              tooltip: 'Processes that have never been released (no versions created yet)',
+            },
           ]}
           subtitle={isRootFolder ? 'Across all folders' : 'In this folder'}
         />
@@ -225,7 +235,6 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Executable"
           icon={<RocketOutlined />}
-          iconColor="#7cb305"
           mainValue={analytics.executableInFolder}
           secondaryValue={analytics.processesInFolder}
           showProgress={true}
@@ -234,7 +243,6 @@ const ProcessAnalyticsCards = ({
               ? (analytics.executableInFolder / analytics.processesInFolder) * 100
               : 0
           }
-          progressColor="#7cb305"
           subtitle={isRootFolder ? 'Ready for Automation' : 'Ready for Automation (In this folder)'}
         />
 
@@ -242,7 +250,6 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Needs Release"
           icon={<EditOutlined />}
-          iconColor="#fa8c16"
           mainValue={analytics.unversionedInFolder}
           secondaryValue={analytics.releasedInFolder}
           showProgress={true}
@@ -251,26 +258,23 @@ const ProcessAnalyticsCards = ({
               ? (analytics.unversionedInFolder / analytics.releasedInFolder) * 100
               : 0
           }
-          progressColor="#fa8c16"
           tooltip="Processes with unreleased changes. They were modified after their last version was created."
           subtitle={
             isRootFolder
-              ? 'Number of Process with unreleased changes'
-              : 'Number of Process with unreleased changes (In this folder)'
+              ? 'Number of Released Processes that someone updated'
+              : 'Number of Released Processes that someone updated (In this folder)'
           }
         />
 
         {/* Folders Card */}
         <AnalyticsCard
-          title={isRootFolder ? 'Folders' : 'In This Folder'}
+          title={isRootFolder ? 'Folders' : 'Folders in This Level'}
           icon={<FolderOutlined />}
-          iconColor="#52c41a"
-          mainValue={isRootFolder ? analytics.totalFolders : analytics.processesInFolder}
-          secondaryValue={!isRootFolder ? analytics.totalProcessesGlobal : undefined}
+          mainValue={isRootFolder ? analytics.totalFolders : analytics.foldersInCurrentLevel}
           subtitle={
             isRootFolder
-              ? 'Organization structure'
-              : `Out of ${analytics.totalProcessesGlobal} total`
+              ? 'Number of accessible Folders and Subfolders'
+              : 'Number of accessible Subfolders (In this folder)'
           }
         />
 
@@ -278,7 +282,6 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Recent Activity"
           icon={<ClockCircleOutlined />}
-          iconColor="#722ed1"
           mainValue={analytics.recentlyEditedInFolder}
           secondaryValue={!isRootFolder ? analytics.processesInFolder : undefined}
           subtitle={
@@ -292,10 +295,13 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Shared"
           icon={<ShareAltOutlined />}
-          iconColor="#096dd9"
           mainValue={analytics.sharedInFolder}
           secondaryValue={!isRootFolder ? analytics.processesInFolder : undefined}
-          subtitle={isRootFolder ? 'Public or shared' : 'Public or shared (In this folder)'}
+          subtitle={
+            isRootFolder
+              ? 'Number of public or shared processes'
+              : 'Number of public or shared processes (In this folder)'
+          }
         />
       </div>
     </div>

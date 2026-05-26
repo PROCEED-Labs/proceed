@@ -16,7 +16,7 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
-import ProcessAnalyticsCards from '@/components/processes/process-analytics-cards';
+import ProcessAnalyticsCards from './analytics';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -32,6 +32,7 @@ async function getAllProcessesRecursive(
     if (item.type === 'process') {
       collected.push(item);
     } else if (item.type === 'folder') {
+      collected.push(item);
       // Recursively get processes from subfolders
       await getAllProcessesRecursive(item.id, ability, collected);
     }

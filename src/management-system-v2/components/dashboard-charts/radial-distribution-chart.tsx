@@ -1,12 +1,5 @@
 import { Card } from 'antd';
-import {
-  RadialBarChart,
-  RadialBar,
-  PolarAngleAxis,
-  Legend,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { RadialBarChart, RadialBar, Legend, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface RadialDistributionChartProps {
   data: Array<{
@@ -26,13 +19,30 @@ const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data,
           cy="50%"
           innerRadius="20%"
           outerRadius="80%"
-          barSize={16}
+          barSize={14}
           data={data}
         >
-          <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
           <RadialBar background dataKey="value" />
-          <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" />
-          <Tooltip formatter={(value) => (value ? `${Number(value).toFixed(1)}%` : '')} />
+          <Legend
+            iconSize={10}
+            layout="vertical"
+            verticalAlign="middle"
+            align="right"
+            wrapperStyle={{
+              top: '50%',
+              right: 0,
+              transform: 'translate(0, -50%)',
+              lineHeight: '24px',
+            }}
+          />
+          <Tooltip
+            formatter={(value) => (value ? `${Number(value).toFixed(1)}%` : '')}
+            contentStyle={{
+              backgroundColor: '#fff',
+              border: '1px solid #d9d9d9',
+              borderRadius: '6px',
+            }}
+          />
         </RadialBarChart>
       </ResponsiveContainer>
     </Card>

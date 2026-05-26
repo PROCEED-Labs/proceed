@@ -1,42 +1,29 @@
 'use client';
 
 import { Card, Col, Row, Space, Typography, Statistic } from 'antd';
+import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
+import { HiUser } from 'react-icons/hi';
+import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
 import {
-  ClockCircleOutlined,
-  CheckCircleOutlined,
-  HourglassOutlined,
-  DollarOutlined,
-} from '@ant-design/icons';
-import { HiUser, HiUserGroup } from 'react-icons/hi';
-import { MdPlayArrow, MdCheckCircle } from 'react-icons/md';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
-  Cell,
 } from 'recharts';
 import GaugeChart from '@/components/dashboard-charts/gauge-chart';
 import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';
 import TimelinePerformanceCard from '@/components/dashboard-charts/timeline-performance-card';
 import StatCard from '@/components/stat-card';
+import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
+import ProcessStatsCards from '@/components/dashboard-charts/process-stats-overview';
+import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 
 const { Title, Text } = Typography;
 
 const COLORS = {
-  primary: '#1677ff',
-  success: '#52c41a',
-  warning: '#fa8c16',
-  error: '#f5222d',
-  purple: '#722ed1',
   blue: '#1677ff',
   green: '#52c41a',
   orange: '#fa8c16',
@@ -47,7 +34,6 @@ const COLORS = {
 interface UserProcessesTabProps {
   userStats: any;
   instanceDistributionData: any[];
-  processTimelineData: any[];
   weeklyTrendData: any[];
   totalInstances: number;
 }
@@ -55,73 +41,25 @@ interface UserProcessesTabProps {
 const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
   userStats,
   instanceDistributionData,
-  processTimelineData,
   weeklyTrendData,
   totalInstances,
 }) => {
   return (
     <>
       {/* Process Initiator Section */}
-      <Title level={4} style={{ marginBottom: '16px' }}>
-        <HiUser style={{ marginRight: '8px' }} /> Your Processes (As Initiator)
+      <Title level={4} style={{ marginBottom: '16px', marginTop: '0' }}>
+        <HiUser style={{ marginRight: '8px' }} /> Your Processes
       </Title>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} lg={8}>
-          <Card bordered={false}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text type="secondary">Accessible Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600 }}>
-                  {userStats.accessibleProcesses}
-                </div>
-              </div>
-              <div>
-                <Text type="secondary">Executable Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600 }}>
-                  {userStats.executableProcesses}
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card bordered={false}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text type="secondary">Running Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600, color: COLORS.green }}>
-                  {userStats.runningProcesses}
-                </div>
-              </div>
-              <div>
-                <Text type="secondary">Paused Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600, color: COLORS.orange }}>
-                  {userStats.pausedProcesses}
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card bordered={false}>
-            <Space direction="vertical" style={{ width: '100%' }} size="middle">
-              <div>
-                <Text type="secondary">Completed Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600 }}>
-                  {userStats.completedProcesses}
-                </div>
-              </div>
-              <div>
-                <Text type="secondary">Started Processes</Text>
-                <div style={{ fontSize: '24px', fontWeight: 600 }}>
-                  {userStats.startedProcesses}
-                </div>
-              </div>
-            </Space>
-          </Card>
-        </Col>
-      </Row>
+      <ProcessStatsCards
+        accessibleProcesses={userStats.accessibleProcesses}
+        executableProcesses={userStats.executableProcesses}
+        runningProcesses={userStats.runningProcesses}
+        pausedProcesses={userStats.pausedProcesses}
+        completedProcesses={userStats.completedProcesses}
+        startedProcesses={userStats.startedProcesses}
+        type="user"
+      />
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
@@ -136,7 +74,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                         totalInstances) *
                       100
                     : 0,
-                fill: COLORS.error,
+                fill: COLORS.red,
               },
               {
                 name: 'Stopped',
@@ -156,7 +94,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                         totalInstances) *
                       100
                     : 14.3,
-                fill: COLORS.warning,
+                fill: COLORS.orange,
               },
               {
                 name: 'Running',
@@ -166,7 +104,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                         totalInstances) *
                       100
                     : 35.7,
-                fill: COLORS.success,
+                fill: COLORS.green,
               },
               {
                 name: 'Completed',
@@ -182,45 +120,6 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
           />
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Process Timeline Status" bordered={false}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={processTimelineData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={120} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                  {processTimelineData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        entry.name === 'On Schedule'
-                          ? COLORS.success
-                          : entry.name === 'Close to Exceed'
-                            ? COLORS.warning
-                            : COLORS.error
-                      }
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} lg={12}>
           <TimelinePerformanceCard
             title="Process Timeline Performance"
             onSchedule={userStats.onSchedule}
@@ -229,48 +128,31 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             runningProcesses={userStats.runningProcesses}
           />
         </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
-          <Card title="Weekly Process Activity" bordered={false}>
-            <ResponsiveContainer width="100%" height={280}>
-              <LineChart
-                data={weeklyTrendData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="started"
-                  stroke={COLORS.blue}
-                  strokeWidth={3}
-                  dot={{ fill: COLORS.blue, r: 5 }}
-                  activeDot={{ r: 8 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="completed"
-                  stroke={COLORS.green}
-                  strokeWidth={3}
-                  dot={{ fill: COLORS.green, r: 5 }}
-                  activeDot={{ r: 8 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+          <ProcessActivityChart
+            title="Weekly Process Activity"
+            data={weeklyTrendData}
+            dataKeys={{
+              x: 'day',
+              line1: { key: 'started', name: 'Started', color: COLORS.blue },
+              line2: { key: 'completed', name: 'Completed', color: COLORS.green },
+            }}
+          />
+        </Col>
+        <Col xs={24} lg={12}>
+          <BudgetOverviewChart
+            title="Budget Overview"
+            plannedBudget={15000}
+            spentBudget={userStats.spentBudget}
+          />
         </Col>
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Avg. Open Process Time"
             value={userStats.avgOpenTime}
@@ -280,7 +162,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             precision={1}
           />
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Avg. Completed Time"
             value={userStats.avgCompletedTime}
@@ -290,7 +172,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             precision={1}
           />
         </Col>
-        <Col xs={24} sm={12} lg={6}>
+        <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Longest Running Process"
             value={userStats.longestRunning}
@@ -300,20 +182,11 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             precision={1}
           />
         </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            title="Budget Spent"
-            value={userStats.spentBudget}
-            icon={<DollarOutlined />}
-            color={COLORS.purple}
-            prefix="$"
-          />
-        </Col>
       </Row>
 
       {/* Participant Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '40px' }}>
-        <HiUserGroup style={{ marginRight: '8px' }} /> Your Tasks (As Participant)
+      <Title level={4} style={{ marginBottom: '16px', marginTop: '32px' }}>
+        <MdAddTask style={{ marginRight: '8px' }} /> Your Tasks (As Participant)
       </Title>
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
@@ -348,7 +221,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             }
             completed={userStats.completedTasks}
             total={userStats.completedTasks + userStats.openTasks}
-            color={COLORS.success}
+            color={COLORS.green}
           />
         </Col>
         <Col xs={24} lg={12}>
@@ -360,8 +233,8 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
               >
                 <defs>
                   <linearGradient id="colorTaskDaily" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.success} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={COLORS.success} stopOpacity={0.1} />
+                    <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={COLORS.green} stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -377,7 +250,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                 <Area
                   type="monotone"
                   dataKey="completed"
-                  stroke={COLORS.success}
+                  stroke={COLORS.green}
                   strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorTaskDaily)"

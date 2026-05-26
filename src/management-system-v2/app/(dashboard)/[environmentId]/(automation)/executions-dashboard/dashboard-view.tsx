@@ -117,15 +117,6 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
     ];
   }, [stats]);
 
-  const processTimelineData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: 'On Schedule', value: stats.userStats.onSchedule, color: COLORS.green },
-      { name: 'Close to Exceed', value: stats.userStats.closeToExceed, color: COLORS.orange },
-      { name: 'Exceeded', value: stats.userStats.exceededTime, color: COLORS.red },
-    ];
-  }, [stats]);
-
   // dummy weekly trend data
   const weeklyTrendData = useMemo(
     () => [
@@ -172,7 +163,6 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
         <UserProcessesTab
           userStats={stats.userStats}
           instanceDistributionData={instanceDistributionData}
-          processTimelineData={processTimelineData}
           weeklyTrendData={weeklyTrendData}
           totalInstances={stats.totalInstances}
         />
@@ -189,7 +179,14 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
           Manager Overview
         </span>
       ),
-      children: <ManagerOverviewTab managerStats={stats.managerStats} />,
+      children: (
+        <ManagerOverviewTab
+          managerStats={stats.managerStats}
+          instanceDistributionData={instanceDistributionData}
+          weeklyTrendData={weeklyTrendData}
+          totalInstances={stats.totalInstances}
+        />
+      ),
     });
   }
 
@@ -214,50 +211,39 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
 
   return (
     <div>
-      {/* Time Range Selector */}
-      <div
-        style={{
-          marginBottom: '10px',
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}
-      >
-        {timeRange === 'custom' && (
-          <RangePicker
-            value={customDateRange}
-            onChange={handleDateRangeChange}
-            format="YYYY-MM-DD"
-            placeholder={['Start Date', 'End Date']}
-            style={{ marginRight: '12px' }}
-          />
-        )}
-        <Select
-          value={timeRange}
-          onChange={handleTimeRangeChange}
-          style={{ width: 150 }}
-          options={[
-            { label: 'Last Week', value: 'week' },
-            { label: 'Last Month', value: 'month' },
-            { label: 'Last Year', value: 'year' },
-            { label: 'Custom Range', value: 'custom' },
-          ]}
-        />
-      </div>
-
-      {/* Tabs */}
       <Tabs
         activeKey={activeTab}
         onChange={setActiveTab}
         items={tabItems}
         size="large"
-        style={{
-          marginTop: '0',
-        }}
         tabBarStyle={{
           marginBottom: '24px',
-          borderBottom: '2px solid #f0f0f0',
+          borderBottom: '1px solid #f0f0f0',
+          paddingBottom: '12px',
         }}
+        tabBarExtraContent={
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {timeRange === 'custom' && (
+              <RangePicker
+                value={customDateRange}
+                onChange={handleDateRangeChange}
+                format="YYYY-MM-DD"
+                placeholder={['Start Date', 'End Date']}
+              />
+            )}
+            <Select
+              value={timeRange}
+              onChange={handleTimeRangeChange}
+              style={{ width: 150 }}
+              options={[
+                { label: 'Last Week', value: 'week' },
+                { label: 'Last Month', value: 'month' },
+                { label: 'Last Year', value: 'year' },
+                { label: 'Custom Range', value: 'custom' },
+              ]}
+            />
+          </div>
+        }
       />
     </div>
   );

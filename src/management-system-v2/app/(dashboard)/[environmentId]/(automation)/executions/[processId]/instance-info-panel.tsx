@@ -2,7 +2,7 @@ import ResizableElement, { ResizableElementRefType } from '@/components/Resizabl
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { Drawer, Grid, Table, Tabs, Typography } from 'antd';
+import { Button, Grid, Modal, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
@@ -64,11 +64,11 @@ export default function InstanceInfoPanel({
   refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  const breakpoints = Grid.useBreakpoint();
+  const breakpoint = Grid.useBreakpoint();
 
   const title = info.element?.businessObject?.name || info.element?.id || 'How to PROCEED?';
 
-  if (breakpoints.xl && !open) return null;
+  if (breakpoint.xl && !open) return null;
 
   const tabs = info.element ? (
     <Tabs
@@ -108,27 +108,42 @@ export default function InstanceInfoPanel({
     />
   ) : null;
 
-  if (breakpoints.xl)
-    return (
-      <ResizableElement
-        initialWidth={400}
-        minWidth={400}
-        maxWidth={'40vw'}
-        style={{
-          // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
-          height: 'calc(100vh - 150px)',
-        }}
-        ref={resizableElementRef}
-      >
-        <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
-          {tabs}
-        </CollapsibleCard>
-      </ResizableElement>
-    );
+  // TODO to be determined by higher forces
+  const hideFooter = true;
 
-  return (
-    <Drawer open={open} onClose={close} title={title}>
+  return breakpoint.xl ? (
+    <ResizableElement
+      initialWidth={400}
+      minWidth={400}
+      maxWidth={'40vw'}
+      style={{
+        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
+        height: 'calc(100vh - 150px)',
+      }}
+      ref={resizableElementRef}
+    >
+      <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
+        {tabs}
+      </CollapsibleCard>
+    </ResizableElement>
+  ) : (
+    <Modal
+      open={open}
+      onCancel={close}
+      onOk={close}
+      title={title}
+      width={breakpoint.xs ? '100vw' : '75vw'}
+      styles={{ body: { height: '75vh', overflowY: 'scroll', paddingRight: '1rem' } }}
+      centered
+      footer={
+        hideFooter ? null : (
+          <Button key="ok" type="primary" onClick={close}>
+            OK
+          </Button>
+        )
+      }
+    >
       {tabs}
-    </Drawer>
+    </Modal>
   );
 }

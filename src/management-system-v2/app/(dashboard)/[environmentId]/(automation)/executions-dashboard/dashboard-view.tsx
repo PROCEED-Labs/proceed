@@ -15,7 +15,13 @@ const DashboardView: React.FC = () => {
   const space = useEnvironment();
 
   const { data: engines } = useQuery({
-    queryFn: async () => getAvailableSpaceEngines(space.spaceId),
+    queryFn: async () => {
+      const res = await getAvailableSpaceEngines(space.spaceId);
+
+      if (isUserErrorResponse(res)) return [];
+
+      return res;
+    },
     refetchInterval: 1000,
     queryKey: ['space', space.spaceId, 'engines'],
   });

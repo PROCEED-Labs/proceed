@@ -234,7 +234,7 @@ describe('Test process endpoints', () => {
           expect(getResponse.body).toStrictEqual([]);
           const postResponse = await request.post('/process/definitionId/versions/123/instance');
           expect(postResponse.status).toBe(201);
-          ({ instanceId } = postResponse.body);
+          ({ processInstanceId: instanceId } = postResponse.body);
           // allow everything to start correctly (the user task should have completely started)
           await new Promise((res) => setTimeout(res, 500));
         });

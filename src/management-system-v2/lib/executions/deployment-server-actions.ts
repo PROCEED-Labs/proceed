@@ -2,7 +2,13 @@
 
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import Ability from '@/lib/ability/abilityHelper';
-import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
+import {
+  UserErrorType,
+  UserFacingError,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '@/lib/user-error';
 
 import { getAllAvailableEngines, getAvailableAdminEngines } from '@/lib/data/engines';
 
@@ -15,7 +21,7 @@ import {
   changeDeploymentActivation as _changeDeploymentActivation,
   getDeploymentActivation,
 } from '../engines/deployment';
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
@@ -35,7 +41,11 @@ export async function deployProcess(
   _forceEngine?: SpaceEngine | 'PROCEED',
 ) {
   try {
-    // TODO: manage permissions for deploying a process
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('create', 'Execution'))
+      return userError('Invalid Permissions', UserErrorType.PermissionError);
+
     const { userId } = await getCurrentUser();
 
     let engines: Engine[];

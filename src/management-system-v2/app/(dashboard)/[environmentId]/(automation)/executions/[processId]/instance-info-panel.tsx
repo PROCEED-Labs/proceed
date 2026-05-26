@@ -7,6 +7,7 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
 import { ElementInfo } from './element-info';
+import { ElementTiming } from './element-timing';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
@@ -86,7 +87,7 @@ export default function InstanceInfoPanel({
         {
           key: 'Timing',
           label: 'Timing',
-          children: 'How to proceed',
+          children: <ElementTiming info={info} />,
         },
         {
           key: 'Assignments',

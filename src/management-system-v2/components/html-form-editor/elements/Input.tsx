@@ -284,39 +284,29 @@ export const InputSettings = () => {
       <DataObjectSelectionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
+        allowedTypes={['string', 'number', 'file', 'date']}
         currentVariable={variable}
-        onSelect={(selected, isGlobal, variableType, variableTextFormat) => {
+        onSelect={(selected, variableType, variableTextFormat) => {
           setProp((props: InputProps) => {
             props.variable = selected;
-            if (isGlobal) {
-              props.type = 'text';
+            if (variableTextFormat) {
+              props.type = variableTextFormat as InputProps['type'];
             } else {
-              if (variableTextFormat) {
-                props.type = variableTextFormat as
-                  | 'text'
-                  | 'number'
-                  | 'email'
-                  | 'url'
-                  | 'file'
-                  | 'date'
-                  | undefined;
-              } else {
-                switch (variableType) {
-                  case 'string':
-                    props.type = 'text';
-                    break;
-                  case 'number':
-                    props.type = 'number';
-                    break;
-                  case 'file':
-                    props.type = 'file';
-                    break;
-                  case 'date':
-                    props.type = 'date';
-                    break;
-                  default:
-                    props.type = 'text';
-                }
+              switch (variableType) {
+                case 'string':
+                  props.type = 'text';
+                  break;
+                case 'number':
+                  props.type = 'number';
+                  break;
+                case 'file':
+                  props.type = 'file';
+                  break;
+                case 'date':
+                  props.type = 'date';
+                  break;
+                default:
+                  props.type = 'text';
               }
             }
           });

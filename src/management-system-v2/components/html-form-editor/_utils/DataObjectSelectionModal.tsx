@@ -4,20 +4,22 @@ import type { DataNode } from 'antd/es/tree';
 import { buildScopedTree, ScopeFilter } from '@/lib/helpers/global-data-tree';
 import { getDeepConfigurationById } from '@/lib/data/db/machine-config';
 import ProcessVariableForm from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/variable-definition/process-variable-form';
-import { ProcessVariable, typeLabelMap } from '@/lib/process-variable-schema';
+import { ProcessVariable, textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 import useEditorStateStore from '../use-editor-state-store';
 import { useEnvironment } from '@/components/auth-can';
 import { useQuery } from '@tanstack/react-query';
+
+type AllowedTypes = React.ComponentProps<typeof ProcessVariableForm>['allowedTypes'];
 
 type Props = {
   open: boolean;
   onClose: () => void;
   onSelect: (
     variable: string,
-    isGlobal: boolean,
-    variableType?: string,
-    variableTextFormat?: string,
+    variableType?: NonNullable<AllowedTypes>[number],
+    variableTextFormat?: keyof typeof textFormatMap,
   ) => void;
+  allowedTypes?: AllowedTypes;
   currentVariable?: string;
 };
 
@@ -38,6 +40,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({
   onClose,
   onSelect,
   currentVariable,
+  allowedTypes,
 }) => {
   const environment = useEnvironment();
   const [scope, setScope] = useState<ScopeFilter>('@worker');
@@ -83,23 +86,15 @@ const DataObjectSelectionModal: React.FC<Props> = ({
     setScope('@worker');
   };
 
-  const getCurrentSelection = () => {
-    if (activeTab === 'process') {
-      return selectedProcessVar;
-    }
-    return selectedKey;
-  };
-
-  const isSelectionChanged = () => {
-    return getCurrentSelection() !== currentVariable;
-  };
+  const currentSelection = activeTab === 'process' ? selectedProcessVar : selectedKey;
+  const isSelectionChanged = !!currentSelection && currentSelection !== currentVariable;
 
   const handleOk = () => {
     if (activeTab === 'process' && selectedProcessVar) {
       const variable = variables?.find((v) => v.name === selectedProcessVar);
-      onSelect(selectedProcessVar, false, variable?.dataType, variable?.textFormat);
+      onSelect(selectedProcessVar, variable?.dataType, variable?.textFormat);
     } else if (activeTab === 'global' && selectedKey) {
-      onSelect(selectedKey, true);
+      onSelect(selectedKey, 'string');
     }
     resetState();
     onClose();
@@ -125,7 +120,7 @@ const DataObjectSelectionModal: React.FC<Props> = ({
         onOk={handleOk}
         okText="OK"
         okButtonProps={{
-          disabled: !getCurrentSelection() || !isSelectionChanged(),
+          disabled: !isSelectionChanged,
         }}
         width={500}
       >
@@ -147,8 +142,9 @@ const DataObjectSelectionModal: React.FC<Props> = ({
                     bordered
                     style={{ maxHeight: 300, overflowY: 'auto' }}
                     dataSource={
-                      variables?.filter((v) => v.dataType !== 'array' && v.dataType !== 'object') ??
-                      []
+                      allowedTypes
+                        ? variables?.filter((v) => allowedTypes.includes(v.dataType)) ?? []
+                        : variables ?? []
                     }
                     renderItem={(v: ProcessVariable) => (
                       <List.Item
@@ -216,8 +212,10 @@ const DataObjectSelectionModal: React.FC<Props> = ({
       <ProcessVariableForm
         open={showVariableForm}
         variables={variables ?? []}
+        allowedTypes={allowedTypes}
         onSubmit={(newVar) => {
           updateVariables([...(variables ?? []), newVar]);
+          setSelectedProcessVar(newVar.name);
           setShowVariableForm(false);
         }}
         onCancel={() => setShowVariableForm(false)}

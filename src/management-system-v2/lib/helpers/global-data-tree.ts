@@ -19,7 +19,7 @@ function buildTreeNodes(params: Parameter[], pathPrefix: string, depth: number):
 
     return {
       key: currentPath,
-      title: param.displayName?.find((d: any) => d.language === 'en')?.text || param.name,
+      title: param.displayName?.find((d) => d.language === 'en')?.text || param.name,
       selectable: !isDataNode,
       children: hasChildren
         ? buildTreeNodes(param.subParameters, currentPath, depth + 1)

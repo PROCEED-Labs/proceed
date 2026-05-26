@@ -50,6 +50,7 @@ import { useEnvironment } from '@/components/auth-can';
 
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenDocumentation } from '../../../processes/processes-helper';
+import { enableInstanceCSVExport } from 'FeatureFlags';
 
 export default function ProcessDeploymentView({
   processId,
@@ -497,34 +498,46 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
-                <Tooltip title={'Export data of this selected instance as a csv file'}>
-                  <Button
-                    onClick={() =>
-                      exportInstanceData([selectedInstance], deploymentInfo.versions, spaceId)
-                    }
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <ExportOutlined style={{ fontSize: '18px' }} />
-                      <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
-                        THIS
-                      </span>
-                    </div>
-                  </Button>
-                </Tooltip>
-                <Tooltip title={'Export data of all instances to this process as a csv file'}>
-                  <Button
-                    onClick={() =>
-                      exportInstanceData(deploymentInfo.instances, deploymentInfo.versions, spaceId)
-                    }
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <ExportOutlined style={{ fontSize: '18px' }} />
-                      <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
-                        ALL
-                      </span>
-                    </div>
-                  </Button>
-                </Tooltip>
+                {enableInstanceCSVExport && (
+                  <>
+                    <Tooltip title={'Export data of this selected instance as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          exportInstanceData([selectedInstance], deploymentInfo.versions, spaceId)
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            THIS
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          exportInstanceData(
+                            deploymentInfo.instances,
+                            deploymentInfo.versions,
+                            spaceId,
+                          )
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            ALL
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
                 {selectedInstance && (
                   <Tooltip title="View Instance Documentation">
                     <Button

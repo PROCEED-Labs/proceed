@@ -161,7 +161,7 @@
   // Responsive sort buttons
   @media (max-width: 768px) {
     :global(.ant-space) {
-      display: none !important;
+      display: none;
     }
     
     h2 {

@@ -62,6 +62,14 @@ export function isUserErrorResponse(value: any): value is { error: UserError } {
   return value && typeof value === 'object' && 'error' in value && isUserError(value.error);
 }
 
+export type SuccessType<T extends any | { error: UserError }> = Exclude<T, { error: UserError }>;
+
+export function isSuccessResponse<U extends any | { error: UserError }>(
+  value: U,
+): value is Exclude<U, { error: UserError }> {
+  return !value || typeof value !== 'object' || !('error' in value && isUserError(value.error));
+}
+
 /** These errors will be sent down to the user */
 export class UserFacingError extends Error {
   constructor(message: string) {

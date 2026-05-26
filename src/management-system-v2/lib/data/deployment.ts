@@ -3,7 +3,7 @@
 import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
+import { SuccessType, UserErrorType, userError } from '../user-error';
 
 export async function getDeployedProcesses(environmentId: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
@@ -11,7 +11,7 @@ export async function getDeployedProcesses(environmentId: string) {
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const deployedProcesses = await db.process.findMany({
+  let deployedProcesses = await db.process.findMany({
     where: {
       AND: [
         { environmentId },
@@ -40,11 +40,22 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
 
   const deployments = await db.processDeployment.findMany({
     where: { AND: [{ version: { processId } }, { removeTime: null }, { toRemove: false }] },
-    include: { version: { select: { processId: true } } },
+    include: {
+      version: { select: { id: true, processId: true, name: true } },
+      instances: { select: { id: true } },
+    },
   });
 
-  return deployments.map((d) => ({ ...d, version: undefined, processId: d.version.processId }));
+  return deployments.map((d) => ({
+    ...d,
+    processId: d.version.processId,
+    instances: d.instances.map(({ id }) => id),
+  }));
 }
+
+export type StoredDeployment = SuccessType<
+  Awaited<ReturnType<typeof getProcessDeployments>>
+>[number];
 
 export async function addDeployment(spaceId: string, input: DeploymentInput) {
   const { ability } = await getCurrentEnvironment(spaceId);

@@ -90,7 +90,7 @@ export default async function startProcess({
 
     if (isUserErrorResponse(deployment)) return deployment.error.message;
 
-    const instanceId = await startInstanceOnMachine(
+    const instance = await startInstanceOnMachine(
       processId,
       process.version.id,
       engine,
@@ -102,11 +102,11 @@ export default async function startProcess({
       },
     );
 
-    if (isUserErrorResponse(instanceId)) {
-      return instanceId.error.message;
+    if (isUserErrorResponse(instance)) {
+      return instance.error.message;
     }
 
-    return `Started the process with instance id ${instanceId}. Please check the PROCEED website to inspect the execution state.`;
+    return `Started the process with instance id ${instance.processInstanceId}. Please check the PROCEED website to inspect the execution state.`;
   } catch (err) {
     if (err instanceof Error) return err.message;
     else return 'Error: Something went wrong';

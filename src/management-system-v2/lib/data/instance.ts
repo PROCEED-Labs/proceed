@@ -6,9 +6,10 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { InstanceInput, InstanceInputSchema } from '../instance-schema';
 import { UserErrorType, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
+import Ability from '../ability/abilityHelper';
 
-export async function getInstance(spaceId: string, instanceId: string) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);

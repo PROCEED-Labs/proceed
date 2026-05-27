@@ -3,7 +3,6 @@
 import db from '@/lib/data/db';
 
 import { asyncFilter, asyncForEach, asyncMap, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import Ability from '@/lib/ability/abilityHelper';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
 
 import { getAllAvailableEngines, getAvailableAdminEngines } from '@/lib/data/engines';
@@ -22,15 +21,6 @@ import { getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
 import { getMSConfig } from '../ms-config/ms-config';
-
-export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
-  const engines = await getAllAvailableEngines(spaceId, ability);
-  if (isUserErrorResponse(engines)) return engines;
-
-  const deployments = await fetchDeployments(engines);
-
-  return deployments.find((d) => d.definitionId === definitionId) || null;
-}
 
 export async function deployProcess(
   definitionId: string,

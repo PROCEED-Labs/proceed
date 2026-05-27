@@ -26,7 +26,10 @@ const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>
-        <DeploymentRefetchBoundary>
+        <DeploymentRefetchBoundary
+          enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
+          interval={publicEnv.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL}
+        >
           <App env={publicEnv}>{children}</App>
         </DeploymentRefetchBoundary>
       </body>

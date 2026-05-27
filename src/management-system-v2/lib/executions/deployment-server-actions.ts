@@ -21,6 +21,7 @@ import {
 import { getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
+import { getMSConfig } from '../ms-config/ms-config';
 
 export async function getDeployment(spaceId: string, definitionId: string, ability?: Ability) {
   const engines = await getAllAvailableEngines(spaceId, ability);
@@ -245,8 +246,17 @@ global.lastDeploymentsRefetchTime =
  * from this MS
  **/
 export async function refetchDeployments() {
-  // allow only one refetch for all users every 10 seconds
-  if (global.isRefetchingDeployments || Date.now() - global.lastDeploymentsRefetchTime < 5000) {
+  const config = await getMSConfig();
+  const enabled = config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE;
+  const interval = config.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL;
+  // if the interval variable is set to 0 we consider this to mean that the fetching is deactivated
+  if (!enabled || !interval) return;
+  // allow only one refetch for all users in the configured interval
+  if (
+    global.isRefetchingDeployments ||
+    // the user sets the interval in seconds so we have to convert to milliseconds
+    Date.now() - global.lastDeploymentsRefetchTime < interval * 1000
+  ) {
     return;
   }
   // prevent other users from triggering additional updates
@@ -392,7 +402,7 @@ export async function refetchDeployments() {
     console.error('Error fetching deployment information: ', err);
   }
 
-  // allow the next update to happen in 10 seconds from now
+  // allow the next update to happen after the configured interval has elapsed
   global.isRefetchingDeployments = false;
   global.lastDeploymentsRefetchTime = Date.now();
 }

@@ -219,14 +219,7 @@ export const InputSettings = () => {
   const [modalOpen, setModalOpen] = useState(false);
 
   // Determine display text for the button
-  const getDisplayText = () => {
-    if (variable) {
-      return variable;
-    }
-    return 'Select Variable';
-  };
-
-  const displayText = getDisplayText();
+  const displayText = variable || 'Select Variable';
   const hasVariable = !!variable;
 
   return (
@@ -290,7 +283,7 @@ export const InputSettings = () => {
           setProp((props: InputProps) => {
             props.variable = selected;
             if (variableTextFormat) {
-              props.type = variableTextFormat as InputProps['type'];
+              props.type = variableTextFormat;
             } else {
               switch (variableType) {
                 case 'string':

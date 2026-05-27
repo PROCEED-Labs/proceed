@@ -3,7 +3,13 @@
 import db from '@/lib/data/db';
 
 import { asyncFilter, asyncForEach, asyncMap, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
+import {
+  UserErrorType,
+  UserFacingError,
+  getErrorMessage,
+  isUserErrorResponse,
+  userError,
+} from '@/lib/user-error';
 
 import { getAllAvailableEngines, getAvailableAdminEngines } from '@/lib/data/engines';
 
@@ -17,7 +23,7 @@ import {
   getDeploymentActivation,
   InstanceInfo,
 } from '../engines/deployment';
-import { getCurrentUser } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
 import { getMSConfig } from '../ms-config/ms-config';
@@ -30,7 +36,11 @@ export async function deployProcess(
   _forceEngine?: SpaceEngine | 'PROCEED',
 ) {
   try {
-    // TODO: manage permissions for deploying a process
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('create', 'Execution'))
+      return userError('Invalid Permissions', UserErrorType.PermissionError);
+
     const { userId } = await getCurrentUser();
 
     let engines: Engine[];

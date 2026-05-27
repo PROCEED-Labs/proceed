@@ -73,7 +73,7 @@ export async function updateInstance(
   if (!skipAbilityCheck) {
     const { ability } = await getCurrentEnvironment(spaceId);
 
-    if (!ability.can('create', 'Execution'))
+    if (!ability.can('update', 'Execution'))
       return userError('Invalid Permissions', UserErrorType.PermissionError);
   }
 

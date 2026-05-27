@@ -79,11 +79,9 @@ export async function addDeployment(spaceId: string, input: DeploymentInput) {
 
   const data = DeploymentInputSchema.parse(input);
 
-  const result = await db.processDeployment.createMany({
+  await db.processDeployment.createMany({
     data: data.engineIds.map((engineId) => ({ ...data, engineIds: undefined, engineId })),
   });
-
-  return result;
 }
 
 export async function updateDeployment(

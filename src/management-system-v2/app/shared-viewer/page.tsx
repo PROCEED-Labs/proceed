@@ -21,7 +21,6 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { env } from '@/lib/ms-config/env-vars';
-import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import InstanceDocumentationPage from './instance-documentation-page';
 import { Metadata } from 'next';
@@ -29,6 +28,8 @@ import { getUserById } from '@/lib/data/db/iam/users';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import db from '@/lib/data/db';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { getInstance } from '@/lib/data/instance';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 interface PageProps {
   searchParams: Promise<{
@@ -281,11 +282,14 @@ const SharedViewer = async (props: PageProps) => {
   let instanceData = undefined;
   if (typeof instanceId === 'string' && processData) {
     try {
-      const deployment = await getDeployment(processData.environmentId, processData.id);
-      if (isUserErrorResponse(deployment)) {
+      // make sure that the data for the instance is not stale
+      await refetchDeployments();
+      // get the instance data from the database
+      const instance = await getInstance(processData.environmentId, instanceId);
+      if (isUserErrorResponse(instance) || !instance) {
         return <ErrorMessage message={'Cannot fetch the requested data.'} />;
       }
-      instanceData = deployment?.instances.find((i) => i.processInstanceId === instanceId);
+      instanceData = instance.state;
     } catch (err) {
       console.error('Failed to fetch instance data:', err);
     }

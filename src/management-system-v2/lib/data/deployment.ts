@@ -11,13 +11,17 @@ export async function getDeployedProcesses(environmentId: string) {
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
+  const deploymentIsNotDeleted = { AND: [{ removeTime: null }, { toRemove: false }] };
+
   let deployedProcesses = await db.process.findMany({
     where: {
+      // get all processes in the current environment that have at least one version that is
+      // currently deployed
       AND: [
         { environmentId },
         {
           versions: {
-            some: { deployments: { some: { AND: [{ removeTime: null }, { toRemove: false }] } } },
+            some: { deployments: { some: deploymentIsNotDeleted } },
           },
         },
       ],
@@ -25,7 +29,17 @@ export async function getDeployedProcesses(environmentId: string) {
     select: {
       id: true,
       name: true,
-      versions: { include: { deployments: { include: { instances: { select: { id: true } } } } } },
+      versions: {
+        // only include deployed versions in the output
+        where: { deployments: { some: deploymentIsNotDeleted } },
+        include: {
+          deployments: {
+            // only include deployments in the output that are still actively deployed
+            where: deploymentIsNotDeleted,
+            include: { instances: { select: { id: true } } },
+          },
+        },
+      },
     },
   });
 

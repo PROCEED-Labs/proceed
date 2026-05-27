@@ -7,6 +7,9 @@ import { InstanceInput, InstanceInputSchema } from '../instance-schema';
 import { UserErrorType, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
+import { ProcessInstance } from '@prisma/client';
+
+type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo };
 
 export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
@@ -20,7 +23,28 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   if (!instanceInfo) return null;
 
-  return instanceInfo as Omit<typeof instanceInfo, 'state'> & { state: InstanceInfo };
+  return instanceInfo as StoredInstance;
+}
+
+export async function getInstances(spaceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const instances = await db.processInstance.findMany({
+    where: {
+      deployment: {
+        AND: [
+          { version: { process: { environmentId: spaceId } } },
+          { removeTime: null },
+          { toRemove: false },
+        ],
+      },
+    },
+  });
+
+  return instances as StoredInstance[];
 }
 
 export async function addInstance(

@@ -148,38 +148,6 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
   }
 }
 
-export async function getProcessActivationStatus(
-  definitionId: string,
-  spaceId: string,
-  version: string,
-) {
-  try {
-    let deployments = await getProcessDeployments(spaceId, definitionId);
-    if (isUserErrorResponse(deployments)) return deployments;
-    deployments = deployments.filter((deployment) => deployment.versionId === version);
-
-    const availableEngines = await getAllAvailableEngines(spaceId);
-    if (isUserErrorResponse(availableEngines)) return availableEngines;
-
-    const res = await asyncMap(deployments, async (deployment) => {
-      try {
-        const engine = availableEngines.find((aE) => aE.id === deployment.engineId);
-
-        if (engine) {
-          return await getDeploymentActivation(engine, definitionId, version);
-        }
-      } catch (err) {}
-
-      return false;
-    });
-
-    return res.some((isActive) => isActive);
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
-
 export async function changeDeploymentActivation(
   definitionId: string,
   spaceId: string,

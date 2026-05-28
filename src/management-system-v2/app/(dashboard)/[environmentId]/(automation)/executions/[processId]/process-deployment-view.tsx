@@ -32,10 +32,7 @@ import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
-import {
-  getProcessActivationStatus,
-  changeDeploymentActivation,
-} from '@/lib/executions/deployment-server-actions';
+import { changeDeploymentActivation } from '@/lib/executions/deployment-server-actions';
 import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
@@ -190,21 +187,6 @@ export default function ProcessDeploymentView({ processId }: { processId: string
     return { instanceIsRunning, instanceIsPausing, instanceIsPaused };
   }, [currentInstance]);
 
-  const {
-    data: isProcessActivated,
-    isFetching: isActivationLoading,
-    refetch: refetchActivation,
-  } = useQuery({
-    queryFn: async () => {
-      if (!currentVersion) return false;
-      const status = await getProcessActivationStatus(processId, spaceId, currentVersion.id);
-
-      if (isUserErrorResponse(status)) return false;
-      return status;
-    },
-    queryKey: ['processActivation', spaceId, processId, currentVersion],
-  });
-
   const { data: selectedBpmn } = useQuery({
     queryFn: async () => {
       const bpmn = await getProcessBPMN(processId, spaceId, currentVersion?.id);
@@ -259,6 +241,11 @@ export default function ProcessDeploymentView({ processId }: { processId: string
     refreshTokens();
     refreshColoring();
   }, [refreshTokens, refreshColoring]);
+
+  const isProcessActivated = useMemo(() => {
+    if (!deployments || !currentVersion) return false;
+    return !!deployments.some((d) => d.versionId === currentVersion.id && d.active);
+  }, [deployments, currentVersion]);
 
   if (!deployments || !selectedBpmn) {
     return (
@@ -446,7 +433,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 >
                   <Button
                     type="text"
-                    loading={togglingActivation || isActivationLoading}
+                    loading={togglingActivation}
                     icon={
                       isProcessActivated ? (
                         <span className={styles.SpinIcon}>
@@ -463,7 +450,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       await wrapServerCall({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
-                        onSuccess: () => refetchActivation(),
+                        onSuccess: () => refetchDeployments(),
                       });
                       setTogglingActivation(false);
                     }}

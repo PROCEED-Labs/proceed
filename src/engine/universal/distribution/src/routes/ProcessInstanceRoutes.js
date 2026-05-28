@@ -45,7 +45,7 @@ module.exports = (path, management) => {
       }
     }
 
-    const instanceId = await management.createInstance(
+    const instance = await management.createInstance(
       definitionId,
       version,
       variables,
@@ -57,7 +57,7 @@ module.exports = (path, management) => {
       },
     );
 
-    if (!instanceId) {
+    if (!instance) {
       throw new APIError(
         406,
         `Engine not allowed to start the instance for the process (id: ${definitionId}).`,
@@ -70,7 +70,7 @@ module.exports = (path, management) => {
     return {
       statusCode: 201,
       mimeType: 'application/json',
-      response: JSON.stringify({ instanceId }),
+      response: JSON.stringify(instance),
     };
   });
 

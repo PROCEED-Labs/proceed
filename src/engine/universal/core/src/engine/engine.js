@@ -291,7 +291,7 @@ class Engine {
     this.originalInstanceState = instance;
     this.instanceEventHandlers = {
       onStarted: (newInstance) => {
-        resolver(newInstance.id);
+        resolver(this.getInstanceInformation(newInstance.id));
         // make sure to keep the information from the original instance on the recreated instance
         if (instance && instance.callingInstance) {
           newInstance.callingInstance = instance.callingInstance;

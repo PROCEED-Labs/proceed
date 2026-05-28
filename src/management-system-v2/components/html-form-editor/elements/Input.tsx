@@ -1,14 +1,15 @@
 import { useEffect, useId, useState } from 'react';
 
-import { Select } from 'antd';
+import { Button, Select } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 
 import { UserComponent, useNode } from '@craftjs/core';
 
-import { ContextMenu, Overlay, Setting, useDeleteControl, VariableSetting } from './utils';
+import { ContextMenu, Overlay, Setting, useDeleteControl } from './utils';
 import EditableText from '../_utils/EditableText';
 import useEditorStateStore from '../use-editor-state-store';
 import { DeleteButton } from '../DeleteButton';
+import DataObjectSelectionModal from '../_utils/DataObjectSelectionModal';
 
 type InputProps = {
   label?: string;
@@ -27,17 +28,17 @@ export const ExportInput: UserComponent<InputProps> = ({
 }) => {
   const inputId = useId();
 
-  if (!variable) variable = `__anonymous_variable_${inputId}__`;
+  const effectiveName = variable || `__anonymous_variable_${inputId}__`;
 
-  const value = defaultValue || `{%${variable}%}`;
+  const value = defaultValue || `{%${effectiveName}%}`;
 
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       type={type}
       defaultValue={value}
-      name={variable}
+      name={effectiveName}
     />
   );
 
@@ -120,14 +121,16 @@ const Input: UserComponent<InputProps> = ({
     }
   }, [inputId, editingDefault]);
 
+  const effectiveName = variable;
+
   const input = (
     <input
       id={inputId}
-      className={variable ? `variable-${variable}` : undefined}
+      className={effectiveName ? `variable-${effectiveName}` : undefined}
       disabled={!editingEnabled}
       type={type}
       value={defaultValue}
-      name={variable}
+      name={effectiveName}
       onClick={() => {
         if (!editingEnabled) return;
         setEditingDefault(true);
@@ -213,6 +216,12 @@ export const InputSettings = () => {
     variable: node.data.props.variable,
   }));
 
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Determine display text for the button
+  const displayText = variable || 'Select Variable';
+  const hasVariable = !!variable;
+
   return (
     <>
       <Setting
@@ -235,15 +244,48 @@ export const InputSettings = () => {
         }
       />
 
-      <VariableSetting
-        variable={variable}
+      <Setting
+        label="Variable"
+        control={
+          <Button
+            style={{
+              display: 'flex',
+              width: '100%',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+            onClick={() => setModalOpen(true)}
+            type={hasVariable ? 'default' : 'dashed'}
+            title={hasVariable ? displayText : 'Click to select a variable'}
+          >
+            <span
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                textAlign: 'left',
+              }}
+            >
+              {displayText}
+            </span>
+            <EditOutlined style={{ marginLeft: 8, flexShrink: 0 }} />
+          </Button>
+        }
+      />
+
+      <DataObjectSelectionModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
         allowedTypes={['string', 'number', 'file', 'date']}
-        onChange={(newVariable, newVariableType, newVariableTextFormat) =>
+        currentVariable={variable}
+        onSelect={(selected, variableType, variableTextFormat) => {
           setProp((props: InputProps) => {
-            props.variable = newVariable;
-            if (newVariableTextFormat) props.type = newVariableTextFormat;
-            else {
-              switch (newVariableType) {
+            props.variable = selected;
+            if (variableTextFormat) {
+              props.type = variableTextFormat;
+            } else {
+              switch (variableType) {
                 case 'string':
                   props.type = 'text';
                   break;
@@ -260,8 +302,8 @@ export const InputSettings = () => {
                   props.type = 'text';
               }
             }
-          })
-        }
+          });
+        }}
       />
     </>
   );

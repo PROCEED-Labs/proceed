@@ -10,7 +10,7 @@ import {
   inlineUserTaskData,
 } from '@proceed/user-task-helper';
 
-import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncForEach, asyncMap, deepEquals, pick } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getCurrentUser } from '@/components/auth';
 import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
@@ -471,32 +471,29 @@ export async function updateTaskInfo(
     })
   ).filter(truthyFilter);
 
+  const changeableEntries = ['actualOwner', 'state', 'priority', 'progress', 'endTime'] as const;
+
   const updatedUserTasks = fetchedUserTasks
-    .filter(([id]) => {
-      return knownUserTasks.some((kUT) => kUT.id === id);
+    .filter(([id, data]) => {
+      const knownUserTask = knownUserTasks.find((kUT) => kUT.id === id);
+      if (!knownUserTask) return false;
+
+      const potentiallyChanged = pick(
+        { ...knownUserTask, endTime: knownUserTask.endTime && knownUserTask.endTime.getTime() },
+        changeableEntries,
+      );
+      const newInfo = pick(data, changeableEntries);
+
+      return !deepEquals(potentiallyChanged, newInfo);
     })
-    .map(
-      ([id, data]) =>
-        [
-          id,
-          {
-            actualOwner: data.actualOwner,
-            state: data.state,
-            status: data.status,
-            priority: data.priority,
-            progress: data.progress,
-            endTime: data.endTime,
-            machineId: data.machineId,
-          },
-        ] as const,
-    );
+    .map(([id, data]) => [id, pick(data, changeableEntries)] as const);
 
   await db.$transaction(async (tx) => {
     await tx.userTask.createMany({
       data: addedUserTasks.map((uT) => ({
         ...uT,
         startTime: new Date(uT.startTime),
-        endTime: new Date(uT.endTime),
+        endTime: uT.endTime === null ? null : new Date(uT.endTime),
       })),
     });
 
@@ -505,7 +502,7 @@ export async function updateTaskInfo(
         where: { id },
         data: {
           ...data,
-          endTime: new Date(data.endTime),
+          endTime: data.endTime === null ? null : new Date(data.endTime),
         },
       });
     });

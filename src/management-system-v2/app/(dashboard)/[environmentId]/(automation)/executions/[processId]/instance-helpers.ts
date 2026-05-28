@@ -255,8 +255,6 @@ export async function exportInstanceData(
               outgoing?: any;
               incoming?: any;
             };
-            console.log(eventElement);
-            console.log(bpmnObj);
             const ActualPerformerId = eventEntry.actualOwner?.[0];
             const user = spaceUsers.find((user) => user.id == ActualPerformerId);
             return {

@@ -16,6 +16,12 @@ module.exports = (path, management) => {
 
     process.instances = await getAllInstances(management, definitionId);
 
+    const engine = management.getEngineWithDefinitionId(definitionId);
+    process.versions = process.versions.map((version) => ({
+      ...version,
+      active: engine ? engine.isProcessVersionDeployed(version.versionId) : false,
+    }));
+
     return process;
   }
 

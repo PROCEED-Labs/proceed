@@ -77,10 +77,7 @@ function useUserTasks(
     }
   }
 
-  return {
-    userTasks,
-    ...query,
-  };
+  return { userTasks };
 }
 
 export default useUserTasks;

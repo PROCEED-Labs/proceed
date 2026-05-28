@@ -136,15 +136,6 @@ function useUserTasks(
     return await addOwnerToTaskListEntry(taskId, owner, machine);
   }
 
-  async function getTaskListEntryHtml(taskId: string, fileName: string) {
-    const machine = getTaskEngine(taskId);
-
-    if (machine === undefined)
-      return { error: 'Could not find the machine the task is running on' };
-
-    return await getTasklistEntryHTML(space.spaceId, taskId, fileName, machine);
-  }
-
   async function submitFile(taskId: string, file: File) {
     const machine = getTaskEngine(taskId);
 
@@ -165,7 +156,6 @@ function useUserTasks(
     setMilestoneValues,
     setVariableValues,
     addOwner,
-    getTaskListEntryHtml,
     submitFile,
   };
 }

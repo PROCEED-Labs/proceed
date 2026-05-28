@@ -325,7 +325,13 @@ export async function refetchDeployments() {
           engineIds: string[];
           state: InstanceInfo;
         }[] = [];
-        const instanceUpdates: { id: string; state: InstanceInfo }[] = [];
+        const instanceUpdates: {
+          id: string;
+          processId: string;
+          environmentId: string;
+          versionId: string;
+          state: InstanceInfo;
+        }[] = [];
 
         // fetch deployment data from the engines
         const engineDeployments = Object.fromEntries(
@@ -364,7 +370,13 @@ export async function refetchDeployments() {
                     state: i,
                   });
                 } else if (!deepEquals(i, existingInstance.state)) {
-                  instanceUpdates.push({ id: i.processInstanceId, state: i });
+                  instanceUpdates.push({
+                    id: i.processInstanceId,
+                    processId: p.definitionId,
+                    environmentId: deployment.version.process.environmentId,
+                    versionId: deployment.version.id,
+                    state: i,
+                  });
                 }
               });
             });
@@ -418,26 +430,7 @@ export async function refetchDeployments() {
         });
 
         const knownInstances = Object.fromEntries(
-          res
-            .flatMap((d) =>
-              d.instances.map((i) => ({
-                ...i,
-                processId: d.version.processId,
-                environmentId: d.version.process.environmentId,
-                versionId: d.version.id,
-              })),
-            )
-            .concat(newInstances)
-            .map((i) => [
-              i.id,
-              {
-                instanceId: i.id,
-                processId: i.processId,
-                state: i.state as InstanceInfo,
-                environmentId: i.environmentId,
-                versionId: i.versionId,
-              },
-            ]),
+          instanceUpdates.concat(newInstances).map((i) => [i.id, { ...i, instanceId: i.id }]),
         );
 
         await updateTaskInfo(engines, reachableWithDeployments, knownInstances);

@@ -1,14 +1,24 @@
 import db from '@/lib/data/db';
 import { z } from 'zod';
-import { UserTask, UserTaskInput, UserTaskInputSchema } from '@/lib/user-task-schema';
+import {
+  ExtendedTaskListEntry,
+  UserTask,
+  UserTaskInput,
+  UserTaskInputSchema,
+} from '@/lib/user-task-schema';
+import { truthyFilter } from '@/lib/typescript-utils';
 
-export async function getUserTasks() {
-  const userTasks = await db.userTask.findMany();
-
-  return userTasks.map((userTask) => ({
-    ...userTask,
-    offline: userTask.machineId !== 'ms-local',
-  })) as unknown as UserTask[];
+export async function getUserTasks(spaceId: string) {
+  return (await db.userTask.findMany({
+    where: {
+      OR: [
+        // get all user tasks that were created in the task editor of the MS
+        { instance: null },
+        // and all user tasks that belong to instances of processes belonging to this space
+        { instance: { deployment: { version: { process: { environmentId: spaceId } } } } },
+      ],
+    },
+  })) as UserTask[];
 }
 
 export async function getUserTaskById(userTaskId: string) {

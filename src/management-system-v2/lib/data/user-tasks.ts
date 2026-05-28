@@ -9,12 +9,44 @@ import {
   deleteUserTask as _deleteUserTask,
 } from './db/user-tasks';
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, userError } from '../user-error';
-import { UserTaskInput } from '../user-task-schema';
+import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
+import { ExtendedTaskListEntry, UserTaskInput } from '../user-task-schema';
+import { getCurrentEnvironment } from '@/components/auth';
+import { getAllAvailableEngines } from './engines';
+import { getSpaceUsers } from './db/iam/users';
+import { truthyFilter } from '../typescript-utils';
 
-export async function getUserTasks() {
+export async function getUserTasks(spaceId: string) {
+  const {
+    activeEnvironment: { isOrganization },
+  } = await getCurrentEnvironment(spaceId);
+
   try {
-    return await _getUserTasks();
+    const userTasks = await _getUserTasks(spaceId);
+    const users = await getSpaceUsers(spaceId, isOrganization);
+    const reachableEngines = await getAllAvailableEngines(spaceId, undefined, true);
+
+    if (isUserErrorResponse(reachableEngines)) return reachableEngines;
+
+    // map the ids in the actualOwner array to the users of the current space so the frontend can
+    // show richer information about who is working on the task
+    return userTasks.map((uT) => ({
+      ...uT,
+      offline:
+        uT.machineId === 'ms-local' || reachableEngines.some((e) => e.id === uT.machineId)
+          ? false
+          : true,
+      actualOwner: uT.actualOwner
+        .map((id) => {
+          const user = users.find((u) => u.id === id);
+          if (user) {
+            return { id, name: user.firstName + ' ' + user.lastName, username: user.username };
+          } else {
+            return { id, name: '' };
+          }
+        })
+        .filter(truthyFilter),
+    })) satisfies ExtendedTaskListEntry[];
   } catch (err) {
     if (err instanceof UnauthorizedError)
       return userError('Permission denied', UserErrorType.PermissionError);

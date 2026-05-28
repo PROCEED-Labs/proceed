@@ -3,7 +3,6 @@ import useEngines from '@/lib/engines/use-engines';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import {
-  getAvailableTaskListEntries,
   getTasklistEntryHTML,
   addOwnerToTaskListEntry,
   setTasklistEntryVariableValues,
@@ -13,10 +12,11 @@ import {
 } from './tasks/server-actions';
 import { getUserRoles } from './data/roles';
 import { isUserErrorResponse } from './user-error';
+import { getUserTasks } from './data/user-tasks';
 
 function useUserTasks(
   space: { spaceId: string; isOrganization: boolean },
-  fetchInterval = 10000,
+  fetchInterval = 1000,
   filter?: {
     allowedStates?: string[];
     hideUnassignedTasks?: boolean;
@@ -30,7 +30,7 @@ function useUserTasks(
 
   const queryFn = useCallback(async () => {
     if (engines) {
-      let result = await getAvailableTaskListEntries(space.spaceId, engines);
+      let result = await getUserTasks(space.spaceId);
 
       if (isUserErrorResponse(result)) return [];
 

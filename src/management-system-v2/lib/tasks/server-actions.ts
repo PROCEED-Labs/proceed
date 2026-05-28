@@ -17,19 +17,10 @@ import { UserFacingError, getErrorMessage, isUserErrorResponse, userError } from
 import { getDataObject, isErrorResponse } from '@/app/api/spaces/[spaceId]/data/helper';
 
 import db from '@/lib/data/db';
-import { getUserById } from '@/lib/data/db/iam/users';
-import {
-  addUserTasks,
-  deleteUserTask,
-  getUserTaskById,
-  getUserTasks,
-  updateUserTask,
-} from '@/lib/data/user-tasks';
-
-import { ExtendedTaskListEntry, UserTask } from '@/lib/user-task-schema';
+import { getUserTaskById, updateUserTask } from '@/lib/data/user-tasks';
 
 import { Engine } from '@/lib/engines/types';
-import { getDeployment as fetchDeployment } from '@/lib/engines/deployment';
+import { InstanceInfo, getDeployment as fetchDeployment } from '@/lib/engines/deployment';
 import { submitFileToMachine } from '@/lib/engines/instances';
 import {
   activateUserTask,
@@ -41,128 +32,11 @@ import {
   setTasklistEntryVariableValuesOnMachine,
 } from '@/lib/engines/tasklist';
 import { getInstance } from '@/lib/data/instance';
-
-export async function getAvailableTaskListEntries(spaceId: string, engines: Engine[]) {
-  try {
-    let stored = await getUserTasks();
-
-    if (isUserErrorResponse(stored)) {
-      throw stored.error;
-    }
-
-    const removedTasks = [] as string[];
-
-    const fetched = (
-      await asyncMap(engines, async (engine) => {
-        try {
-          const taskList = await getTaskListFromMachine(engine);
-
-          // check if we have stored user tasks for this machine which have been removed from the
-          // machine
-          const removedFromMachine = Object.fromEntries(
-            (stored as UserTask[])
-              .filter((task) => task.machineId === engine.id)
-              .map((task) => [task.id, task]),
-          );
-          taskList.forEach(
-            (task) => delete removedFromMachine[`${task.id}|${task.instanceID}|${task.startTime}`],
-          );
-          removedTasks.push(...Object.keys(removedFromMachine));
-
-          return taskList.map((task) => ({
-            ...task,
-            machineId: engine.id,
-            potentialOwners: task.performers,
-          }));
-        } catch (e) {
-          return null;
-        }
-      })
-    )
-      .filter(truthyFilter)
-      .flat()
-      .map(
-        (task) =>
-          ({
-            ...task,
-            id: `${task.id}|${task.instanceID}|${task.startTime}`,
-            taskId: task.id,
-            fileName: task.attrs['proceed:fileName'],
-            milestones: undefined,
-          }) as UserTask,
-      );
-
-    const newTasks: UserTask[] = [];
-    const changedTasks: UserTask[] = [];
-
-    fetched.forEach((task) => {
-      const alreadyStored = (stored as UserTask[]).some((t) => t.id === task.id);
-      if (alreadyStored) {
-        // TODO: maybe check if the task actually changed
-        changedTasks.push(task);
-      } else {
-        newTasks.push(task);
-      }
-    });
-
-    if (newTasks.length) await addUserTasks(newTasks);
-    await asyncForEach(changedTasks, async (task) => {
-      delete task.milestones;
-      await updateUserTask(task.id, task);
-    });
-    await asyncForEach(removedTasks, async (id) => {
-      await deleteUserTask(id);
-      stored = (stored as UserTask[]).filter((task) => task.id !== id);
-    });
-
-    const userTasks = [
-      ...fetched,
-      ...stored
-        .filter((task) => !fetched.some((t) => t.id === task.id))
-        .map(
-          (task) =>
-            ({
-              ...task,
-              startTime: +task.startTime,
-              endTime: task.endTime && +task.endTime,
-            }) as UserTask,
-        ),
-    ];
-
-    return await asyncMap(userTasks, async (task) => {
-      const actualOwner = await db.$transaction(async (tx) => {
-        let users: {
-          id: string;
-          username?: string | null;
-          firstName?: string | null;
-          lastName?: string | null;
-        }[] = (
-          await asyncMap(task.actualOwner, async (owner) => {
-            return getUserById(owner, undefined, tx) || owner;
-          })
-        ).filter(truthyFilter);
-
-        return users.map((user) =>
-          typeof user === 'string'
-            ? { id: user, name: '' }
-            : { id: user.id, name: user.firstName + ' ' + user.lastName, username: user?.username },
-        );
-      });
-
-      return {
-        ...task,
-        actualOwner,
-      } satisfies ExtendedTaskListEntry;
-    });
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
+import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
-  initiatorId: string,
+  initiatorId: string | null,
   html: string,
 ) {
   return await getGlobalVariables(html, async (varPath) => {
@@ -171,6 +45,10 @@ export async function getGlobalVariablesForHTML(
     let userId: string | undefined;
 
     if (segments[0] === '@process-initiator') {
+      if (!initiatorId)
+        throw new UserFacingError(
+          'Invalid selector for global initiator data in execution that does not have an initiator.',
+        );
       userId = initiatorId;
     } else if (segments[0] === '@worker' || !segments[0].startsWith('@')) {
       ({ userId } = await getCurrentUser());
@@ -306,7 +184,6 @@ export async function getTasklistEntryHTML(
       const instance = await getInstance(spaceId, storedUserTask.instanceID);
       if (isUserErrorResponse(instance)) return instance;
       if (!instance) throw new Error('Cannot retrieve the instance initiator information.');
-      if (!instance.initiatorId) throw new Error('Missing initiator information');
 
       globalVars = await getGlobalVariablesForHTML(spaceId, instance.initiatorId, html);
     }
@@ -480,4 +357,157 @@ export async function submitFile(engine: Engine | null, userTaskId: string, form
     const message = getErrorMessage(err);
     return userError(message);
   }
+}
+
+export async function updateTaskInfo(
+  reachableEngines: Engine[],
+  reachableWithDeployments: Engine[],
+  knownInstances: Record<
+    string,
+    {
+      instanceId: string;
+      processId: string;
+      environmentId: string;
+      versionId: string;
+      state: InstanceInfo;
+    }
+  >,
+) {
+  // get all users tasks that belong to instances (they were not created in the task editor)
+  const knownUserTasks = await db.userTask.findMany({ where: { NOT: { instanceID: null } } });
+
+  const reachableWithUserTasks = reachableEngines.filter((e) =>
+    knownUserTasks.some((uT) => uT.machineId === e.id),
+  );
+
+  const reachableWithDeploymentsAndUserTasks = Object.values(
+    Object.fromEntries(
+      reachableWithDeployments.concat(reachableWithUserTasks).map((e) => [e.id, e]),
+    ),
+  );
+
+  const fetchedUserTasks = (
+    await asyncMap(reachableWithDeploymentsAndUserTasks, async (e) => {
+      const tasklist = await getTaskListFromMachine(e);
+
+      return tasklist.map((entry) => ({ ...entry, machineId: e.id }));
+    })
+  )
+    .flat()
+    .filter((uT) => !!knownInstances[uT.instanceID])
+    .map((uT) => [`${uT.id}|${uT.instanceID}|${uT.startTime}`, uT] as const);
+
+  const newUserTasks = fetchedUserTasks.filter(([id]) => {
+    return !knownUserTasks.some((kUT) => kUT.id === id);
+  });
+
+  const addedUserTasks = (
+    await asyncMap(newUserTasks, async ([id, task]) => {
+      const relatedInstanceInfo = knownInstances[task.instanceID];
+
+      const machine = reachableEngines.find((e) => e.id === task.machineId);
+      if (!machine) return;
+
+      try {
+        const definitionId = relatedInstanceInfo.processId;
+        const spaceId = relatedInstanceInfo.environmentId;
+        const bpmn = await getProcessBPMN(
+          definitionId,
+          spaceId,
+          relatedInstanceInfo.versionId,
+          undefined,
+          true,
+        );
+
+        if (isUserErrorResponse(bpmn)) return;
+
+        const initialVariables = getCorrectVariableState(task, relatedInstanceInfo.state);
+        const milestones = await getCorrectMilestoneState(bpmn, task, relatedInstanceInfo.state);
+
+        const fileName = task.attrs['proceed:fileName'];
+        const htmlForm = await getProcessHtmlFormHTML(
+          definitionId,
+          fileName,
+          spaceId,
+          undefined,
+          true,
+        );
+
+        if (isUserErrorResponse(htmlForm)) return;
+
+        let html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
+          const path = match.split('/');
+          return `/api/private/${spaceId}/engine/resources/process/${task.instanceID}/images/${path.pop()}`;
+        });
+
+        const processIds = await getProcessIds(bpmn);
+        let variableDefinitions: undefined | Variable[];
+        if (processIds.length) {
+          const [processId] = processIds;
+          variableDefinitions = await getVariablesFromElementById(bpmn, processId);
+        }
+
+        html = inlineScript(html, task.instanceID, id, variableDefinitions);
+
+        return {
+          ...task,
+          attrs: undefined,
+          performers: undefined,
+          id,
+          taskId: task.id,
+          fileName,
+          potentialOwners: task.performers,
+          startTime: task.startTime,
+          environmentId: relatedInstanceInfo.environmentId,
+          initialVariables,
+          variableChanges: {},
+          milestones,
+          milestonesChanges: {},
+          html,
+        };
+      } catch (err) {
+        console.error('Error', err);
+      }
+    })
+  ).filter(truthyFilter);
+
+  const updatedUserTasks = fetchedUserTasks
+    .filter(([id]) => {
+      return knownUserTasks.some((kUT) => kUT.id === id);
+    })
+    .map(
+      ([id, data]) =>
+        [
+          id,
+          {
+            actualOwner: data.actualOwner,
+            state: data.state,
+            status: data.status,
+            priority: data.priority,
+            progress: data.progress,
+            endTime: data.endTime,
+            machineId: data.machineId,
+          },
+        ] as const,
+    );
+
+  await db.$transaction(async (tx) => {
+    await tx.userTask.createMany({
+      data: addedUserTasks.map((uT) => ({
+        ...uT,
+        startTime: new Date(uT.startTime),
+        endTime: new Date(uT.endTime),
+      })),
+    });
+
+    await asyncForEach(updatedUserTasks, async ([id, data]) => {
+      await tx.userTask.update({
+        where: { id },
+        data: {
+          ...data,
+          endTime: new Date(data.endTime),
+        },
+      });
+    });
+  });
 }

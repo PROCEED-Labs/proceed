@@ -43,6 +43,10 @@ export async function deployProcess(
 
     const { userId } = await getCurrentUser();
 
+    const allEngines = await getAllAvailableEngines(spaceId);
+
+    if (isUserErrorResponse(allEngines)) return allEngines;
+
     let engines: Engine[];
     if (_forceEngine === 'PROCEED') {
       // force that only proceed engines are supposed to be used
@@ -52,12 +56,7 @@ export async function deployProcess(
 
       engines = res;
     } else {
-      // get all available engines
-      const res = await getAllAvailableEngines(spaceId);
-
-      if (isUserErrorResponse(res)) return res;
-
-      engines = res;
+      engines = allEngines;
 
       if (_forceEngine) {
         // force a specific engine if it is available
@@ -96,15 +95,20 @@ export async function deployProcess(
       deployerId: userId,
       deployTime: new Date(),
       engineIds: deployedTo.map((engine) => engine.id),
+      active: true,
     });
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
     await Promise.allSettled(
-      processAlreadyDeployedInfo.map(async (deployment) => {
-        // TODO: consider all engines to deactivate deployments on engines that are not "forced" here
-        if (deployment.engine && !deployedTo.some((engine) => engine.id === deployment.engineId)) {
-          await _changeDeploymentActivation(deployment.engine, definitionId, undefined, false);
+      alreadyDeployed.map(async (deployment) => {
+        if (deployment.active && !deployedTo.some((e) => e.id === deployment.engineId)) {
+          await updateDeployment(spaceId, deployment.id, { active: false });
+
+          const engine = allEngines.find((e) => e.id === deployment.engineId);
+          if (engine) {
+            await _changeDeploymentActivation(engine, definitionId, undefined, false);
+          }
         }
       }),
     );
@@ -130,13 +134,13 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
           // engine => we don't need to call this for every version but only once per engine per
           // process
           await removeDeploymentFromMachines([engine], deployment.processId);
-          await updateDeployment(spaceId, deployment.id, { removeTime: new Date() });
+          await updateDeployment(spaceId, deployment.id, { removeTime: new Date(), active: false });
           return;
         }
       } catch (err) {}
 
       // if removing the deployment is currently not possible mark it for automatic removal
-      await updateDeployment(spaceId, deployment.id, { toRemove: true });
+      await updateDeployment(spaceId, deployment.id, { toRemove: true, active: false });
     });
   } catch (e) {
     const message = getErrorMessage(e);
@@ -185,21 +189,59 @@ export async function changeDeploymentActivation(
   try {
     let deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
+
     const versionDeployments = deployments.filter((deployment) => deployment.versionId === version);
+    if (!versionDeployments.length) return userError('This version is not deployed');
 
-    if (!deployments.length) return userError('This version is not deployed');
+    // exit early if executing the function will/should not change the already existing activation state
+    if (
+      (value === true && versionDeployments.some((d) => d.active === true)) ||
+      (value === false && versionDeployments.every((d) => d.active === false))
+    ) {
+      return;
+    }
 
-    let availableEngines = await getAllAvailableEngines(spaceId);
-    if (isUserErrorResponse(availableEngines)) return availableEngines;
+    let deploymentsToChange = versionDeployments.filter((d) => d.active !== value);
 
-    availableEngines = availableEngines.filter((e) =>
-      versionDeployments.some((d) => d.engineId === e.id),
-    );
+    const engines = await getAllAvailableEngines(spaceId);
 
-    if (!availableEngines.length)
-      throw new Error('There is no available engine with the requested process version.');
+    if (isUserErrorResponse(engines)) return engines;
 
-    await _changeDeploymentActivation(availableEngines[0], definitionId, version, value);
+    if (value === true) {
+      let activated = false;
+      for (const deployment of deploymentsToChange) {
+        const engine = engines.find((e) => e.id === deployment.engineId);
+        if (engine) {
+          try {
+            // activate the process on a single machine so we do not spawn new instances on multiple machines at once
+            await _changeDeploymentActivation(engine, definitionId, version, true);
+            await updateDeployment(spaceId, deployment.id, { active: true });
+            activated = true;
+            break;
+          } catch (err) {}
+        }
+        if (activated) break;
+      }
+
+      if (!activated) return userError('Could not reach any engine to activate the deployment.');
+
+      // if we activate a deployment we need to deactivate all deployments of other versions that are currently
+      // active
+      deploymentsToChange = deployments.filter((d) => d.versionId !== version && d.active);
+    }
+
+    await asyncForEach(deploymentsToChange, async (d) => {
+      // mark the deployment as inactive locally
+      await updateDeployment(spaceId, d.id, { active: false });
+
+      try {
+        // if deactivating the deployment fails the refetch loop should deactivate it due to the
+        // mismatch between the locally stored activation value and the activation value from the
+        // engine
+        const engine = engines.find((e) => e.id === d.engineId);
+        if (engine) await _changeDeploymentActivation(engine, definitionId, version, false);
+      } catch (err) {}
+    });
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -272,6 +314,7 @@ export async function refetchDeployments() {
             id: true,
             engineId: true,
             toRemove: true,
+            active: true,
             version: {
               select: { id: true, processId: true, process: { select: { environmentId: true } } },
             },
@@ -337,6 +380,32 @@ export async function refetchDeployments() {
               ]),
             );
 
+            await asyncForEach(res, async (p) => {
+              await asyncForEach(p.versions, async (v) => {
+                try {
+                  const deployment =
+                    engineIdsWithDeployments[e.id]?.[p.definitionId]?.[v.versionId];
+                  if (!deployment) return;
+
+                  if (v.active !== deployment.active) {
+                    // mismatch of the active state on the engine and the locally stored active
+                    // state => change the state on the engine
+                    console.log('Mismatch in active state', deployment.active, v.active);
+                    await _changeDeploymentActivation(
+                      e,
+                      p.definitionId,
+                      v.versionId,
+                      deployment.active,
+                    );
+                  }
+                } catch (err) {
+                  console.error(
+                    `Failed to update the active state for the deployment of process (id: ${p.definitionId}) version (id: ${v.versionId}) on engine (id: ${e.id}).`,
+                  );
+                }
+              });
+            });
+
             // TODO: when we want to handle instances that move to other engines automatically, we
             // will have to change this logic since it assumes that all available data of the instance
             // can be found on the engine it was started on
@@ -389,7 +458,7 @@ export async function refetchDeployments() {
             ...removedOnEngine.map(async (deployment) => {
               await tx.processDeployment.update({
                 where: { id: deployment.id },
-                data: { removeTime: new Date(), toRemove: false },
+                data: { removeTime: new Date(), toRemove: false, active: false },
               });
             }),
             ...instanceUpdates.map(async ({ id, state }) => {

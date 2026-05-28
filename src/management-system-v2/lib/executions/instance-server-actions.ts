@@ -26,6 +26,7 @@ import { addInstance, getInstance, updateInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '@/lib/data/processes';
 import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -150,6 +151,9 @@ export async function getFile(
     return userError('Unknown Instance', UserErrorType.NotFoundError);
   }
 
+  const savedFile = await getInstanceFile(instanceId, fileName);
+  if (savedFile) return savedFile;
+
   try {
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
@@ -161,6 +165,22 @@ export async function getFile(
     }
 
     const file = await getFileFromMachine(definitionId, instanceId, fileName, availableEngines[0]);
+
+    try {
+      const res = await saveInstanceArtifact(
+        spaceId,
+        instanceId,
+        fileName,
+        file.type,
+        Buffer.from(await file.arrayBuffer()),
+      );
+
+      if (res.presignedUrl) {
+        // TODO: handle cloud storage case
+      }
+    } catch (err) {
+      console.error(`Failed to cache instance file ${fileName}.`);
+    }
 
     return file;
   } catch (err) {

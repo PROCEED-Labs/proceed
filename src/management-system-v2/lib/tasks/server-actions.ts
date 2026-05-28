@@ -33,6 +33,7 @@ import {
 import { getInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { getEngineIfAvailable } from '../data/engines';
+import { saveInstanceArtifact } from '../data/file-manager-facade';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -336,7 +337,7 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
     // user tasks and also for user tasks that are cached in the MS
     if (!engine) throw new Error('Could not find the engine to submit the file to');
 
-    const res = await submitFileToMachine(
+    const filePath = await submitFileToMachine(
       definitionId,
       instanceId,
       engine,
@@ -345,7 +346,17 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
       Array.from(new Uint8Array(await file.arrayBuffer())),
     );
 
-    return res;
+    const newFileName = filePath.split('/').pop()!;
+
+    await saveInstanceArtifact(
+      spaceId,
+      instanceId,
+      newFileName,
+      file.type,
+      Buffer.from(await file.arrayBuffer()),
+    );
+
+    return filePath;
   } catch (err) {
     const message = getErrorMessage(err);
     return userError(message);

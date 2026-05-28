@@ -1,16 +1,15 @@
 'use server';
 
-import { z } from 'zod';
-import {
-  getUserTasks as _getUserTasks,
-  getUserTaskById as _getUserTaskById,
-  addUserTasks as _addUserTasks,
-  updateUserTask as _updateUserTask,
-  deleteUserTask as _deleteUserTask,
-} from './db/user-tasks';
+import db from '@/lib/data/db';
+
 import { UnauthorizedError } from '../ability/abilityHelper';
 import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
-import { ExtendedTaskListEntry, UserTaskInput } from '../user-task-schema';
+import {
+  ExtendedTaskListEntry,
+  UserTask,
+  UserTaskInput,
+  UserTaskInputSchema,
+} from '../user-task-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { getAllAvailableEngines } from './engines';
 import { getSpaceUsers } from './db/iam/users';
@@ -22,7 +21,16 @@ export async function getUserTasks(spaceId: string) {
   } = await getCurrentEnvironment(spaceId);
 
   try {
-    const userTasks = await _getUserTasks(spaceId);
+    const userTasks = (await db.userTask.findMany({
+      where: {
+        OR: [
+          // get all user tasks that were created in the task editor of the MS
+          { instance: null },
+          // and all user tasks that belong to instances of processes belonging to this space
+          { instance: { deployment: { version: { process: { environmentId: spaceId } } } } },
+        ],
+      },
+    })) as UserTask[];
     const users = await getSpaceUsers(spaceId, isOrganization);
     const reachableEngines = await getAllAvailableEngines(spaceId, undefined, true);
 
@@ -56,44 +64,52 @@ export async function getUserTasks(spaceId: string) {
 
 export async function getUserTaskById(userTaskId: string) {
   try {
-    return await _getUserTaskById(userTaskId);
+    const userTask = await db.userTask.findUnique({
+      where: {
+        id: userTaskId,
+      },
+    });
+
+    return userTask as UserTask;
   } catch (err) {
-    if (err instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error getting user tasks');
+    return userError('Error getting user tasks');
   }
 }
 
 export async function addUserTasks(userTasks: UserTaskInput[]) {
   try {
-    return await _addUserTasks(userTasks);
-  } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
+    const newUserTasks = UserTaskInputSchema.array().safeParse(userTasks);
+
+    if (!newUserTasks.success) {
       return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting user task');
+    }
+
+    // TODO: maybe check if the user can work on/add user tasks
+    return await db.userTask.createMany({
+      data: newUserTasks.data,
+    });
+  } catch (e) {
+    return userError('Error getting user task');
   }
 }
 
 export async function updateUserTask(userTaskId: string, userTaskInput: Partial<UserTaskInput>) {
   try {
-    return await _updateUserTask(userTaskId, userTaskInput);
-  } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else if (e instanceof z.ZodError)
-      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
-    else return userError('Error getting updating user task');
-  }
-}
+    const newUserTaskData = UserTaskInputSchema.partial().safeParse(userTaskInput);
 
-export async function deleteUserTask(userTaskId: string) {
-  try {
-    return await _deleteUserTask(userTaskId);
+    if (!newUserTaskData.success) {
+      return userError('Schema validation failed', UserErrorType.SchemaValidationError);
+    }
+
+    const res = await db.userTask.update({
+      data: newUserTaskData.data,
+      where: {
+        id: userTaskId,
+      },
+    });
+
+    return res;
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError('Permission denied', UserErrorType.PermissionError);
-    else return userError('Error deleting user task');
+    return userError('Error getting updating user task');
   }
 }

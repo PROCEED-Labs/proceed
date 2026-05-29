@@ -24,7 +24,7 @@ function parseInitialData(data?: { address: string; name: string | null }) {
   };
 }
 
-const EnginesModal = ({
+const ConnectionsModal = ({
   open,
   close,
   title,
@@ -142,4 +142,4 @@ const EnginesModal = ({
   );
 };
 
-export default EnginesModal;
+export default ConnectionsModal;

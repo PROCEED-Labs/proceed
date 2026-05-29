@@ -1,7 +1,7 @@
 'use server';
 
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
-import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
+import { EngineConnectionInput, EngineConnectionInputSchema } from '@/lib/space-engine-schema';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
   getErrorMessage,
@@ -10,14 +10,14 @@ import {
   schemaValidationError,
   userError,
 } from '../user-error';
-import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
+import { resolveEngines } from '../engines/engine-connections-helpers';
 import { Engine, SpaceEngine } from '../engines/types';
 import { SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';
 import { toCaslResource } from '../ability/caslAbility';
 
-export async function getDbEngines(
+export async function getEngineConnections(
   environmentId: string | null,
   ability?: Ability,
   systemAdmin?: SystemAdmin | 'dont-check',
@@ -26,15 +26,15 @@ export async function getDbEngines(
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
     throw new UnauthorizedError();
 
-  const engines = await db.engine.findMany({
+  const connections = await db.engineConnection.findMany({
     where: { environmentId: environmentId },
   });
 
-  return ability ? ability.filter('view', 'Machine', engines) : engines;
+  return ability ? ability.filter('view', 'Machine', connections) : connections;
 }
 
-export async function getDbEngineById(
-  engineId: string,
+export async function getEngineConnectionById(
+  connectionId: string,
   environmentId: string | null,
   ability?: Ability,
   systemAdmin?: SystemAdmin | 'dont-check',
@@ -43,23 +43,23 @@ export async function getDbEngineById(
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
     throw new UnauthorizedError();
 
-  const engine = await db.engine.findUnique({
+  const connection = await db.engineConnection.findUnique({
     where: {
       environmentId: environmentId,
-      id: engineId,
+      id: connectionId,
     },
   });
 
-  if (!engine) return undefined;
+  if (!connection) return undefined;
 
   if (
     ability &&
-    !ability.can('view', toCaslResource('Machine', engine), { environmentId: environmentId! })
+    !ability.can('view', toCaslResource('Machine', connection), { environmentId: environmentId! })
   ) {
     throw new UnauthorizedError();
   }
 
-  return engine;
+  return connection;
 }
 
 function getUniqueEngines(engines: Engine[]) {
@@ -82,8 +82,8 @@ function getUniqueEngines(engines: Engine[]) {
 
 export async function getAvailableAdminEngines() {
   try {
-    const dbEngines = await getDbEngines(null, undefined, 'dont-check');
-    const engines = await savedEnginesToEngines(dbEngines);
+    const connections = await getEngineConnections(null, undefined, 'dont-check');
+    const engines = await resolveEngines(connections);
     return getUniqueEngines(engines);
   } catch (e) {
     const message = getErrorMessage(e);
@@ -95,8 +95,8 @@ export async function getAvailableAdminEngines() {
 export async function getAvailableSpaceEngines(spaceId: string) {
   try {
     const { ability } = await getCurrentEnvironment(spaceId);
-    const spaceEngines = await getDbEngines(spaceId, ability);
-    const engines = await savedEnginesToEngines(spaceEngines);
+    const connections = await getEngineConnections(spaceId, ability);
+    const engines = await resolveEngines(connections);
     return getUniqueEngines(engines) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
@@ -114,8 +114,8 @@ export async function getAllAvailableEngines(
 
     let engines: Engine[] = [];
     const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getDbEngines(null, undefined, 'dont-check').then(savedEnginesToEngines),
-      getDbEngines(spaceId, ability).then(savedEnginesToEngines),
+      getEngineConnections(null, undefined, 'dont-check').then(resolveEngines),
+      getEngineConnections(spaceId, ability).then(resolveEngines),
     ]);
 
     if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
@@ -134,11 +134,14 @@ export async function getEngineIfAvailable(environmentId: string, engineId: stri
   return engines.find((e) => e.id === engineId);
 }
 
-const SpaceEngineArraySchema = SpaceEngineInputSchema.array();
-export async function addDbEngines(enginesInput: SpaceEngineInput[], environmentId: string | null) {
-  const newEngines = SpaceEngineArraySchema.safeParse(enginesInput);
+const EngineConnectionArraySchema = EngineConnectionInputSchema.array();
+export async function addEngineConnections(
+  connectionsInput: EngineConnectionInput[],
+  environmentId: string | null,
+) {
+  const newConnections = EngineConnectionArraySchema.safeParse(connectionsInput);
 
-  if (!newEngines.success) {
+  if (!newConnections.success) {
     return schemaValidationError();
   }
 
@@ -148,30 +151,30 @@ export async function addDbEngines(enginesInput: SpaceEngineInput[], environment
     const { ability } = await getCurrentEnvironment(environmentId);
     if (!ability.can('create', 'Machine')) return permissionDenied();
   } else if (!user.systemAdmin) {
-    // engines without an environmentId are PROCEED engines
+    // connections without an environmentId are PROCEED engines
     return permissionDenied();
   }
 
   try {
-    const res = await db.engine.createMany({
-      data: newEngines.data.map((e) => ({ ...e, environmentId: environmentId ?? null })),
+    const res = await db.engineConnection.createMany({
+      data: newConnections.data.map((e) => ({ ...e, environmentId: environmentId ?? null })),
     });
 
     return res;
   } catch (e) {
-    return userError('Error getting space engines');
+    return userError('Error saving engine connections.');
   }
 }
 
-const PartialSpaceEngineInputSchema = SpaceEngineInputSchema.partial();
-export async function updateDbEngine(
-  engineId: string,
-  engineInput: Partial<SpaceEngineInput>,
+const PartialEngineConnectionInputSchema = EngineConnectionInputSchema.partial();
+export async function updateEngineConnection(
+  connectionId: string,
+  connectionInput: Partial<EngineConnectionInput>,
   environmentId: string | null,
 ) {
-  const newEngineData = PartialSpaceEngineInputSchema.safeParse(engineInput);
+  const newConnectionData = PartialEngineConnectionInputSchema.safeParse(connectionInput);
 
-  if (!newEngineData.success) {
+  if (!newConnectionData.success) {
     return schemaValidationError();
   }
 
@@ -180,7 +183,7 @@ export async function updateDbEngine(
   if (environmentId) {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const engine = await getDbEngineById(engineId, environmentId);
+    const engine = await getEngineConnectionById(connectionId, environmentId);
     if (!engine) return userError('Engine not found');
 
     if (
@@ -194,21 +197,21 @@ export async function updateDbEngine(
   }
 
   try {
-    const res = await db.engine.update({
-      data: newEngineData.data,
+    const res = await db.engineConnection.update({
+      data: newConnectionData.data,
       where: {
         environmentId,
-        id: engineId,
+        id: connectionId,
       },
     });
 
     return res;
   } catch (e) {
-    return userError('Error getting space engines');
+    return userError('Error updating engine connection.');
   }
 }
 
-export async function deleteDbEngine(engineId: string, environmentId: string | null) {
+export async function deleteEngineConnection(engineId: string, environmentId: string | null) {
   const user = await getCurrentUser();
 
   // engines without an environmentId are PROCEED engines
@@ -219,18 +222,20 @@ export async function deleteDbEngine(engineId: string, environmentId: string | n
   if (environmentId) {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const engine = await getDbEngineById(engineId, environmentId);
-    if (!engine) return userError('Engine not found');
+    const connection = await getEngineConnectionById(engineId, environmentId);
+    if (!connection) return userError('Engine not found');
 
     if (
-      !ability.can('delete', toCaslResource('Machine', engine), { environmentId: environmentId! })
+      !ability.can('delete', toCaslResource('Machine', connection), {
+        environmentId: environmentId!,
+      })
     ) {
       return permissionDenied();
     }
   }
 
   try {
-    const res = await db.engine.delete({
+    const res = await db.engineConnection.delete({
       where: {
         environmentId: environmentId,
         id: engineId,

@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
 import { type Engine } from '@/lib/engines/types';
-import { getDbEngineById } from '@/lib/data/engines';
+import { getEngineConnectionById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';
@@ -13,7 +13,7 @@ import SpaceLink from '@/components/space-link';
 export type TableEngine = Engine & { id: string };
 
 export default async function EnginesPage(props: {
-  params: Promise<{ dbEngineId: string; environmentId: string }>;
+  params: Promise<{ connectionId: string; environmentId: string }>;
   searchParams: Promise<{ engineId: string }>;
 }) {
   const searchParams = await props.searchParams;
@@ -21,11 +21,15 @@ export default async function EnginesPage(props: {
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const dbEngineId = decodeURIComponent(params.dbEngineId);
+  const connectionId = decodeURIComponent(params.connectionId);
   const engineId = decodeURIComponent(searchParams.engineId || '');
 
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const dbEngine = await getDbEngineById(dbEngineId, activeEnvironment.spaceId, ability);
+  const connection = await getEngineConnectionById(
+    connectionId,
+    activeEnvironment.spaceId,
+    ability,
+  );
 
   return (
     <Suspense
@@ -36,7 +40,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        dbEngine={dbEngine}
+        connection={connection}
         engineId={engineId}
         backButton={
           <SpaceLink href="/engines">

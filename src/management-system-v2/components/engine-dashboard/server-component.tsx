@@ -1,10 +1,10 @@
 import Content from '@/components/content';
 import { Result, Space } from 'antd';
 import { type Engine } from '@/lib/engines/types';
-import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
+import { resolveEngines } from '@/lib/engines/engine-connections-helpers';
 import { engineRequest } from '@/lib/engines/endpoints/index';
 import ClientEngineDashboard from '@/components/engine-dashboard/dashboard';
-import { type Engine as DBEngine } from '@prisma/client';
+import { type EngineConnection } from '@prisma/client';
 import { ReactNode } from 'react';
 
 export type TableEngine = Engine & { id: string };
@@ -12,15 +12,15 @@ export type TableEngine = Engine & { id: string };
 /** Make sure that the user requesting the page has permission to view the engine, this component
  * doesn't check view permissions */
 export default async function EngineDashboard({
-  dbEngine,
+  connection,
   engineId,
   backButton,
 }: {
-  dbEngine?: DBEngine;
+  connection?: EngineConnection;
   engineId?: string;
   backButton?: ReactNode;
 }) {
-  if (!dbEngine) {
+  if (!connection) {
     return (
       <Content title={backButton}>
         <Result status="404" title="Error" subTitle="Couldn't find engine" />
@@ -28,7 +28,7 @@ export default async function EngineDashboard({
     );
   }
 
-  const engines = await savedEnginesToEngines([dbEngine]);
+  const engines = await resolveEngines([connection]);
   let engine: Engine | undefined = engines[0];
   if (engineId) engine = engines.find((e) => e.id === engineId);
 

@@ -47,7 +47,7 @@ import {
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { getUserById } from './iam/users';
 import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
@@ -61,7 +61,7 @@ import {
   userInfoMap,
 } from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
-import { getRoles, getUserRoles } from '../roles';
+import { getUserRoles } from '../roles';
 import { getRolesWithMembers } from './iam/roles';
 
 const IntSchema = z.number().int();
@@ -4949,10 +4949,6 @@ export async function syncSpaceConfigs() {
   }
 }
 
-export async function getUser(userId: string) {
-  return await getUserById(userId);
-}
-
 async function checkSiblingNames(siblings: string[], name: string) {
   for (const id of siblings) {
     let childParameterResult = await db.configParameter.findUnique({
@@ -4962,4 +4958,9 @@ async function checkSiblingNames(siblings: string[], name: string) {
     if (childParameter.name == name) return true;
   }
   return false;
+}
+
+// fetch helpers TO BE REMOVED IN THE FUTURE
+export async function getUser(userId: string) {
+  return await getUserById(userId);
 }

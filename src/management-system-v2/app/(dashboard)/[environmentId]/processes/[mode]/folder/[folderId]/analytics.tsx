@@ -16,7 +16,6 @@ import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
 import AnalyticsCard from '@/components/analytics-card';
 
-
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 interface ProcessAnalyticsCardsProps {
@@ -251,13 +250,6 @@ const ProcessAnalyticsCards = ({
           title="Needs Release"
           icon={<EditOutlined />}
           mainValue={analytics.unversionedInFolder}
-          secondaryValue={analytics.releasedInFolder}
-          showProgress={true}
-          progressPercent={
-            analytics.releasedInFolder > 0
-              ? (analytics.unversionedInFolder / analytics.releasedInFolder) * 100
-              : 0
-          }
           tooltip="Processes with unreleased changes. They were modified after their last version was created."
           subtitle={
             isRootFolder

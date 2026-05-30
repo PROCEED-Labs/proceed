@@ -62,9 +62,9 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       {/* Main value with icon */}
       <div style={{ marginBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ color: '#595959', fontSize: '18px' }}>{icon}</div>
+          <div style={{ color: '#1677ff', fontSize: '18px' }}>{icon}</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-            <span style={{ color: '#262626', fontSize: '24px', fontWeight: 600, lineHeight: 1 }}>
+            <span style={{ color: '#1677ff', fontSize: '24px', fontWeight: 600, lineHeight: 1 }}>
               {mainValue}
             </span>
             {secondaryValue !== undefined && (

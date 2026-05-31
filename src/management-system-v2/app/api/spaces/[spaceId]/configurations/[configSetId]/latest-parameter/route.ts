@@ -1,4 +1,4 @@
-import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-helper';
+import { defaultParameter } from '@/app/(dashboard)/[environmentId]/machine-config/helpers/configuration-helper';
 import {
   addParameter,
   addParentConfig,
@@ -67,7 +67,7 @@ export async function POST(
         .parse(body);
     }
 
-    const newParam = { ...defaultParameter('new-param', [], []), ...body };
+    const newParam = defaultParameter(body);
 
     if (subParameterOf) {
       if (!(await validateParameterName(queryId, subParameterOf, 'parameter', body.name))) {

@@ -54,7 +54,7 @@ export type TokenInfo = {
   /**
    * - the values of variables changed during the tokens execution that are not yet committed to the instance
    */
-  intermediateVariablesState?: {
+  variablesIntermediateState?: {
     [key: string]: any;
   };
 };
@@ -68,8 +68,9 @@ export type VariableInfo = {
   value: any;
   log: {
     changedTime: number;
-    changedBy: string;
+    changedBy?: string;
     oldValue?: any;
+    newValue: any;
   }[];
 };
 /**
@@ -156,7 +157,7 @@ export type InstanceInfo = {
  * @property {string} state - the state the token is in
  * @property {string} currentFlowElementId - the flow element the token resides on
  * @property {number} currentFlowElementStartTime - the time the current execution of the current flow element started
- * @property {{ [key: string]: any }} [intermediateVariablesState] - the values of variables changed during the tokens execution that are not yet committed to the instance
+ * @property {{ [key: string]: any }} [variablesIntermediateState] - the values of variables changed during the tokens execution that are not yet committed to the instance
  */
 /**
  * An object containing information about a token in an instance
@@ -164,7 +165,7 @@ export type InstanceInfo = {
  * @typedef VariableInfo
  * @type {object}
  * @property {any} value - the value of the variable
- * @property {{ changedTime: number, changedBy: string, oldValue?: any }[]} log
+ * @property {{ changedTime: number, changedBy?: string, oldValue?: any, newValue: any }[]} log
  */
 /**
  * An object containing information about already executed flow nodes

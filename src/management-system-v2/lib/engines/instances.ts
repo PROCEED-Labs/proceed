@@ -1,11 +1,12 @@
 'use server';
 
-import { Engine } from './machines';
+import { Engine } from './types';
 import { engineRequest } from './endpoints/index';
 import { userError } from '../user-error';
 import { env } from '../ms-config/env-vars';
 import os from 'os';
 import { truthyFilter } from '../typescript-utils';
+import { InstanceInfo } from './deployment';
 
 export async function startInstanceOnMachine(
   definitionId: string,
@@ -36,7 +37,7 @@ export async function startInstanceOnMachine(
       body: { variables, extras },
     });
 
-    return response.instanceId as string;
+    return response as InstanceInfo;
   } catch (err) {
     if (
       err instanceof Error &&

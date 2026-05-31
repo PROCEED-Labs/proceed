@@ -18,6 +18,7 @@ import {
   Skeleton,
   Breadcrumb,
 } from 'antd';
+import { FolderOutlined } from '@ant-design/icons';
 import { MdArrowBackIos, MdArrowForwardIos } from 'react-icons/md';
 import { UserError } from '@/lib/user-error';
 import { useAddControlCallback } from '@/lib/controls-store';
@@ -31,6 +32,7 @@ import dynamic from 'next/dynamic';
 
 import '@toast-ui/editor/dist/toastui-editor.css';
 import type { Editor as EditorClass } from '@toast-ui/react-editor';
+import { isDummyFolderProcess } from '@/lib/process-export/export-preparation';
 const TextEditor = dynamic(() => import('@/components/text-editor'), {
   ssr: false,
   loading: () => <Skeleton.Input size="large" />,
@@ -38,7 +40,7 @@ const TextEditor = dynamic(() => import('@/components/text-editor'), {
 
 export type ProcessModalMode = 'create' | 'edit' | 'copy' | 'import';
 
-type ProcessModalProps<T extends { name: string; description: string }> = {
+type ProcessModalProps<T extends { id?: string; name: string; description: string }> = {
   open: boolean;
   title: string;
   okText?: string;
@@ -52,6 +54,7 @@ type ProcessModalProps<T extends { name: string; description: string }> = {
 
 const ProcessModal = <
   T extends {
+    id?: string;
     name: string;
     description: string;
     userDefinedId?: string;
@@ -214,6 +217,8 @@ const ProcessModal = <
     { level: 2, blocking: open, dependencies: [open] },
   );
 
+  const [fullyOpen, setFullyOpen] = useState(false);
+
   const renderFormContent = () => {
     if (!initialData) {
       return <ProcessInputs index={0} readonly={readonly} />;
@@ -255,13 +260,38 @@ const ProcessModal = <
         >
           {initialData.map((process, index) => (
             <Card key={index}>
-              {process.bpmn && (
-                <>
-                  <LazyBPMNViewer previewBpmn={process.bpmn} reduceLogo={true} fitOnResize />
-                  <Divider style={{ width: '100%', marginLeft: '-20%' }} />
-                </>
-              )}
-              <ProcessInputsImport key={index} index={index} readonly={readonly} />
+              <>
+                {process.bpmn && (
+                  <>
+                    {isDummyFolderProcess(process) ? (
+                      <div
+                        style={{
+                          height: '150px',
+                          width: '100%',
+                          display: 'flex',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <FolderOutlined style={{ fontSize: '100px' }} />
+                      </div>
+                    ) : (
+                      <LazyBPMNViewer
+                        previewBpmn={process.bpmn}
+                        reduceLogo={true}
+                        fitOnResize
+                        visible={fullyOpen}
+                      />
+                    )}
+                    <Divider style={{ width: '100%', marginLeft: '-20%' }} />
+                  </>
+                )}
+              </>
+              <ProcessInputsImport
+                key={index}
+                index={index}
+                readonly={readonly}
+                isFolder={isDummyFolderProcess(process)}
+              />
             </Card>
           ))}
         </Carousel>
@@ -309,6 +339,7 @@ const ProcessModal = <
             flexDirection: 'column',
           },
         }}
+        afterOpenChange={(open) => setFullyOpen(open)}
       >
         <div style={{ overflowY: 'auto', flex: 1 }} className="Hide-Scroll-Bar">
           {nameCollisions.length > 0 && showCollisions && (
@@ -395,6 +426,7 @@ type ProcessInputsProps = {
   index: number;
   initialName?: string;
   readonly?: boolean;
+  isFolder?: boolean;
 };
 
 const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsProps) => {
@@ -486,7 +518,7 @@ const ProcessInputs = ({ index, initialName, readonly = false }: ProcessInputsPr
   );
 };
 
-const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) => {
+const ProcessInputsImport = ({ index, readonly = false, isFolder }: ProcessInputsProps) => {
   const instance = Form.useFormInstance();
   const data = instance.getFieldsValue()[index];
 
@@ -497,6 +529,13 @@ const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) =>
       <Form.Item hidden name={[index, 'folderPath']}>
         <Input disabled />
       </Form.Item>
+      {isFolder && (
+        <Alert
+          style={{ marginBottom: '10px' }}
+          type="warning"
+          title="This imports an empty folder without any processes."
+        />
+      )}
       {!!data?.folderPath && (
         <Form.Item label="Import Path">
           <Card size="small">
@@ -509,24 +548,32 @@ const ProcessInputsImport = ({ index, readonly = false }: ProcessInputsProps) =>
           </Card>
         </Form.Item>
       )}
-      <ProcessInputs index={index} readonly={readonly} />
-      <Form.Item name={[index, 'creator']} label="Original Creator" rules={[{ required: false }]}>
-        <Input disabled />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'creatorUsername']}
-        label="Original Creator Username"
-        rules={[{ required: false }]}
-      >
-        <Input disabled />
-      </Form.Item>
-      <Form.Item
-        name={[index, 'createdOn']}
-        label="Original Creation Date"
-        rules={[{ required: false }]}
-      >
-        <Input disabled />
-      </Form.Item>
+      {!isFolder && (
+        <>
+          <ProcessInputs index={index} readonly={readonly} />
+          <Form.Item
+            name={[index, 'creator']}
+            label="Original Creator"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            name={[index, 'creatorUsername']}
+            label="Original Creator Username"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+          <Form.Item
+            name={[index, 'createdOn']}
+            label="Original Creation Date"
+            rules={[{ required: false }]}
+          >
+            <Input disabled />
+          </Form.Item>
+        </>
+      )}
     </>
   );
 };

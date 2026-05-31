@@ -35,7 +35,7 @@ const RoleContent: FC<{
             </>
           )}
 
-          {role.name.value !== '@everyone' && role.name.value !== '@gues' && (
+          {role.name.value !== '@everyone' && role.name.value !== '@guest' && (
             <>
               <Typography.Title>Members</Typography.Title>
               <Typography.Text>{role.members.length}</Typography.Text>

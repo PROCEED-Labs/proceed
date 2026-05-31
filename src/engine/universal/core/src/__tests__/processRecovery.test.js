@@ -106,15 +106,29 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
     it('will create an execution engine for a process that has interrupted instances and load the correct process versions', async () => {
       distribution.db.getAllProcesses.mockResolvedValue(['Process 1']);
       distribution.db.getArchivedInstances.mockResolvedValue({
-        instance1: { processVersion: 123, tokens: [], instanceState: ['ENDED'], some: 'data' },
+        instance1: {
+          processInstanceId: 'instance1',
+          processVersion: 123,
+          tokens: [],
+          instanceState: ['ENDED'],
+          some: 'data',
+        },
         instance2: {
+          processInstanceId: 'instance2',
           processVersion: 123,
           tokens: [],
           instanceState: ['RUNNING'],
           isCurrentlyExecutedInBpmnEngine: true,
         },
-        instance3: { processVersion: 456, tokens: [], instanceState: ['TERMINATED'], some: 'data' },
+        instance3: {
+          processInstanceId: 'instance3',
+          processVersion: 456,
+          tokens: [],
+          instanceState: ['TERMINATED'],
+          some: 'data',
+        },
         instance4: {
+          processInstanceId: 'instance4',
           processVersion: 789,
           tokens: [],
           instanceState: ['DEPLOYMENT-WAITING'],
@@ -133,12 +147,12 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       await management.restoreInterruptedInstances();
 
       expect(ensureExecutionEngine).toBeCalledTimes(2);
-      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 123);
-      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 789);
+      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 123, false);
+      expect(ensureExecutionEngine).toHaveBeenCalledWith('Process 1', 789, false);
 
       expect(deployVersionInEngine).toBeCalledTimes(2);
-      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 123);
-      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 789);
+      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 123, false);
+      expect(deployVersionInEngine).toHaveBeenCalledWith('Process 1', 789, false);
 
       expect(management.getAllEngines().length).toBe(1);
 
@@ -164,7 +178,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'READY',
             currentFlowElementId: 'Task_1y4wd2q',
             previousFlowElementId: 'SequenceFlow_14mwzvq',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 5,
           },
         ],
@@ -232,7 +246,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'READY',
             currentFlowElementId: 'Task_1y4wd2q',
             previousFlowElementId: 'SequenceFlow_14mwzvq',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 5,
           },
         ],
@@ -278,7 +292,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
           {
             ...archivedState.tokens[0],
             state: 'READY',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: expect.any(Number),
             currentFlowElementStartTime: expect.any(Number),
             currentFlowNodeState: 'READY',
@@ -296,6 +310,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
       expect(instanceInformation).toEqual({
         ...archivedState,
         instanceState: ['ENDED'],
+        extras: {},
         tokens: [
           {
             ...archivedState.tokens[0],
@@ -360,7 +375,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'RUNNING',
             currentFlowElementId: 'Task_1y4wd2q',
             previousFlowElementId: 'SequenceFlow_14mwzvq',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 5,
           },
         ],
@@ -415,7 +430,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'DEPLOYMENT-WAITING',
             currentFlowElementId: 'SequenceFlow_14mwzvq',
             previousFlowElementId: 'StartEvent_1',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 5,
           },
         ],
@@ -476,7 +491,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678109226210,
             previousFlowElementId: 'SequenceFlow_14mwzvq',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 6,
           },
         ],
@@ -524,6 +539,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             },
           ],
           userTasks: [],
+          extras: {},
           isCurrentlyExecutedInBpmnEngine: undefined,
         },
       );
@@ -551,7 +567,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1677676740578,
             previousFlowElementId: 'Flow_13rsymi',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 3,
           },
           {
@@ -564,7 +580,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'FAILED',
             currentFlowElementId: 'Flow_15l0o0p',
             previousFlowElementId: 'Gateway_1lwhjkl',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 3,
           },
           {
@@ -577,7 +593,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'TERMINATED',
             currentFlowElementId: 'Activity_0o4tgs8',
             previousFlowElementId: 'Flow_1cieo5q',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 3,
           },
         ],
@@ -647,7 +663,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             state: 'RUNNING',
             currentFlowElementId: 'Task_1y4wd2q',
             previousFlowElementId: 'SequenceFlow_14mwzvq',
-            intermediateVariablesState: null,
+            variablesIntermediateState: null,
             localExecutionTime: 5,
           },
         ],
@@ -693,7 +709,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             ...archivedState.tokens[0],
             state: 'ERROR-INTERRUPTED',
             currentFlowNodeState: 'ERROR-INTERRUPTED',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: expect.any(Number),
             flowElementExecutionWasInterrupted: true,
             currentFlowElementStartTime: expect.any(Number),
@@ -726,7 +742,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'ACTIVE',
             currentFlowElementStartTime: 1678112173953,
             previousFlowElementId: 'Flow_1q1qn9y',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 5,
           },
           {
@@ -740,7 +756,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678112173981,
             previousFlowElementId: 'Flow_0z65t3n',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 13,
           },
         ],
@@ -812,7 +828,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'ACTIVE',
             currentFlowElementStartTime: 1678112173953,
             previousFlowElementId: 'Flow_1q1qn9y',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 5,
           },
           {
@@ -826,7 +842,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678112173981,
             previousFlowElementId: 'Flow_0z65t3n',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 13,
           },
         ],
@@ -922,7 +938,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'ACTIVE',
             currentFlowElementStartTime: 1678113974636,
             previousFlowElementId: 'Flow_0xrwj67',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 5,
           },
         ],
@@ -966,7 +982,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678113974704,
             previousFlowElementId: 'Flow_1o1yusn',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 10,
           },
         ],
@@ -1040,7 +1056,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'ACTIVE',
             currentFlowElementStartTime: 1678113974636,
             previousFlowElementId: 'Flow_0xrwj67',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 5,
           },
         ],
@@ -1084,7 +1100,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678113974704,
             previousFlowElementId: 'Flow_1o1yusn',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 10,
           },
         ],
@@ -1154,6 +1170,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             },
           ],
           userTasks: [],
+          extras: {},
           isCurrentlyExecutedInBpmnEngine: undefined,
         },
       );
@@ -1180,7 +1197,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'READY',
             currentFlowElementStartTime: 1678193052970,
             previousFlowElementId: 'Flow_1wuudkw',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 6,
           },
           {
@@ -1195,7 +1212,7 @@ describe('Tests for the restart of interrupted processes at engine startup', () 
             currentFlowNodeState: 'ACTIVE',
             currentFlowElementStartTime: 1678193052996,
             previousFlowElementId: 'Flow_0l0qebs',
-            intermediateVariablesState: {},
+            variablesIntermediateState: {},
             localExecutionTime: 9,
           },
         ],

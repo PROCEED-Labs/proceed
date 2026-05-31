@@ -127,17 +127,21 @@ class Engine {
    *
    * @param {string} definitionId The name of the file of the (main) process (as stored in the `data`)
    * @param {string} the version of the process to deploy
+   * @param {boolean} [active=true] defines if the deployed process is allowed to spawn instances
+   * automatically
    */
-  async deployProcessVersion(definitionId, versionId) {
-    const otherVersions = this.versions.filter((version) => version !== versionId);
-    otherVersions.forEach((version) => {
-      const process = this._versionProcessMapping[version];
+  async deployProcessVersion(definitionId, versionId, active = true) {
+    if (active) {
+      const otherVersions = this.versions.filter((version) => version !== versionId);
+      otherVersions.forEach((version) => {
+        const process = this._versionProcessMapping[version];
 
-      // deactivate other versions so they don't keep spawning new instances automatically
-      if (process) {
-        process.undeploy();
-      }
-    });
+        // deactivate other versions so they don't keep spawning new instances automatically
+        if (process) {
+          process.undeploy();
+        }
+      });
+    }
 
     if (!this._versionProcessMapping[versionId]) {
       // Fetch the stored BPMN
@@ -211,7 +215,7 @@ class Engine {
         shouldActivateFlowNodeHook: getShouldActivateFlowNode(this),
       });
 
-      process.deploy();
+      if (active) process.deploy();
 
       // Subscribe to the new process instances stream before we start the execution
       process.getInstance$().subscribe(getNewInstanceHandler(this));
@@ -226,7 +230,7 @@ class Engine {
     } else if (!this._versionProcessMapping[versionId].isDeployed()) {
       // activate the process so auto-start events like timer events are allowed to trigger new
       // instances
-      this._versionProcessMapping[versionId].deploy();
+      if (active) this._versionProcessMapping[versionId].deploy();
     }
   }
 
@@ -240,6 +244,16 @@ class Engine {
     if (process && process.isDeployed()) {
       process.undeploy();
     }
+  }
+
+  /**
+   * Returns whether the given process version is currently deployed in the NeoBPMN Engine
+   *
+   * @param {string} versionId the version of the process to check
+   * @returns {boolean} true if the version is deployed, false if it is known but not active
+   */
+  async isProcessVersionDeployed(versionId) {
+    return this._versionProcessMapping[versionId]?.isDeployed() ?? false;
   }
 
   /**
@@ -277,7 +291,7 @@ class Engine {
     this.originalInstanceState = instance;
     this.instanceEventHandlers = {
       onStarted: (newInstance) => {
-        resolver(newInstance.id);
+        resolver(this.getInstanceInformation(newInstance.id));
         // make sure to keep the information from the original instance on the recreated instance
         if (instance && instance.callingInstance) {
           newInstance.callingInstance = instance.callingInstance;
@@ -460,7 +474,7 @@ class Engine {
 
     const token = this.getToken(instanceID, userTask.tokenId);
     // remember the changes made by this user task invocation
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
     userTask.milestones = { ...token.milestones };
     userTask.actualOwner = [...token.actualOwner];
 
@@ -1010,7 +1024,7 @@ class Engine {
     );
 
     const token = this.getToken(instanceID, userTask.tokenId);
-    userTask.variableChanges = { ...token.intermediateVariablesState };
+    userTask.variableChanges = { ...token.variablesIntermediateState };
   }
 
   setFlowNodeState(instanceId, tokenId, state, variables) {

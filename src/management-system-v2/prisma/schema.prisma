@@ -49,6 +49,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[] @relation("verificationToken")
   mcpPairingCodes         McpPairingCode[]         @relation("pairingCode")
   Config                  Config[]
+  deployments             ProcessDeployment[]
+  instances               ProcessInstance[]
 
   @@map("user")
 }
@@ -210,6 +212,7 @@ model Version {
   createdOn                 DateTime                   @unique @updatedAt
   bpmnFilePath              String
   artifactVersionReferences ArtifactVersionReference[]
+  deployments               ProcessDeployment[]
 
   @@map("version")
 }
@@ -229,6 +232,9 @@ model Role {
   lastEditedOn  DateTime  @updatedAt
   parentId      String?
   parentFolder  Folder?   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  parentRoleId  String?
+  parentRole    Role?      @relation("roleHierarchy", fields: [parentRoleId], references: [id], onDelete: Cascade)
+  children      Role[]    @relation("roleHierarchy")
 
   organigramTeam       UserOrganigram[] @relation("teamRole")
   organigramBackOffice UserOrganigram[] @relation("backOfficeRole")
@@ -428,4 +434,36 @@ model UserOrganigram {
   backOfficeRole Role?       @relation("backOfficeRole", fields: [backOfficeRoleId], references: [id], onDelete: SetNull)
 
   @@map("user_organigram")
+}
+
+model ProcessDeployment {
+  id            String     @id @default(uuid())
+  versionId     String
+  version       Version    @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  deployerId    String
+  deployer      User?      @relation(fields: [deployerId], references: [id], onDelete: SetNull)
+  deployTime    DateTime   @default(now())
+  removeTime    DateTime?
+
+  // This is not the "Engine" which we store here in the DB but the actual engine the process is deployed on
+  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
+  engineId      String
+
+  instances     ProcessInstance[]
+
+  @@map("process_deployment")
+}
+
+model ProcessInstance {
+  id                  String            @id
+  deploymentId        String
+  deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  initiatorId         String?
+  initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
+  // These are not the "Engines" which we store here in the DB but the actual engines the process is running on
+  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
+  engineIds           String[]
+  state               Json
+
+  @@map("process_instance")
 }

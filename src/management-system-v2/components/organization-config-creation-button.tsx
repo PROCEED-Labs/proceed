@@ -9,7 +9,7 @@ import { useEnvironment } from './auth-can';
 import { spaceURL } from '@/lib/utils';
 import { useContext } from 'react';
 import { UserSpacesContext } from '@/app/(dashboard)/[environmentId]/layout-client';
-import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/configuration-templates-organization';
+import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
 
 type ConfigCreationButtonProps = ButtonProps & {
   wrapperElement?: ReactNode;

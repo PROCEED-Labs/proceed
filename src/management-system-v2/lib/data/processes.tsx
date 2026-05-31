@@ -8,6 +8,7 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
+  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -66,6 +67,7 @@ import { getFolderById, getRootFolder } from './db/folders';
 import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
 import Ability from '../ability/abilityHelper';
+import { isDummyFolderProcess } from '../process-export/export-preparation';
 
 // Import necessary functions from processModule
 
@@ -275,6 +277,12 @@ export const addProcesses = async (
       value.folderId = folder.id;
     }
 
+    if (isDummyFolderProcess(value)) {
+      // if the process represents a placeholder for importing empty folders then skip adding the
+      // process after the folder structure was created
+      continue;
+    }
+
     // bpmn prop gets deleted in addProcess()
     const process = await _addProcess({ ...newProcess, folderId: value.folderId });
 
@@ -394,6 +402,9 @@ export const importProcesses = async (processData: ProcessData[], spaceId: strin
   if ('error' in importedProcesses) {
     return importedProcesses;
   }
+
+  // filter out dummy processes that were included in the import to generate empty folders
+  processData = processData.filter((p) => !isDummyFolderProcess(p));
 
   for (let idx = 0; idx < importedProcesses.length; idx++) {
     const process = importedProcesses[idx];
@@ -558,16 +569,23 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
-// TODO: fix: this function doesn't work yet
-export const processHasChangesSinceLastVersion = async (processId: string, spaceId: string) => {
+/**
+ * Function that checks if a process' latest version is unchanged from the version it is based on
+ *
+ * @returns if unchanged, the version id of the based on version is returned, otherwise undefined is
+ * returned
+ **/
+export const processUnchangedFromBasedOnVersion = async (processId: string, spaceId: string) => {
   const error = await checkValidity(processId, 'view', spaceId);
   if (error) return error;
 
   const process = await _getProcess(processId, true);
   if (!process) return userError('Process not found', UserErrorType.NotFoundError);
 
+  if (!process.versions.length) return;
+
   const bpmnObj = await toBpmnObject(process.bpmn!);
-  const { versionBasedOn, versionCreatedOn } = await getDefinitionsVersionInformation(bpmnObj);
+  const { versionBasedOn } = await getDefinitionsVersionInformation(bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
 
@@ -578,7 +596,8 @@ export const processHasChangesSinceLastVersion = async (processId: string, space
       : undefined;
 
   const versionsAreEqual = basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN));
-  return !versionsAreEqual;
+
+  if (versionsAreEqual) return versionBasedOn;
 };
 
 export const createVersion = async (

@@ -3,7 +3,7 @@
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
 import { App, Button, Space } from 'antd';
-import { FC } from 'react';
+import { FC, use } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import Link from 'next/link';
@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import { SettingOutlined } from '@ant-design/icons';
 import { getPairingCode } from '@/lib/data/mcp-authorization';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 const highlightedKeys = ['name', 'description'] as const;
 export type FilteredEnvironment = ReplaceKeysWithHighlighted<
@@ -37,6 +38,8 @@ const EnvironmentsPage: FC<{
     highlightedKeys,
     transformData: (results) => results.map((result) => result.item),
   });
+
+  const env = use(EnvVarsContext);
 
   const handleCreateAccessCode = async (environmentId: string) => {
     const code = await getPairingCode(environmentId);
@@ -76,9 +79,11 @@ const EnvironmentsPage: FC<{
                 <Link href={`/${id}/start`}>
                   <Button>Enter</Button>
                 </Link>
-                <Button onClick={() => handleCreateAccessCode(environment.id)}>
-                  Connect Chatbot
-                </Button>
+                {env.PROCEED_PUBLIC_MCP_ACTIVE && (
+                  <Button onClick={() => handleCreateAccessCode(environment.id)}>
+                    Connect Chatbot
+                  </Button>
+                )}
                 {environment.isOrganization && (
                   <ConfirmationButton
                     title={`Leave ${environment.name.value}`}

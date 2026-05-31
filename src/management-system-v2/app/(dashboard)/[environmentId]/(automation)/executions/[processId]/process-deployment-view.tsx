@@ -12,6 +12,7 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -25,7 +26,12 @@ import { RemoveReadOnly } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useDeployment from '../deployment-hook';
-import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
+import {
+  exportInstanceData,
+  getLatestDeployment,
+  getVersionInstances,
+  getYoungestInstance,
+} from './instance-helpers';
 
 import useColors from './use-colors';
 import useTokens from './use-tokens';
@@ -35,12 +41,23 @@ import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
 import {
-  changeDeploymentActivation,
   getProcessActivationStatus,
-  getGlobalVariablesForHTML,
-} from '@/lib/engines/server-actions';
+  changeDeploymentActivation,
+} from '@/lib/executions/deployment-server-actions';
+import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
+
+import { GrDocumentUser } from 'react-icons/gr';
+import { handleOpenDocumentation } from '../../../processes/processes-helper';
+import {
+  getProcessStartForm,
+  pauseInstance,
+  resumeInstance,
+  startInstance,
+  stopInstance,
+} from '@/lib/executions/instance-server-actions';
+import { enableInstanceCSVExport } from 'FeatureFlags';
 
 export default function ProcessDeploymentView({
   processId,
@@ -73,15 +90,7 @@ export default function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-  const {
-    data: deploymentInfo,
-    refetch,
-    startInstance,
-    resumeInstance,
-    pauseInstance,
-    stopInstance,
-    getStartForm,
-  } = useDeployment(processId, initialDeploymentInfo);
+  const { data: deploymentInfo, refetch } = useDeployment(processId, initialDeploymentInfo);
 
   const {
     selectedVersion,
@@ -338,7 +347,7 @@ export default function ProcessDeploymentView({
                           const latestDeployment = getLatestDeployment(deploymentInfo);
                           const versionId = latestDeployment.versionId;
 
-                          let startForm = await getStartForm(versionId);
+                          let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
                           if (typeof startForm !== 'string') return startForm;
 
@@ -367,7 +376,7 @@ export default function ProcessDeploymentView({
 
                             setStartForm(startForm);
                           } else {
-                            return startInstance(versionId);
+                            return startInstance(spaceId, processId, versionId);
                           }
                         },
                         onSuccess: async (instanceId) => {
@@ -439,7 +448,12 @@ export default function ProcessDeploymentView({
                         onClick={async () => {
                           setResumingInstance(true);
                           await wrapServerCall({
-                            fn: () => resumeInstance(selectedInstance.processInstanceId),
+                            fn: () =>
+                              resumeInstance(
+                                spaceId,
+                                processId,
+                                selectedInstance.processInstanceId,
+                              ),
                             onSuccess: async () => await refetch(),
                           });
                           setResumingInstance(false);
@@ -457,7 +471,8 @@ export default function ProcessDeploymentView({
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
-                            fn: async () => pauseInstance(selectedInstance.processInstanceId),
+                            fn: async () =>
+                              pauseInstance(spaceId, processId, selectedInstance.processInstanceId),
                             onSuccess: async () => await refetch(),
                           });
                           setPausingInstance(false);
@@ -475,7 +490,8 @@ export default function ProcessDeploymentView({
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({
-                          fn: async () => stopInstance(selectedInstance.processInstanceId),
+                          fn: async () =>
+                            stopInstance(spaceId, processId, selectedInstance.processInstanceId),
                           onSuccess: async () => await refetch(),
                         });
                         setStoppingInstance(false);
@@ -488,6 +504,63 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
+                {enableInstanceCSVExport && (
+                  <>
+                    <Tooltip title={'Export data of this selected instance as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          exportInstanceData([selectedInstance], deploymentInfo.versions, spaceId)
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            THIS
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          exportInstanceData(
+                            deploymentInfo.instances,
+                            deploymentInfo.versions,
+                            spaceId,
+                          )
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            ALL
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
+                {selectedInstance && (
+                  <Tooltip title="View Instance Documentation">
+                    <Button
+                      aria-label="view-instance-documentation"
+                      icon={<GrDocumentUser />}
+                      onClick={() =>
+                        handleOpenDocumentation(
+                          processId,
+                          spaceId,
+                          selectedInstance.processVersion,
+                          selectedInstance.processInstanceId,
+                          selectedColoring,
+                        )
+                      }
+                    />
+                  </Tooltip>
+                )}
                 <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                   <Button
                     icon={<InfoCircleOutlined />}
@@ -527,7 +600,7 @@ export default function ProcessDeploymentView({
 
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () => startInstance(versionId, mappedVariables),
+              fn: () => startInstance(spaceId, processId, versionId, mappedVariables),
 
               onSuccess: async (instanceId) => {
                 await refetch();

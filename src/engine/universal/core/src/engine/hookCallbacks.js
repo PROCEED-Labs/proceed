@@ -200,6 +200,7 @@ function saveIntermediateInstanceState(engine, instance) {
   if (!instance.isEnded() && engine.getInstance(instance.id)) {
     distribution.db.archiveInstance(engine.definitionId, instance.id, {
       ...engine.getInstanceInformation(instance.id),
+      extras: engine._instanceIdExtraInfoMapping[instance.id],
       isCurrentlyExecutedInBpmnEngine: true,
     });
   }

@@ -1,21 +1,12 @@
-import { useEnvironment, useSession } from '@/components/auth-can';
+import { useEnvironment } from '@/components/auth-can';
 import {
   DeployedProcessInfo,
   InstanceInfo,
   VersionInfo,
   getDeployments,
 } from '@/lib/engines/deployment';
-import {
-  pauseInstanceOnMachine,
-  resumeInstanceOnMachine,
-  startInstanceOnMachine,
-  stopInstanceOnMachine,
-} from '@/lib/engines/instances';
-import { Engine } from '@/lib/engines/machines';
-import { getStartFormFromMachine } from '@/lib/engines/tasklist';
 import useEngines from '@/lib/engines/use-engines';
-import { asyncFilter, asyncForEach, deepEquals } from '@/lib/helpers/javascriptHelpers';
-import { getErrorMessage, userError } from '@/lib/user-error';
+import { deepEquals } from '@/lib/helpers/javascriptHelpers';
 import { useQuery } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
@@ -89,7 +80,6 @@ const mergeDeployment = (
 
 function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) {
   const space = useEnvironment();
-  const { data: session } = useSession();
 
   const { data: engines } = useEngines(space, {
     key: [definitionId],
@@ -98,90 +88,6 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
       return deployments.some((d) => d.definitionId === definitionId);
     },
   });
-
-  const startInstance = async (versionId: string, variables: { [key: string]: any } = {}) => {
-    if (!engines?.length) return userError('No fitting engine found');
-
-    // TODO: in case of static deployment or different versions on different engines we will have
-    // to check if the engine can actually be used to start an instance
-    return await startInstanceOnMachine(definitionId, versionId, engines[0], variables, {
-      processInitiator: session?.user.id,
-      spaceIdOfProcessInitiator: space.spaceId,
-    });
-  };
-
-  const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-  async function changeInstanceState(
-    instanceId: string,
-    stateValidator: (state: InstanceInfo['instanceState']) => boolean,
-    stateChangeFunction: typeof resumeInstanceOnMachine,
-  ) {
-    if (!engines) return;
-    try {
-      const targetEngines = await asyncFilter(engines, async (engine: Engine) => {
-        const deployments = await getDeployments([engine]);
-
-        return deployments.some((deployment) => {
-          if (deployment.definitionId !== definitionId) return false;
-
-          const instance = deployment.instances.find(
-            (instance) => instance.processInstanceId === instanceId,
-          );
-          if (!instance) return false;
-
-          return stateValidator(instance.instanceState);
-        });
-      });
-
-      await asyncForEach(targetEngines, async (engine) => {
-        await stateChangeFunction(definitionId, instanceId, engine);
-      });
-    } catch (e) {
-      const message = getErrorMessage(e);
-      return userError(message);
-    }
-  }
-
-  async function resumeInstance(instanceId: string) {
-    // TODO: manage permissions for starting an instance
-    return await changeInstanceState(
-      instanceId,
-      (tokenStates) => tokenStates.some((tokenState) => tokenState === 'PAUSED'),
-      resumeInstanceOnMachine,
-    );
-  }
-
-  async function pauseInstance(instanceId: string) {
-    // TODO: manage permissions for starting an instance
-    return await changeInstanceState(
-      instanceId,
-      (tokenStates) =>
-        tokenStates.some((state) => activeStates.includes(state) && state !== 'PAUSED'),
-      pauseInstanceOnMachine,
-    );
-  }
-
-  async function stopInstance(instanceId: string) {
-    // TODO: manage permissions for starting an instance
-    return await changeInstanceState(
-      instanceId,
-      (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
-      stopInstanceOnMachine,
-    );
-  }
-
-  async function getStartForm(versionId: string) {
-    if (!engines?.length) return userError('No fitting engine found');
-
-    try {
-      // TODO: in case of static deployment or different versions on different engines we will have
-      // to check if the engine can actually be used to start an instance
-      return await getStartFormFromMachine(definitionId, versionId, engines[0]);
-    } catch (e) {
-      const message = getErrorMessage(e);
-      return userError(message);
-    }
-  }
 
   const queryFn = useCallback(async () => {
     if (engines?.length) {
@@ -212,7 +118,7 @@ function useDeployment(definitionId: string, initialData?: DeployedProcessInfo) 
     },
   });
 
-  return { ...query, startInstance, resumeInstance, pauseInstance, stopInstance, getStartForm };
+  return { ...query };
 }
 
 export default useDeployment;

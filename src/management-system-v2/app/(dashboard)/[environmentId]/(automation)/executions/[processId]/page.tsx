@@ -1,12 +1,21 @@
 import { Result, Skeleton } from 'antd';
 import Content from '@/components/content';
-import { getDeployment } from '@/lib/engines/server-actions';
+import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import ProcessDeploymentView from './process-deployment-view';
 import { Suspense } from 'react';
 import { getCurrentEnvironment } from '@/components/auth';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
   const deployment = await getDeployment(spaceId, processId);
+
+  if (isUserErrorResponse(deployment)) {
+    return (
+      <Content>
+        <Result status="404" title={deployment.error.message} />
+      </Content>
+    );
+  }
 
   if (!deployment) {
     return (

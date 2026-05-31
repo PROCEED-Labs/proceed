@@ -172,7 +172,7 @@ export function useExportProcess(
 
           // the timestamp does not matter here since it is overridden by the user being an owner of the process
           const url = await generateSharedViewerUrl(
-            { processId: definitionId, timestamp: 0 },
+            { processId: definitionId, timestamp: 0, spaceId },
             processVersion,
             selectedOptions as string[],
           );

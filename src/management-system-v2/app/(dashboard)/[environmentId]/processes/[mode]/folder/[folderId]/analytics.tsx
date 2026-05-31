@@ -15,6 +15,7 @@ import { useMemo, useRef, useState, useEffect } from 'react';
 import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
 import AnalyticsCard from '@/components/analytics-card';
+import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
 
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -22,6 +23,7 @@ interface ProcessAnalyticsCardsProps {
   items: AnalyticsItem[];
   allProcesses: AnalyticsItem[];
   isRootFolder?: boolean;
+  spaceId: string;
 }
 
 interface AnalyticsData {
@@ -41,10 +43,12 @@ const ProcessAnalyticsCards = ({
   items,
   allProcesses,
   isRootFolder = true,
+  spaceId,
 }: ProcessAnalyticsCardsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(false);
+  const [unversionedCount, setUnversionedCount] = useState(0);
 
   const checkScrollButtons = () => {
     if (scrollRef.current) {
@@ -57,6 +61,37 @@ const ProcessAnalyticsCards = ({
       setShowRightButton(scrollLeft < scrollWidth - clientWidth - 5);
     }
   };
+
+  // Calculate unversioned processes
+  useEffect(() => {
+    const calculateUnversioned = async () => {
+      const allProcessesGlobal = allProcesses.filter(
+        (item) => item.type === 'process',
+      ) as ProcessMetadata[];
+
+      const processesInFolder = isRootFolder
+        ? allProcessesGlobal
+        : (items.filter((item) => item.type === 'process') as ProcessMetadata[]);
+
+      let count = 0;
+
+      for (const p of processesInFolder) {
+        if (!p.versions || p.versions.length === 0) {
+          continue;
+        }
+
+        const result = await processUnchangedFromBasedOnVersion(p.id, spaceId);
+
+        if (result === undefined) {
+          count++;
+        }
+      }
+
+      setUnversionedCount(count);
+    };
+
+    calculateUnversioned();
+  }, [items, allProcesses, isRootFolder, spaceId]);
 
   useEffect(() => {
     // Check buttons on mount and when items change
@@ -108,32 +143,11 @@ const ProcessAnalyticsCards = ({
       (p) => p.lastEditedOn && new Date(p.lastEditedOn) > sevenDaysAgo,
     ).length;
 
-    // Count processes modified more than 2 minutes after last version
-    const unversionedInFolder = processesInFolder.filter((p) => {
-      if (!p.versions || p.versions.length === 0) {
-        return false;
-      }
-
-      const latestVersionDate = p.versions.reduce((latest, version) => {
-        const versionDate = new Date(version.createdOn);
-        return versionDate > latest ? versionDate : latest;
-      }, new Date(0));
-
-      if (p.lastEditedOn) {
-        const lastEditDate = new Date(p.lastEditedOn);
-        const timeDiffInMinutes =
-          (lastEditDate.getTime() - latestVersionDate.getTime()) / (1000 * 60);
-        return timeDiffInMinutes > 2;
-      }
-
-      return false;
-    }).length;
-
     return {
       processesInFolder: processesInFolderCount,
       releasedInFolder,
       draftsInFolder,
-      unversionedInFolder,
+      unversionedInFolder: unversionedCount,
       recentlyEditedInFolder,
       sharedInFolder,
       executableInFolder,
@@ -141,7 +155,7 @@ const ProcessAnalyticsCards = ({
       foldersInCurrentLevel: foldersInCurrent.length,
       totalProcessesGlobal,
     };
-  }, [items, allProcesses, isRootFolder]);
+  }, [items, allProcesses, isRootFolder, unversionedCount]);
 
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {

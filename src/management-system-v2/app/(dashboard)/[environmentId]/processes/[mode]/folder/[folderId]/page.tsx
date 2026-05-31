@@ -124,6 +124,7 @@ const ProcessesPage = async (props: {
             items={folderContentsFiltered}
             allProcesses={allProcessesRecursive}
             isRootFolder={isRootFolder}
+            spaceId={activeEnvironment.spaceId}
           />
           {/* Processes List */}
           <div style={{ overflow: 'auto', width: '100%' }}>

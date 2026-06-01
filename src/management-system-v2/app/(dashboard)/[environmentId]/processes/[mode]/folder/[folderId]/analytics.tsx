@@ -62,7 +62,7 @@ const ProcessAnalyticsCards = ({
     }
   };
 
-  // Calculate unversioned processes
+  // Calculate processes that need release (drafts + released with changes)
   useEffect(() => {
     const calculateUnversioned = async () => {
       const allProcessesGlobal = allProcesses.filter(
@@ -76,10 +76,13 @@ const ProcessAnalyticsCards = ({
       let count = 0;
 
       for (const p of processesInFolder) {
+        // increament for drafts
         if (!p.versions || p.versions.length === 0) {
+          count++;
           continue;
         }
 
+        // For released processes, check if they have unreleased changes
         const result = await processUnchangedFromBasedOnVersion(p.id, spaceId);
 
         if (result === undefined) {
@@ -264,11 +267,11 @@ const ProcessAnalyticsCards = ({
           title="Needs Release"
           icon={<EditOutlined />}
           mainValue={analytics.unversionedInFolder}
-          tooltip="Processes with unreleased changes. They were modified after their last version was created."
+          tooltip="Processes that need to be released. Includes drafts (never released) and released processes with unreleased changes."
           subtitle={
             isRootFolder
-              ? 'Number of Released Processes that someone updated'
-              : 'Number of Released Processes that someone updated (In this folder)'
+              ? 'Number of updated Processes that need release'
+              : 'Number of updated Processes that need release (In this folder)'
           }
         />
 

@@ -17,9 +17,18 @@ import { getRoles } from './db/iam/roles';
 import { truthyFilter } from '../typescript-utils';
 
 import { getAllAvailableEngines } from './engines';
+import { getProcessBPMN } from './processes';
+import { getElementById, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
+const getVersionBpmnObject = cache(
+  async (spaceId: string, definitionId: string, versionId: string, ability?: Ability) => {
+    const bpmn = await getProcessBPMN(definitionId, spaceId, versionId, ability);
+    if (isUserErrorResponse(bpmn)) return bpmn;
+    return toBpmnObject(bpmn);
+  },
+);
 const getSpaceInfo = cache(async (spaceId: string) => {
   return await getEnvironmentById(spaceId);
 });
@@ -88,8 +97,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   }
 
   let initiatorSpace: undefined | { id: string; name: string; isOrganization: boolean } = undefined;
-  if (instance.state.spaceIdOfProcessInitiator) {
-    const space = await getSpaceInfo(instance.state.spaceIdOfProcessInitiator);
+  if (state.spaceIdOfProcessInitiator) {
+    const space = await getSpaceInfo(state.spaceIdOfProcessInitiator);
     if (space) {
       if (space.isOrganization) {
         initiatorSpace = pick(space, ['id', 'name', 'isOrganization']);
@@ -98,6 +107,53 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
       }
     }
   }
+
+  const bpmnObject = await getVersionBpmnObject(
+    spaceId,
+    instance.state.processId,
+    instance.state.processVersion,
+    ability,
+  );
+
+  if (isUserErrorResponse(bpmnObject)) return bpmnObject;
+
+  const getPlannedCosts = (flowNodeId: string) => {
+    const flowNode = getElementById(bpmnObject, flowNodeId);
+    if (!flowNode) return;
+    const metaData = getMetaDataFromElement(flowNode);
+    return metaData.costsPlanned;
+  };
+
+  function accumulateCosts(
+    acc: { value: number; unit: string }[],
+    cost: { value: string; unit: string },
+  ) {
+    try {
+      const value = parseFloat(cost.value);
+      const sameUnit = acc.find((entry) => entry.unit === cost.unit);
+      if (sameUnit) {
+        sameUnit.value += value;
+      } else {
+        acc.push({ value, unit: cost.unit });
+      }
+    } catch (err) {}
+
+    return acc;
+  }
+
+  const fullExecution = [...state.log, ...state.tokens];
+  let executionCosts = fullExecution
+    .map((entry) => entry.costsRealSetByOwner)
+    .filter(truthyFilter)
+    .reduce(accumulateCosts, [] as { value: number; unit: string }[]);
+  let plannedCosts = fullExecution
+    .map((entry) => {
+      const flowNodeId =
+        'flowElementId' in entry ? entry.flowElementId : entry.currentFlowElementId;
+      return getPlannedCosts(flowNodeId);
+    })
+    .filter(truthyFilter)
+    .reduce(accumulateCosts, [] as { value: number; unit: string }[]);
 
   return {
     ...instance,
@@ -110,16 +166,20 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
       ...state,
       tokens: state.tokens.map((token) => ({
         ...token,
+        plannedCosts: getPlannedCosts(token.currentFlowElementId),
         actualOwner: mapUsers(token.actualOwner),
         performers: mapPerformers(token.performers),
       })),
       log: state.log.map((entry) => ({
         ...entry,
+        plannedCosts: getPlannedCosts(entry.flowElementId),
         actualOwner: mapUsers(entry.actualOwner),
         performers: mapPerformers(entry.performers),
       })),
       processInitiator: initiator,
       spaceOfProcessInitiator: initiatorSpace,
+      executionCosts,
+      plannedCosts: plannedCosts.length ? plannedCosts : undefined,
     },
   };
 }
@@ -179,6 +239,10 @@ export async function getInstances(spaceId: string, ability: Ability) {
       ability,
     ),
   );
+
+  const engineResWithError = extendedInstances.find(isUserErrorResponse);
+
+  if (!!engineResWithError) return engineResWithError;
 
   return extendedInstances as ExtendedInstance[];
 }

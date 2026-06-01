@@ -289,7 +289,7 @@ export type InstanceInfo = {
     currentFlowNodeProgress?: { value: number; manual: boolean };
     milestones: { [name: string]: number };
     priority?: number;
-    costsRealSetByOwner?: string;
+    costsRealSetByOwner?: { value: string; unit: string };
     performers?: {
       user: string[];
       roles: string[];
@@ -320,7 +320,7 @@ export type InstanceInfo = {
     };
     executionWasInterrupted?: true;
     priority?: number;
-    costsRealSetByOwner?: string;
+    costsRealSetByOwner?: { value: string; unit: string };
     performers?: {
       user: string[];
       roles: string[];

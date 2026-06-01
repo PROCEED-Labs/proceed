@@ -87,11 +87,12 @@ export default async function getExecutionInfo({
       // this information is not needed by/already known to the LLM
       ...omit(instance, ['managementSystemLocation', 'spaceIdOfProcessInitiator', 'userTasks']),
       tokens: instance.tokens.map((t) => ({
-        ...omit(t, ['actualOwner', 'performers']),
+        ...omit(t, ['actualOwner', 'performers', 'costsRealSetByOwner']),
         actualPerformers: t.actualOwner,
         potentialPerformers: t.performers,
         // extend with user readable information
         currentFlowElementName: idToName(t.currentFlowElementId),
+        stepExecutionCosts: t.costsRealSetByOwner,
       })),
       variables: Object.fromEntries(
         Object.entries(instance.variables).map(([key, info]) => [
@@ -107,11 +108,12 @@ export default async function getExecutionInfo({
         ]),
       ),
       log: instance.log.map((l) => ({
-        ...omit(l, ['actualOwner', 'performers']),
+        ...omit(l, ['actualOwner', 'performers', 'costsRealSetByOwner']),
         actualPerformers: l.actualOwner,
         potentialPerformers: l.performers,
         // add the name so the llm can show it instead of the id
         flowElementName: idToName(l.flowElementId),
+        stepExecutionCosts: l.costsRealSetByOwner,
       })),
       // remove execution information needed by the engine
       processVersion: versionInfo,

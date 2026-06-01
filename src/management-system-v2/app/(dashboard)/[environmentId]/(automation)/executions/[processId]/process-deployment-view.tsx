@@ -1,7 +1,7 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton, Avatar } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -13,6 +13,7 @@ import {
   PauseOutlined,
   StopOutlined,
   ExportOutlined,
+  WarningTwoTone,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -170,16 +171,17 @@ export default function ProcessDeploymentView({ processId }: { processId: string
       if (isUserErrorResponse(instance)) return null;
       if (!instance) return null;
 
-      return { ...instance.state, engineIds: instance.engineIds };
+      return { ...instance.state, engines: instance.engines };
     },
     enabled: !!selectedInstanceId,
     refetchInterval: 1000,
   });
 
-  const { instanceIsRunning, instanceIsPausing, instanceIsPaused } = useMemo(() => {
+  const { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline } = useMemo(() => {
     let instanceIsRunning = false;
     let instanceIsPausing = false;
     let instanceIsPaused = false;
+    let offline = false;
 
     const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
 
@@ -189,9 +191,11 @@ export default function ProcessDeploymentView({ processId }: { processId: string
       );
       instanceIsPausing = currentInstance.instanceState.some((state) => state === 'PAUSING');
       instanceIsPaused = currentInstance.instanceState.some((state) => state === 'PAUSED');
+
+      offline = currentInstance.engines.some((e) => e.online === false);
     }
 
-    return { instanceIsRunning, instanceIsPausing, instanceIsPaused };
+    return { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline };
   }, [currentInstance]);
 
   const {
@@ -309,6 +313,21 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 }))}
                 placeholder="Select an instance"
               />
+
+              {offline && (
+                <Tooltip title="Some of the engines this process is executed on are not reachable!">
+                  <Avatar
+                    icon={
+                      <WarningTwoTone
+                        twoToneColor="orange"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    }
+                    size={40}
+                    style={{ backgroundColor: 'inherit' }}
+                  />
+                </Tooltip>
+              )}
 
               <Tooltip title="Filter by version">
                 <Dropdown
@@ -490,6 +509,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       <Button
                         className={styles.PlayIcon}
                         icon={<CaretRightOutlined />}
+                        disabled={offline}
                         loading={resumingInstance}
                         onClick={async () => {
                           setResumingInstance(true);
@@ -509,7 +529,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                         className={styles.PauseIcon}
                         icon={<PauseOutlined />}
                         loading={pausingInstance}
-                        disabled={!instanceIsRunning}
+                        disabled={offline || !instanceIsRunning}
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
@@ -528,7 +548,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       className={styles.StopIcon}
                       icon={<StopOutlined />}
                       loading={stoppingInstance}
-                      disabled={!instanceIsRunning}
+                      disabled={offline || !instanceIsRunning}
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({

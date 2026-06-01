@@ -4,7 +4,7 @@ import db from '@/lib/data/db';
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { InstanceInput, InstanceInputSchema } from '../instance-schema';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
@@ -15,6 +15,8 @@ import { getEnvironmentById } from './db/iam/environments';
 import { Role } from './role-schema';
 import { getRoles } from './db/iam/roles';
 import { truthyFilter } from '../typescript-utils';
+
+import { getAllAvailableEngines } from './engines';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
@@ -38,9 +40,12 @@ const getKnownRoles = cache(async (spaceId: string) => {
   return knownRoles;
 });
 
-export async function extendInstance(spaceId: string, instance: StoredInstance) {
+async function extendInstance(spaceId: string, instance: StoredInstance, ability?: Ability) {
   const knownUsers = await getKnownUsers(spaceId);
   const knownRoles = await getKnownRoles(spaceId);
+
+  const reachableEngines = await getAllAvailableEngines(spaceId, ability);
+  if (isUserErrorResponse(reachableEngines)) return reachableEngines;
 
   const mapUser = (userId: string) => {
     const user = knownUsers[userId];
@@ -97,6 +102,10 @@ export async function extendInstance(spaceId: string, instance: StoredInstance) 
   return {
     ...instance,
     initiator,
+    engines: instance.engineIds.map((id) => ({
+      id,
+      online: reachableEngines.some((e) => e.id === id),
+    })),
     state: {
       ...state,
       tokens: state.tokens.map((token) => ({
@@ -131,16 +140,18 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   if (!instanceInfo) return null;
 
-  return extendInstance(spaceId, {
-    ...instanceInfo,
-    state: instanceInfo.state as InstanceInfo,
-    versionId: instanceInfo.deployment.versionId,
-  });
+  return extendInstance(
+    spaceId,
+    {
+      ...instanceInfo,
+      state: instanceInfo.state as InstanceInfo,
+      versionId: instanceInfo.deployment.versionId,
+    },
+    ability,
+  );
 }
 
-export async function getInstances(spaceId: string, ability?: Ability) {
-  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
-
+export async function getInstances(spaceId: string, ability: Ability) {
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
@@ -158,11 +169,15 @@ export async function getInstances(spaceId: string, ability?: Ability) {
   });
 
   const extendedInstances = await asyncMap(instances, async (i) =>
-    extendInstance(spaceId, {
-      ...i,
-      state: i.state as InstanceInfo,
-      versionId: i.deployment.versionId,
-    }),
+    extendInstance(
+      spaceId,
+      {
+        ...i,
+        state: i.state as InstanceInfo,
+        versionId: i.deployment.versionId,
+      },
+      ability,
+    ),
   );
 
   return extendedInstances as ExtendedInstance[];

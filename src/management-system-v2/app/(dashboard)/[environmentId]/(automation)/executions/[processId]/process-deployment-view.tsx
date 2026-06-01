@@ -403,7 +403,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                             );
 
                             if (!session)
-                              throw new Error('Unknown user tries to start an instance!');
+                              return userError('Unknown user tries to start an instance!');
 
                             const globalVars = await getGlobalVariablesForHTML(
                               spaceId,
@@ -643,29 +643,29 @@ export default function ProcessDeploymentView({ processId }: { processId: string
         <StartFormModal
           html={startForm}
           onSubmit={async (submitVariables) => {
-            const deployment = getLatestDeployment(deployments);
-
-            if (!deployment) {
-              throw new Error('The current process does not seem to be deployed.');
-            }
-
-            const mappedVariables: Record<string, { value: any }> = {};
-
-            // set the values of variables to the ones coming from the start form
-            Object.entries(submitVariables).forEach(
-              ([key, value]) => (mappedVariables[key] = { value }),
-            );
-
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () =>
-                startInstance(
+              fn: async () => {
+                const deployment = getLatestDeployment(deployments);
+
+                if (!deployment) {
+                  return userError('The current process does not seem to be deployed.');
+                }
+
+                const mappedVariables: Record<string, { value: any }> = {};
+
+                // set the values of variables to the ones coming from the start form
+                Object.entries(submitVariables).forEach(
+                  ([key, value]) => (mappedVariables[key] = { value }),
+                );
+
+                return startInstance(
                   spaceId,
                   deployment.processId,
                   deployment.version.id,
                   mappedVariables,
-                ),
-
+                );
+              },
               onSuccess: async (instanceId) => {
                 await refetchDeployments();
                 setSelectedInstanceId(instanceId);

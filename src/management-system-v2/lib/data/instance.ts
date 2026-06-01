@@ -8,13 +8,90 @@ import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
-import { asyncMap } from '../helpers/javascriptHelpers';
+import { asyncMap, pick } from '../helpers/javascriptHelpers';
+import { cache } from 'react';
+import { getSpaceUsers } from './db/iam/users';
+import { getEnvironmentById } from './db/iam/environments';
+import { Role } from './role-schema';
+import { getRoles } from './db/iam/roles';
+import { truthyFilter } from '../typescript-utils';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
-export async function extendInstanceInfo(instanceInfo: StoredInstance) {
+const getSpaceInfo = cache(async (spaceId: string) => {
+  return await getEnvironmentById(spaceId);
+});
+const getKnownUsers = cache(async (spaceId: string) => {
+  const space = await getSpaceInfo(spaceId);
+  const users = await getSpaceUsers(spaceId, space.isOrganization);
+  return Object.fromEntries(users.map((user) => [user.id, user]));
+});
+const getKnownRoles = cache(async (spaceId: string) => {
+  let knownRoles: Record<string, Role> = {};
+
+  const space = await getSpaceInfo(spaceId);
+  if (space.isOrganization) {
+    const roles = await getRoles(spaceId);
+    knownRoles = Object.fromEntries(roles.map((role) => [role.id, role]));
+  }
+
+  return knownRoles;
+});
+
+export async function extendInstance(spaceId: string, instance: StoredInstance) {
+  const knownUsers = await getKnownUsers(spaceId);
+  const knownRoles = await getKnownRoles(spaceId);
+
+  const mapUser = (userId: string) => {
+    const user = knownUsers[userId];
+    if (!user) return undefined;
+    return {
+      id: user.id,
+      isGuest: user.isGuest,
+      username: user.username,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      fullName: `${user.firstName} ${user.lastName}`.trim(),
+    };
+  };
+
+  const mapUsers = (ownerIds?: string[]) => {
+    return ownerIds?.map(mapUser).filter(truthyFilter);
+  };
+
+  const mapPerformers = (performers?: InstanceInfo['tokens'][number]['performers']) => {
+    if (!performers) return undefined;
+
+    return {
+      user: mapUsers(performers.user),
+      roles: performers.roles
+        .map((roleId) => {
+          const role = knownRoles[roleId];
+          if (!role) return undefined;
+
+          return pick(role, ['id', 'name', 'description']);
+        })
+        .filter(truthyFilter),
+    };
+  };
+
+  const { state } = instance;
+
   return {
-    ...instanceInfo,
+    ...instance,
+    state: {
+      ...state,
+      tokens: state.tokens.map((token) => ({
+        ...token,
+        actualOwner: mapUsers(token.actualOwner),
+        performers: mapPerformers(token.performers),
+      })),
+      log: state.log.map((entry) => ({
+        ...entry,
+        actualOwner: mapUsers(entry.actualOwner),
+        performers: mapPerformers(entry.performers),
+      })),
+    },
   };
 }
 
@@ -37,7 +114,7 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   if (!instanceInfo) return null;
 
-  return extendInstanceInfo({
+  return extendInstance(spaceId, {
     ...instanceInfo,
     state: instanceInfo.state as InstanceInfo,
     versionId: instanceInfo.deployment.versionId,
@@ -63,17 +140,13 @@ export async function getInstances(spaceId: string, ability?: Ability) {
     include: { deployment: { select: { versionId: true } } },
   });
 
-  const extendedInstances = (await asyncMap(instances, async (i) =>
-    extendInstanceInfo({
+  const extendedInstances = await asyncMap(instances, async (i) =>
+    extendInstance(spaceId, {
       ...i,
       state: i.state as InstanceInfo,
       versionId: i.deployment.versionId,
     }),
-  )) as ExtendedInstance[];
-
-  const instanceWithError = extendedInstances.find(isUserErrorResponse);
-
-  if (instanceWithError) return instanceWithError;
+  );
 
   return extendedInstances as ExtendedInstance[];
 }

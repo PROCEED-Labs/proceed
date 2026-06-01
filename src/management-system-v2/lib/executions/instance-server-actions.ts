@@ -421,16 +421,15 @@ export async function exportInstanceData(
               outgoing?: any;
               incoming?: any;
             };
-            const ActualPerformerId = eventEntry.actualOwner?.[0];
-            const user = spaceUsers.find((user) => user.id == ActualPerformerId);
+            const ActualPerformer = eventEntry.actualOwner?.[0];
             return {
               ...instance,
               ...eventEntry,
               ProcessStepName: eventElement?.name,
               ProcessStepType: eventElement?.$type?.split(':')[1],
-              ActualPerformerId,
-              ActualPerformerName: user ? `${user.firstName} ${user.lastName}` : undefined,
-              ActualPerformerUsername: user ? user.username : undefined,
+              ActualPerformerId: ActualPerformer?.id,
+              ActualPerformerName: ActualPerformer?.fullName,
+              ActualPerformerUsername: ActualPerformer?.username,
               Log: JSON.stringify(eventEntry.variableChanges),
               PreviousProcessStepId: eventElement.incoming?.map((flow: any) => flow.sourceRef.id),
             };

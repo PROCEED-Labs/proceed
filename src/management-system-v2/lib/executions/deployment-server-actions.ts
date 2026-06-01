@@ -408,7 +408,7 @@ export async function refetchDeployments() {
       // allow the next update to happen after the configured interval has elapsed
       global.isRefetchingDeployments = false;
       global.lastDeploymentsRefetchTime = Date.now();
-      resolve(undefined);
+      resolve({ success: true });
     });
   }
 

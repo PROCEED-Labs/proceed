@@ -4,7 +4,7 @@ import db from '@/lib/data/db';
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { InstanceInput, InstanceInputSchema } from '../instance-schema';
-import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
+import { UserErrorType, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
@@ -46,11 +46,7 @@ export async function extendInstance(spaceId: string, instance: StoredInstance) 
     const user = knownUsers[userId];
     if (!user) return undefined;
     return {
-      id: user.id,
-      isGuest: user.isGuest,
-      username: user.username,
-      firstName: user.firstName,
-      lastName: user.lastName,
+      ...pick(user, ['id', 'isGuest', 'username', 'firstName', 'lastName']),
       fullName: `${user.firstName} ${user.lastName}`.trim(),
     };
   };
@@ -77,8 +73,30 @@ export async function extendInstance(spaceId: string, instance: StoredInstance) 
 
   const { state } = instance;
 
+  let initiator: 'Automatic' | 'Unknown' | 'Guest' | NonNullable<ReturnType<typeof mapUser>> =
+    'Automatic';
+  if (instance.initiatorId) {
+    const i = mapUser(instance.initiatorId);
+    if (!i) initiator = 'Unknown';
+    else if (i.isGuest) initiator = 'Guest';
+    else initiator = i;
+  }
+
+  let initiatorSpace: undefined | { id: string; name: string; isOrganization: boolean } = undefined;
+  if (instance.state.spaceIdOfProcessInitiator) {
+    const space = await getSpaceInfo(instance.state.spaceIdOfProcessInitiator);
+    if (space) {
+      if (space.isOrganization) {
+        initiatorSpace = pick(space, ['id', 'name', 'isOrganization']);
+      } else {
+        initiatorSpace = { id: space.id, name: 'Personal Space', isOrganization: false };
+      }
+    }
+  }
+
   return {
     ...instance,
+    initiator,
     state: {
       ...state,
       tokens: state.tokens.map((token) => ({
@@ -91,14 +109,13 @@ export async function extendInstance(spaceId: string, instance: StoredInstance) 
         actualOwner: mapUsers(entry.actualOwner),
         performers: mapPerformers(entry.performers),
       })),
+      processInitiator: initiator,
+      spaceOfProcessInitiator: initiatorSpace,
     },
   };
 }
 
-export type ExtendedInstance = Exclude<
-  Awaited<ReturnType<typeof extendInstanceInfo>>,
-  { error: any }
->;
+export type ExtendedInstance = Exclude<Awaited<ReturnType<typeof extendInstance>>, { error: any }>;
 export type ExtendedInstanceInfo = ExtendedInstance['state'];
 
 export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {

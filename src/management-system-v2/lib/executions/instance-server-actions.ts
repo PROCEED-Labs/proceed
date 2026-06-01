@@ -31,10 +31,6 @@ import {
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { getUsersInSpace } from '../data/db/iam/memberships';
-import { getEnvironmentById } from '../data/db/iam/environments';
-import { User } from '@prisma/client';
-import { Environment } from '../data/environment-schema';
 import { getProcessVersion } from '../data/db/process';
 
 export async function getProcessStartForm(
@@ -303,8 +299,6 @@ type VersionCache = Record<
 
 export async function exportInstanceCSV(
   spaceId: string,
-  spaceUsers: User[],
-  space: Environment,
   instanceId: string,
   versionCache: VersionCache,
 ) {
@@ -329,9 +323,29 @@ export async function exportInstanceCSV(
 
   const correspondingVersion = versionCache[instance.versionId];
   const { bpmnObj } = correspondingVersion;
-  const initiator = spaceUsers.find((user) => user.id == instance.initiatorId);
   const definitionInfos = await getDefinitionsInfos(bpmnObj);
-  console.log(correspondingVersion, new Date());
+
+  const { initiator } = instance;
+  let initiatorInfo = {
+    ProcessInstanceInitiatorId: '',
+    ProcessInstanceInitiatorFullName: 'Unknown',
+    ProcessInstanceInitiatorUsername: 'Unknown',
+  };
+  if (initiator) {
+    if (typeof initiator === 'string') {
+      initiatorInfo.ProcessInstanceInitiatorId =
+        initiatorInfo.ProcessInstanceInitiatorUsername =
+        initiatorInfo.ProcessInstanceInitiatorFullName =
+          initiator;
+    } else {
+      (initiatorInfo.ProcessInstanceInitiatorId = initiator.id),
+        (initiatorInfo.ProcessInstanceInitiatorFullName = initiator.fullName);
+      initiatorInfo.ProcessInstanceInitiatorUsername = initiator.username || '';
+    }
+  }
+
+  const initiatorSpace = instance.state.spaceOfProcessInitiator;
+
   return {
     ...instance.state,
     ProcessName: definitionInfos.name,
@@ -340,11 +354,8 @@ export async function exportInstanceCSV(
     ProcessVersionDescription: correspondingVersion.versionDescription,
     ProcessVersionCreatedOn: new Date(correspondingVersion.createdOn).getTime(),
     ProcessVersionBasedOn: correspondingVersion.basedOnVersion,
-    ProcessInstanceInitiatorFullName:
-      initiator && !initiator.isGuest ? `${initiator.firstName} ${initiator.lastName}` : 'Guest',
-    ProcessInstanceInitiatorUsername:
-      initiator && !initiator.isGuest ? initiator.username : 'Guest',
-    ProcessInstanceInitiatorSpaceName: space.isOrganization ? space.name : 'no organization',
+    ...initiatorInfo,
+    ProcessInstanceInitiatorSpaceName: initiatorSpace?.name || 'Unknown',
     ProcessEngineId: instance.state.log[0].machine.id,
     correspondingVersion,
   };
@@ -387,9 +398,6 @@ export async function exportInstanceData(
     Log: null,
   };
 
-  const spaceUsers = await getUsersInSpace(spaceId);
-  const space = await getEnvironmentById(spaceId);
-
   let selectedInstances;
   if (instanceId) {
     selectedInstances = [instanceId];
@@ -404,7 +412,7 @@ export async function exportInstanceData(
   // pasting metadata from VersionInfo
   const instancesWithVersionData = (
     await asyncMap(selectedInstances, async (instanceId) =>
-      exportInstanceCSV(spaceId, spaceUsers, space, instanceId, versionCache),
+      exportInstanceCSV(spaceId, instanceId, versionCache),
     )
   ).filter(truthyFilter);
 
@@ -443,7 +451,6 @@ export async function exportInstanceData(
     processId: 'ProcessId',
     processVersion: 'ProcessVersionId',
     processInstanceId: 'ProcessInstanceId',
-    processInitiator: 'ProcessInstanceInitiatorId',
     spaceIdOfProcessInitiator: 'ProcessInstanceInitiatorSpaceId',
     globalStartTime: 'InstanceStartTime',
     flowElementId: 'ProcessStepId',

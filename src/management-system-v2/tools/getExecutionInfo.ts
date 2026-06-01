@@ -2,9 +2,7 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { omit, pick } from '@/lib/helpers/javascriptHelpers';
-import { getRoles } from '@/lib/data/roles';
-import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
+import { omit } from '@/lib/helpers/javascriptHelpers';
 import {
   getDefinitionsVersionInformation,
   getElementById,
@@ -65,25 +63,6 @@ export default async function getExecutionInfo({
 
     const instance = storedInstance.state;
 
-    const usersWithRoles = await getFullMembersWithRoles(environmentId, ability);
-
-    let roles = await getRoles(environmentId, ability);
-    if (isUserErrorResponse(roles)) roles = [];
-
-    const users = Object.fromEntries(
-      usersWithRoles.map((user) => [
-        user.id,
-        {
-          ...pick(user, ['id', 'username', 'firstName', 'lastName', 'email']),
-          roles: user.roles.map((r) => pick(r, ['id', 'name', 'description'])),
-        },
-      ]),
-    );
-
-    const idToUser = (id: string) => {
-      if (id in users) return { type: 'user', ...users[id] };
-    };
-
     const versionBpmn = await getProcessBPMN(
       instance.processId,
       environmentId,
@@ -107,7 +86,6 @@ export default async function getExecutionInfo({
     const mappedInstance = {
       // this information is not needed by/already known to the LLM
       ...omit(instance, ['managementSystemLocation', 'spaceIdOfProcessInitiator', 'userTasks']),
-      processInitiator: instance.processInitiator ? idToUser(instance.processInitiator) : undefined,
       tokens: instance.tokens.map((t) => ({
         ...omit(t, ['actualOwner', 'performers']),
         actualPerformers: t.actualOwner,

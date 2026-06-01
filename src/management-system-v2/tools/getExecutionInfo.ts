@@ -11,8 +11,7 @@ import {
   getElementById,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
-import { InstanceInfo } from '@/lib/engines/deployment';
-import { getInstance } from '@/lib/data/instance';
+import { ExtendedInstanceInfo, getInstance } from '@/lib/data/instance';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
@@ -114,7 +113,7 @@ export default async function getExecutionInfo({
     const transformPerformerInfo = <
       T extends {
         actualOwner?: string[];
-        performers?: InstanceInfo['tokens'][number]['performers'];
+        performers?: ExtendedInstanceInfo['tokens'][number]['performers'];
       },
     >(
       input: T,

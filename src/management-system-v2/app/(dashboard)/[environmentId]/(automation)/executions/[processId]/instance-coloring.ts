@@ -1,7 +1,7 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper/src/getters';
 import { getPlanDelays, getTimeInfo } from './instance-helpers';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export const colorOptions = [
   {
@@ -69,7 +69,7 @@ export function progressToColor(
 
 export function flowElementsStyling(
   bpmnViewer: BPMNCanvasRef,
-  instance: InstanceInfo,
+  instance: ExtendedInstanceInfo,
   colors: ColorOptions,
 ) {
   const instanceFlowElements = bpmnViewer.getAllElements();

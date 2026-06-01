@@ -1,5 +1,5 @@
 import { StoredDeployment } from '@/lib/data/deployment';
-import { InstanceInfo } from '@/lib/engines/deployment';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -47,10 +47,10 @@ export function getTimeInfo({
 }: {
   element: ElementLike;
   /** Log entry for element in instance information */
-  logInfo?: InstanceInfo['log'][number];
+  logInfo?: ExtendedInstanceInfo['log'][number];
   /** Token where currentFlowElementId is the element   */
-  token?: InstanceInfo['tokens'][number];
-  instance?: InstanceInfo;
+  token?: ExtendedInstanceInfo['tokens'][number];
+  instance?: ExtendedInstanceInfo;
 }) {
   if (!instance) return { start: undefined, end: undefined, duration: undefined };
 
@@ -133,7 +133,7 @@ export function getPlanDelays({
   return { plan, delays };
 }
 
-export function getVersionInstances(instances: InstanceInfo[], version?: string) {
+export function getVersionInstances(instances: ExtendedInstanceInfo[], version?: string) {
   if (!version) return instances;
   return instances.filter((instance) => instance.processVersion === version);
 }
@@ -150,7 +150,7 @@ export function getLatestDeployment(deployments: StoredDeployment[]) {
   );
 }
 
-export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
+export function getYoungestInstance<T extends ExtendedInstanceInfo[]>(instances: T) {
   if (instances.length === 0) return undefined;
 
   let firstInstance = 0;

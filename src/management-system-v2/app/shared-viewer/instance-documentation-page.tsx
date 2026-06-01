@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Spin } from 'antd';
 import { getProcess } from '@/lib/data/db/process';
 import { Environment } from '@/lib/data/environment-schema';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { instanceSettings } from './settings-modal';
 import {
   ImportsInfo,
@@ -17,6 +16,7 @@ import InstanceDocumentContent from './instance-document-content';
 import { useProcessHierarchy } from './use-process-hierarchy';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 const defaultInstanceSettingValues = instanceSettings.map(({ value }) => value);
 
@@ -26,7 +26,7 @@ type InstanceDocumentationPageProps = {
   userWorkspaces: Environment[];
   defaultSettings?: string[];
   availableImports: ImportsInfo;
-  instance: InstanceInfo;
+  instance: ExtendedInstanceInfo;
   coloring: ColorOptions;
 };
 

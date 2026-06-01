@@ -4,12 +4,25 @@ import db from '@/lib/data/db';
 
 import { getCurrentEnvironment } from '@/components/auth';
 import { InstanceInput, InstanceInputSchema } from '../instance-schema';
-import { UserErrorType, userError } from '../user-error';
+import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
+import { asyncMap } from '../helpers/javascriptHelpers';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+
+export async function extendInstanceInfo(instanceInfo: StoredInstance) {
+  return {
+    ...instanceInfo,
+  };
+}
+
+export type ExtendedInstance = Exclude<
+  Awaited<ReturnType<typeof extendInstanceInfo>>,
+  { error: any }
+>;
+export type ExtendedInstanceInfo = ExtendedInstance['state'];
 
 export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
@@ -24,11 +37,11 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   if (!instanceInfo) return null;
 
-  return {
+  return extendInstanceInfo({
     ...instanceInfo,
     state: instanceInfo.state as InstanceInfo,
     versionId: instanceInfo.deployment.versionId,
-  } as StoredInstance;
+  });
 }
 
 export async function getInstances(spaceId: string, ability?: Ability) {
@@ -50,11 +63,19 @@ export async function getInstances(spaceId: string, ability?: Ability) {
     include: { deployment: { select: { versionId: true } } },
   });
 
-  return instances.map((i) => ({
-    ...i,
-    state: i.state as InstanceInfo,
-    versionId: i.deployment.versionId,
-  })) as StoredInstance[];
+  const extendedInstances = (await asyncMap(instances, async (i) =>
+    extendInstanceInfo({
+      ...i,
+      state: i.state as InstanceInfo,
+      versionId: i.deployment.versionId,
+    }),
+  )) as ExtendedInstance[];
+
+  const instanceWithError = extendedInstances.find(isUserErrorResponse);
+
+  if (instanceWithError) return instanceWithError;
+
+  return extendedInstances as ExtendedInstance[];
 }
 
 export async function addInstance(

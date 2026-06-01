@@ -6,8 +6,8 @@ import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export function ElementStatus({
   processId,
@@ -16,7 +16,7 @@ export function ElementStatus({
 }: {
   processId: string;
   element: ElementLike;
-  instance?: InstanceInfo;
+  instance?: ExtendedInstanceInfo;
 }) {
   const statusEntries: ReactNode[][] = [];
 

@@ -445,6 +445,10 @@ model ProcessDeployment {
   deployTime    DateTime   @default(now())
   removeTime    DateTime?
 
+  // marks a deployment for automatic removal if the deployment could not be removed from the related engines at the time a user tried to delete it
+  // when the engine becomes available again the deployment should be removed from it and then the "removeTime" entry should be set
+  toRemove      Boolean    @default(false)
+
   // This is not the "Engine" which we store here in the DB but the actual engine the process is deployed on
   // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
   engineId      String

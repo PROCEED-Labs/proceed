@@ -2,13 +2,19 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDeployment } from '@/lib/executions/deployment-server-actions';
 import { omit, pick } from '@/lib/helpers/javascriptHelpers';
 import { getRoles } from '@/lib/data/roles';
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
-import { getElementById, toBpmnObject } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsVersionInformation,
+  getElementById,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import { InstanceInfo } from '@/lib/engines/deployment';
+import { getInstance } from '@/lib/data/instance';
+import { getProcessBPMN } from '@/lib/data/processes';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -53,17 +59,13 @@ export default async function getExecutionInfo({
     if (!accessible)
       return 'Error: The user cannot access execution information in this space. This might be due to a space wide setting or due to the user not having the permission to view execution information.';
 
-    const [definitionId] = instanceId.split('-_');
+    // make sure that the data for the instance is not stale
+    await refetchDeployments();
+    const storedInstance = await getInstance(environmentId, instanceId, ability);
+    if (isUserErrorResponse(storedInstance)) return storedInstance;
+    if (!storedInstance) return 'Could not find an execution with the given id.';
 
-    const deployment = await getDeployment(environmentId, definitionId, ability);
-
-    if (isUserErrorResponse(deployment)) return deployment;
-
-    if (!deployment) return 'Could not find an execution with the given id.';
-
-    const instance = deployment.instances.find((i) => i.processInstanceId === instanceId);
-
-    if (!instance) return 'Could not find an execution with the given id.';
+    const instance = storedInstance.state;
 
     const usersWithRoles = await getFullMembersWithRoles(environmentId, ability);
 
@@ -91,14 +93,23 @@ export default async function getExecutionInfo({
       if (id in roleMap) return { type: 'role', ...roleMap[id] };
     };
 
-    const version = deployment.versions.find((v) => v.versionId === instance.processVersion);
+    const versionBpmn = await getProcessBPMN(
+      instance.processId,
+      environmentId,
+      instance.processVersion,
+      ability,
+    );
 
-    const bpmnObj = version ? await toBpmnObject(version.bpmn) : undefined;
+    if (isUserErrorResponse(versionBpmn)) return versionBpmn;
+
+    const bpmnObj = await toBpmnObject(versionBpmn);
     const idToName = (id: string) => {
       if (bpmnObj) {
         return (getElementById(bpmnObj, id) as any)?.name;
       }
     };
+
+    const versionInfo = await getDefinitionsVersionInformation(bpmnObj);
 
     const transformPerformerInfo = <
       T extends {
@@ -121,8 +132,6 @@ export default async function getExecutionInfo({
           : undefined,
       };
     };
-
-    console.log(JSON.stringify(instance, null, 2));
 
     // extend the instance information object with data that might be useful to the user and the LLM
     // the most significant changes are mapping from user/role ids to actual user/role information
@@ -162,7 +171,7 @@ export default async function getExecutionInfo({
           : undefined,
       })),
       // remove execution information needed by the engine
-      processVersion: version ? omit(version, ['bpmn', 'needs']) : instance.processVersion,
+      processVersion: versionInfo,
       userTasks: instance.userTasks?.map((uT) => ({
         // remove execution information needed by the engine
         ...omit(transformPerformerInfo(uT), [

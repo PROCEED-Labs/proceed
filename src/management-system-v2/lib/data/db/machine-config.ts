@@ -47,9 +47,9 @@ import {
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { getUserById } from './iam/users';
-import { getMembers, getUsersInSpace } from './iam/memberships';
+import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
 import { truthyFilter } from '@/lib/typescript-utils';
 import {
@@ -61,9 +61,8 @@ import {
   userInfoMap,
 } from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
-import { getRoles, getUserRoles } from '../roles';
+import { getUserRoles } from '../roles';
 import { getRolesWithMembers } from './iam/roles';
-import { getEnvironmentById } from './iam/environments';
 
 const IntSchema = z.number().int();
 type Int = z.infer<typeof IntSchema>;
@@ -4964,12 +4963,4 @@ async function checkSiblingNames(siblings: string[], name: string) {
 // fetch helpers TO BE REMOVED IN THE FUTURE
 export async function getUser(userId: string) {
   return await getUserById(userId);
-}
-
-export async function getSpaceUsers(envId: string) {
-  return await getUsersInSpace(envId);
-}
-
-export async function getEnv(envId: string) {
-  return await getEnvironmentById(envId);
 }

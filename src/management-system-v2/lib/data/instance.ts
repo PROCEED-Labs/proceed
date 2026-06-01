@@ -6,20 +6,55 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { InstanceInput, InstanceInputSchema } from '../instance-schema';
 import { UserErrorType, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
+import Ability from '../ability/abilityHelper';
+import { ProcessInstance } from '@prisma/client';
 
-export async function getInstance(spaceId: string, instanceId: string) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+
+export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   const instanceInfo = await db.processInstance.findUnique({
     where: { id: instanceId },
+    include: { deployment: { select: { versionId: true } } },
   });
 
   if (!instanceInfo) return null;
 
-  return instanceInfo as Omit<typeof instanceInfo, 'state'> & { state: InstanceInfo };
+  return {
+    ...instanceInfo,
+    state: instanceInfo.state as InstanceInfo,
+    versionId: instanceInfo.deployment.versionId,
+  } as StoredInstance;
+}
+
+export async function getInstances(spaceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const instances = await db.processInstance.findMany({
+    where: {
+      deployment: {
+        AND: [
+          { version: { process: { environmentId: spaceId } } },
+          { removeTime: null },
+          { toRemove: false },
+        ],
+      },
+    },
+    include: { deployment: { select: { versionId: true } } },
+  });
+
+  return instances.map((i) => ({
+    ...i,
+    state: i.state as InstanceInfo,
+    versionId: i.deployment.versionId,
+  })) as StoredInstance[];
 }
 
 export async function addInstance(

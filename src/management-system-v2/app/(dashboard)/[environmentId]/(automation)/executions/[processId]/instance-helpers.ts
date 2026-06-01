@@ -1,16 +1,7 @@
-import { getEnv, getSpaceUsers, getUser } from '@/lib/data/db/machine-config';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { truthyFilter } from '@/lib/typescript-utils';
-import {
-  getDefinitionsInfos,
-  getDefinitionsName,
-  getElementById,
-  toBpmnObject,
-} from '@proceed/bpmn-helper';
+import { StoredDeployment } from '@/lib/data/deployment';
+import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import jsonToCsvExport from 'json-to-csv-export';
 
 export type ElementStatus =
   | 'PAUSED'
@@ -142,23 +133,21 @@ export function getPlanDelays({
   return { plan, delays };
 }
 
-export function getVersionInstances(process: DeployedProcessInfo, version?: string) {
-  const instances = process.instances;
-
+export function getVersionInstances(instances: InstanceInfo[], version?: string) {
   if (!version) return instances;
   return instances.filter((instance) => instance.processVersion === version);
 }
 
-export function getLatestDeployment(process: DeployedProcessInfo) {
-  let latest = process.versions.length - 1;
-  for (let i = process.versions.length - 2; i >= 0; i--) {
-    // TODO: this is actually the last version that was deployed since there is no version creation
-    // information stored on the engine (do we keep this, store the creation time on the engine or
-    // parse the creation time from the bpmn?)
-    if (process.versions[i].deploymentDate > process.versions[latest].deploymentDate) latest = i;
-  }
-
-  return process.versions[latest];
+export function getLatestDeployment(deployments: StoredDeployment[]) {
+  return deployments.reduce(
+    (latest, curr) => {
+      if (!latest || latest.deployTime.getTime() > curr.deployTime.getTime()) {
+        return curr;
+      }
+      return latest;
+    },
+    undefined as undefined | StoredDeployment,
+  );
 }
 
 export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
@@ -169,152 +158,4 @@ export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
     if (instances[i].globalStartTime < instances[firstInstance].globalStartTime) firstInstance = i;
   }
   return instances[firstInstance];
-}
-
-export async function exportInstanceData(
-  selectedInstances: (InstanceInfo | undefined)[],
-  versionInfo: VersionInfo[],
-  spaceId: string,
-) {
-  const objectOrderTemplate = {
-    ProcessId: null,
-    ProcessName: null,
-    ProcessShortName: null,
-    ProcessVersionId: null,
-    ProcessVersionName: null,
-    ProcessVersionDescription: null,
-    ProcessVersionCreatedOn: null,
-    ProcessVersionBasedOn: null,
-    ProcessInstanceId: null,
-    ProcessInstanceInitiatorId: null,
-    ProcessInstanceInitiatorFullName: null,
-    ProcessInstanceInitiatorUsername: null,
-    ProcessInstanceInitiatorSpaceId: null,
-    ProcessInstanceInitiatorSpaceName: null,
-    InstanceStartTime: null,
-    ProcessStepId: null,
-    ProcessStepName: null,
-    ProcessStepType: null,
-    ProcessStepStatus: null,
-    ProcessStepStartTime: null,
-    ProcessStepEndTime: null,
-    PreviousProcessStepId: null,
-    ProcessStepTokenId: null,
-    ActualPerformerId: null,
-    ActualPerformerName: null,
-    ActualPerformerUsername: null,
-    ProcessEngineId: null,
-    ProcessEngineName: null, //tofind
-    Log: null,
-  };
-
-  const spaceUsers = await getSpaceUsers(spaceId);
-  const space = await getEnv(spaceId);
-
-  // pasting metadata from VersionInfo
-  const instancesWithVersionData = (
-    await asyncMap(selectedInstances, async (instance) => {
-      if (!instance) return undefined;
-      const correspondingVersion = versionInfo.find((e) => e.versionId == instance.processVersion);
-      if (!correspondingVersion) return undefined;
-      const bpmnObj = await toBpmnObject(correspondingVersion.bpmn);
-      const initiator = spaceUsers.find((user) => user.id == instance.processInitiator);
-      const definitionInfos = await getDefinitionsInfos(bpmnObj);
-
-      return {
-        ...instance,
-        ProcessName: definitionInfos.name,
-        ProcessShortName: definitionInfos.userDefinedId,
-        ProcessVersionName: correspondingVersion.versionName,
-        ProcessVersionDescription: correspondingVersion.versionDescription,
-        ProcessVersionCreatedOn: correspondingVersion.deploymentDate,
-        ProcessVersionBasedOn: correspondingVersion.basedOnVersion,
-        ProcessInstanceInitiatorFullName:
-          initiator && !initiator.isGuest
-            ? `${initiator.firstName} ${initiator.lastName}`
-            : 'Guest',
-        ProcessInstanceInitiatorUsername:
-          initiator && !initiator.isGuest ? initiator.username : 'Guest',
-        ProcessInstanceInitiatorSpaceName: space.isOrganization ? space.name : 'no organization',
-        ProcessEngineId: instance.log[0].machine.id,
-        correspondingVersion,
-      };
-    })
-  ).filter(truthyFilter);
-
-  // retrieve and flatten event data
-  const instanceEvents = (
-    await asyncMap(instancesWithVersionData, async (instance) => {
-      const bpmnObj = await toBpmnObject(instance.correspondingVersion?.bpmn || '');
-
-      return instance
-        ? instance.log.map((eventEntry) => {
-            const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
-              $type?: string;
-              name?: string;
-              outgoing?: any;
-              incoming?: any;
-            };
-            const ActualPerformerId = eventEntry.actualOwner?.[0];
-            const user = spaceUsers.find((user) => user.id == ActualPerformerId);
-            return {
-              ...instance,
-              ...eventEntry,
-              ProcessStepName: eventElement?.name,
-              ProcessStepType: eventElement?.$type?.split(':')[1],
-              ActualPerformerId,
-              ActualPerformerName: user ? `${user.firstName} ${user.lastName}` : undefined,
-              ActualPerformerUsername: user ? user.username : undefined,
-              Log: JSON.stringify(eventEntry.variableChanges),
-              PreviousProcessStepId: eventElement.incoming?.map((flow: any) => flow.sourceRef.id),
-            };
-          })
-        : [];
-    })
-  ).flat();
-
-  // renaming
-  const keyMap: Record<string, string> = {
-    processId: 'ProcessId',
-    processVersion: 'ProcessVersionId',
-    processInstanceId: 'ProcessInstanceId',
-    processInitiator: 'ProcessInstanceInitiatorId',
-    spaceIdOfProcessInitiator: 'ProcessInstanceInitiatorSpaceId',
-    globalStartTime: 'InstanceStartTime',
-    flowElementId: 'ProcessStepId',
-    executionState: 'ProcessStepStatus',
-    startTime: 'ProcessStepStartTime',
-    endTime: 'ProcessStepEndTime',
-    tokenId: 'ProcessStepTokenId',
-  };
-
-  const renamedInstanceEvents: Record<string, any>[] = instanceEvents.map((instance) =>
-    Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
-  );
-
-  // converting dates
-  const datedInstanceEvents = renamedInstanceEvents.map((instance) => ({
-    ...instance,
-    InstanceStartTime: new Date(instance.InstanceStartTime).toISOString(),
-    ProcessStepEndTime: new Date(instance.ProcessStepEndTime).toISOString(),
-    ProcessStepStartTime: new Date(instance.ProcessStepStartTime).toISOString(),
-    ProcessVersionCreatedOn: new Date(instance.ProcessVersionCreatedOn).toISOString(),
-  }));
-
-  // reordering
-  const structuredInstanceEvents = datedInstanceEvents.map((instance) =>
-    Object.entries(instance).reduce(
-      (acc, [key, value]) => {
-        if (key in acc) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      { ...objectOrderTemplate } as Record<string, any>,
-    ),
-  );
-
-  return jsonToCsvExport({
-    data: structuredInstanceEvents,
-  });
 }

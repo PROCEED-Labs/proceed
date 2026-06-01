@@ -7,6 +7,7 @@ import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-status.module.scss';
+import { InstanceSelector } from './instance-selector';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryText = (props: EntryTextProps) => (
@@ -18,6 +19,7 @@ const ClockSymbol = () => (
 );
 
 export function ElementTiming({ info }: { info: RelevantInstanceInfo }) {
+  if (!info.instance) return <InstanceSelector />;
   const timingEntries: ReactNode[][] = [];
 
   const metaData = getMetaDataFromElement(info.element.businessObject);

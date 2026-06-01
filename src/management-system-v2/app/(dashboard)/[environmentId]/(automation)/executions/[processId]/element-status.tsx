@@ -1,16 +1,30 @@
 import { ReactNode } from 'react';
-import { Alert, Button, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
+import {
+  Alert,
+  Checkbox,
+  Collapse,
+  Divider,
+  Progress,
+  ProgressProps,
+  Space,
+  Switch,
+  Typography,
+} from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
 import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
+import { DataGrid, DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-status.module.scss';
+import { InstanceSelector } from './instance-selector';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
-const EntryText = (props: EntryTextProps) => (
-  <Typography.Text ellipsis={{ tooltip: { ...props } }} className={styles.ElementText} {...props} />
+const EntryKeyText = (props: EntryTextProps) => (
+  <Typography.Text className={styles.ElementText + ' ' + styles.ElementKeyText} {...props} />
+);
+const EntryValueText = (props: EntryTextProps) => (
+  <Typography.Text className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />
 );
 
 const ClockSymbol = () => (
@@ -18,6 +32,7 @@ const ClockSymbol = () => (
 );
 
 export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
+  if (!info.instance) return <InstanceSelector />;
   const statusEntries: ReactNode[][] = [];
 
   const isRootElement = info.element && info.element.type === 'bpmn:Process';
@@ -25,128 +40,175 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
   const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
 
-  if (!info.instance) {
-    return (
-      <>
-        <Typography.Title style={{ marginBottom: 20, marginTop: 5 }}>
-          Let's select some instances!
-        </Typography.Title>
-        <Space.Compact orientation="vertical">
-          <Button style={{ justifyContent: 'left' }}>1. Instance: 5/22/2026, 4:11:49 PM</Button>
-          <Button style={{ justifyContent: 'left' }}>2. Instance: 5/22/2026, 4:10:34 PM</Button>
-          <Button style={{ justifyContent: 'left' }}>3. Instance: 5/22/2026, 4:07:23 PM</Button>
-          <Button style={{ justifyContent: 'left' }}>4. Instance: 5/22/2026, 3:51:33 PM</Button>
-          <Button style={{ justifyContent: 'left' }}>5. Instance: 5/21/2026, 8:41:49 PM</Button>
-          <Button style={{ justifyContent: 'left' }}>6. Instance: 5/22/2026, 7:11:49 PM</Button>
-        </Space.Compact>
-      </>
-    );
-  }
-
+  statusEntries.push([
+    <div
+      style={{
+        width: '100%',
+        justifyContent: 'space-between',
+        flexWrap: 'nowrap',
+        alignItems: 'start',
+        display: 'inline-flex',
+        gap: 10,
+        padding: '10px 25px',
+        backgroundColor: 'hsla(213, 100%, 58%, 0.06)',
+        borderBottom: 'solid',
+        borderColor: 'hsla(213, 100%, 52%, 0.08)',
+        borderWidth: 2,
+      }}
+    >
+      <Switch />
+      <Space
+        style={{
+          width: '100%',
+          justifyContent: 'space-between',
+          flexWrap: 'nowrap',
+          alignItems: 'start',
+          display: 'inline-flex',
+          gap: 10,
+        }}
+      >
+        <Typography.Text
+          style={{ fontSize: '.9em', fontWeight: 'bold', color: 'rgb(62, 147, 222)' }}
+        >
+          Show technical details
+        </Typography.Text>
+        <Typography.Text style={{ fontSize: '.9em', fontWeight: 'bold', color: '#aaa' }}>
+          IDs & system info shown
+        </Typography.Text>
+      </Space>
+    </div>,
+  ]);
   if (isRootElement) {
     statusEntries.push([
-      <EntryText>Name</EntryText>,
-      <EntryText>Vacation Requests Automated</EntryText>,
-    ]);
-    statusEntries.push([<EntryText>Short Name</EntryText>, <EntryText>Vac-Req-Aut</EntryText>]);
-    statusEntries.push([
-      <EntryText>ID</EntryText>,
-      <EntryText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryText>,
-    ]);
-    statusEntries.push([<EntryText>Version Name</EntryText>, <EntryText>v1</EntryText>]);
-    statusEntries.push([
-      <EntryText>Version Description</EntryText>,
-      <EntryText>Version description, yes.</EntryText>,
+      <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>GENERAL</EntryKeyText>,
     ]);
     statusEntries.push([
-      <EntryText>Version Based on</EntryText>,
-      <EntryText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryText>,
+      <EntryKeyText>Name</EntryKeyText>,
+      <EntryValueText>Vacation Requests Automated</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Version Created on</EntryText>,
-      <EntryText>2026-05-18T11:39:54.943Z</EntryText>,
+      <EntryKeyText>Documentation:</EntryKeyText>,
+      <EntryValueText>{info.element.businessObject?.documentation?.[0]?.text}</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Instance ID</EntryText>,
-      <EntryText>
+      <EntryKeyText>Short Name</EntryKeyText>,
+      <EntryValueText>Vac-Req-Aut</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>ID</EntryKeyText>,
+      <EntryValueText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
+    ]);
+
+    statusEntries.push([
+      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
+      </Space>,
+    ]);
+
+    statusEntries.push([
+      <EntryKeyText>Version Name</EntryKeyText>,
+      <EntryValueText>v1</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Version Description</EntryKeyText>,
+      <EntryValueText>Version description, yes.</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Version Based on</EntryKeyText>,
+      <EntryValueText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Version Created on</EntryKeyText>,
+      <EntryValueText>2026-05-18T11:39:54.943Z</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Instance ID</EntryKeyText>,
+      <EntryValueText>
         _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
-      </EntryText>,
-    ]);
-    statusEntries.push([<EntryText>Initiator Name</EntryText>, <EntryText>Timmy Test</EntryText>]);
-    statusEntries.push([
-      <EntryText>Initiator ID</EntryText>,
-      <EntryText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryText>,
-    ]);
-    statusEntries.push([<EntryText>Initiator Username</EntryText>, <EntryText>timtes</EntryText>]);
-    statusEntries.push([<EntryText>Initiator Space</EntryText>, <EntryText>org1</EntryText>]);
-    statusEntries.push([
-      <EntryText>Initiator Space ID</EntryText>,
-      <EntryText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryText>,
+      </EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Start Time</EntryText>,
-      <EntryText>5/20/2026, 12:39 PM</EntryText>,
+      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHO STARTED IT</EntryKeyText>
+      </Space>,
     ]);
-    statusEntries.push([<EntryText>Engine</EntryText>, <EntryText>engine1</EntryText>]);
     statusEntries.push([
-      <EntryText>Engine ID</EntryText>,
-      <EntryText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryText>,
+      <EntryKeyText>Initiator Name</EntryKeyText>,
+      <EntryValueText>Timmy Test</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Initiator ID</EntryKeyText>,
+      <EntryValueText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Initiator Username</EntryKeyText>,
+      <EntryValueText>timtes</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Initiator Space</EntryKeyText>,
+      <EntryValueText>org1</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Initiator Space ID</EntryKeyText>,
+      <EntryValueText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
+      </Space>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Start Time</EntryKeyText>,
+      <EntryValueText>5/20/2026, 12:39 PM</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
+      </Space>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Engine</EntryKeyText>,
+      <EntryValueText>engine1</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Engine ID</EntryKeyText>,
+      <EntryValueText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
     ]);
   } else {
     statusEntries.push([
-      <EntryText>{'Step ID (or "Event ID"?)'}</EntryText>,
-      <EntryText>Activity_0309v8x</EntryText>,
+      <EntryKeyText>{'Step ID (or "Event ID"?)'}</EntryKeyText>,
+      <EntryValueText>Activity_0309v8x</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Step Name</EntryText>,
-      <EntryText>Check vacation application</EntryText>,
+      <EntryKeyText>Step Name</EntryKeyText>,
+      <EntryValueText>Check vacation application</EntryValueText>,
     ]);
-    statusEntries.push([<EntryText>Step Type</EntryText>, <EntryText>User Task</EntryText>]);
+    statusEntries.push(['Documentation:', info.element.businessObject?.documentation?.[0]?.text]);
     statusEntries.push([
-      <EntryText>Previous Step ID</EntryText>,
-      <EntryText>Check vacation application</EntryText>,
-    ]);
-    statusEntries.push([
-      <EntryText>Actual Performer</EntryText>,
-      <EntryText>Sandra Sample</EntryText>,
+      <EntryKeyText>Step Type</EntryKeyText>,
+      <EntryValueText>User Task</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Actual Performer Username</EntryText>,
-      <EntryText>sansam</EntryText>,
+      <EntryKeyText>Previous Step ID</EntryKeyText>,
+      <EntryValueText>Check vacation application</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryText>Actual Performer ID</EntryText>,
-      <EntryText>29880751-c190-4f58-b5cb-438754e9f02d</EntryText>,
+      <EntryKeyText>Actual Performer</EntryKeyText>,
+      <EntryValueText>Sandra Sample</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Actual Performer Username</EntryKeyText>,
+      <EntryValueText>sansam</EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Actual Performer ID</EntryKeyText>,
+      <EntryValueText>29880751-c190-4f58-b5cb-438754e9f02d</EntryValueText>,
     ]);
   }
-
-  // Element image
-  if (metaData.overviewImage)
-    statusEntries.push([
-      'Image',
-      <div
-        key="image"
-        style={{
-          width: '75%',
-          display: 'flex',
-          justifyContent: 'center',
-          margin: 'auto',
-          marginTop: '1rem',
-        }}
-      >
-        {/** TODO: correct image url */}
-        <Image
-          // TODO: use engine endpoint to get the image
-          alt="Image linked to the element"
-          src={endpointBuilder('get', '/resources/process/:definitionId/images/:fileName', {
-            pathParams: {
-              definitionId: info.process.definitionId,
-              fileName: metaData.overviewImage,
-            },
-          })}
-        />
-      </div>,
-    ]);
 
   // Element status
   let status = undefined;
@@ -256,7 +318,18 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   }
 
   // Documentation
-  statusEntries.push(['Documentation:', info.element.businessObject?.documentation?.[0]?.text]);
+  statusEntries.push([
+    <Collapse
+      size="small"
+      items={[
+        {
+          key: '1',
+          label: 'Documentation',
+          children: <p>{info.element.businessObject?.documentation?.[0]?.text}</p>,
+        },
+      ]}
+    />,
+  ]);
 
   // Activity time calculation
   const { start, end, duration } = getTimeInfo({
@@ -268,68 +341,71 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
-  // adding an empty line for padding
-  statusEntries.push([]);
   // Activity time
   // statusEntries.push([
   //   <Space key="started">
   //     <ClockSymbol />
-  //     <EntryText strong>Started:</EntryText>
-  //     <EntryText>{generateDateString(start, true)}</EntryText>
+  //     <EntryKeyText strong>Started:</EntryKeyText>
+  //     <EntryValueText>{generateDateString(start, true)}</EntryValueText>
   //   </Space>,
   //   <Space key="planned-start">
   //     <ClockSymbol />
-  //     <EntryText strong>Planned Start:</EntryText>
-  //     <EntryText>{generateDateString(plan.start, true) || ''}</EntryText>
+  //     <EntryKeyText strong>Planned Start:</EntryKeyText>
+  //     <EntryValueText>{generateDateString(plan.start, true) || ''}</EntryValueText>
   //   </Space>,
   //   <Space key="start-delay">
   //     <ClockSymbol />
-  //     <EntryText strong>Delay:</EntryText>
-  //     <EntryText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
+  //     <EntryKeyText strong>Delay:</EntryKeyText>
+  //     <EntryValueText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
   //       {generateDurationString(delays.start)}
-  //     </EntryText>
+  //     </EntryValueText>
   //   </Space>,
   // ]);
 
   // statusEntries.push([
   //   <Space key="duration">
   //     <ClockSymbol />
-  //     <EntryText strong>Duration:</EntryText>
-  //     <EntryText>{generateDurationString(duration)}</EntryText>
+  //     <EntryKeyText strong>Duration:</EntryKeyText>
+  //     <EntryValueText>{generateDurationString(duration)}</EntryValueText>
   //   </Space>,
   //   <Space key="duration-planned">
   //     <ClockSymbol />
-  //     <EntryText strong>Planned Duration:</EntryText>
-  //     <EntryText>{generateDurationString(plan.duration)}</EntryText>
+  //     <EntryKeyText strong>Planned Duration:</EntryKeyText>
+  //     <EntryValueText>{generateDurationString(plan.duration)}</EntryValueText>
   //   </Space>,
   //   <Space key="duration-delay">
   //     <ClockSymbol />
-  //     <EntryText strong>Delay:</EntryText>
-  //     <EntryText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
+  //     <EntryKeyText strong>Delay:</EntryKeyText>
+  //     <EntryValueText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
   //       {generateDurationString(delays.duration)}
-  //     </EntryText>
+  //     </EntryValueText>
   //   </Space>,
   // ]);
 
   // statusEntries.push([
   //   <Space key="end">
   //     <ClockSymbol />
-  //     <EntryText strong>Ended:</EntryText>
-  //     <EntryText>{generateDateString(end, true)}</EntryText>
+  //     <EntryKeyText strong>Ended:</EntryKeyText>
+  //     <EntryValueText>{generateDateString(end, true)}</EntryValueText>
   //   </Space>,
   //   <Space key="end-planned">
   //     <ClockSymbol />
-  //     <EntryText strong>Planned End:</EntryText>
-  //     <EntryText>{generateDateString(plan.end, true) || ''}</EntryText>
+  //     <EntryKeyText strong>Planned End:</EntryKeyText>
+  //     <EntryValueText>{generateDateString(plan.end, true) || ''}</EntryValueText>
   //   </Space>,
   //   <Space key="end-delay">
   //     <ClockSymbol />
-  //     <EntryText strong>Delay:</EntryText>
-  //     <EntryText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
+  //     <EntryKeyText strong>Delay:</EntryKeyText>
+  //     <EntryValueText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
   //       {generateDurationString(delays.end)}
-  //     </EntryText>
+  //     </EntryValueText>
   //   </Space>,
   // ]);
 
-  return <DisplayTable data={statusEntries} />;
+  return (
+    <>
+      {/* <DisplayTable data={statusEntries} /> */}
+      <DataGrid data={statusEntries} />
+    </>
+  );
 }

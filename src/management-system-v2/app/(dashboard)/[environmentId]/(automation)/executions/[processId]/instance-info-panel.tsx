@@ -2,12 +2,13 @@ import ResizableElement, { ResizableElementRefType } from '@/components/Resizabl
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
 import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { Button, Grid, Modal, Tabs } from 'antd';
+import { Button, Col, Grid, Modal, Row, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
-import { ElementInfo } from './element-info';
 import { ElementTiming } from './element-timing';
+import { ElementOverview } from './element-overview';
+import { StatusTag } from './status-tag';
 
 export type RelevantInstanceInfo = {
   instance?: InstanceInfo;
@@ -52,6 +53,44 @@ export function DisplayTable({ data }: { data: ReactNode[][] }) {
   );
 }
 
+export function DataGrid({ data }: { data: ReactNode[][] }) {
+  return (
+    <>
+      {data.map((row, idx_row) => (
+        <Row style={{ marginBlock: 12 }} wrap={false}>
+          {row.length == 1 ? (
+            <Col flex="auto">{row[0]}</Col>
+          ) : (
+            <>
+              <Col
+                flex="115px"
+                style={{
+                  fontWeight: 'bold',
+                  justifyContent: 'left',
+                  alignItems: 'baseline',
+                  display: 'flex',
+                }}
+              >
+                {row[0]}
+              </Col>
+              <Col
+                flex="auto"
+                style={{
+                  marginLeft: 20,
+                  alignItems: 'center',
+                  display: 'flex',
+                }}
+              >
+                {row[1]}
+              </Col>
+            </>
+          )}
+        </Row>
+      ))}
+    </>
+  );
+}
+
 export default function InstanceInfoPanel({
   open,
   close,
@@ -72,11 +111,16 @@ export default function InstanceInfoPanel({
 
   const tabs = info.element ? (
     <Tabs
-      defaultActiveKey="1"
+      defaultActiveKey="Overview"
       items={[
         {
           key: 'Overview',
           label: 'Overview',
+          children: <ElementOverview info={info} />,
+        },
+        {
+          key: 'Details',
+          label: 'Details',
           children: <ElementStatus info={info} />,
         },
         {
@@ -113,16 +157,18 @@ export default function InstanceInfoPanel({
 
   return breakpoint.xl ? (
     <ResizableElement
-      initialWidth={400}
+      initialWidth={500}
       minWidth={400}
-      maxWidth={'40vw'}
+      maxWidth={'100vw'}
       style={{
         // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
         height: 'calc(100vh - 150px)',
+        boxShadow: '0 3px 12px -4px rgba(0, 0, 0, 0.1), 0 6px 48px -2px rgba(0, 0, 0, 0.07)',
       }}
       ref={resizableElementRef}
     >
       <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
+        <StatusTag info={info} />
         {tabs}
       </CollapsibleCard>
     </ResizableElement>

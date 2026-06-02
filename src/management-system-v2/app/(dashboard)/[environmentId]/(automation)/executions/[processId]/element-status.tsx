@@ -150,16 +150,6 @@ export function ElementStatus({
       }),
   ]);
 
-  // Real Costs
-  // TODO: Set real costs
-  if (instance && !isRootElement) {
-    let costs: string | undefined = undefined;
-    if (token) costs = token.costsRealSetByOwner;
-    else if (logInfo) costs = logInfo.costsRealSetByOwner;
-
-    statusEntries.push(['Real Costs:', costs]);
-  }
-
   // Documentation
   statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
 
@@ -171,14 +161,59 @@ export function ElementStatus({
     token,
   });
 
-  const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
+  const { plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
+
+  // Real Costs
+  // TODO: Set real costs
+  if (instance) {
+    let costs: string | undefined = undefined;
+    if (token)
+      costs =
+        token.costsRealSetByOwner &&
+        generateNumberString(+token.costsRealSetByOwner.value, {
+          style: 'currency',
+          currency: token.costsRealSetByOwner.unit,
+        });
+    else if (logInfo)
+      costs =
+        logInfo.costsRealSetByOwner &&
+        generateNumberString(+logInfo.costsRealSetByOwner.value, {
+          style: 'currency',
+          currency: logInfo.costsRealSetByOwner.unit,
+        });
+    else {
+      costs = instance.executionCosts
+        ?.map((c) =>
+          generateNumberString(+c.value, {
+            style: 'currency',
+            currency: c.unit,
+          }),
+        )
+        .join(' + ');
+    }
+
+    statusEntries.push(['Real Costs:', costs]);
+  }
+
+  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
+    actual: { start: undefined, end: undefined, duration: undefined },
+    plan: { start: undefined, end: undefined, duration: undefined },
+    delays: { start: undefined, end: undefined, duration: undefined },
+  };
+  if (token) {
+    if (token.timing) timing = token.timing;
+  } else if (logInfo) {
+    if (logInfo.timing) timing = logInfo.timing;
+  } else if (instance) {
+    if (instance.timing) timing = instance.timing;
+  }
 
   // Activity time
   statusEntries.push([
     <Space key="started">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Started:</Typography.Text>
-      <Typography.Text>{generateDateString(start, true)}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.actual.start, true)}</Typography.Text>
     </Space>,
     <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
@@ -188,8 +223,10 @@ export function ElementStatus({
     <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.start)}
+      <Typography.Text
+        type={timing.delays.start && timing.delays.start >= 1000 ? 'danger' : undefined}
+      >
+        {generateDurationString(timing.delays.start)}
       </Typography.Text>
     </Space>,
   ]);
@@ -198,7 +235,7 @@ export function ElementStatus({
     <Space key="duration">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
-      <Typography.Text>{generateDurationString(duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(timing.actual.duration)}</Typography.Text>
     </Space>,
     <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
@@ -208,8 +245,10 @@ export function ElementStatus({
     <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.duration)}
+      <Typography.Text
+        type={timing.delays.duration && timing.delays.duration >= 1000 ? 'danger' : undefined}
+      >
+        {generateDurationString(timing.delays.duration)}
       </Typography.Text>
     </Space>,
   ]);
@@ -218,7 +257,7 @@ export function ElementStatus({
     <Space key="end">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Ended:</Typography.Text>
-      <Typography.Text>{generateDateString(end, true)}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.actual.end, true)}</Typography.Text>
     </Space>,
     <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
@@ -228,8 +267,8 @@ export function ElementStatus({
     <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.end)}
+      <Typography.Text type={timing.delays.end && timing.delays.end >= 1000 ? 'danger' : undefined}>
+        {generateDurationString(timing.delays.end)}
       </Typography.Text>
     </Space>,
   ]);

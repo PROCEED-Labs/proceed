@@ -18,7 +18,17 @@ import { truthyFilter } from '../typescript-utils';
 
 import { getAllAvailableEngines } from './engines';
 import { getProcessBPMN } from './processes';
-import { getElementById, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
+import {
+  getElementById,
+  getElementsByTagName,
+  getMetaDataFromElement,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
+import {
+  getPlanDelays,
+  getTimeInfo,
+} from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
@@ -155,6 +165,36 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
     .filter(truthyFilter)
     .reduce(accumulateCosts, [] as { value: number; unit: string }[]);
 
+  function getTimings(
+    log?: (typeof state)['log'][number],
+    token?: (typeof state)['tokens'][number],
+  ) {
+    let element;
+    if (log) element = getElementById(bpmnObject, log.flowElementId) as any;
+    else if (token) element = getElementById(bpmnObject, token.currentFlowElementId) as any;
+    else {
+      [element] = getElementsByTagName(bpmnObject, 'bpmn:Process');
+    }
+
+    if (!element) return;
+
+    const { start, end, duration } = getTimeInfo({
+      element: { type: element.$type } as unknown as ElementLike,
+      logInfo: log as any,
+      token: token as any,
+      instance: state as any,
+    });
+
+    const elementMetaData = getMetaDataFromElement(element);
+    const { plan, delays } = getPlanDelays({ elementMetaData, start, end, duration });
+
+    return {
+      actual: { start, end, duration },
+      plan,
+      delays,
+    };
+  }
+
   return {
     ...instance,
     initiator,
@@ -169,17 +209,20 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
         plannedCosts: getPlannedCosts(token.currentFlowElementId),
         actualOwner: mapUsers(token.actualOwner),
         performers: mapPerformers(token.performers),
+        timing: getTimings(undefined, token),
       })),
       log: state.log.map((entry) => ({
         ...entry,
         plannedCosts: getPlannedCosts(entry.flowElementId),
         actualOwner: mapUsers(entry.actualOwner),
         performers: mapPerformers(entry.performers),
+        timing: getTimings(entry, undefined),
       })),
       processInitiator: initiator,
       spaceOfProcessInitiator: initiatorSpace,
       executionCosts,
       plannedCosts: plannedCosts.length ? plannedCosts : undefined,
+      timing: getTimings(),
     },
   };
 }

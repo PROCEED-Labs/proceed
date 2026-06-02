@@ -51,7 +51,7 @@ export function getTimeInfo({
   /** Token where currentFlowElementId is the element   */
   token?: ExtendedInstanceInfo['tokens'][number];
   instance?: ExtendedInstanceInfo;
-}) {
+}): { start?: Date; end?: Date; duration?: number } {
   if (!instance) return { start: undefined, end: undefined, duration: undefined };
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -82,6 +82,7 @@ export function getTimeInfo({
 
   let duration: number | undefined;
   if (start && end) duration = end.getTime() - start.getTime();
+  else if (start) duration = Date.now() - start.getTime();
 
   return { start, end, duration };
 }
@@ -125,9 +126,10 @@ export function getPlanDelays({
     plan.duration = plan.end.getTime() - plan.start.getTime();
 
   const delays = {
-    start: plan.start && start && start.getTime() - plan.start.getTime(),
-    end: plan.end && end && end.getTime() - plan.end.getTime(),
-    duration: plan.duration && duration && duration - plan.duration,
+    start:
+      (plan.start && start && Math.max(start.getTime() - plan.start.getTime(), 0)) || undefined,
+    end: (plan.end && end && Math.max(end.getTime() - plan.end.getTime(), 0)) || undefined,
+    duration: (plan.duration && duration && Math.max(duration - plan.duration, 0)) || undefined,
   };
 
   return { plan, delays };

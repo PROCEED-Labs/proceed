@@ -45,6 +45,9 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
+  // CSV export buttons for process instances
+  enableInstanceCSVExport: true,
+
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
   // -----------------------------------------------------------------------------
   // Chopping Block

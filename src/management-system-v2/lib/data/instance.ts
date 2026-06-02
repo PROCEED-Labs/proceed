@@ -9,7 +9,7 @@ import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
 
-type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo };
+type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
 export async function getInstance(spaceId: string, instanceId: string, ability?: Ability) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
@@ -19,11 +19,16 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   const instanceInfo = await db.processInstance.findUnique({
     where: { id: instanceId },
+    include: { deployment: { select: { versionId: true } } },
   });
 
   if (!instanceInfo) return null;
 
-  return instanceInfo as StoredInstance;
+  return {
+    ...instanceInfo,
+    state: instanceInfo.state as InstanceInfo,
+    versionId: instanceInfo.deployment.versionId,
+  } as StoredInstance;
 }
 
 export async function getInstances(spaceId: string, ability?: Ability) {
@@ -42,9 +47,14 @@ export async function getInstances(spaceId: string, ability?: Ability) {
         ],
       },
     },
+    include: { deployment: { select: { versionId: true } } },
   });
 
-  return instances as StoredInstance[];
+  return instances.map((i) => ({
+    ...i,
+    state: i.state as InstanceInfo,
+    versionId: i.deployment.versionId,
+  })) as StoredInstance[];
 }
 
 export async function addInstance(

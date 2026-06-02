@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import {
   Alert,
   Checkbox,
@@ -8,6 +8,7 @@ import {
   ProgressProps,
   Space,
   Switch,
+  Tag,
   Typography,
 } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
@@ -18,6 +19,7 @@ import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-status.module.scss';
 import { InstanceSelector } from './instance-selector';
+import TextViewer from '@/components/text-viewer';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
@@ -27,20 +29,35 @@ const EntryValueText = (props: EntryTextProps) => (
   <Typography.Text className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />
 );
 
-const ClockSymbol = () => (
-  <ClockCircleFilled style={{ fontSize: '1.1rem', verticalAlign: 'middle' }} />
+const TechEntryKey = (props: EntryTextProps) => (
+  <Space style={{ fontSize: '.9em' }}>
+    <EntryKeyText {...props} />
+    <Tag
+      variant="outlined"
+      color={'blue'}
+      style={{
+        width: '30px',
+        height: '15px',
+        fontSize: 8,
+        display: 'inline-flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      TECH
+    </Tag>
+  </Space>
 );
 
-export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
-  if (!info.instance) return <InstanceSelector />;
-  const statusEntries: ReactNode[][] = [];
-
-  const isRootElement = info.element && info.element.type === 'bpmn:Process';
-  const metaData = getMetaDataFromElement(info.element.businessObject);
-  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
-  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
-
-  statusEntries.push([
+const TechDetailsSwitch = ({
+  techDetails,
+  setTechDetailsCb,
+}: {
+  techDetails: boolean;
+  setTechDetailsCb: (checked: boolean) => void;
+}) => {
+  const textColor = techDetails ? '#3e93de' : '#aaa';
+  return (
     <div
       style={{
         width: '100%',
@@ -49,14 +66,14 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         alignItems: 'start',
         display: 'inline-flex',
         gap: 10,
-        padding: '10px 25px',
+        padding: '10px 20px',
         backgroundColor: 'hsla(213, 100%, 58%, 0.06)',
         borderBottom: 'solid',
         borderColor: 'hsla(213, 100%, 52%, 0.08)',
         borderWidth: 2,
       }}
     >
-      <Switch />
+      <Switch onChange={(checked) => setTechDetailsCb(checked)} />
       <Space
         style={{
           width: '100%',
@@ -67,18 +84,34 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
           gap: 10,
         }}
       >
-        <Typography.Text
-          style={{ fontSize: '.9em', fontWeight: 'bold', color: 'rgb(62, 147, 222)' }}
-        >
+        <Typography.Text style={{ fontSize: '.9em', fontWeight: 'bold', color: textColor }}>
           Show technical details
         </Typography.Text>
+
         <Typography.Text style={{ fontSize: '.9em', fontWeight: 'bold', color: '#aaa' }}>
-          IDs & system info shown
+          {techDetails ? 'IDs & system info shown' : 'IDs & system info hidden'}
         </Typography.Text>
       </Space>
-    </div>,
+    </div>
+  );
+};
+
+export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
+  if (!info.instance) return <InstanceSelector />;
+  const [techDetails, setTechDetails] = useState(false);
+  const statusEntries: ReactNode[][] = [];
+
+  const isRootElement = info.element && info.element.type === 'bpmn:Process';
+  const metaData = getMetaDataFromElement(info.element.businessObject);
+  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
+  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+
+  // TECH DETAILS SWITCH
+  statusEntries.push([
+    <TechDetailsSwitch techDetails={techDetails} setTechDetailsCb={setTechDetails} />,
   ]);
   if (isRootElement) {
+    // GENERAL
     statusEntries.push([
       <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>GENERAL</EntryKeyText>,
     ]);
@@ -87,47 +120,54 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <EntryValueText>Vacation Requests Automated</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Documentation:</EntryKeyText>,
-      <EntryValueText>{info.element.businessObject?.documentation?.[0]?.text}</EntryValueText>,
-    ]);
-    statusEntries.push([
       <EntryKeyText>Short Name</EntryKeyText>,
       <EntryValueText>Vac-Req-Aut</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>ID</EntryKeyText>,
-      <EntryValueText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
-    ]);
+      <EntryKeyText>Documentation</EntryKeyText>,
 
+      <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />,
+    ]);
+    statusEntries.push([
+      <EntryKeyText>Process Mangager</EntryKeyText>,
+      <EntryValueText>Sandra Sample</EntryValueText>,
+    ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>ID</TechEntryKey>,
+        <EntryValueText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
+      ]);
+
+    // VERSION DATA
     statusEntries.push([
       <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
       </Space>,
     ]);
-
     statusEntries.push([
       <EntryKeyText>Version Name</EntryKeyText>,
-      <EntryValueText>v1</EntryValueText>,
+      <EntryValueText>v2</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Version Description</EntryKeyText>,
+      <EntryKeyText>What changed</EntryKeyText>,
       <EntryValueText>Version description, yes.</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Version Based on</EntryKeyText>,
-      <EntryValueText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
-    ]);
-    statusEntries.push([
-      <EntryKeyText>Version Created on</EntryKeyText>,
+      <EntryKeyText>Created on</EntryKeyText>,
       <EntryValueText>2026-05-18T11:39:54.943Z</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Instance ID</EntryKeyText>,
-      <EntryValueText>
-        _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
-      </EntryValueText>,
+      <EntryKeyText>Based on</EntryKeyText>,
+      <EntryValueText>v1</EntryValueText>,
     ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>Based on ID</TechEntryKey>,
+        <EntryValueText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
+      ]);
+
+    // INITIATOR
     statusEntries.push([
       <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
@@ -135,49 +175,78 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       </Space>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Initiator Name</EntryKeyText>,
+      <EntryKeyText>Started by</EntryKeyText>,
       <EntryValueText>Timmy Test</EntryValueText>,
     ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>Username</TechEntryKey>,
+        <EntryValueText>timtes</EntryValueText>,
+      ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>User ID</TechEntryKey>,
+        <EntryValueText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
+      ]);
     statusEntries.push([
-      <EntryKeyText>Initiator ID</EntryKeyText>,
-      <EntryValueText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
-    ]);
-    statusEntries.push([
-      <EntryKeyText>Initiator Username</EntryKeyText>,
-      <EntryValueText>timtes</EntryValueText>,
-    ]);
-    statusEntries.push([
-      <EntryKeyText>Initiator Space</EntryKeyText>,
+      <EntryKeyText>Workspace</EntryKeyText>,
       <EntryValueText>org1</EntryValueText>,
     ]);
-    statusEntries.push([
-      <EntryKeyText>Initiator Space ID</EntryKeyText>,
-      <EntryValueText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
-    ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>Workspace ID</TechEntryKey>,
+        <EntryValueText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
+      ]);
+
+    // TIMING
     statusEntries.push([
       <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
       </Space>,
     ]);
+    if (techDetails)
+      statusEntries.push([
+        <TechEntryKey>Run ID</TechEntryKey>,
+        <EntryValueText>
+          _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
+        </EntryValueText>,
+      ]);
+    statusEntries.push([
+      <EntryKeyText>Planned duration</EntryKeyText>,
+      <EntryValueText>N/A</EntryValueText>,
+    ]);
     statusEntries.push([
       <EntryKeyText>Start Time</EntryKeyText>,
       <EntryValueText>5/20/2026, 12:39 PM</EntryValueText>,
     ]);
     statusEntries.push([
-      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
-      </Space>,
+      <EntryKeyText>End Time</EntryKeyText>,
+      <EntryValueText>N/A</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Engine</EntryKeyText>,
-      <EntryValueText>engine1</EntryValueText>,
+      <EntryKeyText>Time so far</EntryKeyText>,
+      <EntryValueText>2h 47m</EntryValueText>,
     ]);
-    statusEntries.push([
-      <EntryKeyText>Engine ID</EntryKeyText>,
-      <EntryValueText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
-    ]);
+
+    // ENGINE
+
+    if (techDetails) {
+      statusEntries.push([
+        <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+          <Divider style={{ padding: 0, margin: 0 }} />
+          <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
+        </Space>,
+      ]);
+      statusEntries.push([
+        <TechEntryKey>Engine</TechEntryKey>,
+        <EntryValueText>engine1</EntryValueText>,
+      ]);
+      statusEntries.push([
+        <TechEntryKey>Engine ID</TechEntryKey>,
+        <EntryValueText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
+      ]);
+    }
   } else {
     statusEntries.push([
       <EntryKeyText>{'Step ID (or "Event ID"?)'}</EntryKeyText>,

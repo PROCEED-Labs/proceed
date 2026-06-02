@@ -57,7 +57,7 @@ export function DataGrid({ data }: { data: ReactNode[][] }) {
   return (
     <>
       {data.map((row, idx_row) => (
-        <Row style={{ marginBlock: 12 }} wrap={false}>
+        <Row style={{ marginBlock: 8 }} wrap={false}>
           {row.length == 1 ? (
             <Col flex="auto">{row[0]}</Col>
           ) : (
@@ -124,24 +124,24 @@ export default function InstanceInfoPanel({
           children: <ElementStatus info={info} />,
         },
         {
-          key: 'Advanced',
-          label: 'Advanced',
+          key: 'Data',
+          label: 'Data',
+          children: <InstanceVariables refetch={refetch} info={info} />,
+        },
+        {
+          key: 'Milestones',
+          label: 'Milestones',
           children: 'How to proceed',
         },
         {
-          key: 'Timing',
-          label: 'Timing',
+          key: 'Activity',
+          label: 'Activity',
           children: <ElementTiming info={info} />,
         },
         {
           key: 'Assignments',
           label: 'Assignments',
           children: 'How to proceed',
-        },
-        {
-          key: 'Variables',
-          label: 'Variables',
-          children: <InstanceVariables refetch={refetch} info={info} />,
         },
         {
           key: 'Resources',

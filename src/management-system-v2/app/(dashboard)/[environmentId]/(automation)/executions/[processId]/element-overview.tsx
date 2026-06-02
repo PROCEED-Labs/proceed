@@ -100,6 +100,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
     });
     const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
+    // Timing
     overviewEntries.push([
       <div
         style={{
@@ -167,11 +168,13 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
           >
             <Typography.Text>Started by</Typography.Text>
             <br />
-            <Typography.Text>kasklds fmds</Typography.Text>
+            <Typography.Text>Timmy Test</Typography.Text>
           </Col>
         </Row>
       </div>,
     ]);
+
+    // Budget
     overviewEntries.push([
       <Typography.Text style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>
         BUDGET

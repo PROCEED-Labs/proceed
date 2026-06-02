@@ -1,6 +1,6 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper/src/getters';
-import { getPlanDelays, getTimeInfo, getTiming } from './instance-helpers';
+import { getTimeInfo, getTiming } from './instance-helpers';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export const colorOptions = [

@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlannedTimeInfo, getTiming, statusToType } from './instance-helpers';
+import { getTiming, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';

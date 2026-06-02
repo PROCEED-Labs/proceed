@@ -73,6 +73,13 @@
   },
   "put": {
     "/configuration/": {},
+    "/tasklist/api/active": {
+      "queryParams": {
+        "instanceID": true,
+        "userTaskID": true,
+        "startTime": true
+      }
+    },
     "/tasklist/api/variable": {
       "queryParams": {
         "instanceID": true,

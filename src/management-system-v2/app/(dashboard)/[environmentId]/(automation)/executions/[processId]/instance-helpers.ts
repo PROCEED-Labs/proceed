@@ -139,6 +139,40 @@ export function getPlanDelays({
   return { plan, delays };
 }
 
+export function getTiming({
+  isRootElement,
+  metaData,
+  logInfo,
+  token,
+  instance,
+}: {
+  isRootElement: boolean;
+  metaData: Record<string, any>;
+  /** Log entry for element in instance information */
+  logInfo?: ExtendedInstanceInfo['log'][number];
+  /** Token where currentFlowElementId is the element   */
+  token?: ExtendedInstanceInfo['tokens'][number];
+  instance?: ExtendedInstanceInfo;
+}) {
+  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
+    actual: { start: undefined, end: undefined, duration: undefined },
+    plan: { start: undefined, end: undefined, duration: undefined },
+    delays: { start: undefined, end: undefined, duration: undefined },
+  };
+
+  if (logInfo) {
+    if (logInfo.timing) timing = logInfo.timing;
+  } else if (token) {
+    if (token.timing) timing = token.timing;
+  } else if (instance && isRootElement) {
+    if (instance.timing) timing = instance.timing;
+  } else {
+    timing.plan = getPlannedTimeInfo(metaData);
+  }
+
+  return timing;
+}
+
 export function getVersionInstances(instances: ExtendedInstanceInfo[], version?: string) {
   if (!version) return instances;
   return instances.filter((instance) => instance.processVersion === version);

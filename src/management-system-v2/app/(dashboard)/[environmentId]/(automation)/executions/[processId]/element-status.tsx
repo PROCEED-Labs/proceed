@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlannedTimeInfo, statusToType } from './instance-helpers';
+import { getPlannedTimeInfo, getTiming, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
@@ -153,22 +153,6 @@ export function ElementStatus({
   // Documentation
   statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
 
-  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
-    actual: { start: undefined, end: undefined, duration: undefined },
-    plan: { start: undefined, end: undefined, duration: undefined },
-    delays: { start: undefined, end: undefined, duration: undefined },
-  };
-
-  if (logInfo) {
-    if (logInfo.timing) timing = logInfo.timing;
-  } else if (token) {
-    if (token.timing) timing = token.timing;
-  } else if (instance && isRootElement) {
-    if (instance.timing) timing = instance.timing;
-  } else {
-    timing.plan = getPlannedTimeInfo(metaData);
-  }
-
   // Real Costs
   // TODO: Set real costs
   if (instance) {
@@ -200,6 +184,14 @@ export function ElementStatus({
 
     statusEntries.push(['Real Costs:', costs]);
   }
+
+  const timing = getTiming({
+    isRootElement,
+    metaData,
+    token,
+    logInfo,
+    instance,
+  });
 
   // Activity time
   statusEntries.push([

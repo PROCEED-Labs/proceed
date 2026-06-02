@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
+import { getPlanDelays, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
@@ -153,15 +153,21 @@ export function ElementStatus({
   // Documentation
   statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
 
-  // Activity time calculation
-  const { start, end, duration } = getTimeInfo({
-    element: element,
-    instance: instance,
-    logInfo,
-    token,
-  });
+  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
+    actual: { start: undefined, end: undefined, duration: undefined },
+    plan: { start: undefined, end: undefined, duration: undefined },
+    delays: { start: undefined, end: undefined, duration: undefined },
+  };
 
-  const { plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
+  if (logInfo) {
+    if (logInfo.timing) timing = logInfo.timing;
+  } else if (token) {
+    if (token.timing) timing = token.timing;
+  } else if (instance && isRootElement) {
+    if (instance.timing) timing = instance.timing;
+  }
+
+  const { plan } = getPlanDelays({ elementMetaData: metaData, ...timing.actual });
 
   // Real Costs
   // TODO: Set real costs
@@ -193,19 +199,6 @@ export function ElementStatus({
     }
 
     statusEntries.push(['Real Costs:', costs]);
-  }
-
-  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
-    actual: { start: undefined, end: undefined, duration: undefined },
-    plan: { start: undefined, end: undefined, duration: undefined },
-    delays: { start: undefined, end: undefined, duration: undefined },
-  };
-  if (token) {
-    if (token.timing) timing = token.timing;
-  } else if (logInfo) {
-    if (logInfo.timing) timing = logInfo.timing;
-  } else if (instance) {
-    if (instance.timing) timing = instance.timing;
   }
 
   // Activity time

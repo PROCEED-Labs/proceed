@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, statusToType } from './instance-helpers';
+import { getPlannedTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
@@ -165,9 +165,9 @@ export function ElementStatus({
     if (token.timing) timing = token.timing;
   } else if (instance && isRootElement) {
     if (instance.timing) timing = instance.timing;
+  } else {
+    timing.plan = getPlannedTimeInfo(metaData);
   }
-
-  const { plan } = getPlanDelays({ elementMetaData: metaData, ...timing.actual });
 
   // Real Costs
   // TODO: Set real costs
@@ -211,7 +211,7 @@ export function ElementStatus({
     <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Start:</Typography.Text>
-      <Typography.Text>{generateDateString(plan.start, true) || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.plan.start, true) || ''}</Typography.Text>
     </Space>,
     <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
@@ -233,7 +233,7 @@ export function ElementStatus({
     <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
-      <Typography.Text>{generateDurationString(plan.duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(timing.plan.duration)}</Typography.Text>
     </Space>,
     <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
@@ -255,7 +255,7 @@ export function ElementStatus({
     <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned End:</Typography.Text>
-      <Typography.Text>{generateDateString(plan.end, true) || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.plan.end, true) || ''}</Typography.Text>
     </Space>,
     <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />

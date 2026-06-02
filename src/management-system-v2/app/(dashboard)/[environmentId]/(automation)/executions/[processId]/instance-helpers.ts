@@ -87,6 +87,18 @@ export function getTimeInfo({
   return { start, end, duration };
 }
 
+export function getPlannedTimeInfo(elementMetaData: Record<string, any>) {
+  return {
+    end: elementMetaData.timePlannedEnd ? new Date(elementMetaData.timePlannedEnd) : undefined,
+    start: elementMetaData.timePlannedOccurrence
+      ? new Date(elementMetaData.timePlannedOccurrence)
+      : undefined,
+    duration: elementMetaData.timePlannedDuration
+      ? convertISODurationToMiliseconds(elementMetaData.timePlannedDuration)
+      : undefined,
+  };
+}
+
 export function getPlanDelays({
   elementMetaData,
   start,
@@ -101,15 +113,7 @@ export function getPlanDelays({
   end?: Date;
   duration?: number;
 }) {
-  const plan = {
-    end: elementMetaData.timePlannedEnd ? new Date(elementMetaData.timePlannedEnd) : undefined,
-    start: elementMetaData.timePlannedOccurrence
-      ? new Date(elementMetaData.timePlannedOccurrence)
-      : undefined,
-    duration: elementMetaData.timePlannedDuration
-      ? convertISODurationToMiliseconds(elementMetaData.timePlannedDuration)
-      : undefined,
-  };
+  const plan = getPlannedTimeInfo(elementMetaData);
 
   // The order in which missing times are derived from the others is irrelevant
   // If there is only one -> not possible to derive the others

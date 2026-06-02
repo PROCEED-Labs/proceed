@@ -65,10 +65,19 @@ module.exports = (path, management) => {
   });
 
   network.get(`${path}/:definitionId/versions/:version`, { cors: true }, async (req) => {
-    const { definitionId, version } = req.params;
+    const { definitionId, version: versionId } = req.params;
+
+    const engine = management.getEngineWithDefinitionId(definitionId);
+
+    let version = await db.getProcessVersionInfo(definitionId, versionId);
+
+    version = {
+      ...version,
+      active: engine ? engine.isProcessVersionDeployed(version.versionId) : false,
+    };
 
     try {
-      return JSON.stringify(await db.getProcessVersionInfo(definitionId, version));
+      return JSON.stringify(version);
     } catch ({ message }) {
       throw new APIError(404, message);
     }

@@ -3,7 +3,20 @@ import { RelevantInstanceInfo } from './instance-info-panel';
 
 import { EditOutlined } from '@ant-design/icons';
 
-import { App, Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
+import {
+  App,
+  Button,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Space,
+  Switch,
+  Table,
+  Typography,
+} from 'antd';
 import { updateVariables } from '@/lib/engines/server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
@@ -225,6 +238,66 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
             {updatedValueInput}
           </Form.Item>
         </Form>
+        <div>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Type</Typography.Text>
+                <br />
+                <Typography.Text>Text</Typography.Text>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Format</Typography.Text>
+                <br />
+                <Typography.Text>N/A</Typography.Text>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Required at start</Typography.Text>
+                <br />
+                <Typography.Text>Yes</Typography.Text>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Can be changed</Typography.Text>
+                <br />
+                <Typography.Text>Yes</Typography.Text>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Default value</Typography.Text>
+                <br />
+                <Typography.Text>N/A</Typography.Text>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <Typography.Text>Allowed values</Typography.Text>
+                <br />
+                <Typography.Text>N/A</Typography.Text>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={24}>
+              <Typography.Text>desc</Typography.Text>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={24}>
+              <Typography.Text>lalalalal</Typography.Text>
+            </Col>
+          </Row>
+        </div>
       </Modal>
     </>
   );

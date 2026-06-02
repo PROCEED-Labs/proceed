@@ -25,9 +25,18 @@ type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
   <Typography.Text className={styles.ElementText + ' ' + styles.ElementKeyText} {...props} />
 );
-const EntryValueText = (props: EntryTextProps) => (
-  <Typography.Text className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />
-);
+const EntryValueText = (props: EntryTextProps) => {
+  return props.children ? (
+    <Typography.Text className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />
+  ) : (
+    <Typography.Text
+      className={styles.ElementText + ' ' + styles.ElementValueText}
+      style={{ color: '#aaa', fontStyle: 'normal' }}
+    >
+      N/A
+    </Typography.Text>
+  );
+};
 
 const TechEntryKey = (props: EntryTextProps) => (
   <Space style={{ fontSize: '.9em' }}>
@@ -212,18 +221,12 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
           _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
         </EntryValueText>,
       ]);
-    statusEntries.push([
-      <EntryKeyText>Planned duration</EntryKeyText>,
-      <EntryValueText>N/A</EntryValueText>,
-    ]);
+    statusEntries.push([<EntryKeyText>Planned duration</EntryKeyText>, <EntryValueText />]);
     statusEntries.push([
       <EntryKeyText>Start Time</EntryKeyText>,
       <EntryValueText>5/20/2026, 12:39 PM</EntryValueText>,
     ]);
-    statusEntries.push([
-      <EntryKeyText>End Time</EntryKeyText>,
-      <EntryValueText>N/A</EntryValueText>,
-    ]);
+    statusEntries.push([<EntryKeyText>End Time</EntryKeyText>, <EntryValueText />]);
     statusEntries.push([
       <EntryKeyText>Time so far</EntryKeyText>,
       <EntryValueText>2h 47m</EntryValueText>,

@@ -1,0 +1,33 @@
+.GridContainer {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.GridCell {
+  padding: 12;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+}
+// removing right border for every second element
+.GridCell:nth-child(2n) {
+  border-right: none;
+}
+// removing the last two bottom borders if number of elements
+// is even otherwise remove only the bottom border of the last one
+.GridContainer:has(> :last-child:nth-child(even))
+  > .GridCell:nth-last-child(-n + 2) {
+  border-bottom: none;
+}
+.GridContainer:has(> :last-child:nth-child(odd)) > .GridCell:last-child {
+  border-bottom: none;
+}
+
+.ListTitle {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: gray;
+}
+.ListValue {
+  display: flex;
+  justify-content: right;
+}

@@ -138,16 +138,6 @@ export default function InstanceInfoPanel({
           label: 'Activity',
           children: <ElementTiming info={info} />,
         },
-        {
-          key: 'Assignments',
-          label: 'Assignments',
-          children: 'How to proceed',
-        },
-        {
-          key: 'Resources',
-          label: 'Resources',
-          children: 'How to proceed',
-        },
       ]}
     />
   ) : null;
@@ -159,7 +149,7 @@ export default function InstanceInfoPanel({
     <ResizableElement
       initialWidth={500}
       minWidth={400}
-      maxWidth={'100vw'}
+      maxWidth={'75vw'}
       style={{
         // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
         height: 'calc(100vh - 150px)',

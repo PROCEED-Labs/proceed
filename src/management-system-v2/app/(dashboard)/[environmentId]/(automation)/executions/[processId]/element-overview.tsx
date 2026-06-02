@@ -1,18 +1,22 @@
 import { ReactNode } from 'react';
 import { Col, Divider, Menu, Row, Space, Typography } from 'antd';
 import { DataGrid, DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
-import styles from './element-status.module.scss';
 import { InstanceSelector } from './instance-selector';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
 import TextViewer from '@/components/text-viewer';
 import { getPlanDelays, getTimeInfo } from './instance-helpers';
 import { generateDateString, generateDurationString } from '@/lib/utils';
+import styles from './element-overwiew.module.scss';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
-const EntryText = (props: EntryTextProps) => (
-  <Typography.Text className={styles.ElementText} {...props} />
-);
+const OverviewEntryText = (props: EntryTextProps) => {
+  return props.children ? (
+    <Typography.Text {...props} />
+  ) : (
+    <Typography.Text style={{ color: '#aaa', fontStyle: 'normal' }}>N/A</Typography.Text>
+  );
+};
 
 export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
   if (!info.instance) return <InstanceSelector />;
@@ -104,73 +108,36 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
     overviewEntries.push([
       <div
         style={{
-          // backgroundColor: 'red',
-          border: 'solid',
+          border: '1.5px solid #ddd',
           borderRadius: 12,
-          borderWidth: 1.5,
-          borderColor: '#ddd',
+          overflow: 'hidden',
         }}
       >
-        <Row>
-          <Col
-            span={12}
-            style={{
-              borderRight: 'solid',
-              borderBottom: 'solid',
-              borderWidth: 1,
-              borderColor: '#ddd',
-              padding: 10,
-            }}
-          >
+        <div className={styles.GridContainer}>
+          <div className={styles.GridCell}>
             <Typography.Text>Started</Typography.Text>
             <br />
-            <Typography.Text>{generateDateString(start, true)}</Typography.Text>
-          </Col>
-          <Col
-            span={12}
-            style={{
-              borderLeft: 'solid',
-              borderBottom: 'solid',
-              borderWidth: 1,
-              borderColor: '#ddd',
-              padding: 10,
-            }}
-          >
+            <OverviewEntryText>{generateDateString(start, true)}</OverviewEntryText>
+          </div>
+
+          <div className={styles.GridCell}>
             <Typography.Text>Running for</Typography.Text>
             <br />
-            <Typography.Text>{generateDurationString(duration) || 'N/A'}</Typography.Text>
-          </Col>
-        </Row>
-        <Row>
-          <Col
-            span={12}
-            style={{
-              borderRight: 'solid',
-              borderTop: 'solid',
-              borderWidth: 1,
-              borderColor: '#ddd',
-              padding: 10,
-            }}
-          >
+            <OverviewEntryText>{generateDurationString(duration)}</OverviewEntryText>
+          </div>
+
+          <div className={styles.GridCell}>
             <Typography.Text>Planned</Typography.Text>
             <br />
-            <Typography.Text>{generateDurationString(plan.duration) || 'N/A'}</Typography.Text>
-          </Col>
-          <Col
-            span={12}
-            style={{
-              borderLeft: 'solid',
-              borderTop: 'solid',
-              borderWidth: 1,
-              borderColor: '#ddd',
-              padding: 10,
-            }}
-          >
+            <OverviewEntryText>{generateDurationString(plan.duration)}</OverviewEntryText>
+          </div>
+
+          <div className={styles.GridCell}>
             <Typography.Text>Started by</Typography.Text>
             <br />
-            <Typography.Text>Timmy Test</Typography.Text>
-          </Col>
-        </Row>
+            <OverviewEntryText>Timmy Test</OverviewEntryText>
+          </div>
+        </div>
       </div>,
     ]);
 
@@ -194,49 +161,30 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
         }}
       >
         <Row style={{ margin: 0 }}>
-          <Col span={12} style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>
+          <Col span={12} className={styles.ListTitle}>
             Planned
           </Col>
-          <Col
-            span={12}
-            style={{
-              display: 'flex',
-              justifyContent: 'right',
-              fontSize: '.9em',
-            }}
-          >
-            $500
+          <Col span={12} className={styles.ListValue}>
+            <OverviewEntryText style={{ fontSize: '.9em' }}>$500</OverviewEntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
         <Row style={{ margin: 0 }}>
-          <Col span={12} style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>
+          <Col span={12} className={styles.ListTitle}>
             Calculated
           </Col>
-          <Col
-            span={12}
-            style={{
-              display: 'flex',
-              justifyContent: 'right',
-              fontSize: '.9em',
-            }}
-          >
-            $520
+
+          <Col span={12} className={styles.ListValue}>
+            <OverviewEntryText style={{ fontSize: '.9em' }}>$520</OverviewEntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
         <Row style={{ margin: 0 }}>
-          <Col span={12} style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>
+          <Col span={12} className={styles.ListTitle}>
             Actual
           </Col>
-          <Col
-            span={12}
-            style={{
-              display: 'flex',
-              justifyContent: 'right',
-            }}
-          >
-            <Typography.Text style={{ fontWeight: 1000 }}>$520</Typography.Text>
+          <Col span={12} className={styles.ListValue}>
+            <OverviewEntryText style={{ fontWeight: 1000 }}>$520</OverviewEntryText>
             <Typography.Text
               style={{
                 fontWeight: 1000,

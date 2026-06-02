@@ -56,7 +56,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProcessDeployments } from '@/lib/data/deployment';
 import { isSuccessResponse, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getInstance } from '@/lib/data/instance';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncMap, pick } from '@/lib/helpers/javascriptHelpers';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { enableInstanceCSVExport } from 'FeatureFlags';
 import jsonToCsvExport from 'json-to-csv-export';
@@ -171,32 +171,14 @@ export default function ProcessDeploymentView({ processId }: { processId: string
       if (isUserErrorResponse(instance)) return null;
       if (!instance) return null;
 
-      return { ...instance.state, engines: instance.engines };
+      return {
+        ...instance.state,
+        ...pick(instance, ['engines', 'executionStatus', 'pausing', 'paused', 'offline']),
+      };
     },
     enabled: !!selectedInstanceId,
     refetchInterval: 1000,
   });
-
-  const { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline } = useMemo(() => {
-    let instanceIsRunning = false;
-    let instanceIsPausing = false;
-    let instanceIsPaused = false;
-    let offline = false;
-
-    const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-
-    if (currentInstance) {
-      instanceIsRunning = currentInstance.instanceState.some((state) =>
-        activeStates.includes(state),
-      );
-      instanceIsPausing = currentInstance.instanceState.some((state) => state === 'PAUSING');
-      instanceIsPaused = currentInstance.instanceState.some((state) => state === 'PAUSED');
-
-      offline = currentInstance.engines.some((e) => e.online === false);
-    }
-
-    return { instanceIsRunning, instanceIsPausing, instanceIsPaused, offline };
-  }, [currentInstance]);
 
   const {
     data: isProcessActivated,
@@ -314,7 +296,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 placeholder="Select an instance"
               />
 
-              {offline && (
+              {currentInstance?.offline && (
                 <Tooltip title="Some of the engines this process is executed on are not reachable!">
                   <Avatar
                     icon={
@@ -499,17 +481,19 @@ export default function ProcessDeploymentView({ processId }: { processId: string
             <div>
               {currentInstance && (
                 <ToolbarGroup>
-                  {instanceIsPaused || instanceIsPausing ? (
+                  {currentInstance.paused || currentInstance.pausing ? (
                     // Show Resume (Play) when paused or pausing
                     <Tooltip
                       title={
-                        instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'
+                        currentInstance.pausing
+                          ? 'Abort pausing the instance'
+                          : 'Resume the instance'
                       }
                     >
                       <Button
                         className={styles.PlayIcon}
                         icon={<CaretRightOutlined />}
-                        disabled={offline}
+                        disabled={currentInstance.offline}
                         loading={resumingInstance}
                         onClick={async () => {
                           setResumingInstance(true);
@@ -529,7 +513,9 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                         className={styles.PauseIcon}
                         icon={<PauseOutlined />}
                         loading={pausingInstance}
-                        disabled={offline || !instanceIsRunning}
+                        disabled={
+                          currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                        }
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
@@ -548,7 +534,9 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       className={styles.StopIcon}
                       icon={<StopOutlined />}
                       loading={stoppingInstance}
-                      disabled={offline || !instanceIsRunning}
+                      disabled={
+                        currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                      }
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({

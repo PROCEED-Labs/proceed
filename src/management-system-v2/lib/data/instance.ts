@@ -195,6 +195,23 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
     };
   }
 
+  let executionStatus: 'Running' | 'Ended' | 'Failed' = 'Ended';
+  const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+  const { instanceState } = state;
+  if (instanceState.some((state) => activeStates.includes(state))) {
+    executionStatus = 'Running';
+  }
+  const failStates = [
+    'FAILED',
+    'ERROR-SEMANTIC',
+    'ERROR-TECHNICAL',
+    'ERROR-CONSTRAINT-UNFULFILLED',
+    'ERROR-UNKNOWN',
+  ];
+  if (executionStatus === 'Ended' && instanceState.some((state) => failStates.includes(state))) {
+    executionStatus = 'Failed';
+  }
+
   return {
     ...instance,
     initiator,
@@ -202,6 +219,10 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
       id,
       online: reachableEngines.some((e) => e.id === id),
     })),
+    executionStatus,
+    offline: instance.engineIds.some((id) => !reachableEngines.some((e) => e.id === id)),
+    pausing: instanceState.some((state) => state === 'PAUSING'),
+    paused: instanceState.some((state) => state === 'PAUSED'),
     state: {
       ...state,
       tokens: state.tokens.map((token) => ({

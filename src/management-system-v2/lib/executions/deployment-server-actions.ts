@@ -239,7 +239,7 @@ global.isRefetchingDeployments =
   global.isRefetchingDeployments || (global.isRefetchingDeployments = false);
 global.deploymentRefetchDonePromise =
   global.deploymentRefetchDonePromise || (global.deploymentRefetchDonePromise = Promise.resolve());
-// value that indicates the time the last update finished to ensure that we have 10 seconds timeout
+// value that indicates the time the last update finished to ensure that we have the configured timeout
 // between updates
 global.lastDeploymentsRefetchTime =
   global.lastDeploymentsRefetchTime || (global.lastDeploymentsRefetchTime = 0);
@@ -441,7 +441,7 @@ export async function refetchDeployments() {
       // allow the next update to happen after the configured interval has elapsed
       global.isRefetchingDeployments = false;
       global.lastDeploymentsRefetchTime = Date.now();
-      resolve(undefined);
+      resolve({ success: true });
     });
   }
 

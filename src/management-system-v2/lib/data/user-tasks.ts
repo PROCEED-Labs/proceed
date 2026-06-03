@@ -27,7 +27,16 @@ export async function getUserTasks(spaceId: string) {
           // get all user tasks that were created in the task editor of the MS
           { instance: null },
           // and all user tasks that belong to instances of processes belonging to this space
-          { instance: { deployment: { version: { process: { environmentId: spaceId } } } } },
+          {
+            instance: {
+              deployment: {
+                AND: [
+                  { version: { process: { environmentId: spaceId } } },
+                  { removeTime: null, toRemove: false },
+                ],
+              },
+            },
+          },
         ],
       },
     })) as UserTask[];

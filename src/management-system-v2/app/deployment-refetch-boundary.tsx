@@ -10,17 +10,22 @@ const DeploymentRefetchBoundary: React.FC<
     // as long as as user is connected they will trigger the backend to keep the deployment
     // information up to date
     let keepRunning = true;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     async function refetchCycle() {
       if (!keepRunning) return;
       await refetchDeployments();
 
       // the user sets the interval in seconds so we have to convert to milliseconds
-      setTimeout(refetchCycle, interval * 1000);
+      timeoutId = setTimeout(refetchCycle, interval * 1000);
     }
 
     if (enabled && interval) refetchCycle();
 
-    () => (keepRunning = false);
+    return () => {
+      keepRunning = false;
+      clearTimeout(timeoutId);
+    };
   }, [enabled, interval]);
 
   return children;

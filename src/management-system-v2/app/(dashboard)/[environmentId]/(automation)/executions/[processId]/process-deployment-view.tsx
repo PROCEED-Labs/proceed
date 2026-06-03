@@ -12,6 +12,7 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -43,6 +44,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenDocumentation } from '../../../processes/processes-helper';
 import {
+  exportInstanceData,
   getProcessStartForm,
   pauseInstance,
   resumeInstance,
@@ -55,6 +57,8 @@ import { isSuccessResponse, isUserErrorResponse, userError } from '@/lib/user-er
 import { getInstance } from '@/lib/data/instance';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { getProcessBPMN } from '@/lib/data/processes';
+import { enableInstanceCSVExport } from 'FeatureFlags';
+import jsonToCsvExport from 'json-to-csv-export';
 
 export default function ProcessDeploymentView({ processId }: { processId: string }) {
   const { data: session } = useSession();
@@ -399,7 +403,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                             );
 
                             if (!session)
-                              throw new Error('Unknown user tries to start an instance!');
+                              return userError('Unknown user tries to start an instance!');
 
                             const globalVars = await getGlobalVariablesForHTML(
                               spaceId,
@@ -542,6 +546,58 @@ export default function ProcessDeploymentView({ processId }: { processId: string
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
+                {enableInstanceCSVExport && (
+                  <>
+                    <Tooltip title={'Export data of this selected instance as a csv file'}>
+                      <Button
+                        onClick={() => {
+                          if (currentInstance) {
+                            wrapServerCall({
+                              fn: () =>
+                                exportInstanceData(
+                                  spaceId,
+                                  processId,
+                                  currentInstance.processInstanceId,
+                                ),
+                              onSuccess: (data) =>
+                                jsonToCsvExport({
+                                  data,
+                                }),
+                            });
+                          }
+                        }}
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            THIS
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          wrapServerCall({
+                            fn: () => exportInstanceData(spaceId, processId),
+                            onSuccess: (data) => jsonToCsvExport({ data }),
+                          })
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            ALL
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
                 {currentInstance && (
                   <Tooltip title="View Instance Documentation">
                     <Button
@@ -587,29 +643,29 @@ export default function ProcessDeploymentView({ processId }: { processId: string
         <StartFormModal
           html={startForm}
           onSubmit={async (submitVariables) => {
-            const deployment = getLatestDeployment(deployments);
-
-            if (!deployment) {
-              throw new Error('The current process does not seem to be deployed.');
-            }
-
-            const mappedVariables: Record<string, { value: any }> = {};
-
-            // set the values of variables to the ones coming from the start form
-            Object.entries(submitVariables).forEach(
-              ([key, value]) => (mappedVariables[key] = { value }),
-            );
-
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () =>
-                startInstance(
+              fn: async () => {
+                const deployment = getLatestDeployment(deployments);
+
+                if (!deployment) {
+                  return userError('The current process does not seem to be deployed.');
+                }
+
+                const mappedVariables: Record<string, { value: any }> = {};
+
+                // set the values of variables to the ones coming from the start form
+                Object.entries(submitVariables).forEach(
+                  ([key, value]) => (mappedVariables[key] = { value }),
+                );
+
+                return startInstance(
                   spaceId,
                   deployment.processId,
                   deployment.version.id,
                   mappedVariables,
-                ),
-
+                );
+              },
               onSuccess: async (instanceId) => {
                 await refetchDeployments();
                 setSelectedInstanceId(instanceId);

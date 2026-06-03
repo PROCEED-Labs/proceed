@@ -20,22 +20,14 @@ import { generateDateString, generateDurationString, generateNumberString } from
 import styles from './element-status.module.scss';
 import { InstanceSelector } from './instance-selector';
 import TextViewer from '@/components/text-viewer';
+import { EntryText } from './entry-text';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
-  <Typography.Text className={styles.ElementText + ' ' + styles.ElementKeyText} {...props} />
+  <EntryText className={styles.ElementText + ' ' + styles.ElementKeyText} {...props} />
 );
 const EntryValueText = (props: EntryTextProps) => {
-  return props.children ? (
-    <Typography.Text className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />
-  ) : (
-    <Typography.Text
-      className={styles.ElementText + ' ' + styles.ElementValueText}
-      style={{ color: '#aaa', fontStyle: 'normal' }}
-    >
-      N/A
-    </Typography.Text>
-  );
+  return <EntryText className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />;
 };
 
 const TechEntryKey = (props: EntryTextProps) => (

@@ -8,15 +8,7 @@ import TextViewer from '@/components/text-viewer';
 import { getPlanDelays, getTimeInfo } from './instance-helpers';
 import { generateDateString, generateDurationString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
-
-type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
-const OverviewEntryText = (props: EntryTextProps) => {
-  return props.children ? (
-    <Typography.Text {...props} />
-  ) : (
-    <Typography.Text style={{ color: '#aaa', fontStyle: 'normal' }}>N/A</Typography.Text>
-  );
-};
+import { EntryText } from './entry-text';
 
 export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
   if (!info.instance) return <InstanceSelector />;
@@ -82,9 +74,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
         <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
           Vacation Requests Automated
         </Typography.Title>
-        <Typography.Text style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>
-          Vac-Req-Aut
-        </Typography.Text>
+        <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>Vac-Req-Aut</EntryText>
       </div>,
     ]);
 
@@ -115,27 +105,27 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
       >
         <div className={styles.GridContainer}>
           <div className={styles.GridCell}>
-            <Typography.Text>Started</Typography.Text>
+            <EntryText>Started</EntryText>
             <br />
-            <OverviewEntryText>{generateDateString(start, true)}</OverviewEntryText>
+            <EntryText>{generateDateString(start, true)}</EntryText>
           </div>
 
           <div className={styles.GridCell}>
-            <Typography.Text>Running for</Typography.Text>
+            <EntryText>Running for</EntryText>
             <br />
-            <OverviewEntryText>{generateDurationString(duration)}</OverviewEntryText>
+            <EntryText>{generateDurationString(duration)}</EntryText>
           </div>
 
           <div className={styles.GridCell}>
-            <Typography.Text>Planned</Typography.Text>
+            <EntryText>Planned</EntryText>
             <br />
-            <OverviewEntryText>{generateDurationString(plan.duration)}</OverviewEntryText>
+            <EntryText>{generateDurationString(plan.duration)}</EntryText>
           </div>
 
           <div className={styles.GridCell}>
-            <Typography.Text>Started by</Typography.Text>
+            <EntryText>Started by</EntryText>
             <br />
-            <OverviewEntryText>Timmy Test</OverviewEntryText>
+            <EntryText>Timmy Test</EntryText>
           </div>
         </div>
       </div>,
@@ -143,9 +133,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
 
     // Budget
     overviewEntries.push([
-      <Typography.Text style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>
-        BUDGET
-      </Typography.Text>,
+      <EntryText style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>BUDGET</EntryText>,
     ]);
     overviewEntries.push([
       <Space
@@ -165,7 +153,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
             Planned
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <OverviewEntryText style={{ fontSize: '.9em' }}>$500</OverviewEntryText>
+            <EntryText style={{ fontSize: '.9em' }}>$500</EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -175,7 +163,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
           </Col>
 
           <Col span={12} className={styles.ListValue}>
-            <OverviewEntryText style={{ fontSize: '.9em' }}>$520</OverviewEntryText>
+            <EntryText style={{ fontSize: '.9em' }}>$520</EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -184,7 +172,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
             Actual
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <OverviewEntryText style={{ fontWeight: 1000 }}>$520</OverviewEntryText>
+            <EntryText style={{ fontWeight: 1000 }}>$520</EntryText>
             <Typography.Text
               style={{
                 fontWeight: 1000,

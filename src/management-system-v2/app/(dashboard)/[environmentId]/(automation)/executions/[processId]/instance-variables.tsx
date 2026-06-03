@@ -23,11 +23,17 @@ import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useInstanceVariables, { Variable } from './use-instance-variables';
 import { textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
+import { EntryText } from './entry-text';
 
 type InstanceVariableProps = {
   info: RelevantInstanceInfo;
   refetch: () => void;
 };
+
+type FieldTitleProps = React.ComponentProps<typeof Typography.Text>;
+const FormFieldTitle = (props: FieldTitleProps) => (
+  <EntryText style={{ fontWeight: 600, color: '#777' }} {...props} />
+);
 
 const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) => {
   const [updatedValue, setUpdatedValue] = useState<any>(undefined);
@@ -242,59 +248,59 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
           <Row>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Type</Typography.Text>
+                <FormFieldTitle>Type</FormFieldTitle>
                 <br />
-                <Typography.Text>Text</Typography.Text>
+                <EntryText>Text</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Format</Typography.Text>
+                <FormFieldTitle>Format</FormFieldTitle>
                 <br />
-                <Typography.Text>N/A</Typography.Text>
+                <EntryText>{}</EntryText>
               </div>
             </Col>
           </Row>
           <Row>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Required at start</Typography.Text>
+                <FormFieldTitle>Required at start</FormFieldTitle>
                 <br />
-                <Typography.Text>Yes</Typography.Text>
+                <EntryText>Yes</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Can be changed</Typography.Text>
+                <FormFieldTitle>Can be changed</FormFieldTitle>
                 <br />
-                <Typography.Text>Yes</Typography.Text>
+                <EntryText>Yes</EntryText>
               </div>
             </Col>
           </Row>
           <Row>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Default value</Typography.Text>
+                <FormFieldTitle>Default value</FormFieldTitle>
                 <br />
-                <Typography.Text>N/A</Typography.Text>
+                <EntryText>{}</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
-                <Typography.Text>Allowed values</Typography.Text>
+                <FormFieldTitle>Allowed values</FormFieldTitle>
                 <br />
-                <Typography.Text>N/A</Typography.Text>
+                <EntryText>{}</EntryText>
               </div>
-            </Col>
-          </Row>
-          <Row>
-            <Col span={24}>
-              <Typography.Text>desc</Typography.Text>
             </Col>
           </Row>
           <Row>
             <Col span={24}>
-              <Typography.Text>lalalalal</Typography.Text>
+              <FormFieldTitle>desc</FormFieldTitle>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={24}>
+              <EntryText>lalalalal</EntryText>
             </Col>
           </Row>
         </div>

@@ -118,7 +118,9 @@ const ProcessesPage = async (props: {
           </Space>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div
+          style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+        >
           {/* Analytics Cards Section */}
           <ProcessAnalyticsCards
             items={folderContentsFiltered}
@@ -127,7 +129,7 @@ const ProcessesPage = async (props: {
             spaceId={activeEnvironment.spaceId}
           />
           {/* Processes List */}
-          <div style={{ overflow: 'auto', width: '100%' }}>
+          <div style={{ flex: 1, overflow: 'auto', width: '100%', minHeight: 0 }}>
             <Processes
               {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
               rootFolder={rootFolder}

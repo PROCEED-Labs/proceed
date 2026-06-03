@@ -1,178 +1,34 @@
 .Section {
-  margin-bottom: 3.5rem;
+  margin-bottom: 1.5rem;
   text-align: left;
-  position: relative;
+  padding-left: 70px;
 
-  // accent line
-  &::before {
-    content: '';
-    position: absolute;
-    left: -20px;
-    top: 8px;
-    width: 4px;
-    height: 28px;
-    background: linear-gradient(180deg, #1890ff 0%, #40a9ff 100%);
-    border-radius: 2px;
-    opacity: 0.85;
-  }
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #1a1a1a;
-  }
-
-  p {
-    color: #666;
-    font-size: 0.95rem;
-  }
-
-  // Section icon
   .SectionIcon {
-    margin-right: 12px;
-    color: #1890ff;
+    margin-right: 8px;
   }
 
   .TileGroup {
     display: flex;
     justify-content: flex-start;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 26px;
 
     .Tile {
       text-decoration: none;
       width: 200px;
-      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-
-      &:hover {
-        transform: translateY(-6px);
-      }
 
       .TileCard {
         text-align: center;
-        border: 1px solid #e8e8e8;
-        border-radius: 12px;
-        background: #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        padding: 28px 16px;
-        height: 145px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        overflow: hidden;
-
-        // Top accent line on hover
-        &::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: linear-gradient(
-            90deg,
-            #1890ff 0%,
-            #40a9ff 50%,
-            #1890ff 100%
-          );
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        // Bottom glow effect on hover
-        &::after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0%;
-          height: 2px;
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            #1890ff 50%,
-            transparent 100%
-          );
-          opacity: 0;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        &:hover {
-          border-color: #1890ff;
-          box-shadow: 0 8px 24px rgba(24, 144, 255, 0.15);
-          background: linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
-
-          &::before {
-            opacity: 1;
-          }
-
-          &::after {
-            width: 80%;
-            opacity: 0.6;
-          }
-        }
+        border: 1.5px solid #d9d9d9;
 
         .TileCardTitle {
-          margin-top: 12px;
-          font-size: 0.95rem;
-          font-weight: 500;
-          color: #262626;
-          transition: all 0.3s ease;
-          letter-spacing: -0.01em;
+          margin-top: 8px;
         }
       }
 
       .TileIcon {
-        font-size: 36px;
-        margin-bottom: 4px;
-        color: #1890ff;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        filter: drop-shadow(0 2px 4px rgba(24, 144, 255, 0.08));
-      }
-
-      // hover effect
-      &:hover .TileIcon {
-        color: #096dd9;
-        transform: scale(1.15) rotateZ(-5deg);
-        filter: drop-shadow(0 4px 8px rgba(24, 144, 255, 0.25));
-      }
-
-      &:hover .TileCardTitle {
-        color: #1890ff;
-        font-weight: 600;
-      }
-    }
-  }
-}
-
-// fade in animation on page load
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.Section {
-  animation: fadeInUp 0.5s ease-out;
-
-  .TileGroup .Tile {
-    animation: fadeInUp 0.5s ease-out;
-    animation-fill-mode: both;
-
-    // delay for each tile
-    @for $i from 1 through 12 {
-      &:nth-child(#{$i}) {
-        animation-delay: #{$i * 0.05}s;
+        font-size: 22px;
+        margin-bottom: 8px;
       }
     }
   }

@@ -214,7 +214,8 @@ const AasConfigContent: React.FC<VariablesEditorProps> = ({ parentConfig, editin
     const isMetaParameter =
       (element as any).valueTemplateSource && (element as any).valueTemplateSource !== 'none';
     const shouldStyleAsEmpty =
-      parentConfig.configType !== 'organization' && effectiveType === 'content' &&
+      parentConfig.configType !== 'organization' &&
+      effectiveType === 'content' &&
       (!element.value || element.value === '') &&
       isLeafParameter &&
       !isMetaParameter;

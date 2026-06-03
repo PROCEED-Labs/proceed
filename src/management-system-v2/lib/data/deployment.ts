@@ -3,7 +3,48 @@
 import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
-import { UserErrorType, userError } from '../user-error';
+import { SuccessType, UserErrorType, userError } from '../user-error';
+
+export async function getDeployedProcesses(environmentId: string) {
+  const { ability } = await getCurrentEnvironment(environmentId);
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const deploymentIsNotDeleted = { AND: [{ removeTime: null }, { toRemove: false }] };
+
+  let deployedProcesses = await db.process.findMany({
+    where: {
+      // get all processes in the current environment that have at least one version that is
+      // currently deployed
+      AND: [
+        { environmentId },
+        {
+          versions: {
+            some: { deployments: { some: deploymentIsNotDeleted } },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      versions: {
+        // only include deployed versions in the output
+        where: { deployments: { some: deploymentIsNotDeleted } },
+        include: {
+          deployments: {
+            // only include deployments in the output that are still actively deployed
+            where: deploymentIsNotDeleted,
+            include: { instances: { select: { id: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  return ability.filter('view', 'Process', deployedProcesses);
+}
 
 export async function getProcessDeployments(spaceId: string, processId: string) {
   const { ability } = await getCurrentEnvironment(spaceId);
@@ -12,12 +53,23 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   const deployments = await db.processDeployment.findMany({
-    where: { AND: [{ version: { processId } }, { removeTime: null }] },
-    include: { version: { select: { processId: true } } },
+    where: { AND: [{ version: { processId } }, { removeTime: null }, { toRemove: false }] },
+    include: {
+      version: { select: { id: true, processId: true, name: true } },
+      instances: { select: { id: true } },
+    },
   });
 
-  return deployments.map((d) => ({ ...d, version: undefined, processId: d.version.processId }));
+  return deployments.map((d) => ({
+    ...d,
+    processId: d.version.processId,
+    instances: d.instances.map(({ id }) => id),
+  }));
 }
+
+export type StoredDeployment = SuccessType<
+  Awaited<ReturnType<typeof getProcessDeployments>>
+>[number];
 
 export async function addDeployment(spaceId: string, input: DeploymentInput) {
   const { ability } = await getCurrentEnvironment(spaceId);

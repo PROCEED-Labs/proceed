@@ -39,14 +39,15 @@ export async function activateUserTask(
   startTime: number,
 ) {
   await engineRequest({
-    method: 'get',
-    endpoint: '/tasklist/api/userTask',
+    method: 'put',
+    endpoint: '/tasklist/api/active',
     engine: machine,
     queryParams: {
       instanceID: instanceId,
       userTaskID: userTaskId,
       startTime: `${startTime}`,
     },
+    body: { active: true },
   });
 }
 

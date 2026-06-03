@@ -5,7 +5,7 @@ import { InstanceInfo } from '@/lib/engines/deployment';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 
 const useColors = (
-  selectedBpmn: { bpmn: string },
+  selectedBpmn: { bpmn: string } | undefined,
   selectedColoring: ColorOptions,
   selectedInstance: InstanceInfo | undefined,
   canvasRef: RefObject<BPMNCanvasRef | null>,

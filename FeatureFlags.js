@@ -46,7 +46,7 @@ module.exports = {
   enableChatbot: false,
 
   // CSV export buttons for process instances
-  enableInstanceCSVExport: false,
+  enableInstanceCSVExport: true,
 
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
   // -----------------------------------------------------------------------------

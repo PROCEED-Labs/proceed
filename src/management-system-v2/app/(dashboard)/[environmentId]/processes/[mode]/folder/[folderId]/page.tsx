@@ -16,30 +16,8 @@ import EllipsisBreadcrumb from '@/components/ellipsis-breadcrumb';
 import { ComponentProps } from 'react';
 import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
-import ProcessAnalyticsCards from './analytics';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
-
-// Helper function to get all processes from a folder and its subfolders
-async function getAllProcessesRecursive(
-  folderId: string,
-  ability: any,
-  collected: ListItem[] = [],
-): Promise<ListItem[]> {
-  const contents = await getFolderContents(folderId, ability);
-
-  for (const item of contents) {
-    if (item.type === 'process') {
-      collected.push(item);
-    } else if (item.type === 'folder') {
-      collected.push(item);
-      // Recursively get processes from subfolders
-      await getAllProcessesRecursive(item.id, ability, collected);
-    }
-  }
-
-  return collected;
-}
 
 const ProcessesPage = async (props: {
   params: Promise<{ environmentId: string; folderId?: string; mode: string }>;
@@ -92,11 +70,6 @@ const ProcessesPage = async (props: {
   pathToFolder.reverse();
   wrappingFolderIds.reverse();
 
-  // Determine if this is the root folder
-  const isRootFolder = !folder.parentId;
-  // Get all processes from root folder for total count
-  const allProcessesRecursive = await getAllProcessesRecursive(rootFolder.id, ability);
-
   return (
     <>
       <Content
@@ -118,26 +91,16 @@ const ProcessesPage = async (props: {
           </Space>
         }
       >
-        <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Analytics Cards Section */}
-          <ProcessAnalyticsCards
-            items={folderContentsFiltered}
-            allProcesses={allProcessesRecursive}
-            isRootFolder={isRootFolder}
-            spaceId={activeEnvironment.spaceId}
+        <Space orientation="vertical" size="large" style={{ display: 'flex', height: '100%' }}>
+          <Processes
+            {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
+            rootFolder={rootFolder}
+            processes={folderContentsFiltered}
+            favourites={favs as string[]}
+            folder={folder}
+            pathToFolder={wrappingFolderIds}
           />
-          {/* Processes List */}
-          <div style={{ overflow: 'auto', width: '100%' }}>
-            <Processes
-              {...(isListView && { readOnly: true, hasNoReleasedProcesses })}
-              rootFolder={rootFolder}
-              processes={folderContentsFiltered}
-              favourites={favs as string[]}
-              folder={folder}
-              pathToFolder={wrappingFolderIds}
-            />
-          </div>
-        </div>
+        </Space>
       </Content>
     </>
   );

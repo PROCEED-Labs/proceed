@@ -260,7 +260,7 @@ const BaseProcessList: FC<BaseProcessListProps> = ({
         width: '40px',
         render: (id, _, index) =>
           id !== folder.parentId && (
-            <FavouriteStar id={id} viewOnly={false} className={styles.HoverableTableCell} />
+            <FavouriteStar id={id} viewOnly={isReadOnly} className={styles.HoverableTableCell} />
           ),
         sorter: folderAwareSort((a, b) =>
           favProcesses?.includes(a.id) && favProcesses?.includes(b.id)

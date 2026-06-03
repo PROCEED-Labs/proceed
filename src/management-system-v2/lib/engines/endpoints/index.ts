@@ -1,5 +1,5 @@
 import { Prettify } from '@/lib/typescript-utils';
-import { Engine } from '../types';
+import { Engine, isMqttConnection } from '../types';
 import {
   Methods,
   AvailableEndpoints,
@@ -24,40 +24,61 @@ export async function engineRequest<
   endpoint: Url;
   body?: any;
 } & Prettify<EndpointBuilderOptions<Method, Url>>) {
-  let queryParams;
-  if ('queryParams' in params && engine.type === 'mqtt') {
-    queryParams = params.queryParams;
-    delete params.queryParams;
-  }
+  for (const connection of engine.connections) {
+    try {
+      let queryParams;
+      if ('queryParams' in params && isMqttConnection(connection)) {
+        queryParams = params.queryParams;
+        delete params.queryParams;
+      }
 
-  const builtEndpoint = _endpointBuilder(endpoint, params);
+      const builtEndpoint = _endpointBuilder(endpoint, params);
 
-  if (engine.type === 'mqtt') {
-    let spaceEngineClient;
-    spaceEngineClient = await getClient(engine.brokerAddress);
+      let response;
+      if (isMqttConnection(connection)) {
+        let spaceEngineClient;
+        try {
+          spaceEngineClient = await getClient(connection.address);
+        } catch (err) {
+          continue;
+        }
 
-    const response = await mqttRequest(
-      engine.id,
-      builtEndpoint,
-      {
-        method: method.toUpperCase() as any,
-        query: queryParams as any,
-        body,
-      },
-      spaceEngineClient,
-    ).catch((e) => {
-      console.error('Error in mqttRequest', e);
-      throw e;
-    });
+        response = await mqttRequest(
+          engine.id,
+          builtEndpoint,
+          {
+            method: method.toUpperCase() as any,
+            query: queryParams as any,
+            body,
+          },
+          spaceEngineClient,
+        );
 
-    // NOTE: not awaiting this could be a problem if hosted on vercel
-    if (engine.spaceEngine) {
-      // TODO: removed because sometimes the same client is used for multiple requests.
-      //spaceEngineClient?.endAsync();
+        // NOTE: not awaiting this could be a problem if hosted on vercel
+        if (engine.spaceEngine) {
+          // TODO: removed because sometimes the same client is used for multiple requests.
+          //spaceEngineClient?.endAsync();
+        }
+      } else {
+        response = await httpRequest(
+          connection.address,
+          builtEndpoint,
+          method.toUpperCase() as any,
+          body,
+        );
+      }
+
+      if (response.error) {
+        // the request could be sent but the result was an error
+        throw response.error;
+      } else {
+        return response.result;
+      }
+    } catch (err) {
+      // the request itself failed => try other connections if there are any
+      continue;
     }
-
-    return response;
-  } else {
-    return await httpRequest(engine.address, builtEndpoint, method.toUpperCase() as any, body);
   }
+
+  throw new Error('Failed to establish a connection to the requested engine.');
 }

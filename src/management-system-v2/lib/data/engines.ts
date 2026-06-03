@@ -11,11 +11,12 @@ import {
   userError,
 } from '../user-error';
 import { resolveEngines } from '../engines/engine-connections-helpers';
-import { Engine, SpaceEngine } from '../engines/types';
-import { SystemAdmin } from '@prisma/client';
+import { SpaceEngine } from '../engines/types';
+import { EngineConnection, SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';
 import { toCaslResource } from '../ability/caslAbility';
+import { asyncMap } from '../helpers/javascriptHelpers';
 
 export async function getEngineConnections(
   environmentId: string | null,
@@ -62,29 +63,10 @@ export async function getEngineConnectionById(
   return connection;
 }
 
-function getUniqueEngines(engines: Engine[]) {
-  // some engines might occur multiple times
-  // (e.g. they are reachable through a saved HTTP engine and over a saved MQTT broker)
-  const uniqueEngines = engines.reduce(
-    (uniqueMap, engine) => {
-      if (!uniqueMap[engine.id]) {
-        uniqueMap[engine.id] = engine;
-      } else if (uniqueMap[engine.id].type === 'mqtt' && engine.type === 'http') {
-        // prefer http over mqtt since we can establish a more direct connection
-        uniqueMap[engine.id] = engine;
-      }
-      return uniqueMap;
-    },
-    {} as Record<string, Engine>,
-  );
-  return Object.values(uniqueEngines);
-}
-
 export async function getAvailableAdminEngines() {
   try {
     const connections = await getEngineConnections(null, undefined, 'dont-check');
-    const engines = await resolveEngines(connections);
-    return getUniqueEngines(engines);
+    return await resolveEngines(connections);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -96,8 +78,7 @@ export async function getAvailableSpaceEngines(spaceId: string) {
   try {
     const { ability } = await getCurrentEnvironment(spaceId);
     const connections = await getEngineConnections(spaceId, ability);
-    const engines = await resolveEngines(connections);
-    return getUniqueEngines(engines) as SpaceEngine[];
+    return (await resolveEngines(connections)) as SpaceEngine[];
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -112,16 +93,17 @@ export async function getAllAvailableEngines(
   try {
     if (!ability && !skipAbilityCheck) ({ ability } = await getCurrentEnvironment(spaceId));
 
-    let engines: Engine[] = [];
-    const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getEngineConnections(null, undefined, 'dont-check').then(resolveEngines),
-      getEngineConnections(spaceId, ability).then(resolveEngines),
+    const [proceedConnections, spaceConnections] = await Promise.allSettled([
+      getEngineConnections(null, undefined, 'dont-check'),
+      getEngineConnections(spaceId, ability),
     ]);
 
-    if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
-    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
+    let connections: EngineConnection[] = [];
+    if (proceedConnections.status === 'fulfilled') connections = proceedConnections.value;
+    if (spaceConnections.status === 'fulfilled')
+      connections = connections.concat(spaceConnections.value);
 
-    return getUniqueEngines(engines);
+    return resolveEngines(connections);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -156,8 +138,31 @@ export async function addEngineConnections(
   }
 
   try {
-    const res = await db.engineConnection.createMany({
-      data: newConnections.data.map((e) => ({ ...e, environmentId: environmentId ?? null })),
+    const data = await asyncMap(newConnections.data, async (connection) => {
+      const reachableEngines = await resolveEngines([
+        { ...connection, environmentId } as EngineConnection,
+      ]);
+
+      return {
+        ...connection,
+        environmentId,
+        engines: {
+          connectOrCreate: reachableEngines.map((e) => ({
+            where: { id: e.id },
+            create: { id: e.id, name: e.name },
+          })),
+        },
+      };
+    });
+
+    const res = await db.$transaction(async (tx) => {
+      return Promise.all(
+        data.map((c) =>
+          tx.engineConnection.create({
+            data: c,
+          }),
+        ),
+      );
     });
 
     return res;
@@ -180,14 +185,22 @@ export async function updateEngineConnection(
 
   const user = await getCurrentUser();
 
+  const connection = await db.engineConnection.findUnique({
+    where: {
+      environmentId: environmentId,
+      id: connectionId,
+    },
+    include: { engines: { select: { id: true } } },
+  });
+  if (!connection) return userError('Engine not found');
+
   if (environmentId) {
     const { ability } = await getCurrentEnvironment(environmentId);
 
-    const engine = await getEngineConnectionById(connectionId, environmentId);
-    if (!engine) return userError('Engine not found');
-
     if (
-      !ability.can('update', toCaslResource('Machine', engine), { environmentId: environmentId! })
+      !ability.can('update', toCaslResource('Machine', connection), {
+        environmentId: environmentId!,
+      })
     ) {
       return permissionDenied();
     }
@@ -196,9 +209,33 @@ export async function updateEngineConnection(
     return permissionDenied();
   }
 
+  const newAddress = newConnectionData.data.address;
+  let data;
+  if (newAddress && newAddress !== connection.address) {
+    const newEngines = await resolveEngines([
+      { ...newConnectionData.data, environmentId } as EngineConnection,
+    ]);
+
+    data = {
+      ...newConnectionData.data,
+      engines: {
+        // remove the relations to all engines that were reached using the old address
+        disconnect: connection.engines,
+        // add relations to all engines that are now reachable using the new address
+        // (create entries for engines that were not previously known)
+        connectOrCreate: newEngines.map((e) => ({
+          where: { id: e.id },
+          create: { id: e.id, name: e.name },
+        })),
+      },
+    };
+  } else {
+    data = newConnectionData.data;
+  }
+
   try {
     const res = await db.engineConnection.update({
-      data: newConnectionData.data,
+      data,
       where: {
         environmentId,
         id: connectionId,

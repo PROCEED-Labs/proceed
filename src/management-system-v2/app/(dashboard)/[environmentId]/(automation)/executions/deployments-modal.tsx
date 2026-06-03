@@ -27,7 +27,7 @@ import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getAvailableSpaceEngines } from '@/lib/data/engines';
-import { SpaceEngine } from '@/lib/engines/types';
+import { SpaceEngine, isHttpConnection, isMqttConnection } from '@/lib/engines/types';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
 
@@ -101,14 +101,26 @@ const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEE
       <>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <MdOutlineComputer />
-          {engine.type === 'http' ? engine.address : engine.id}
+          {engine.name || engine.id}
         </div>
 
         <Descriptions
           items={[
             {
-              label: 'type',
-              children: engine.type.toUpperCase(),
+              label: 'Connections',
+              children: Object.entries(
+                engine.connections.reduce(
+                  (acc, c) => {
+                    if (isHttpConnection(c)) acc.HTTP = true;
+                    else if (isMqttConnection(c)) acc.MQTT = true;
+                    return acc;
+                  },
+                  { HTTP: false, MQTT: false },
+                ),
+              )
+                .filter(([, hasType]) => hasType)
+                .map(([type]) => type)
+                .join(', '),
               key: '0',
               style: { padding: 0 },
             },

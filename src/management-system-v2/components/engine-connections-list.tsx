@@ -180,7 +180,7 @@ const EngineConnectionsList = ({
                     key={engine.id}
                     href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}
                   >
-                    {engine.id}
+                    {engine.name || engine.id}
                   </Link>
                 ));
               },

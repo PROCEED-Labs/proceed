@@ -40,26 +40,20 @@ export default async function EngineDashboard({
     );
   }
 
-  try {
-    const [configuration, machineData] = await Promise.all([
-      engineRequest({
-        engine,
-        method: 'get',
-        endpoint: '/configuration/',
-      }),
-      engineRequest({
-        engine,
-        method: 'get',
-        endpoint: '/machine/',
-      }),
-    ]);
+  const [configuration, machineData] = await Promise.allSettled([
+    engineRequest({
+      engine,
+      method: 'get',
+      endpoint: '/configuration/',
+    }),
+    engineRequest({
+      engine,
+      method: 'get',
+      endpoint: '/machine/',
+    }),
+  ]);
 
-    return (
-      <Content title={<Space style={{ alignItems: 'center' }}>{backButton}</Space>}>
-        <ClientEngineDashboard configuration={configuration} machineData={machineData} />
-      </Content>
-    );
-  } catch (e) {
+  if (configuration.status === 'rejected' || machineData.status === 'rejected') {
     // TODO: get more information about error
     return (
       <Content title={backButton}>
@@ -67,4 +61,10 @@ export default async function EngineDashboard({
       </Content>
     );
   }
+
+  return (
+    <Content title={<Space style={{ alignItems: 'center' }}>{backButton}</Space>}>
+      <ClientEngineDashboard configuration={configuration.value} machineData={machineData.value} />
+    </Content>
+  );
 }

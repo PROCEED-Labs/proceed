@@ -33,7 +33,7 @@ export const UserTaskInputSchema = z.object({
     })
     .array(),
   milestonesChanges: z.record(z.string(), z.number()),
-  machineId: z.string(),
+  engineId: z.string().nullable(),
   offline: z.boolean().optional(),
 });
 

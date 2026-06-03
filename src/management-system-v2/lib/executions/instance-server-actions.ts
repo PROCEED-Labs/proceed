@@ -122,7 +122,9 @@ export async function updateVariables(
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    availableEngines = availableEngines.filter((engine) => instance.engineIds.includes(engine.id));
+    availableEngines = availableEngines.filter((engine) =>
+      instance.engines.some(({ id }) => id === engine.id),
+    );
 
     await asyncForEach(
       availableEngines,
@@ -164,7 +166,9 @@ export async function getFile(
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    availableEngines = availableEngines.filter((engine) => instance.engineIds.includes(engine.id));
+    availableEngines = availableEngines.filter((engine) =>
+      instance.engines.some(({ id }) => id === engine.id),
+    );
 
     if (!availableEngines.length) {
       return userError('Failed to find the engine the instance is running on!');
@@ -214,7 +218,7 @@ async function changeInstanceState(
   if (isUserErrorResponse(instance)) return instance;
   if (!instance) return userError('Unknown instance!', UserErrorType.NotFoundError);
 
-  if (!instance.engineIds.length) return userError('The instance is not being executed anymore.');
+  if (!instance.engines.length) return userError('The instance is not being executed anymore.');
 
   try {
     // TODO: how do we handle this correctly if some engines are reachable but others aren't?
@@ -228,7 +232,7 @@ async function changeInstanceState(
       {} as Record<string, Engine>,
     );
 
-    let instanceMachinesToChange = await asyncMap(instance.engineIds, async (id) => {
+    let instanceMachinesToChange = await asyncMap(instance.engines, async ({ id }) => {
       const machine = engineMap[id];
       if (!machine) return false;
 
@@ -356,7 +360,7 @@ export async function exportInstanceCSV(
       initiatorInfo.ProcessInstanceInitiatorId =
         initiatorInfo.ProcessInstanceInitiatorUsername =
         initiatorInfo.ProcessInstanceInitiatorFullName =
-        initiator;
+          initiator;
     } else {
       (initiatorInfo.ProcessInstanceInitiatorId = initiator.id),
         (initiatorInfo.ProcessInstanceInitiatorFullName = initiator.fullName);
@@ -443,25 +447,25 @@ export async function exportInstanceData(
 
       return instance
         ? instance.log.map((eventEntry) => {
-          const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
-            $type?: string;
-            name?: string;
-            outgoing?: any;
-            incoming?: any;
-          };
-          const ActualPerformer = eventEntry.actualOwner?.[0];
-          return {
-            ...instance,
-            ...eventEntry,
-            ProcessStepName: eventElement?.name,
-            ProcessStepType: eventElement?.$type?.split(':')[1],
-            ActualPerformerId: ActualPerformer?.id,
-            ActualPerformerName: ActualPerformer?.fullName,
-            ActualPerformerUsername: ActualPerformer?.username,
-            Log: JSON.stringify(eventEntry.variableChanges),
-            PreviousProcessStepId: eventElement.incoming?.map((flow: any) => flow.sourceRef.id),
-          };
-        })
+            const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
+              $type?: string;
+              name?: string;
+              outgoing?: any;
+              incoming?: any;
+            };
+            const ActualPerformer = eventEntry.actualOwner?.[0];
+            return {
+              ...instance,
+              ...eventEntry,
+              ProcessStepName: eventElement?.name,
+              ProcessStepType: eventElement?.$type?.split(':')[1],
+              ActualPerformerId: ActualPerformer?.id,
+              ActualPerformerName: ActualPerformer?.fullName,
+              ActualPerformerUsername: ActualPerformer?.username,
+              Log: JSON.stringify(eventEntry.variableChanges),
+              PreviousProcessStepId: eventElement.incoming?.map((flow: any) => flow.sourceRef.id),
+            };
+          })
         : [];
     })
   ).flat();

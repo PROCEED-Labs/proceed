@@ -30,7 +30,11 @@ import {
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
-type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+type StoredInstance = Omit<ProcessInstance, 'state'> & {
+  state: InstanceInfo;
+  versionId: string;
+  engines: { id: string }[];
+};
 
 const getVersionBpmnObject = cache(
   async (spaceId: string, definitionId: string, versionId: string, ability?: Ability) => {
@@ -215,12 +219,12 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   return {
     ...instance,
     initiator,
-    engines: instance.engineIds.map((id) => ({
+    engines: instance.engines.map(({ id }) => ({
       id,
       online: reachableEngines.some((e) => e.id === id),
     })),
     executionStatus,
-    offline: instance.engineIds.some((id) => !reachableEngines.some((e) => e.id === id)),
+    offline: instance.engines.some(({ id }) => !reachableEngines.some((e) => e.id === id)),
     pausing: instanceState.some((state) => state === 'PAUSING'),
     paused: instanceState.some((state) => state === 'PAUSED'),
     state: {
@@ -259,7 +263,7 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   const instanceInfo = await db.processInstance.findUnique({
     where: { id: instanceId },
-    include: { deployment: { select: { versionId: true } } },
+    include: { deployment: { select: { versionId: true } }, engines: { select: { id: true } } },
   });
 
   if (!instanceInfo) return null;
@@ -289,7 +293,7 @@ export async function getInstances(spaceId: string, ability: Ability) {
         ],
       },
     },
-    include: { deployment: { select: { versionId: true } } },
+    include: { deployment: { select: { versionId: true } }, engines: { select: { id: true } } },
   });
 
   const extendedInstances = await asyncMap(instances, async (i) =>

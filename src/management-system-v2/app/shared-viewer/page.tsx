@@ -297,7 +297,15 @@ const SharedViewer = async (props: PageProps) => {
 
   const ownerName = await resolveUserDisplayName(processData?.creatorId);
 
-  const processInitiatorName = await resolveUserDisplayName(instanceData?.processInitiator);
+  let processInitiatorName = 'Unknown';
+  const initiator = instanceData?.processInitiator;
+  if (initiator) {
+    if (typeof initiator === 'string') {
+      processInitiatorName = initiator;
+    } else {
+      processInitiatorName = initiator.fullName || initiator.username || initiator.id;
+    }
+  }
 
   // Inject both ownerName and processInitiatorName into processData
   const enrichedProcessData = {

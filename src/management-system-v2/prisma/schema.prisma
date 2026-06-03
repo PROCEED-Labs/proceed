@@ -270,6 +270,17 @@ model RoleMember {
   @@map("role_member")
 }
 
+model Engine {
+  id            String   @id
+  name          String?
+  connections   EngineConnection[]
+  deployments   ProcessDeployment[]
+  instances     ProcessInstance[]
+  userTasks     UserTask[]
+
+  @@map("engine")
+}
+
 model EngineConnection {
   id            String   @id @default(uuid())
   space         Space?   @relation(fields: [environmentId], references: [id], onDelete: Cascade)
@@ -278,6 +289,8 @@ model EngineConnection {
   name          String?
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
+
+  engines       Engine[]
 
   @@map("engine-connection")
 }
@@ -363,7 +376,8 @@ model UserTask {
   variableChanges   Json
   milestones        Json
   milestonesChanges Json
-  machineId         String
+  engineId          String?
+  engine            Engine?         @relation(fields: [engineId], references: [id])
   actualOwner       String[]
   potentialOwners   Json
 
@@ -469,9 +483,8 @@ model ProcessDeployment {
   // when the engine becomes available again the deployment should be removed from it and then the "removeTime" entry should be set
   toRemove      Boolean    @default(false)
 
-  // This is not the "Engine" which we store here in the DB but the actual engine the process is deployed on
-  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
   engineId      String
+  engine        Engine         @relation(fields: [engineId], references: [id])
 
   instances     ProcessInstance[]
 
@@ -484,9 +497,7 @@ model ProcessInstance {
   deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   initiatorId         String?
   initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
-  // These are not the "Engines" which we store here in the DB but the actual engines the process is running on
-  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
-  engineIds           String[]
+  engines             Engine[]
   state               Json
 
   userTasks           UserTask[]

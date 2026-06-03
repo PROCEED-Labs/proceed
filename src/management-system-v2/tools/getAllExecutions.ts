@@ -43,7 +43,7 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
 
     await refetchDeployments();
     const instances = await getInstances(environmentId, ability);
-    if (isUserErrorResponse(instances)) return instances;
+    if (isUserErrorResponse(instances)) return `Error: ${instances.error.message}.`;
 
     return {
       content: [{ type: 'text', text: JSON.stringify([...instances.map((i) => i.id)]) }],

@@ -27,7 +27,7 @@ import {
 } from '@/lib/data/machine-config-aas-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
-import { UserError, userError } from '@/lib/user-error';
+import { UserError, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
@@ -47,7 +47,7 @@ import {
 import mqtt from 'mqtt';
 import jsonata from 'jsonata';
 import { possiblyNumber } from '@/lib/utils';
-import { z, ZodError } from 'zod';
+import { z } from 'zod';
 import { getUserById } from './iam/users';
 import { getMembers } from './iam/memberships';
 import { Membership } from '@prisma/client';
@@ -61,7 +61,7 @@ import {
   userInfoMap,
 } from '@/app/(dashboard)/[environmentId]/machine-config/templates/parameter-template-user';
 import { defaultOrganizationConfigurationTemplate } from '@/app/(dashboard)/[environmentId]/machine-config/templates/configuration-template-organization';
-import { getRoles, getUserRoles } from '../roles';
+import { getUserRoles } from '../roles';
 import { getRolesWithMembers } from './iam/roles';
 
 const IntSchema = z.number().int();
@@ -1644,19 +1644,16 @@ export async function getVirtualUserRoles(
 ): Promise<Parameter> {
   let roleParameters: Parameter[] = [];
   const roles = await getUserRoles(parameter.environmentId, parameter.userId);
-  if ('error' in roles) {
-    throw new Error(
-      `Cannot get roles for user ${parameter.userId} in space ${parameter.environmentId}.`,
-    );
-  }
-  roleParameters = roles.map((role) => {
-    return defaultParameter({
-      name: role.id,
-      displayName: [{ text: role.name, language: 'en' }],
-      id: parameter.userId + role.name, // hardcoded ID for frontend consistency
-      origin: 'external',
+  if (!isUserErrorResponse(roles)) {
+    roleParameters = roles.map((role) => {
+      return defaultParameter({
+        name: role.id,
+        displayName: [{ text: role.name, language: 'en' }],
+        id: parameter.userId + role.name, // hardcoded ID for frontend consistency
+        origin: 'external',
+      });
     });
-  });
+  }
   return { ...parameter, subParameters: roleParameters };
 }
 
@@ -4949,10 +4946,6 @@ export async function syncSpaceConfigs() {
   }
 }
 
-export async function getUser(userId: string) {
-  return await getUserById(userId);
-}
-
 async function checkSiblingNames(siblings: string[], name: string) {
   for (const id of siblings) {
     let childParameterResult = await db.configParameter.findUnique({
@@ -4962,4 +4955,9 @@ async function checkSiblingNames(siblings: string[], name: string) {
     if (childParameter.name == name) return true;
   }
   return false;
+}
+
+// fetch helpers TO BE REMOVED IN THE FUTURE
+export async function getUser(userId: string) {
+  return await getUserById(userId);
 }

@@ -77,13 +77,12 @@ const DashboardView: React.FC = () => {
 
     stats.numEngines = engines.length;
 
-    const knownDeployments: Record<string, boolean> = {};
     const knownInstances: Record<string, string[]> = {};
 
     for (const {
       state: { processInstanceId, instanceState },
     } of data.instances) {
-      if (!knownDeployments[processInstanceId]) {
+      if (!knownInstances[processInstanceId]) {
         knownInstances[processInstanceId] = instanceState;
       } else {
         knownInstances[processInstanceId].push(...instanceState);

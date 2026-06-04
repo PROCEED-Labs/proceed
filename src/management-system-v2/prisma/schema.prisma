@@ -290,6 +290,8 @@ model EngineConnection {
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
 
+  removed       Boolean  @default(false)
+
   engines       Engine[]
 
   @@map("engine-connection")

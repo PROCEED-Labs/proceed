@@ -12,7 +12,7 @@ import {
 import ConnectionsModal from './engines-modal';
 import {
   updateEngineConnection,
-  addEngineConnections,
+  addEngineConnection,
   deleteEngineConnection,
 } from '@/lib/data/engines';
 import { useEnvironment } from '@/components/auth-can';
@@ -84,7 +84,7 @@ const EngineConnectionsList = ({
     await wrapServerCall({
       fn: (): Promise<any> => {
         if (editData) return updateEngineConnection(editData.id, data, spaceId);
-        else return addEngineConnections([data], spaceId);
+        else return addEngineConnection(data, spaceId);
       },
       onSuccess: () => {
         app.message.success({ content: editData ? 'Engine updated' : 'Engine added' });

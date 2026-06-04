@@ -273,10 +273,11 @@ model RoleMember {
 model Engine {
   id            String   @id
   name          String?
-  connections   EngineConnection[]
   deployments   ProcessDeployment[]
   instances     ProcessInstance[]
   userTasks     UserTask[]
+
+  connections   ConnectionEngineReachability[]
 
   @@map("engine")
 }
@@ -292,9 +293,20 @@ model EngineConnection {
 
   removed       Boolean  @default(false)
 
-  engines       Engine[]
+  engines       ConnectionEngineReachability[]
 
   @@map("engine-connection")
+}
+
+model ConnectionEngineReachability {
+  engine        Engine              @relation(fields: [engineId], references: [id])
+  engineId      String
+  connection    EngineConnection    @relation(fields: [connectionId], references: [id])
+  connectionId  String
+
+  reachable     Boolean
+  
+  @@id([engineId, connectionId])
 }
 
 model GuestSignin {

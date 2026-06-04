@@ -147,6 +147,15 @@ export async function addEngineConnection(
   }
 
   try {
+    const existingConnection = await tx.engineConnection.findFirst({
+      where: { address: newConnection.data.address, environmentId },
+    });
+
+    if (existingConnection && !existingConnection.removed) {
+      // we allow only one active connection entry with a specific address in a space
+      return userError('There is already an engine with the same address.');
+    }
+
     // get all engines that can be reached through the connection
     const reachableEngines = await resolveEngines([
       { ...newConnection.data, environmentId } as EngineConnection,
@@ -155,30 +164,43 @@ export async function addEngineConnection(
       ...newConnection.data,
       environmentId,
       removed: false,
-      engines: {
-        connectOrCreate: reachableEngines.map((e) => ({
-          where: { id: e.id },
-          create: { id: e.id, name: e.name },
-        })),
-      },
     };
 
-    const existingConnection = await tx.engineConnection.findFirst({
-      where: { address: connection.address, environmentId },
-    });
-
-    if (existingConnection && !existingConnection.removed) {
-      // we allow only one active connection entry with a specific address in a space
-      return userError('There is already an engine with the same address.');
-    } else if (existingConnection) {
+    if (existingConnection) {
       // reactivate an older entry if the address was already used before but removed
       await tx.engineConnection.update({
         where: { id: existingConnection.id },
-        data: connection,
+        data: {
+          ...connection,
+          engines: {
+            upsert: reachableEngines.map((e) => ({
+              where: {
+                engineId_connectionId: { engineId: e.id, connectionId: existingConnection.id },
+              },
+              update: { reachable: true },
+              create: {
+                reachable: true,
+                engine: {
+                  connectOrCreate: { where: { id: e.id }, create: { id: e.id, name: e.name } },
+                },
+              },
+            })),
+          },
+        },
       });
     } else {
       await tx.engineConnection.create({
-        data: connection,
+        data: {
+          ...connection,
+          engines: {
+            create: reachableEngines.map((e) => ({
+              reachable: true,
+              engine: {
+                connectOrCreate: { where: { id: e.id }, create: { id: e.id, name: e.name } },
+              },
+            })),
+          },
+        },
       });
     }
   } catch (e) {
@@ -205,7 +227,6 @@ export async function updateEngineConnection(
       environmentId: environmentId,
       id: connectionId,
     },
-    include: { engines: { select: { id: true } } },
   });
   if (!connection) return userError('Engine not found');
 

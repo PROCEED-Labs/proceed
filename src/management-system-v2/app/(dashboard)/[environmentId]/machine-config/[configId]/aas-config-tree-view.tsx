@@ -331,7 +331,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
     if (rightClickedType === 'parameter') {
       const currentParameter = rightClickedNode as Parameter;
       const isChangeable =
-        currentParameter.origin === 'external' ? false : currentParameter.changeableByUser ?? true;
+        currentParameter.origin === 'external' ? false : currentParameter.changeableByUser;
       // find parent context and determine position
       const ref = findParameter(rightClickedId, parentConfig, 'config');
       const parentArray =

@@ -27,7 +27,7 @@ import {
 } from '@/lib/data/machine-config-aas-schema';
 import { getFolderById, getRootFolder } from './folders';
 import db from '.';
-import { UserError, userError } from '@/lib/user-error';
+import { UserError, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getCurrentUser } from '@/components/auth';
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { asyncFilter, asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
@@ -1644,19 +1644,16 @@ export async function getVirtualUserRoles(
 ): Promise<Parameter> {
   let roleParameters: Parameter[] = [];
   const roles = await getUserRoles(parameter.environmentId, parameter.userId);
-  if ('error' in roles) {
-    throw new Error(
-      `Cannot get roles for user ${parameter.userId} in space ${parameter.environmentId}.`,
-    );
-  }
-  roleParameters = roles.map((role) => {
-    return defaultParameter({
-      name: role.id,
-      displayName: [{ text: role.name, language: 'en' }],
-      id: parameter.userId + role.name, // hardcoded ID for frontend consistency
-      origin: 'external',
+  if (!isUserErrorResponse(roles)) {
+    roleParameters = roles.map((role) => {
+      return defaultParameter({
+        name: role.id,
+        displayName: [{ text: role.name, language: 'en' }],
+        id: parameter.userId + role.name, // hardcoded ID for frontend consistency
+        origin: 'external',
+      });
     });
-  });
+  }
   return { ...parameter, subParameters: roleParameters };
 }
 

@@ -30,6 +30,7 @@ class TaskListTab extends DisplayItem {
       '/api/': this.getAPI.bind(this),
       // GET/POST <engine>/tasklist/api/userTask ('tasklist' comes from DisplayItem.key)
       '/api/userTask': { get: this.getUserTask.bind(this), post: this.postUserTask.bind(this) },
+      '/api/active': { put: this.activateUserTask.bind(this) },
       '/api/variable': { put: this.putVariable.bind(this) },
       '/api/milestone': { put: this.putMilestone.bind(this) },
       '/api/variable-file': { post: this.postFile.bind(this) },
@@ -193,6 +194,37 @@ class TaskListTab extends DisplayItem {
 
       return inlineUserTaskData(html, variables, milestones);
     }
+  }
+
+  async activateUserTask(body, query) {
+    const engine = this.getTaskEngine(query);
+
+    if (!engine) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    const userTask = engine.userTasks.find(
+      (userTask) =>
+        userTask.processInstance.id === query.instanceID &&
+        userTask.id === query.userTaskID &&
+        parseInt(userTask.startTime) === parseInt(query.startTime),
+    );
+
+    if (!userTask) {
+      throw new Error(`No pending user task with id ${query.userTaskID}`);
+    }
+
+    if (!body || !('active' in body)) {
+      throw new Error('Invalid value. Expected the body to have the form \'{ "active": true }\'');
+    }
+
+    if (body.active !== true) {
+      throw new Error('Setting active to anything but true is not supported.');
+    }
+
+    if (userTask.activate) userTask.activate();
+
+    return 'true';
   }
 
   async postUserTask(variables, query) {

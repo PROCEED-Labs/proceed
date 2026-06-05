@@ -155,14 +155,14 @@ export function defaultUserParameterTemplate(
   const dataParameter = defaultParameter({
     name: 'data',
     displayName: [{ text: `Data`, language: 'en' }],
-    changeableByUser: false,
+    origin: 'external',
   });
 
   const rolesParameter: VirtualUserRolesParameter = {
     ...defaultParameter({
       name: 'roles',
       displayName: [{ text: `Roles`, language: 'en' }],
-      changeableByUser: false,
+      origin: 'external',
     }),
     userId: membership.userId,
     environmentId: membership.environmentId,
@@ -174,5 +174,6 @@ export function defaultUserParameterTemplate(
     displayName: [{ text: `${lastName}, ${firstName}`, language: 'en' }],
     subParameters: [dataParameter, rolesParameter, createTemplateUserInfo(membership.userId)],
     id: membership.id,
+    origin: 'external',
   });
 }

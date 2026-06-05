@@ -329,7 +329,14 @@ export async function addInstance(
 
   const data = InstanceInputSchema.parse(instance);
 
-  return await db.processInstance.create({ data });
+  return await db.processInstance.create({
+    data: {
+      ...data,
+      engines: {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
+  });
 }
 
 export async function updateInstance(
@@ -349,6 +356,11 @@ export async function updateInstance(
 
   return await db.processInstance.update({
     where: { id: instanceId },
-    data,
+    data: {
+      ...data,
+      engines: data.engines && {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
   });
 }

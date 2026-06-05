@@ -1,4 +1,4 @@
-import type { EngineConnection } from '@prisma/client';
+import type { EngineConnection, Engine as DBEngine } from '@prisma/client';
 
 type Discriminator = { spaceEngine?: undefined } | { spaceEngine: true };
 
@@ -14,7 +14,15 @@ export type HttpEngine = {
   id: string;
   address: string;
 } & Discriminator;
-export type Engine = { id: string; name?: string; connections: EngineConnection[] } & Discriminator;
+export type Engine = {
+  id: string;
+  name?: string | null;
+  connections: (EngineConnection & { reachable: boolean })[];
+} & Discriminator;
+
+export type Connection = EngineConnection & {
+  engines: (DBEngine & { reachable: boolean })[];
+};
 
 export function isHttpConnection(connection: EngineConnection) {
   return connection.address.startsWith('http');

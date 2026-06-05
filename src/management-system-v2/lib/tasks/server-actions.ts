@@ -32,7 +32,7 @@ import {
 } from '@/lib/engines/tasklist';
 import { getInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
-import { getEngineIfAvailable } from '../data/engines';
+import { getEngineById } from '../data/engines';
 import { saveInstanceArtifact } from '../data/file-manager-facade';
 
 export async function getGlobalVariablesForHTML(
@@ -85,8 +85,12 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
       let activated = true;
       if (storedUserTask.instanceID && storedUserTask.engineId) {
         try {
-          const engine = await getEngineIfAvailable(spaceId, storedUserTask.engineId);
-          if (engine && !isUserErrorResponse(engine)) {
+          const engine = await getEngineById(undefined, storedUserTask.engineId);
+          if (
+            engine &&
+            !isUserErrorResponse(engine) &&
+            engine.connections.some((c) => c.reachable)
+          ) {
             await activateUserTask(
               engine,
               storedUserTask.instanceID,
@@ -149,7 +153,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
   }
 }
 
-export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
+export async function addOwnerToTaskListEntry(userTaskId: string, owner: string) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -166,7 +170,7 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
 
       if (storedUserTask.instanceID) {
         const { engineId } = storedUserTask;
-        const engine = engineId && (await getEngineIfAvailable(spaceId, engineId));
+        const engine = engineId && (await getEngineById(undefined, engineId));
 
         if (!engine || isUserErrorResponse(engine)) {
           return userError('Could not find the engine this user task is running on.');
@@ -186,7 +190,6 @@ export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: strin
 }
 
 export async function setTasklistEntryVariableValues(
-  spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
 ) {
@@ -203,7 +206,7 @@ export async function setTasklistEntryVariableValues(
 
     if (storedUserTask.instanceID) {
       const { engineId } = storedUserTask;
-      const engine = engineId && (await getEngineIfAvailable(spaceId, engineId));
+      const engine = engineId && (await getEngineById(undefined, engineId));
 
       if (!engine || isUserErrorResponse(engine)) {
         return userError('Could not find the engine this user task is running on.');
@@ -220,7 +223,6 @@ export async function setTasklistEntryVariableValues(
 }
 
 export async function setTasklistMilestoneValues(
-  spaceId: string,
   userTaskId: string,
   milestones: { [key: string]: any },
 ) {
@@ -237,7 +239,7 @@ export async function setTasklistMilestoneValues(
 
     if (storedUserTask.instanceID) {
       const { engineId } = storedUserTask;
-      const engine = engineId && (await getEngineIfAvailable(spaceId, engineId));
+      const engine = engineId && (await getEngineById(undefined, engineId));
 
       if (!engine || isUserErrorResponse(engine)) {
         return userError('Could not find the engine this user task is running on.');
@@ -253,11 +255,7 @@ export async function setTasklistMilestoneValues(
   }
 }
 
-export async function completeTasklistEntry(
-  spaceId: string,
-  userTaskId: string,
-  variables: { [key: string]: any },
-) {
+export async function completeTasklistEntry(userTaskId: string, variables: { [key: string]: any }) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -269,7 +267,7 @@ export async function completeTasklistEntry(
 
     if (storedUserTask.instanceID) {
       const { engineId } = storedUserTask;
-      const engine = engineId && (await getEngineIfAvailable(spaceId, engineId));
+      const engine = engineId && (await getEngineById(undefined, engineId));
 
       if (!engine || isUserErrorResponse(engine)) {
         return userError('Could not find the engine this user task is running on.');
@@ -319,7 +317,7 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
     }
 
     const { engineId } = storedUserTask;
-    const engine = engineId && (await getEngineIfAvailable(spaceId, engineId));
+    const engine = engineId && (await getEngineById(undefined, engineId));
 
     if (!engine || isUserErrorResponse(engine)) {
       return userError('Could not find the engine this user task is running on.');
@@ -394,7 +392,7 @@ export async function updateTaskInfo(
     await asyncMap(reachableWithDeploymentsAndUserTasks, async (e) => {
       const tasklist = await getTaskListFromMachine(e);
 
-      return tasklist.map((entry) => ({ ...entry, machineId: e.id }));
+      return tasklist.map((entry) => ({ ...entry, engineId: e.id }));
     })
   )
     .flat()
@@ -409,7 +407,7 @@ export async function updateTaskInfo(
     await asyncMap(newUserTasks, async ([id, task]) => {
       const relatedInstanceInfo = knownInstances[task.instanceID];
 
-      const machine = reachableEngines.find((e) => e.id === task.machineId);
+      const machine = reachableEngines.find((e) => e.id === task.engineId);
       if (!machine) return;
 
       try {

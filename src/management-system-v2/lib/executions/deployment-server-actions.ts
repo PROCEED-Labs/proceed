@@ -2,7 +2,13 @@
 
 import db from '@/lib/data/db';
 
-import { asyncFilter, asyncForEach, asyncMap, deepEquals } from '@/lib/helpers/javascriptHelpers';
+import {
+  asyncFilter,
+  asyncForEach,
+  asyncMap,
+  deepEquals,
+  pick,
+} from '@/lib/helpers/javascriptHelpers';
 import {
   UserErrorType,
   UserFacingError,
@@ -25,10 +31,10 @@ import {
 } from '../engines/deployment';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
-import { resolveEngines } from '../engines/engine-connections-helpers';
 import { getMSConfig } from '../ms-config/ms-config';
 import { updateTaskInfo } from '../tasks/server-actions';
 import { getSharedRefetch } from '../shared-refetch';
+import { deepEqual } from 'assert';
 
 export async function deployProcess(
   definitionId: string,
@@ -272,8 +278,15 @@ async function refetchFn() {
     );
 
     // get all (reachable) engines known to the MS
-    const connections = await db.engineConnection.findMany();
-    let engines = await resolveEngines(connections);
+    let engines = (
+      await db.engine.findMany({
+        where: { connections: { some: { reachable: true, connection: { removed: false } } } },
+        include: { connections: { include: { connection: true } } },
+      })
+    ).map((e) => ({
+      ...e,
+      connections: e.connections.map(({ reachable, connection }) => ({ reachable, ...connection })),
+    }));
     const knownEngines: Record<string, Engine> = {};
     // deduplicate the engines (an engine might be reachable through multiple connections)
     engines = engines.filter((engine) => {
@@ -302,6 +315,7 @@ async function refetchFn() {
       versionId: string;
       state: InstanceInfo;
     }[] = [];
+    const unchangedInstances: typeof instanceUpdates = [];
 
     // fetch deployment data from the engines
     const engineDeployments = Object.fromEntries(
@@ -346,6 +360,14 @@ async function refetchFn() {
                 versionId: deployment.version.id,
                 state: i,
               });
+            } else {
+              unchangedInstances.push({
+                id: i.processInstanceId,
+                processId: p.definitionId,
+                environmentId: deployment.version.process.environmentId,
+                versionId: deployment.version.id,
+                state: existingInstance.state as InstanceInfo,
+              });
             }
           });
         });
@@ -386,20 +408,24 @@ async function refetchFn() {
             data: { state },
           });
         }),
-        newInstances.length &&
-          tx.processInstance.createMany({
-            data: newInstances.map((i) => ({
-              ...i,
-              processId: undefined,
-              versionId: undefined,
-              environmentId: undefined,
-            })),
+        ...newInstances.map((i) =>
+          tx.processInstance.create({
+            data: {
+              ...pick(i, ['id', 'deploymentId', 'initiatorId', 'state']),
+              engines: {
+                connect: i.engineIds.map((id) => ({ id })),
+              },
+            },
           }),
+        ),
       ]);
     });
 
     const knownInstances = Object.fromEntries(
-      instanceUpdates.concat(newInstances).map((i) => [i.id, { ...i, instanceId: i.id }]),
+      unchangedInstances
+        .concat(instanceUpdates)
+        .concat(newInstances)
+        .map((i) => [i.id, { ...i, instanceId: i.id }]),
     );
 
     await updateTaskInfo(engines, reachableWithDeployments, knownInstances);

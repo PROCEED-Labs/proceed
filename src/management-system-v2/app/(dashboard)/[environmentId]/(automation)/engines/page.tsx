@@ -7,18 +7,15 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
-import { resolveEngines } from '@/lib/engines/engine-connections-helpers';
-import { type EngineConnection } from '@prisma/client';
 import { spaceURL } from '@/lib/utils';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { Connection } from '@/lib/engines/types';
 
-const getConnectionStatus = async (connection: EngineConnection) => {
-  const engines = await resolveEngines([connection]);
-
-  if (engines.length === 0) {
+const getConnectionStatus = async (connection: Connection) => {
+  if (connection.engines.reduce((count, e) => (count += e.reachable ? 1 : 0), 0) === 0) {
     return { online: false } as const;
   } else {
-    return { online: true, engines } as const;
+    return { online: true, engines: connection.engines } as const;
   }
 };
 

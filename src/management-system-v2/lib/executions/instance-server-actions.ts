@@ -94,7 +94,7 @@ export async function startInstance(
       await addInstance(spaceId, {
         id: result.processInstanceId,
         deploymentId: deployment.id,
-        engineIds: [engine.id],
+        engines: [engine.id],
         initiatorId: userId,
         state: result,
       });

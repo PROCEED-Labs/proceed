@@ -22,7 +22,7 @@ async function refetchFn() {
         },
         {} as Record<string, true>,
       );
-      let becameReachable: { id: string; name?: string }[] = [];
+      let becameReachable: { id: string; name?: string | null }[] = [];
 
       if (request.status === 'fulfilled') {
         request.value.forEach((e) => {

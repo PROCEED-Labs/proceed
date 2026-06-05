@@ -23,13 +23,15 @@ import { App, Badge, Button, Grid, Spin, TableColumnsType, TableProps } from 'an
 
 import ElementList from '@/components/item-list-view';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { type EngineConnection } from '@prisma/client';
-import { Engine } from '@/lib/engines/types';
+import type { Engine as DBEngine } from '@prisma/client';
 import { useUserPreferences } from '@/lib/user-preferences';
 import Link from 'next/link';
+import { Connection, isHttpConnection } from '@/lib/engines/types';
 
-type ConnectionStatus = { online: false } | { online: true; engines: Engine[] };
-type InputConnection = EngineConnection & { status: ReactNode };
+type ConnectionStatus =
+  | { online: false }
+  | { online: true; engines: (DBEngine & { reachable: boolean })[] };
+type InputConnection = Connection & { status: ReactNode };
 
 // The status for each connection is streamed in after the page loads, I can't add the status promises
 // to the connections prop, because that would trigger a suspense boundary for the whole table.
@@ -102,20 +104,28 @@ const EngineConnectionsList = ({
       key: 'Name',
       ellipsis: true,
       sorter: (a, b) => (a.name ? a.name.localeCompare(b.name || '') : -1),
-      render: (_, record) => (
-        <Link
-          href={`${engineDashboardLinkPrefix}/${record.id}`}
-          className={
-            breakpoint.xs
-              ? styles.MobileTitleTruncation
-              : breakpoint.xl
-                ? styles.TitleTruncation
-                : styles.TabletTitleTruncation
-          }
-        >
-          {record.name}
-        </Link>
-      ),
+      render: (_, record) => {
+        const text = record.name;
+
+        if (isHttpConnection(record)) {
+          return (
+            <Link
+              href={`${engineDashboardLinkPrefix}/${record.engines[0].id}`}
+              className={
+                breakpoint.xs
+                  ? styles.MobileTitleTruncation
+                  : breakpoint.xl
+                    ? styles.TitleTruncation
+                    : styles.TabletTitleTruncation
+              }
+            >
+              {text}
+            </Link>
+          );
+        }
+
+        return text;
+      },
       responsive: ['xs', 'sm'],
     },
     {
@@ -176,10 +186,7 @@ const EngineConnectionsList = ({
                 if (!status.online) return;
 
                 return status.engines.map((engine) => (
-                  <Link
-                    key={engine.id}
-                    href={`${engineDashboardLinkPrefix}/${record.id}?engineId=${engine.id}`}
-                  >
+                  <Link key={engine.id} href={`${engineDashboardLinkPrefix}/${engine.id}`}>
                     {engine.name || engine.id}
                   </Link>
                 ));

@@ -1,35 +1,32 @@
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentUser } from '@/components/auth';
 import Content from '@/components/content';
 import { Button, Skeleton } from 'antd';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
 import { type Engine } from '@/lib/engines/types';
-import { getEngineConnectionById } from '@/lib/data/engines';
+import { getEngineById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
-import SpaceLink from '@/components/space-link';
+import { isUserErrorResponse } from '@/lib/user-error';
 
 export type TableEngine = Engine & { id: string };
 
-export default async function EnginesPage(props: {
-  params: Promise<{ connectionId: string; environmentId: string }>;
-  searchParams: Promise<{ engineId: string }>;
-}) {
-  const searchParams = await props.searchParams;
+export default async function EnginesPage(props: { params: Promise<{ engineId: string }> }) {
   const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const connectionId = decodeURIComponent(params.connectionId);
-  const engineId = decodeURIComponent(searchParams.engineId || '');
+  const user = await getCurrentUser();
+  if (!user.systemAdmin) redirect('/');
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const connection = await getEngineConnectionById(
-    connectionId,
-    activeEnvironment.spaceId,
-    ability,
-  );
+  const engineId = decodeURIComponent(params.engineId || '');
+  const engine = await getEngineById(null, engineId);
+
+  if (isUserErrorResponse(engine)) {
+    return notFound();
+  }
 
   return (
     <Suspense
@@ -40,14 +37,13 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        connection={connection}
-        engineId={engineId}
+        engine={engine || undefined}
         backButton={
-          <SpaceLink href="/engines">
+          <Link href="/admin/engines">
             <Button icon={<LeftOutlined />} type="text">
               Engines
             </Button>
-          </SpaceLink>
+          </Link>
         }
       />
       ;

@@ -188,7 +188,6 @@ export async function changeDeploymentActivation(
             break;
           } catch (err) {}
         }
-        if (activated) break;
       }
 
       if (!activated) return userError('Could not reach any engine to activate the deployment.');

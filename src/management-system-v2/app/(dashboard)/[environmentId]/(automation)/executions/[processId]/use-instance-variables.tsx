@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { ProcessVariable, ProcessVariableSchema } from '@/lib/process-variable-schema';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export type Variable = {
   name: string;
@@ -11,7 +11,10 @@ export type Variable = {
   value: any;
 };
 
-const useInstanceVariables = (info: { version?: { bpmn: string }; instance?: InstanceInfo }) => {
+const useInstanceVariables = (info: {
+  version?: { bpmn: string };
+  instance?: ExtendedInstanceInfo;
+}) => {
   const [variableDefinitions, setVariableDefinitions] = useState<ProcessVariable[]>([]);
 
   useEffect(() => {

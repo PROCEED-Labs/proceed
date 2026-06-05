@@ -1312,6 +1312,12 @@ export async function getProcessImage(processDefinitionsId: string, imageFileNam
   }
 }
 
+export async function getProcessVersion(processDefinitionsId: string, versionId: string) {
+  return db.version.findUnique({
+    where: { id: versionId, processId: processDefinitionsId },
+  });
+}
+
 /** Return Array with fileNames of images for given process */
 export async function getProcessImageFileNames(processDefinitionsId: string) {
   // TODO

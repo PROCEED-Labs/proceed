@@ -1,10 +1,17 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Select, Space, DatePicker, Tabs, Skeleton } from 'antd';
+import { Select, DatePicker, Tabs, Skeleton } from 'antd';
 import { HiUser, HiUserGroup, HiShieldCheck } from 'react-icons/hi';
 import type { Dayjs } from 'dayjs';
-import useDeployments from './use-deployments';
+import { useEnvironment } from '@/components/auth-can';
+import { getAvailableSpaceEngines } from '@/lib/data/engines';
+import { getDeployedProcesses } from '@/lib/data/deployment';
+import { getInstance } from '@/lib/data/instance';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { truthyFilter } from '@/lib/typescript-utils';
+import { useQuery } from '@tanstack/react-query';
 import {
   filterInstancesByDateRange,
   calculateInstanceStats,
@@ -23,7 +30,6 @@ type TimeRange = 'week' | 'month' | 'year' | 'custom';
 interface DashboardProps {
   userRole: 'user' | 'manager' | 'admin';
   userId: string;
-  spaceId: string;
 }
 
 const COLORS = {
@@ -34,7 +40,7 @@ const COLORS = {
   gray: '#8c8c8c',
 };
 
-const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) => {
+const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState<string>('user');
@@ -42,9 +48,45 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
   const isManager = userRole === 'manager' || userRole === 'admin';
   const isAdmin = userRole === 'admin';
 
-  const { engines, deployments, isLoading } = useDeployments(
-    'definitionId,instances(processInstanceId,instanceState,globalStartTime)',
-  );
+  const space = useEnvironment();
+
+  const { data: engines, isLoading: enginesLoading } = useQuery({
+    queryFn: async () => {
+      const res = await getAvailableSpaceEngines(space.spaceId);
+      if (isUserErrorResponse(res)) return [];
+      return res;
+    },
+    refetchInterval: 1000,
+    queryKey: ['space', space.spaceId, 'engines'],
+  });
+
+  const { data: deploymentData, isLoading: deploymentsLoading } = useQuery({
+    queryFn: async () => {
+      const deployedProcesses = await getDeployedProcesses(space.spaceId);
+      if (isUserErrorResponse(deployedProcesses)) return { deployedProcesses: [], instances: [] };
+
+      const instanceIds = new Set<string>();
+      deployedProcesses.forEach((p) =>
+        p.versions.forEach((v) =>
+          v.deployments.forEach((d) => d.instances.forEach((i) => instanceIds.add(i.id))),
+        ),
+      );
+
+      const instances = (
+        await asyncMap([...instanceIds], async (id) => {
+          const instance = await getInstance(space.spaceId, id);
+          if (isUserErrorResponse(instance)) return undefined;
+          return instance;
+        })
+      ).filter(truthyFilter);
+
+      return { deployedProcesses: deployedProcesses.map((p) => p.id), instances };
+    },
+    refetchInterval: 1000,
+    queryKey: ['space', space.spaceId, 'deployments'],
+  });
+
+  const isLoading = enginesLoading || deploymentsLoading;
 
   // calculate date range based on selection
   const dateRange = useMemo(() => {
@@ -56,7 +98,7 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
     }
 
     const end = new Date();
-    let start = new Date();
+    const start = new Date();
 
     switch (timeRange) {
       case 'week':
@@ -73,27 +115,26 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
     return { start, end };
   }, [timeRange, customDateRange]);
 
-  // filter deployed processes by date range
-  const filteredDeployedProcesses = useMemo(() => {
-    if (!deployments) return [];
-    return filterInstancesByDateRange(deployments, dateRange.start, dateRange.end);
-  }, [deployments, dateRange]);
+  // filter instances by date range
+  const filteredInstances = useMemo(() => {
+    if (!deploymentData?.instances) return [];
+    return filterInstancesByDateRange(deploymentData.instances, dateRange.start, dateRange.end);
+  }, [deploymentData, dateRange]);
 
   // calculate stats from filtered data
   const stats = useMemo(() => {
-    if (!engines || !deployments) return null;
+    if (!engines || !deploymentData) return null;
 
-    const baseStats = calculateInstanceStats(filteredDeployedProcesses);
+    const baseStats = calculateInstanceStats(filteredInstances);
     const hasRealData = baseStats.totalInstances > 0;
 
-    // use real data if available, otherwise dummy
     const finalBaseStats = hasRealData ? baseStats : getDummyStats();
 
     const userStats = calculateUserStats(finalBaseStats);
     const managerStats = calculateManagerStats();
     const adminStats = {
-      engines: engines.length, // real data: engine count
-      ...managerStats, // manager sattes dummy for now
+      engines: engines.length,
+      ...managerStats,
     };
 
     return {
@@ -103,7 +144,7 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
       adminStats,
       hasRealData,
     };
-  }, [engines, filteredDeployedProcesses, deployments]);
+  }, [engines, filteredInstances, deploymentData]);
 
   // chart data
   const instanceDistributionData = useMemo(() => {
@@ -133,23 +174,18 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId, spaceId }) 
 
   const handleTimeRangeChange = (value: TimeRange) => {
     setTimeRange(value);
-    if (value !== 'custom') {
-      setCustomDateRange(null);
-    }
+    if (value !== 'custom') setCustomDateRange(null);
   };
 
   const handleDateRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
     setCustomDateRange(dates);
-    if (dates && dates[0] && dates[1]) {
-      setTimeRange('custom');
-    }
+    if (dates && dates[0] && dates[1]) setTimeRange('custom');
   };
 
   if (isLoading || !stats) {
     return <Skeleton active />;
   }
 
-  // build tabs based on user role
   const tabItems = [
     {
       key: 'user',

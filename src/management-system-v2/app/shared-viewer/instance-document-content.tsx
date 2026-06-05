@@ -4,7 +4,6 @@ import { useSearchParams } from 'next/navigation';
 import { Alert, Grid, Image, Table, Typography } from 'antd';
 import cn from 'classnames';
 import { getProcess } from '@/lib/data/db/process';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { generateDateString } from '@/lib/utils';
 import { useEnvironment } from '@/components/auth-can';
 import { useFileManager } from '@/lib/useFileManager';
@@ -30,6 +29,7 @@ import ElementSections from '@/components/doc-element-sections';
 import ExecutionLogTable from '../../components/instance-doc-tables/execution-log-table';
 import FinalVariablesTable from '../../components/instance-doc-tables/final-variables-table';
 import ImportedProcessSectionHeader from '@/components/doc-imported-process-header';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -37,7 +37,7 @@ type Props = {
   processData: Awaited<ReturnType<typeof getProcess>>;
   processHierarchy: ElementInfo;
   versionInfo: VersionInfo;
-  instance: InstanceInfo;
+  instance: ExtendedInstanceInfo;
   settings: Record<string, boolean>;
 };
 
@@ -155,7 +155,7 @@ const InstanceDocumentContent: React.FC<Props> = ({
         executionState: string;
         startTime?: number;
         endTime?: number;
-        machine?: InstanceInfo['log'][number]['machine'];
+        machine?: ExtendedInstanceInfo['log'][number]['machine'];
       }[] = [];
 
       if (hasLog) {

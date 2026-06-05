@@ -24,8 +24,14 @@ import { Engine } from '../engines/types';
 import { getProcessDeployments } from '../data/deployment';
 import { addInstance, getInstance, updateInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '@/lib/data/processes';
-import { getStartFormFileNameMapping } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsInfos,
+  getElementById,
+  getStartFormFileNameMapping,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { getProcessVersion } from '../data/db/process';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -278,4 +284,207 @@ export async function stopInstance(spaceId: string, definitionId: string, instan
     (tokenStates) => tokenStates.some((state) => activeStates.includes(state)),
     stopInstanceOnMachine,
   );
+}
+
+type VersionCache = Record<
+  string,
+  {
+    versionName: string;
+    versionDescription: string;
+    basedOnVersion?: string;
+    createdOn: number;
+    bpmnObj: any;
+  }
+>;
+
+export async function exportInstanceCSV(
+  spaceId: string,
+  instanceId: string,
+  versionCache: VersionCache,
+) {
+  const instance = await getInstance(spaceId, instanceId);
+
+  if (!instance || isUserErrorResponse(instance)) return undefined;
+
+  if (!versionCache[instance.versionId]) {
+    const versionBpmn = await getProcessBPMN(instance.state.processId, spaceId, instance.versionId);
+    if (isUserErrorResponse(versionBpmn)) return undefined;
+    const version = await getProcessVersion(instance.state.processId, instance.versionId);
+    if (!version) return undefined;
+    const bpmnObj = await toBpmnObject(versionBpmn);
+    versionCache[instance.versionId] = {
+      versionName: version.name,
+      versionDescription: version.description,
+      basedOnVersion: version.versionBasedOn || undefined,
+      createdOn: version.createdOn.getTime(),
+      bpmnObj,
+    };
+  }
+
+  const correspondingVersion = versionCache[instance.versionId];
+  const { bpmnObj } = correspondingVersion;
+  const definitionInfos = await getDefinitionsInfos(bpmnObj);
+
+  const { initiator } = instance;
+  let initiatorInfo = {
+    ProcessInstanceInitiatorId: '',
+    ProcessInstanceInitiatorFullName: 'Unknown',
+    ProcessInstanceInitiatorUsername: 'Unknown',
+  };
+  if (initiator) {
+    if (typeof initiator === 'string') {
+      initiatorInfo.ProcessInstanceInitiatorId =
+        initiatorInfo.ProcessInstanceInitiatorUsername =
+        initiatorInfo.ProcessInstanceInitiatorFullName =
+          initiator;
+    } else {
+      initiatorInfo.ProcessInstanceInitiatorId = initiator.id;
+      initiatorInfo.ProcessInstanceInitiatorFullName = initiator.fullName;
+      initiatorInfo.ProcessInstanceInitiatorUsername = initiator.username || '';
+    }
+  }
+
+  const initiatorSpace = instance.state.spaceOfProcessInitiator;
+
+  return {
+    ...instance.state,
+    ProcessName: definitionInfos.name,
+    ProcessShortName: definitionInfos.userDefinedId,
+    ProcessVersionName: correspondingVersion.versionName,
+    ProcessVersionDescription: correspondingVersion.versionDescription,
+    ProcessVersionCreatedOn: new Date(correspondingVersion.createdOn).getTime(),
+    ProcessVersionBasedOn: correspondingVersion.basedOnVersion,
+    ...initiatorInfo,
+    ProcessInstanceInitiatorSpaceName: initiatorSpace?.name || 'Unknown',
+    ProcessEngineId: instance.state.log[0].machine.id,
+    correspondingVersion,
+  };
+}
+
+export async function exportInstanceData(
+  spaceId: string,
+  definitionId: string,
+  instanceId?: string,
+) {
+  const objectOrderTemplate = {
+    ProcessId: null,
+    ProcessName: null,
+    ProcessShortName: null,
+    ProcessVersionId: null,
+    ProcessVersionName: null,
+    ProcessVersionDescription: null,
+    ProcessVersionCreatedOn: null,
+    ProcessVersionBasedOn: null,
+    ProcessInstanceId: null,
+    ProcessInstanceInitiatorId: null,
+    ProcessInstanceInitiatorFullName: null,
+    ProcessInstanceInitiatorUsername: null,
+    ProcessInstanceInitiatorSpaceId: null,
+    ProcessInstanceInitiatorSpaceName: null,
+    InstanceStartTime: null,
+    ProcessStepId: null,
+    ProcessStepName: null,
+    ProcessStepType: null,
+    ProcessStepStatus: null,
+    ProcessStepStartTime: null,
+    ProcessStepEndTime: null,
+    PreviousProcessStepId: null,
+    ProcessStepTokenId: null,
+    ActualPerformerId: null,
+    ActualPerformerName: null,
+    ActualPerformerUsername: null,
+    ProcessEngineId: null,
+    ProcessEngineName: null, //tofind
+    Log: null,
+  };
+
+  let selectedInstances;
+  if (instanceId) {
+    selectedInstances = [instanceId];
+  } else {
+    const processDeployments = await getProcessDeployments(spaceId, definitionId);
+    if (isUserErrorResponse(processDeployments)) return processDeployments;
+    selectedInstances = processDeployments.flatMap((d) => d.instances);
+  }
+
+  const versionCache: VersionCache = {};
+
+  // pasting metadata from VersionInfo
+  const instancesWithVersionData = (
+    await asyncMap(selectedInstances, async (instanceId) =>
+      exportInstanceCSV(spaceId, instanceId, versionCache),
+    )
+  ).filter(truthyFilter);
+
+  // retrieve and flatten event data
+  const instanceEvents = (
+    await asyncMap(instancesWithVersionData, async (instance) => {
+      const { bpmnObj } = versionCache[instance.processVersion];
+
+      return instance
+        ? instance.log.map((eventEntry) => {
+            const eventElement = getElementById(bpmnObj, eventEntry.flowElementId) as {
+              $type?: string;
+              name?: string;
+              outgoing?: any;
+              incoming?: any;
+            };
+            const ActualPerformer = eventEntry.actualOwner?.[0];
+            return {
+              ...instance,
+              ...eventEntry,
+              ProcessStepName: eventElement?.name,
+              ProcessStepType: eventElement?.$type?.split(':')[1],
+              ActualPerformerId: ActualPerformer?.id,
+              ActualPerformerName: ActualPerformer?.fullName,
+              ActualPerformerUsername: ActualPerformer?.username,
+              Log: JSON.stringify(eventEntry.variableChanges),
+              PreviousProcessStepId: eventElement.incoming?.map((flow: any) => flow.sourceRef.id),
+            };
+          })
+        : [];
+    })
+  ).flat();
+
+  // renaming
+  const keyMap: Record<string, string> = {
+    processId: 'ProcessId',
+    processVersion: 'ProcessVersionId',
+    processInstanceId: 'ProcessInstanceId',
+    spaceIdOfProcessInitiator: 'ProcessInstanceInitiatorSpaceId',
+    globalStartTime: 'InstanceStartTime',
+    flowElementId: 'ProcessStepId',
+    executionState: 'ProcessStepStatus',
+    startTime: 'ProcessStepStartTime',
+    endTime: 'ProcessStepEndTime',
+    tokenId: 'ProcessStepTokenId',
+  };
+
+  const renamedInstanceEvents: Record<string, any>[] = instanceEvents.map((instance) =>
+    Object.fromEntries(Object.entries(instance).map(([k, v]) => [keyMap[k] ?? k, v])),
+  );
+
+  // converting dates
+  const datedInstanceEvents = renamedInstanceEvents.map((instance) => ({
+    ...instance,
+    InstanceStartTime: new Date(instance.InstanceStartTime).toISOString(),
+    ProcessStepEndTime: new Date(instance.ProcessStepEndTime).toISOString(),
+    ProcessStepStartTime: new Date(instance.ProcessStepStartTime).toISOString(),
+    ProcessVersionCreatedOn: new Date(instance.ProcessVersionCreatedOn).toISOString(),
+  }));
+
+  // reordering
+  const structuredInstanceEvents = datedInstanceEvents.map((instance) =>
+    Object.entries(instance).reduce(
+      (acc, [key, value]) => {
+        if (key in acc) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      { ...objectOrderTemplate } as Record<string, any>,
+    ),
+  );
+
+  return structuredInstanceEvents;
 }

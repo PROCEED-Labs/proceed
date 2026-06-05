@@ -10,7 +10,6 @@ import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
-import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
 import {
   deployProcess as serverDeployProcess,
@@ -35,8 +34,8 @@ const DeploymentsView = ({
   deployedProcesses: {
     id: string;
     name: string;
-    versions: DeployedProcessInfo['versions'];
-    instances: DeployedProcessInfo['instances'];
+    versions: { id: string; name: string }[];
+    instances: string[];
   }[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);

@@ -1,8 +1,21 @@
-// utility functions for calculating instance statistics from deployed processes
-
-interface DeployedProcess {
-  definitionId: string;
-  instances: any[];
+// utility functions for calculating instance statistics from
+export type ExtendedInstance = {
+  executionStatus: 'Running' | 'Ended' | 'Failed';
+  paused: boolean;
+  pausing: boolean;
+  globalStartTime?: number;
+  state: {
+    globalStartTime?: number;
+    processInstanceId: string;
+    instanceState: string[];
+    [key: string]: any;
+  };
+  id: string;
+  deploymentId: string;
+  initiatorId: string | null;
+  engineIds: string[];
+  versionId: string;
+  [key: string]: any;
 }
 
 interface InstanceStats {
@@ -15,75 +28,53 @@ interface InstanceStats {
   deployments: number;
 }
 
-const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-const failedStates = [
-  'ABORTED',
-  'FAILED',
-  'ERROR-SEMANTIC',
-  'ERROR-TECHNICAL',
-  'ERROR-CONSTRAINT-UNFULFILLED',
-  'ERROR-UNKNOWN',
-];
-const completedStates = ['ENDED', 'COMPLETED'];
-const stoppedStates = ['STOPPED', 'TERMINATED'];
+// filter instances by date range using globalStartTime
+export function filterInstancesByDateRange(
+  instances: ExtendedInstance[],
+  startDate: Date | null,
+  endDate: Date | null,
+): ExtendedInstance[] {
+  if (!startDate || !endDate) return instances;
 
-export function calculateInstanceStats(deployedProcesses: DeployedProcess[]): InstanceStats {
-  let totalInstances = 0;
+  return instances.filter((instance) => {
+    const startTime = instance.globalStartTime ?? instance.state?.globalStartTime;
+    if (!startTime) return true;
+    const instanceDate = new Date(startTime);
+    return instanceDate >= startDate && instanceDate <= endDate;
+  });
+}
+
+export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceStats {
   let runningInstances = 0;
   let pausedInstances = 0;
   let completedInstances = 0;
   let failedInstances = 0;
   let stoppedInstances = 0;
 
-  deployedProcesses.forEach((process) => {
-    if (process.instances && Array.isArray(process.instances)) {
-      process.instances.forEach((instance) => {
-        totalInstances++;
-
-        const instanceStates = instance.instanceState || [];
-
-        if (instanceStates.includes('PAUSED')) {
-          pausedInstances++;
-        } else if (instanceStates.some((state: string) => stoppedStates.includes(state))) {
-          stoppedInstances++;
-        } else if (instanceStates.some((state: string) => activeStates.includes(state))) {
-          runningInstances++;
-        } else if (instanceStates.some((state: string) => failedStates.includes(state))) {
-          failedInstances++;
-        } else if (instanceStates.some((state: string) => completedStates.includes(state))) {
-          completedInstances++;
-        }
-      });
+  instances.forEach((instance) => {
+    // use new executionStatus field from PR
+    if (instance.paused) {
+      pausedInstances++;
+    } else if (instance.executionStatus === 'Running') {
+      runningInstances++;
+    } else if (instance.executionStatus === 'Ended') {
+      completedInstances++;
+    } else if (instance.executionStatus === 'Failed') {
+      failedInstances++;
+    } else {
+      stoppedInstances++;
     }
   });
 
   return {
-    totalInstances,
+    totalInstances: instances.length,
     runningInstances,
     pausedInstances,
     completedInstances,
     failedInstances,
     stoppedInstances,
-    deployments: deployedProcesses.length,
+    deployments: 0,
   };
-}
-
-// filter instances by date range
-export function filterInstancesByDateRange(
-  deployedProcesses: DeployedProcess[],
-  startDate: Date | null,
-  endDate: Date | null,
-): DeployedProcess[] {
-  if (!startDate || !endDate) return deployedProcesses;
-
-  return deployedProcesses.map((process) => ({
-    ...process,
-    instances: process.instances.filter((instance) => {
-      if (!instance.globalStartTime) return true;
-      const instanceDate = new Date(instance.globalStartTime);
-      return instanceDate >= startDate && instanceDate <= endDate;
-    }),
-  }));
 }
 
 // get dummy data for placeholders
@@ -102,7 +93,6 @@ export function getDummyStats(): InstanceStats {
 // calculate user-specific stats (dummy for now; need real user task data)
 export function calculateUserStats(baseStats: InstanceStats) {
   return {
-    // real data from instances
     startedProcesses: baseStats.totalInstances,
     runningProcesses: baseStats.runningInstances,
     pausedProcesses: baseStats.pausedInstances,

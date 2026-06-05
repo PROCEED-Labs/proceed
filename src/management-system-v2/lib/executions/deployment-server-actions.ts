@@ -197,7 +197,7 @@ export async function changeDeploymentActivation(
       deploymentsToChange = deployments.filter((d) => d.versionId !== version && d.active);
     }
 
-    await asyncForEach(deploymentsToChange, async (d) => {
+    const res = await asyncMap(deploymentsToChange, async (d) => {
       // mark the deployment as inactive locally
       await updateDeployment(spaceId, d.id, { active: false });
 
@@ -206,9 +206,19 @@ export async function changeDeploymentActivation(
         // mismatch between the locally stored activation value and the activation value from the
         // engine
         const engine = engines.find((e) => e.id === d.engineId);
-        if (engine) await _changeDeploymentActivation(engine, definitionId, version, false);
+        if (engine) {
+          await _changeDeploymentActivation(engine, definitionId, version, false);
+          return true;
+        }
       } catch (err) {}
+      return false;
     });
+
+    if (res.some((success) => !success)) {
+      return userError(
+        `Some deployments of${value ? ' other versions of' : ''} this process could not be deactivated. The system will try to deactivate them as soon as possible but they might spawn new instances in the meantime.`,
+      );
+    }
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

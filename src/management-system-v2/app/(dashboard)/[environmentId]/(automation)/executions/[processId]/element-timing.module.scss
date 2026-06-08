@@ -1,0 +1,17 @@
+.GridContainer {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+}
+
+.GridCell {
+  padding: 10px 5px;
+  border-bottom: 1px solid #ddd;
+}
+
+.GridCell:last-child {
+  border-bottom: none;
+}
+
+.GridCell:hover {
+  background-color: rgba(93, 117, 136, 0.05);
+}

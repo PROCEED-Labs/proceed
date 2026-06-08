@@ -2,6 +2,7 @@ import { Typography } from 'antd';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text> & {
   missingColorOverride?: string;
+  missingTextOverride?: string;
 };
 /**
  * component to display an antd Typography.Text component,
@@ -21,7 +22,7 @@ export const EntryText = (props: EntryTextProps) => {
         fontWeight: 'normal',
       }}
     >
-      N/A
+      {props.missingTextOverride ?? 'N/A'}
     </Typography.Text>
   );
 };

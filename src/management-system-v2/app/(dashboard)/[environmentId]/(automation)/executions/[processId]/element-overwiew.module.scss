@@ -21,6 +21,9 @@
 .GridContainer:has(> :last-child:nth-child(odd)) > .GridCell:last-child {
   border-bottom: none;
 }
+.GridCell:hover {
+  background-color: rgba(93, 117, 136, 0.05);
+}
 
 .ListTitle {
   font-weight: 600;

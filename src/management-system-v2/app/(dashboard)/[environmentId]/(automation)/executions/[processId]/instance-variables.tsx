@@ -146,6 +146,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
         onCancel={handleClose}
         destroyOnHidden
         okButtonProps={{ loading: submitting }}
+        okText={'Save value'}
         onOk={async () => {
           await form.validateFields();
 
@@ -185,79 +186,100 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
           });
         }}
       >
-        <Form form={form} clearOnDestroy>
-          <Form.Item
-            name="value"
-            initialValue={updatedValue}
-            rules={[
-              {
-                validator(_, value: any) {
-                  if (value) {
-                    switch (variableToEdit?.type) {
-                      // for numbers and strings we have to check if the value is part of the
-                      // optionally defined allowed values
-                      case 'number':
-                        value = JSON.stringify(value);
-                      case 'string':
-                        {
-                          value = (value as string).trim();
-                          if (variableToEdit.allowed) {
-                            const allowedValues = variableToEdit.allowed.split(';');
+        <div
+          style={{
+            border: 'solid 1px rgb(118, 193, 255)',
+            borderRadius: 12,
+            padding: 15,
+            backgroundColor: 'rgba(118, 193, 255, 0.15)',
+          }}
+        >
+          <EntryText
+            style={{
+              display: 'block',
+              margin: '0 0 5px 0',
+              fontWeight: 600,
+              color: '#777',
+              fontSize: '.95em',
+            }}
+          >
+            Current Value
+          </EntryText>
+          <Form form={form} clearOnDestroy>
+            <Form.Item
+              name="value"
+              initialValue={updatedValue}
+              style={{ margin: 0 }}
+              rules={[
+                {
+                  validator(_, value: any) {
+                    if (value) {
+                      switch (variableToEdit?.type) {
+                        // for numbers and strings we have to check if the value is part of the
+                        // optionally defined allowed values
+                        case 'number':
+                          value = JSON.stringify(value);
+                        case 'string':
+                          {
+                            value = (value as string).trim();
+                            if (variableToEdit.allowed) {
+                              const allowedValues = variableToEdit.allowed.split(';');
 
-                            if (!allowedValues.includes(value)) {
-                              return Promise.reject(
-                                new Error(
-                                  `Invalid value. Expected one of: ${allowedValues.join(', ')}`,
-                                ),
-                              );
+                              if (!allowedValues.includes(value)) {
+                                return Promise.reject(
+                                  new Error(
+                                    `Invalid value. Expected one of: ${allowedValues.join(', ')}`,
+                                  ),
+                                );
+                              }
                             }
                           }
-                        }
-                        break;
-                      // check if the entered text can be transformed to the respective object type
-                      case 'object':
-                      case 'array': {
-                        try {
-                          const parsed = JSON.parse(value);
-                          if (
-                            (variableToEdit.type === 'array' && Array.isArray(parsed)) ||
-                            (variableToEdit.type === 'object' && !Array.isArray(parsed))
-                          ) {
-                            return Promise.resolve();
-                          }
-                        } catch (err) {}
+                          break;
+                        // check if the entered text can be transformed to the respective object type
+                        case 'object':
+                        case 'array': {
+                          try {
+                            const parsed = JSON.parse(value);
+                            if (
+                              (variableToEdit.type === 'array' && Array.isArray(parsed)) ||
+                              (variableToEdit.type === 'object' && !Array.isArray(parsed))
+                            ) {
+                              return Promise.resolve();
+                            }
+                          } catch (err) {}
 
-                        return Promise.reject(
-                          new Error(
-                            `Input is not a valid JSON ${variableToEdit.type === 'object' ? 'Object' : 'List'}.`,
-                          ),
-                        );
+                          return Promise.reject(
+                            new Error(
+                              `Input is not a valid JSON ${variableToEdit.type === 'object' ? 'Object' : 'List'}.`,
+                            ),
+                          );
+                        }
                       }
                     }
-                  }
 
-                  return Promise.resolve();
+                    return Promise.resolve();
+                  },
                 },
-              },
-            ]}
-          >
-            {updatedValueInput}
-          </Form.Item>
-        </Form>
+              ]}
+            >
+              {updatedValueInput}
+            </Form.Item>
+          </Form>
+        </div>
         <div>
           <Row>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Type</FormFieldTitle>
                 <br />
-                <EntryText>Text</EntryText>
+                <EntryText missingTextOverride="— not set">Text</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Format</FormFieldTitle>
                 <br />
-                <EntryText>{}</EntryText>
+                <EntryText missingTextOverride="— not set">{}</EntryText>
               </div>
             </Col>
           </Row>
@@ -266,14 +288,14 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Required at start</FormFieldTitle>
                 <br />
-                <EntryText>Yes</EntryText>
+                <EntryText missingTextOverride="— not set">Yes</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Can be changed</FormFieldTitle>
                 <br />
-                <EntryText>Yes</EntryText>
+                <EntryText missingTextOverride="— not set">Yes</EntryText>
               </div>
             </Col>
           </Row>
@@ -282,25 +304,34 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Default value</FormFieldTitle>
                 <br />
-                <EntryText>{}</EntryText>
+                <EntryText missingTextOverride="— not set">{}</EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Allowed values</FormFieldTitle>
                 <br />
-                <EntryText>{}</EntryText>
+                <EntryText missingTextOverride="— not set">{}</EntryText>
               </div>
             </Col>
           </Row>
           <Row>
-            <Col span={24}>
+            <Col span={24} style={{ margin: '10px 0 0 0' }}>
               <FormFieldTitle>desc</FormFieldTitle>
             </Col>
           </Row>
           <Row>
             <Col span={24}>
-              <EntryText>lalalalal</EntryText>
+              <EntryText missingTextOverride="— not set">
+                Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod
+                tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero
+                eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea
+                takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet,
+                consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et
+                dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo
+                dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
+                ipsum dolor sit amet.
+              </EntryText>
             </Col>
           </Row>
         </div>

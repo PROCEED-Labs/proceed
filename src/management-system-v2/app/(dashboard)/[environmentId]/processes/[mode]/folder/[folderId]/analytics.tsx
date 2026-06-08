@@ -47,7 +47,7 @@ async function calculateNeedsRelease(
   let count = 0;
 
   for (const p of processesInFolder) {
-    // increament for drafts
+    // increment for drafts
     if (!p.versions || p.versions.length === 0) {
       count++;
       continue;

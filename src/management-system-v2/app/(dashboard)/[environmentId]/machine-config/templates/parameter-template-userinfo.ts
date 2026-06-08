@@ -101,7 +101,7 @@ export function createTemplateUserInfo(userId: string): VirtualUserInfoParameter
         },
       ],
       subParameters: [team, directManager, backOffice],
-      changeableByUser: false,
+      origin: 'external',
     }),
     userId,
     virtualType: 'user-info',

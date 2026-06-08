@@ -41,10 +41,10 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
-export async function getSpaceUsers(spaceId: string, isOrganization = false) {
+export async function getSpaceUsers(spaceId: string, isOrganization: boolean) {
   // get the users for the current space
   if (isOrganization) {
-    return await db.user.findMany({
+    return db.user.findMany({
       where: { memberIn: { some: { environmentId: spaceId } } },
     });
   } else {

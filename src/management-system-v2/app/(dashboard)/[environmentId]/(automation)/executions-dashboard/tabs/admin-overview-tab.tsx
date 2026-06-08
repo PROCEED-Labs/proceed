@@ -31,34 +31,19 @@ interface AdminOverviewTabProps {
   adminStats: any;
   instanceDistributionData: any[];
   totalInstances: number;
+  monthlyData: { month: string; completed: number; failed: number }[];
 }
 
 const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   adminStats,
   instanceDistributionData,
   totalInstances,
+  monthlyData,
 }) => {
   const [selectedFolder, setSelectedFolder] = useState<string>('root');
 
-  const folderTreeData = [
-    {
-      title: 'Root',
-      value: 'root',
-      children: [
-        { title: 'HR Processes', value: 'hr' },
-        { title: 'Finance Processes', value: 'finance' },
-        { title: 'Operations', value: 'operations' },
-      ],
-    },
-  ];
-
-  const monthlyData = [
-    { month: 'Jan', completed: 145, failed: 8 },
-    { month: 'Feb', completed: 162, failed: 5 },
-    { month: 'Mar', completed: 158, failed: 12 },
-    { month: 'Apr', completed: 178, failed: 7 },
-    { month: 'May', completed: 198, failed: 15 },
-  ];
+  // TODO
+  const folderTreeData = [{ title: 'Root', value: 'root' }];
 
   return (
     <>
@@ -137,58 +122,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         <Col xs={24} lg={12}>
           <RadialDistributionChart
             title="System Instance Distribution"
-            data={[
-              {
-                name: 'Failed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Failed')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.red,
-              },
-              {
-                name: 'Stopped',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Stopped')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.gray,
-              },
-              {
-                name: 'Paused',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Paused')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 14.3,
-                fill: COLORS.orange,
-              },
-              {
-                name: 'Running',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Running')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 35.7,
-                fill: COLORS.green,
-              },
-              {
-                name: 'Completed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Completed')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 50,
-                fill: COLORS.blue,
-              },
-            ]}
+            data={instanceDistributionData}
           />
         </Col>
         <Col xs={24} lg={12}>
@@ -218,7 +152,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         <Col xs={24} lg={12}>
           <BudgetOverviewChart
             title="System Budget Overview"
-            plannedBudget={120000}
+            plannedBudget={adminStats.plannedBudget}
             spentBudget={adminStats.spentBudget}
           />
         </Col>

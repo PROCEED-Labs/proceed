@@ -34,15 +34,6 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
   weeklyTrendData,
   totalInstances,
 }) => {
-
-  const monthlyData = [
-    { month: 'Jan', completed: 45, failed: 3 },
-    { month: 'Feb', completed: 52, failed: 2 },
-    { month: 'Mar', completed: 48, failed: 4 },
-    { month: 'Apr', completed: 58, failed: 2 },
-    { month: 'May', completed: 68, failed: 6 },
-  ];
-
   return (
     <>
       {/* Team Overview Section */}
@@ -90,58 +81,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
         <Col xs={24} lg={12}>
           <RadialDistributionChart
             title="Team Instance Distribution"
-            data={[
-              {
-                name: 'Failed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Failed')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.red,
-              },
-              {
-                name: 'Stopped',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Stopped')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.gray,
-              },
-              {
-                name: 'Paused',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Paused')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 14.3,
-                fill: COLORS.orange,
-              },
-              {
-                name: 'Running',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Running')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 35.7,
-                fill: COLORS.green,
-              },
-              {
-                name: 'Completed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Completed')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 50,
-                fill: COLORS.blue,
-              },
-            ]}
+            data={instanceDistributionData}
           />
         </Col>
         <Col xs={24} lg={12}>
@@ -160,7 +100,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
         <Col xs={24} lg={12}>
           <ProcessActivityChart
             title="Team Process Activity"
-            data={monthlyData}
+            data={weeklyTrendData}
             dataKeys={{
               x: 'month',
               line1: { key: 'completed', name: 'Completed', color: COLORS.green },
@@ -171,7 +111,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
         <Col xs={24} lg={12}>
           <BudgetOverviewChart
             title="Team Budget Overview"
-            plannedBudget={60000}
+            plannedBudget={managerStats.plannedBudget}
             spentBudget={managerStats.spentBudget}
           />
         </Col>

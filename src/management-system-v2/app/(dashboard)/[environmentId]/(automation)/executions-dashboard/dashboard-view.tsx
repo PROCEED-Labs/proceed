@@ -8,6 +8,7 @@ import { useEnvironment } from '@/components/auth-can';
 import { getAvailableSpaceEngines } from '@/lib/data/engines';
 import { getDeployedProcesses } from '@/lib/data/deployment';
 import { getInstance } from '@/lib/data/instance';
+import { getUserTasks } from '@/lib/data/user-tasks';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { truthyFilter } from '@/lib/typescript-utils';
@@ -15,7 +16,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   filterInstancesByDateRange,
   calculateInstanceStats,
-  getDummyStats,
+  getEmptyStats,
   calculateUserStats,
   calculateManagerStats,
 } from './dashboard-utils';
@@ -30,6 +31,10 @@ type TimeRange = 'week' | 'month' | 'year' | 'custom';
 interface DashboardProps {
   userRole: 'user' | 'manager' | 'admin';
   userId: string;
+  accessibleProcesses: number;
+  executableProcesses: number;
+  teamMemberCount: number;
+  teamMemberIds: string[];
 }
 
 const COLORS = {
@@ -40,7 +45,14 @@ const COLORS = {
   gray: '#8c8c8c',
 };
 
-const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
+const DashboardView: React.FC<DashboardProps> = ({
+  userRole,
+  userId,
+  accessibleProcesses,
+  executableProcesses,
+  teamMemberCount,
+  teamMemberIds,
+}) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState<string>('user');
@@ -50,6 +62,7 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
 
   const space = useEnvironment();
 
+  // fetch engines
   const { data: engines, isLoading: enginesLoading } = useQuery({
     queryFn: async () => {
       const res = await getAvailableSpaceEngines(space.spaceId);
@@ -60,6 +73,7 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
     queryKey: ['space', space.spaceId, 'engines'],
   });
 
+  // fetch all instances
   const { data: deploymentData, isLoading: deploymentsLoading } = useQuery({
     queryFn: async () => {
       const deployedProcesses = await getDeployedProcesses(space.spaceId);
@@ -86,11 +100,27 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
     queryKey: ['space', space.spaceId, 'deployments'],
   });
 
+  // fetch user tasks for current user
+  const { data: userTasksData } = useQuery({
+    queryFn: async () => {
+      const tasks = await getUserTasks();
+      if (isUserErrorResponse(tasks)) return { openTasks: 0, completedTasks: 0 };
+      // filter tasks where current user is an actual owner
+      const myTasks = tasks.filter((t) => t.actualOwner?.includes(userId));
+      return {
+        openTasks: myTasks.filter((t) => t.state !== 'COMPLETED').length,
+        completedTasks: myTasks.filter((t) => t.state === 'COMPLETED').length,
+      };
+    },
+    refetchInterval: 5000,
+    queryKey: ['space', space.spaceId, 'userTasks', userId],
+  });
+
   const isLoading = enginesLoading || deploymentsLoading;
 
-  // calculate date range based on selection
+  // calculate date range
   const dateRange = useMemo(() => {
-    if (timeRange === 'custom' && customDateRange && customDateRange[0] && customDateRange[1]) {
+    if (timeRange === 'custom' && customDateRange?.[0] && customDateRange?.[1]) {
       return {
         start: customDateRange[0].toDate(),
         end: customDateRange[1].toDate(),
@@ -115,61 +145,127 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
     return { start, end };
   }, [timeRange, customDateRange]);
 
-  // filter instances by date range
+  // filter all instances by date range
   const filteredInstances = useMemo(() => {
-    if (!deploymentData?.instances) return [];
-    return filterInstancesByDateRange(deploymentData.instances, dateRange.start, dateRange.end);
+    if (!deploymentData?.instances?.length) return [];
+    return filterInstancesByDateRange(
+      deploymentData.instances as any[],
+      dateRange.start,
+      dateRange.end,
+    );
   }, [deploymentData, dateRange]);
 
-  // calculate stats from filtered data
+  // filter instances for current user only
+  const userInstances = useMemo(() => {
+    if (!filteredInstances.length) return [];
+    return filteredInstances.filter((instance) => instance.initiatorId === userId);
+  }, [filteredInstances, userId]);
+
+  // filter instances for manager's direct reports only (admin sees all)
+  const managerInstances = useMemo(() => {
+    if (!filteredInstances.length) return [];
+    if (userRole === 'admin') return filteredInstances;
+    return filteredInstances.filter((instance) => {
+      if (!instance.initiatorId) return false;
+      return teamMemberIds.includes(instance.initiatorId);
+    });
+  }, [filteredInstances, teamMemberIds, userRole]);
+
+  // calculate all stats
   const stats = useMemo(() => {
     if (!engines || !deploymentData) return null;
 
-    const baseStats = calculateInstanceStats(filteredInstances);
-    const hasRealData = baseStats.totalInstances > 0;
+    // user stats which is from their own instances only
+    const userBaseStats =
+      filteredInstances.length > 0
+        ? calculateInstanceStats(userInstances as any[])
+        : getEmptyStats();
 
-    const finalBaseStats = hasRealData ? baseStats : getDummyStats();
+    const userStats = calculateUserStats(
+      userBaseStats,
+      accessibleProcesses,
+      executableProcesses,
+      userTasksData?.openTasks ?? 0,
+      userTasksData?.completedTasks ?? 0,
+    );
 
-    const userStats = calculateUserStats(finalBaseStats);
-    const managerStats = calculateManagerStats();
+    // manager stats
+    const managerBaseStats =
+      filteredInstances.length > 0
+        ? calculateInstanceStats(managerInstances as any[])
+        : getEmptyStats();
+
+    const managerStats = calculateManagerStats(
+      managerBaseStats,
+      accessibleProcesses,
+      executableProcesses,
+      teamMemberCount,
+    );
+
+    // admin stats from all instances
+    const adminBaseStats =
+      filteredInstances.length > 0
+        ? calculateInstanceStats(filteredInstances as any[])
+        : getEmptyStats();
+
     const adminStats = {
       engines: engines.length,
-      ...managerStats,
+      ...calculateManagerStats(
+        adminBaseStats,
+        accessibleProcesses,
+        executableProcesses,
+        teamMemberCount,
+      ),
     };
 
     return {
-      ...finalBaseStats,
+      // base stats from all instances for distribution chart
+      ...adminBaseStats,
       userStats,
       managerStats,
       adminStats,
-      hasRealData,
     };
-  }, [engines, filteredInstances, deploymentData]);
+  }, [
+    engines,
+    deploymentData,
+    filteredInstances,
+    userInstances,
+    managerInstances,
+    userTasksData,
+    accessibleProcesses,
+    executableProcesses,
+    teamMemberCount,
+  ]);
 
-  // chart data
-  const instanceDistributionData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: 'Completed', value: Math.max(stats.completedInstances, 0), color: COLORS.blue },
-      { name: 'Running', value: Math.max(stats.runningInstances, 0), color: COLORS.green },
-      { name: 'Paused', value: Math.max(stats.pausedInstances, 0), color: COLORS.orange },
-      { name: 'Stopped', value: Math.max(stats.stoppedInstances, 0), color: COLORS.gray },
-      { name: 'Failed', value: Math.max(stats.failedInstances, 0), color: COLORS.red },
+  // instance distribution uses all instances for radial chart
+  const buildDistributionData = (instances: any[], label: string) => {
+    const s = instances.length > 0 ? calculateInstanceStats(instances as any[]) : getEmptyStats();
+
+    console.log(`[Dashboard] ${label} raw instances (${instances.length}):`, instances);
+    console.log(`[Dashboard] ${label} calculated stats:`, s);
+
+    const result = [
+      { name: 'Completed', value: Math.max(s.completedInstances, 0), fill: COLORS.blue },
+      { name: 'Running', value: Math.max(s.runningInstances, 0), fill: COLORS.green },
+      { name: 'Paused', value: Math.max(s.pausedInstances, 0), fill: COLORS.orange },
+      { name: 'Stopped', value: Math.max(s.stoppedInstances, 0), fill: COLORS.gray },
+      { name: 'Failed', value: Math.max(s.failedInstances, 0), fill: COLORS.red },
     ];
-  }, [stats]);
 
-  // dummy weekly trend data
-  const weeklyTrendData = useMemo(
-    () => [
-      { day: 'Mon', started: 8, completed: 6 },
-      { day: 'Tue', started: 12, completed: 9 },
-      { day: 'Wed', started: 10, completed: 11 },
-      { day: 'Thu', started: 15, completed: 10 },
-      { day: 'Fri', started: 9, completed: 8 },
-      { day: 'Sat', started: 5, completed: 7 },
-      { day: 'Sun', started: 3, completed: 4 },
-    ],
-    [],
+    return result;
+  };
+
+  const userDistributionData = useMemo(
+    () => buildDistributionData(userInstances, 'USER'),
+    [userInstances],
+  );
+  const managerDistributionData = useMemo(
+    () => buildDistributionData(managerInstances, 'MANAGER'),
+    [managerInstances],
+  );
+  const adminDistributionData = useMemo(
+    () => buildDistributionData(filteredInstances, 'ADMIN'),
+    [filteredInstances],
   );
 
   const handleTimeRangeChange = (value: TimeRange) => {
@@ -179,12 +275,10 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
 
   const handleDateRangeChange = (dates: [Dayjs | null, Dayjs | null] | null) => {
     setCustomDateRange(dates);
-    if (dates && dates[0] && dates[1]) setTimeRange('custom');
+    if (dates?.[0] && dates?.[1]) setTimeRange('custom');
   };
 
-  if (isLoading || !stats) {
-    return <Skeleton active />;
-  }
+  if (isLoading || !stats) return <Skeleton active />;
 
   const tabItems = [
     {
@@ -198,9 +292,9 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
       children: (
         <UserProcessesTab
           userStats={stats.userStats}
-          instanceDistributionData={instanceDistributionData}
-          weeklyTrendData={weeklyTrendData}
-          totalInstances={stats.totalInstances}
+          instanceDistributionData={userDistributionData}
+          weeklyTrendData={stats.userStats.weeklyData}
+          totalInstances={stats.userStats.startedProcesses}
         />
       ),
     },
@@ -218,9 +312,9 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
       children: (
         <ManagerOverviewTab
           managerStats={stats.managerStats}
-          instanceDistributionData={instanceDistributionData}
-          weeklyTrendData={weeklyTrendData}
-          totalInstances={stats.totalInstances}
+          instanceDistributionData={managerDistributionData}
+          weeklyTrendData={stats.managerStats.monthlyData}
+          totalInstances={stats.managerStats.startedProcesses}
         />
       ),
     });
@@ -238,8 +332,9 @@ const DashboardView: React.FC<DashboardProps> = ({ userRole, userId }) => {
       children: (
         <AdminOverviewTab
           adminStats={stats.adminStats}
-          instanceDistributionData={instanceDistributionData}
-          totalInstances={stats.totalInstances}
+          instanceDistributionData={adminDistributionData}
+          totalInstances={stats.adminStats.startedProcesses}
+          monthlyData={stats.adminStats.monthlyData}
         />
       ),
     });

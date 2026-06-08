@@ -63,61 +63,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
-          <RadialDistributionChart
-            title="Instance Distribution"
-            data={[
-              {
-                name: 'Failed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Failed')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.red,
-              },
-              {
-                name: 'Stopped',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Stopped')?.value || 0) /
-                        totalInstances) *
-                      100
-                    : 0,
-                fill: COLORS.gray,
-              },
-              {
-                name: 'Paused',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Paused')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 14.3,
-                fill: COLORS.orange,
-              },
-              {
-                name: 'Running',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Running')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 35.7,
-                fill: COLORS.green,
-              },
-              {
-                name: 'Completed',
-                value:
-                  totalInstances > 0
-                    ? ((instanceDistributionData.find((d) => d.name === 'Completed')?.value || 1) /
-                        totalInstances) *
-                      100
-                    : 50,
-                fill: COLORS.blue,
-              },
-            ]}
-          />
+          <RadialDistributionChart title="Instance Distribution" data={instanceDistributionData} />
         </Col>
         <Col xs={24} lg={12}>
           <TimelinePerformanceCard
@@ -145,7 +91,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         <Col xs={24} lg={12}>
           <BudgetOverviewChart
             title="Budget Overview"
-            plannedBudget={15000}
+            plannedBudget={userStats.plannedBudget}
             spentBudget={userStats.spentBudget}
           />
         </Col>
@@ -217,7 +163,10 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
           <GaugeChart
             title="Task Completion Rate"
             percentage={
-              (userStats.completedTasks / (userStats.completedTasks + userStats.openTasks)) * 100
+              userStats.completedTasks + userStats.openTasks > 0
+                ? (userStats.completedTasks / (userStats.completedTasks + userStats.openTasks)) *
+                  100
+                : 0
             }
             completed={userStats.completedTasks}
             total={userStats.completedTasks + userStats.openTasks}
@@ -225,20 +174,27 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
           />
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Daily Task Completion" bordered={false}>
+          <Card title="Task Overview" bordered={false}>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart
-                data={weeklyTrendData}
+                data={[
+                  { label: 'Open', value: userStats.openTasks },
+                  { label: 'Completed', value: userStats.completedTasks },
+                ]}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
                 <defs>
-                  <linearGradient id="colorTaskDaily" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorTaskOpen" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={COLORS.orange} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={COLORS.orange} stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="colorTaskCompleted" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.8} />
                     <stop offset="95%" stopColor={COLORS.green} stopOpacity={0.1} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="day" />
+                <XAxis dataKey="label" />
                 <YAxis />
                 <Tooltip
                   contentStyle={{
@@ -249,11 +205,12 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                 />
                 <Area
                   type="monotone"
-                  dataKey="completed"
+                  dataKey="value"
                   stroke={COLORS.green}
                   strokeWidth={3}
                   fillOpacity={1}
-                  fill="url(#colorTaskDaily)"
+                  fill="url(#colorTaskCompleted)"
+                  name="Tasks"
                 />
               </AreaChart>
             </ResponsiveContainer>

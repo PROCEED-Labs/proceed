@@ -5,6 +5,10 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import DashboardView from './dashboard-view';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { getUserRoles } from '@/lib/data/db/iam/roles';
+import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
+import { getDashboardProcessStats } from './dashboard-data';
+import db from '@/lib/data/db';
 
 const Page = async (props: any) => {
   const params = await props.params;
@@ -27,9 +31,9 @@ const Page = async (props: any) => {
     return notFound();
   }
 
-  // determine user role based on abilities
+  // Role Detection
   let userRole: 'user' | 'manager' | 'admin' = 'user';
-  if (systemAdmin) {
+  if (systemAdmin || ability.can('admin', 'All')) {
     userRole = 'admin';
   } else if (
     ability.can('manage', 'User') ||
@@ -37,11 +41,65 @@ const Page = async (props: any) => {
     ability.can('manage', 'Role')
   ) {
     userRole = 'manager';
+  } else {
+    // check if user has a team role
+    const userRoles = await getUserRoles(userId, activeEnvironment.spaceId);
+    const hasTeamRole = userRoles.some((r) =>
+      (r.organizationRoleType as string[])?.includes('team'),
+    );
+    if (hasTeamRole) userRole = 'manager';
+  }
+
+  // Process Stats (accessible or executable)
+  const processStats = await getDashboardProcessStats(activeEnvironment.spaceId);
+
+  // Team Members
+  let teamMemberIds: string[] = [];
+  let teamMemberCount = 0;
+
+  if (userRole === 'manager') {
+    try {
+      // get loggedin user's membership
+      const myMembership = await db.membership.findUnique({
+        where: {
+          userId_environmentId: {
+            userId,
+            environmentId: activeEnvironment.spaceId,
+          },
+        },
+      });
+
+      if (myMembership) {
+        // find all members who report directly to this manager
+        const directReports = await db.userOrganigram.findMany({
+          where: { directManagerId: myMembership.id },
+          include: { member: { select: { userId: true } } },
+        });
+        teamMemberIds = directReports.map((r) => r.member.userId);
+        teamMemberCount = teamMemberIds.length;
+      }
+    } catch (_) {}
+  }
+
+  if (userRole === 'admin') {
+    try {
+      // admin sees all members
+      const allMembers = await getFullMembersWithRoles(activeEnvironment.spaceId, ability);
+      teamMemberCount = allMembers.length;
+      teamMemberIds = allMembers.map((m) => m.id);
+    } catch (_) {}
   }
 
   return (
-    <Content title="Dashboard">
-      <DashboardView userRole={userRole} userId={userId} spaceId={activeEnvironment.spaceId} />
+    <Content>
+      <DashboardView
+        userRole={userRole}
+        userId={userId}
+        accessibleProcesses={processStats.accessibleProcesses}
+        executableProcesses={processStats.executableProcesses}
+        teamMemberCount={teamMemberCount}
+        teamMemberIds={teamMemberIds}
+      />
     </Content>
   );
 };

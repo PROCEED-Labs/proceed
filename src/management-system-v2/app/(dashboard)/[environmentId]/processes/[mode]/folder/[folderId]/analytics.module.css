@@ -1,0 +1,15 @@
+.scrollButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.scrollButtonLeft {
+  left: 8px;
+}
+
+.scrollButtonRight {
+  right: 8px;
+}

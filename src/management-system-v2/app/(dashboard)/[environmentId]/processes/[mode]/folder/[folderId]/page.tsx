@@ -18,12 +18,13 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
 import ProcessAnalyticsCards from './analytics';
 import { toCaslResource } from '@/lib/ability/caslAbility';
+import Ability from '@/lib/ability/abilityHelper';
 export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 // get all processes from a folder and its subfolders
 async function getAllProcessesRecursive(
   folderId: string,
-  ability: any,
+  ability: Ability,
   collected: ListItem[] = [],
 ): Promise<ListItem[]> {
   const contents = await getFolderContents(folderId, ability);
@@ -123,7 +124,7 @@ const ProcessesPage = async (props: {
         >
           {/* Analytics Cards Section */}
           <ProcessAnalyticsCards
-            items={folderContentsFiltered}
+            folderContents={folderContentsFiltered}
             allProcesses={allProcessesRecursive}
             isRootFolder={isRootFolder}
             spaceId={activeEnvironment.spaceId}

@@ -1,4 +1,4 @@
-import { Card, Typography, Tooltip, Progress } from 'antd';
+import { Card, Typography, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -60,19 +60,17 @@ const AnalyticsCard: React.FC<AnalyticsCardProps> = ({
       </div>
 
       {/* Main value with icon */}
-      <div style={{ marginBottom: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ color: '#1677ff', fontSize: '18px' }}>{icon}</div>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
-            <span style={{ color: '#1677ff', fontSize: '24px', fontWeight: 600, lineHeight: 1 }}>
-              {mainValue}
+      <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ color: '#1677ff', fontSize: '18px' }}>{icon}</div>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <span style={{ color: '#1677ff', fontSize: '24px', fontWeight: 600, lineHeight: 1 }}>
+            {mainValue}
+          </span>
+          {secondaryValue !== undefined && (
+            <span style={{ color: '#8c8c8c', fontSize: '16px', fontWeight: 400 }}>
+              / {secondaryValue}
             </span>
-            {secondaryValue !== undefined && (
-              <span style={{ color: '#8c8c8c', fontSize: '16px', fontWeight: 400 }}>
-                / {secondaryValue}
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </div>
 

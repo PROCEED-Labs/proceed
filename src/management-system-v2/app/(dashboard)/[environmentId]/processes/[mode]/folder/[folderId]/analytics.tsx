@@ -16,11 +16,13 @@ import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
 import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
 import AnalyticsCard from '@/components/analytics-card';
+import styles from './analytics.module.css';
+import { useQuery } from '@tanstack/react-query';
 
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 interface ProcessAnalyticsCardsProps {
-  items: AnalyticsItem[];
+  folderContents: AnalyticsItem[];
   allProcesses: AnalyticsItem[];
   isRootFolder?: boolean;
   spaceId: string;
@@ -36,11 +38,33 @@ interface AnalyticsData {
   executableInFolder: number;
   totalFolders: number;
   foldersInCurrentLevel: number;
-  totalProcessesGlobal: number;
+}
+
+async function calculateNeedsRelease(
+  processesInFolder: ProcessMetadata[],
+  spaceId: string,
+): Promise<number> {
+  let count = 0;
+
+  for (const p of processesInFolder) {
+    // increament for drafts
+    if (!p.versions || p.versions.length === 0) {
+      count++;
+      continue;
+    }
+
+    // For released processes, check if they have unreleased changes
+    const result = await processUnchangedFromBasedOnVersion(p.id, spaceId);
+    if (result === undefined) {
+      count++;
+    }
+  }
+
+  return count;
 }
 
 const ProcessAnalyticsCards = ({
-  items,
+  folderContents,
   allProcesses,
   isRootFolder = true,
   spaceId,
@@ -48,7 +72,6 @@ const ProcessAnalyticsCards = ({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(false);
-  const [unversionedCount, setUnversionedCount] = useState(0);
 
   const checkScrollButtons = () => {
     if (scrollRef.current) {
@@ -62,39 +85,24 @@ const ProcessAnalyticsCards = ({
     }
   };
 
-  // Calculate processes that need release (drafts and released with changes)
-  useEffect(() => {
-    const calculateUnversioned = async () => {
-      const allProcessesGlobal = allProcesses.filter(
-        (item) => item.type === 'process',
-      ) as ProcessMetadata[];
+  const allProcessesGlobal = useMemo(
+    () => allProcesses.filter((item) => item.type === 'process') as ProcessMetadata[],
+    [allProcesses],
+  );
 
-      const processesInFolder = isRootFolder
+  const processesInFolder = useMemo(
+    () =>
+      isRootFolder
         ? allProcessesGlobal
-        : (items.filter((item) => item.type === 'process') as ProcessMetadata[]);
+        : (folderContents.filter((item) => item.type === 'process') as ProcessMetadata[]),
+    [folderContents, allProcessesGlobal, isRootFolder],
+  );
 
-      let count = 0;
-
-      for (const p of processesInFolder) {
-        // increament for drafts
-        if (!p.versions || p.versions.length === 0) {
-          count++;
-          continue;
-        }
-
-        // For released processes, check if they have unreleased changes
-        const result = await processUnchangedFromBasedOnVersion(p.id, spaceId);
-
-        if (result === undefined) {
-          count++;
-        }
-      }
-
-      setUnversionedCount(count);
-    };
-
-    calculateUnversioned();
-  }, [items, allProcesses, isRootFolder, spaceId]);
+  const { data: unversionedCount = 0, isLoading: isUnversionedLoading } = useQuery({
+    queryKey: ['needsRelease', processesInFolder, spaceId],
+    queryFn: () => calculateNeedsRelease(processesInFolder, spaceId),
+    enabled: processesInFolder.length > 0 && !!spaceId,
+  });
 
   useEffect(() => {
     // Check buttons on mount and when items change
@@ -113,31 +121,24 @@ const ProcessAnalyticsCards = ({
         window.removeEventListener('resize', checkScrollButtons);
       };
     }
-  }, [items]);
+  }, [folderContents]);
 
   const analytics: AnalyticsData = useMemo(() => {
-    const allProcessesGlobal = allProcesses.filter(
-      (item) => item.type === 'process',
-    ) as ProcessMetadata[];
-
-    const processesInFolder = isRootFolder
-      ? allProcessesGlobal
-      : (items.filter((item) => item.type === 'process') as ProcessMetadata[]);
-
     // Count all folders from allProcesses
     const allFoldersGlobal = allProcesses.filter((item) => item.type === 'folder');
     // Count all folders on current level
-    const foldersInCurrent = items.filter((item) => item.type === 'folder');
+    const foldersInCurrent = folderContents.filter((item) => item.type === 'folder');
 
     const processesInFolderCount = processesInFolder.length;
-    const totalProcessesGlobal = allProcessesGlobal.length;
 
     const releasedInFolder = processesInFolder.filter(
       (p) => p.versions && p.versions.length > 0,
     ).length;
 
     const draftsInFolder = processesInFolderCount - releasedInFolder;
-    const sharedInFolder = processesInFolder.filter((p) => p.sharedAs !== 'protected').length;
+    const sharedInFolder = processesInFolder.filter(
+      (p) => p.shareTimestamp && p.shareTimestamp > 0,
+    ).length;
     const executableInFolder = processesInFolder.filter((p) => p.executable).length;
 
     const sevenDaysAgo = new Date();
@@ -156,10 +157,8 @@ const ProcessAnalyticsCards = ({
       executableInFolder,
       totalFolders: allFoldersGlobal.length,
       foldersInCurrentLevel: foldersInCurrent.length,
-      totalProcessesGlobal,
     };
-  }, [items, allProcesses, isRootFolder, unversionedCount]);
-
+  }, [unversionedCount, processesInFolder, allProcesses, folderContents]);
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 350;
@@ -179,14 +178,7 @@ const ProcessAnalyticsCards = ({
           onClick={() => scroll('left')}
           size="middle"
           type="default"
-          style={{
-            position: 'absolute',
-            left: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
+          className={`${styles.scrollButton} ${styles.scrollButtonLeft}`}
         />
       )}
 
@@ -197,14 +189,7 @@ const ProcessAnalyticsCards = ({
           onClick={() => scroll('right')}
           size="middle"
           type="default"
-          style={{
-            position: 'absolute',
-            right: '8px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            zIndex: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
+          className={`${styles.scrollButton} ${styles.scrollButtonRight}`}
         />
       )}
 
@@ -224,7 +209,7 @@ const ProcessAnalyticsCards = ({
         <AnalyticsCard
           title="Total Processes"
           icon={<FileOutlined />}
-          mainValue={isRootFolder ? analytics.totalProcessesGlobal : analytics.processesInFolder}
+          mainValue={analytics.processesInFolder}
           showProgress={true}
           progressPercent={100}
           successPercent={

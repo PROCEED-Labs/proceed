@@ -9,6 +9,7 @@
     letter-spacing: -0.03em;
     position: relative;
     padding-bottom: 0.3rem;
+    width: fit-content;
     // bottom accent line
     &::after {
       content: '';

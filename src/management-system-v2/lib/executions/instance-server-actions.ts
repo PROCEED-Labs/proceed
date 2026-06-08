@@ -362,8 +362,8 @@ export async function exportInstanceCSV(
         initiatorInfo.ProcessInstanceInitiatorFullName =
           initiator;
     } else {
-      (initiatorInfo.ProcessInstanceInitiatorId = initiator.id),
-        (initiatorInfo.ProcessInstanceInitiatorFullName = initiator.fullName);
+      initiatorInfo.ProcessInstanceInitiatorId = initiator.id;
+      initiatorInfo.ProcessInstanceInitiatorFullName = initiator.fullName;
       initiatorInfo.ProcessInstanceInitiatorUsername = initiator.username || '';
     }
   }

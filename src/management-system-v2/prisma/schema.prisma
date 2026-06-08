@@ -497,6 +497,10 @@ model ProcessDeployment {
   // when the engine becomes available again the deployment should be removed from it and then the "removeTime" entry should be set
   toRemove      Boolean    @default(false)
 
+  // marks a deployment as active if it is allowed to spawn new instances automatically on the engines it is deployed to
+  // this can happen when the bpmn contains typed start events like timer start events
+  active        Boolean    @default(false)
+
   engineId      String
   engine        Engine         @relation(fields: [engineId], references: [id])
 

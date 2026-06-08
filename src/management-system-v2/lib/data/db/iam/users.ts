@@ -41,6 +41,18 @@ export async function getUsers(page: number = 1, pageSize: number = 10) {
   };
 }
 
+export async function getSpaceUsers(spaceId: string, isOrganization: boolean) {
+  // get the users for the current space
+  if (isOrganization) {
+    return db.user.findMany({
+      where: { memberIn: { some: { environmentId: spaceId } } },
+    });
+  } else {
+    const user = await db.user.findUnique({ where: { id: spaceId } });
+    return user ? [user] : [];
+  }
+}
+
 export async function getUserById(
   id: string,
   opts?: { throwIfNotFound?: boolean },

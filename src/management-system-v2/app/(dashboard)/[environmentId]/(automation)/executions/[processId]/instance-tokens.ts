@@ -1,10 +1,10 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { InstanceInfo } from '@/lib/engines/deployment';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 import type { Element } from 'bpmn-js/lib/model/Types';
 import type { Connection } from 'diagram-js/lib/util/Elements';
 
-type TokenInfo = InstanceInfo['tokens'][number];
+type TokenInfo = ExtendedInstanceInfo['tokens'][number];
 
 export function getTokenPosition(
   token: TokenInfo,
@@ -84,11 +84,14 @@ export function getTokenPosition(
   return { top, right, left, targetElementId: targetFlowElement.id };
 }
 
-function isPausingToken(token: TokenInfo, instance: InstanceInfo) {
+function isPausingToken(token: TokenInfo, instance: ExtendedInstanceInfo) {
   return instance?.instanceState.includes('PAUSING') && token.state === 'RUNNING';
 }
 
-function getTokenTooltip(token: InstanceInfo['tokens'][number], instance: InstanceInfo) {
+function getTokenTooltip(
+  token: ExtendedInstanceInfo['tokens'][number],
+  instance: ExtendedInstanceInfo,
+) {
   if (isPausingToken(token, instance)) {
     return 'Token is in state RUNNING, switching to PAUSE state after current task is finished';
   }
@@ -111,7 +114,7 @@ function getTokenTooltip(token: InstanceInfo['tokens'][number], instance: Instan
   return token.state;
 }
 
-export function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
+export function getTokenColor(token: TokenInfo, instance: ExtendedInstanceInfo) {
   if (isPausingToken(token, instance)) {
     return '#faad14';
   }
@@ -155,7 +158,11 @@ export function getTokenColor(token: TokenInfo, instance: InstanceInfo) {
   return 'white';
 }
 
-export function addToken(token: TokenInfo, instance: InstanceInfo, bpmnViewer: BPMNCanvasRef) {
+export function addToken(
+  token: TokenInfo,
+  instance: ExtendedInstanceInfo,
+  bpmnViewer: BPMNCanvasRef,
+) {
   const tokenColor: string = getTokenColor(token, instance);
   const tokenTooltip = getTokenTooltip(token, instance);
 

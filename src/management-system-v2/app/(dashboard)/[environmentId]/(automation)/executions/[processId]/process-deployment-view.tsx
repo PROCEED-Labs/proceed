@@ -1,7 +1,7 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton, Avatar } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -13,6 +13,7 @@ import {
   PauseOutlined,
   StopOutlined,
   ExportOutlined,
+  WarningTwoTone,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -33,10 +34,7 @@ import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
-import {
-  getProcessActivationStatus,
-  changeDeploymentActivation,
-} from '@/lib/executions/deployment-server-actions';
+import { changeDeploymentActivation } from '@/lib/executions/deployment-server-actions';
 import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
@@ -55,7 +53,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getProcessDeployments } from '@/lib/data/deployment';
 import { isSuccessResponse, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getInstance } from '@/lib/data/instance';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { asyncMap, pick } from '@/lib/helpers/javascriptHelpers';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { enableInstanceCSVExport } from 'FeatureFlags';
 import jsonToCsvExport from 'json-to-csv-export';
@@ -170,43 +168,13 @@ export default function ProcessDeploymentView({ processId }: { processId: string
       if (isUserErrorResponse(instance)) return null;
       if (!instance) return null;
 
-      return { ...instance.state, engineIds: instance.engineIds };
+      return {
+        ...instance.state,
+        ...pick(instance, ['engines', 'executionStatus', 'pausing', 'paused', 'offline']),
+      };
     },
     enabled: !!selectedInstanceId,
     refetchInterval: 1000,
-  });
-
-  const { instanceIsRunning, instanceIsPausing, instanceIsPaused } = useMemo(() => {
-    let instanceIsRunning = false;
-    let instanceIsPausing = false;
-    let instanceIsPaused = false;
-
-    const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
-
-    if (currentInstance) {
-      instanceIsRunning = currentInstance.instanceState.some((state) =>
-        activeStates.includes(state),
-      );
-      instanceIsPausing = currentInstance.instanceState.some((state) => state === 'PAUSING');
-      instanceIsPaused = currentInstance.instanceState.some((state) => state === 'PAUSED');
-    }
-
-    return { instanceIsRunning, instanceIsPausing, instanceIsPaused };
-  }, [currentInstance]);
-
-  const {
-    data: isProcessActivated,
-    isFetching: isActivationLoading,
-    refetch: refetchActivation,
-  } = useQuery({
-    queryFn: async () => {
-      if (!currentVersion) return false;
-      const status = await getProcessActivationStatus(processId, spaceId, currentVersion.id);
-
-      if (isUserErrorResponse(status)) return false;
-      return status;
-    },
-    queryKey: ['processActivation', spaceId, processId, currentVersion],
   });
 
   const { data: selectedBpmn } = useQuery({
@@ -264,6 +232,11 @@ export default function ProcessDeploymentView({ processId }: { processId: string
     refreshColoring();
   }, [refreshTokens, refreshColoring]);
 
+  const isProcessActivated = useMemo(() => {
+    if (!deployments || !currentVersion) return false;
+    return !!deployments.some((d) => d.versionId === currentVersion.id && d.active);
+  }, [deployments, currentVersion]);
+
   if (!deployments || !selectedBpmn) {
     return (
       <Content>
@@ -309,6 +282,21 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 }))}
                 placeholder="Select an instance"
               />
+
+              {currentInstance?.offline && (
+                <Tooltip title="Some of the engines this process is executed on are not reachable!">
+                  <Avatar
+                    icon={
+                      <WarningTwoTone
+                        twoToneColor="orange"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    }
+                    size={40}
+                    style={{ backgroundColor: 'inherit' }}
+                  />
+                </Tooltip>
+              )}
 
               <Tooltip title="Filter by version">
                 <Dropdown
@@ -450,7 +438,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 >
                   <Button
                     type="text"
-                    loading={togglingActivation || isActivationLoading}
+                    loading={togglingActivation}
                     icon={
                       isProcessActivated ? (
                         <span className={styles.SpinIcon}>
@@ -467,7 +455,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       await wrapServerCall({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
-                        onSuccess: () => refetchActivation(),
+                        onSuccess: () => refetchDeployments(),
                       });
                       setTogglingActivation(false);
                     }}
@@ -480,16 +468,19 @@ export default function ProcessDeploymentView({ processId }: { processId: string
             <div>
               {currentInstance && (
                 <ToolbarGroup>
-                  {instanceIsPaused || instanceIsPausing ? (
+                  {currentInstance.paused || currentInstance.pausing ? (
                     // Show Resume (Play) when paused or pausing
                     <Tooltip
                       title={
-                        instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'
+                        currentInstance.pausing
+                          ? 'Abort pausing the instance'
+                          : 'Resume the instance'
                       }
                     >
                       <Button
                         className={styles.PlayIcon}
                         icon={<CaretRightOutlined />}
+                        disabled={currentInstance.offline}
                         loading={resumingInstance}
                         onClick={async () => {
                           setResumingInstance(true);
@@ -509,7 +500,9 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                         className={styles.PauseIcon}
                         icon={<PauseOutlined />}
                         loading={pausingInstance}
-                        disabled={!instanceIsRunning}
+                        disabled={
+                          currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                        }
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
@@ -528,7 +521,9 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       className={styles.StopIcon}
                       icon={<StopOutlined />}
                       loading={stoppingInstance}
-                      disabled={!instanceIsRunning}
+                      disabled={
+                        currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                      }
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({

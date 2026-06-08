@@ -1,13 +1,13 @@
 import { ReactNode } from 'react';
 import { Alert, Checkbox, Image, Progress, ProgressProps, Space, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
+import { getTiming, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export function ElementStatus({
   processId,
@@ -16,7 +16,7 @@ export function ElementStatus({
 }: {
   processId: string;
   element: ElementLike;
-  instance?: InstanceInfo;
+  instance?: ExtendedInstanceInfo;
 }) {
   const statusEntries: ReactNode[][] = [];
 
@@ -150,46 +150,68 @@ export function ElementStatus({
       }),
   ]);
 
+  // Documentation
+  statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
+
   // Real Costs
   // TODO: Set real costs
-  if (instance && !isRootElement) {
+  if (instance) {
     let costs: string | undefined = undefined;
-    if (token) costs = token.costsRealSetByOwner;
-    else if (logInfo) costs = logInfo.costsRealSetByOwner;
+    if (token)
+      costs =
+        token.costsRealSetByOwner &&
+        generateNumberString(+token.costsRealSetByOwner.value, {
+          style: 'currency',
+          currency: token.costsRealSetByOwner.unit,
+        });
+    else if (logInfo)
+      costs =
+        logInfo.costsRealSetByOwner &&
+        generateNumberString(+logInfo.costsRealSetByOwner.value, {
+          style: 'currency',
+          currency: logInfo.costsRealSetByOwner.unit,
+        });
+    else {
+      costs = instance.executionCosts
+        ?.map((c) =>
+          generateNumberString(+c.value, {
+            style: 'currency',
+            currency: c.unit,
+          }),
+        )
+        .join(' + ');
+    }
 
     statusEntries.push(['Real Costs:', costs]);
   }
 
-  // Documentation
-  statusEntries.push(['Documentation:', element.businessObject?.documentation?.[0]?.text]);
-
-  // Activity time calculation
-  const { start, end, duration } = getTimeInfo({
-    element: element,
-    instance: instance,
-    logInfo,
+  const timing = getTiming({
+    isRootElement,
+    metaData,
     token,
+    logInfo,
+    instance,
   });
-
-  const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
   // Activity time
   statusEntries.push([
     <Space key="started">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Started:</Typography.Text>
-      <Typography.Text>{generateDateString(start, true)}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.actual.start, true)}</Typography.Text>
     </Space>,
     <Space key="planned-start">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Start:</Typography.Text>
-      <Typography.Text>{generateDateString(plan.start, true) || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.plan.start, true) || ''}</Typography.Text>
     </Space>,
     <Space key="start-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.start)}
+      <Typography.Text
+        type={timing.delays.start && timing.delays.start >= 1000 ? 'danger' : undefined}
+      >
+        {generateDurationString(timing.delays.start)}
       </Typography.Text>
     </Space>,
   ]);
@@ -198,18 +220,20 @@ export function ElementStatus({
     <Space key="duration">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Duration:</Typography.Text>
-      <Typography.Text>{generateDurationString(duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(timing.actual.duration)}</Typography.Text>
     </Space>,
     <Space key="duration-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned Duration:</Typography.Text>
-      <Typography.Text>{generateDurationString(plan.duration)}</Typography.Text>
+      <Typography.Text>{generateDurationString(timing.plan.duration)}</Typography.Text>
     </Space>,
     <Space key="duration-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.duration)}
+      <Typography.Text
+        type={timing.delays.duration && timing.delays.duration >= 1000 ? 'danger' : undefined}
+      >
+        {generateDurationString(timing.delays.duration)}
       </Typography.Text>
     </Space>,
   ]);
@@ -218,18 +242,18 @@ export function ElementStatus({
     <Space key="end">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Ended:</Typography.Text>
-      <Typography.Text>{generateDateString(end, true)}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.actual.end, true)}</Typography.Text>
     </Space>,
     <Space key="end-planned">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Planned End:</Typography.Text>
-      <Typography.Text>{generateDateString(plan.end, true) || ''}</Typography.Text>
+      <Typography.Text>{generateDateString(timing.plan.end, true) || ''}</Typography.Text>
     </Space>,
     <Space key="end-delay">
       <ClockCircleFilled style={{ fontSize: '1rem' }} />
       <Typography.Text strong>Delay:</Typography.Text>
-      <Typography.Text type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-        {generateDurationString(delays.end)}
+      <Typography.Text type={timing.delays.end && timing.delays.end >= 1000 ? 'danger' : undefined}>
+        {generateDurationString(timing.delays.end)}
       </Typography.Text>
     </Space>,
   ]);

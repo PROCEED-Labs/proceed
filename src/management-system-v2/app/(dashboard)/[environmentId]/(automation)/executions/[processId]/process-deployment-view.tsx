@@ -205,7 +205,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
         });
         setHasTimerStartEvents(hasTimer);
         setHasPlainStartEvents(hasPlain);
-      } catch (_) { }
+      } catch (_) {}
     }
 
     initStartEventInfo();
@@ -309,11 +309,11 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       },
                       ...(selectedVersion
                         ? [
-                          {
-                            label: '<none>',
-                            key: '-2',
-                          },
-                        ]
+                            {
+                              label: '<none>',
+                              key: '-2',
+                            },
+                          ]
                         : []),
                       ...deployments.map(({ version }) => ({
                         label: version.name,

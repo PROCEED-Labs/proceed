@@ -9,12 +9,12 @@ import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useInstanceVariables, { Variable } from './use-instance-variables';
 import { textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
-import { InstanceInfo } from '@/lib/engines/deployment';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 type InstanceVariableProps = {
   processId: string;
   version: { bpmn: string };
-  instance: InstanceInfo | undefined;
+  instance: ExtendedInstanceInfo | undefined;
   refetch: () => void;
 };
 

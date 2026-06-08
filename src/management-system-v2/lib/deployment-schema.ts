@@ -6,6 +6,7 @@ export const DeploymentInputSchema = z.object({
   deployTime: z.date(),
   removeTime: z.date().nullable().default(null),
   toRemove: z.boolean().default(false),
+  active: z.boolean().default(false),
   engineIds: z.string().array(),
 });
 

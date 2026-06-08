@@ -109,6 +109,7 @@ export const getTableColumns = ({
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
+        parentConfig.configType !== 'organization' &&
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
@@ -150,6 +151,7 @@ export const getTableColumns = ({
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
+        parentConfig.configType !== 'organization' &&
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
@@ -188,6 +190,7 @@ export const getTableColumns = ({
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
+        parentConfig.configType !== 'organization' &&
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
@@ -225,6 +228,7 @@ export const getTableColumns = ({
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
+        parentConfig.configType !== 'organization' &&
         effectiveType === 'content' &&
         (!(record as Parameter).value || (record as Parameter).value === '') &&
         isLeafParameter &&
@@ -263,6 +267,7 @@ export const getTableColumns = ({
         'valueTemplateSource' in record && (record as any).valueTemplateSource !== 'none';
       const effectiveType = getEffectiveParameterType(record, parentConfig);
       const shouldStyleAsEmpty =
+        parentConfig.configType !== 'organization' &&
         effectiveType === 'content' &&
         (!record.value || record.value === '') &&
         isLeafParameter &&

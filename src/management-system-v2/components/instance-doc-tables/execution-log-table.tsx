@@ -1,8 +1,8 @@
 import React from 'react';
 import { Alert, Table } from 'antd';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { generateDateString, generateDurationString } from '@/lib/utils';
 import { statusToType } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 type LogRow = {
   key: string;
@@ -10,7 +10,7 @@ type LogRow = {
   startTime?: number | string;
   endTime?: number | string;
   duration?: string;
-  machine?: InstanceInfo['log'][number]['machine'];
+  machine?: ExtendedInstanceInfo['log'][number]['machine'];
 };
 
 const columns = [
@@ -58,7 +58,7 @@ const columns = [
     dataIndex: 'machine',
     key: 'machine',
     width: 150,
-    render: (m?: InstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
+    render: (m?: ExtendedInstanceInfo['log'][number]['machine']) => (m ? m.name : '—'),
   },
 ];
 

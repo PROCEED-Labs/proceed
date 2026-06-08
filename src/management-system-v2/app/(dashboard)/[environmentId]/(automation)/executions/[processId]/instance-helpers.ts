@@ -1,5 +1,5 @@
 import { StoredDeployment } from '@/lib/data/deployment';
-import { InstanceInfo } from '@/lib/engines/deployment';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -47,11 +47,11 @@ export function getTimeInfo({
 }: {
   element: ElementLike;
   /** Log entry for element in instance information */
-  logInfo?: InstanceInfo['log'][number];
+  logInfo?: ExtendedInstanceInfo['log'][number];
   /** Token where currentFlowElementId is the element   */
-  token?: InstanceInfo['tokens'][number];
-  instance?: InstanceInfo;
-}) {
+  token?: ExtendedInstanceInfo['tokens'][number];
+  instance?: ExtendedInstanceInfo;
+}): { start?: Date; end?: Date; duration?: number } {
   if (!instance) return { start: undefined, end: undefined, duration: undefined };
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -82,8 +82,21 @@ export function getTimeInfo({
 
   let duration: number | undefined;
   if (start && end) duration = end.getTime() - start.getTime();
+  else if (start) duration = Date.now() - start.getTime();
 
   return { start, end, duration };
+}
+
+export function getPlannedTimeInfo(elementMetaData: Record<string, any>) {
+  return {
+    end: elementMetaData.timePlannedEnd ? new Date(elementMetaData.timePlannedEnd) : undefined,
+    start: elementMetaData.timePlannedOccurrence
+      ? new Date(elementMetaData.timePlannedOccurrence)
+      : undefined,
+    duration: elementMetaData.timePlannedDuration
+      ? convertISODurationToMiliseconds(elementMetaData.timePlannedDuration)
+      : undefined,
+  };
 }
 
 export function getPlanDelays({
@@ -100,15 +113,7 @@ export function getPlanDelays({
   end?: Date;
   duration?: number;
 }) {
-  const plan = {
-    end: elementMetaData.timePlannedEnd ? new Date(elementMetaData.timePlannedEnd) : undefined,
-    start: elementMetaData.timePlannedOccurrence
-      ? new Date(elementMetaData.timePlannedOccurrence)
-      : undefined,
-    duration: elementMetaData.timePlannedDuration
-      ? convertISODurationToMiliseconds(elementMetaData.timePlannedDuration)
-      : undefined,
-  };
+  const plan = getPlannedTimeInfo(elementMetaData);
 
   // The order in which missing times are derived from the others is irrelevant
   // If there is only one -> not possible to derive the others
@@ -125,15 +130,50 @@ export function getPlanDelays({
     plan.duration = plan.end.getTime() - plan.start.getTime();
 
   const delays = {
-    start: plan.start && start && start.getTime() - plan.start.getTime(),
-    end: plan.end && end && end.getTime() - plan.end.getTime(),
-    duration: plan.duration && duration && duration - plan.duration,
+    start:
+      (plan.start && start && Math.max(start.getTime() - plan.start.getTime(), 0)) || undefined,
+    end: (plan.end && end && Math.max(end.getTime() - plan.end.getTime(), 0)) || undefined,
+    duration: (plan.duration && duration && Math.max(duration - plan.duration, 0)) || undefined,
   };
 
   return { plan, delays };
 }
 
-export function getVersionInstances(instances: InstanceInfo[], version?: string) {
+export function getTiming({
+  isRootElement,
+  metaData,
+  logInfo,
+  token,
+  instance,
+}: {
+  isRootElement: boolean;
+  metaData: Record<string, any>;
+  /** Log entry for element in instance information */
+  logInfo?: ExtendedInstanceInfo['log'][number];
+  /** Token where currentFlowElementId is the element   */
+  token?: ExtendedInstanceInfo['tokens'][number];
+  instance?: ExtendedInstanceInfo;
+}) {
+  let timing: NonNullable<ExtendedInstanceInfo['tokens'][number]['timing']> = {
+    actual: { start: undefined, end: undefined, duration: undefined },
+    plan: { start: undefined, end: undefined, duration: undefined },
+    delays: { start: undefined, end: undefined, duration: undefined },
+  };
+
+  if (logInfo) {
+    if (logInfo.timing) timing = logInfo.timing;
+  } else if (token) {
+    if (token.timing) timing = token.timing;
+  } else if (instance && isRootElement) {
+    if (instance.timing) timing = instance.timing;
+  } else {
+    timing.plan = getPlannedTimeInfo(metaData);
+  }
+
+  return timing;
+}
+
+export function getVersionInstances(instances: ExtendedInstanceInfo[], version?: string) {
   if (!version) return instances;
   return instances.filter((instance) => instance.processVersion === version);
 }
@@ -150,7 +190,7 @@ export function getLatestDeployment(deployments: StoredDeployment[]) {
   );
 }
 
-export function getYoungestInstance<T extends InstanceInfo[]>(instances: T) {
+export function getYoungestInstance<T extends ExtendedInstanceInfo[]>(instances: T) {
   if (instances.length === 0) return undefined;
 
   let firstInstance = 0;

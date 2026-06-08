@@ -1,10 +1,13 @@
 import { RefObject, useCallback, useEffect, useRef } from 'react';
 
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { addToken } from './instance-tokens';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
-const useTokens = (instance: InstanceInfo | null, canvasRef: RefObject<BPMNCanvasRef | null>) => {
+const useTokens = (
+  instance: ExtendedInstanceInfo | null,
+  canvasRef: RefObject<BPMNCanvasRef | null>,
+) => {
   // provide a function that allows BpmnCanvas to reapply the tokens after the bpmn was imported
   // but prevent unnecessary reimports of the bpmn from occuring every time there is a change in the
   // instance information

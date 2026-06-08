@@ -2,16 +2,12 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { omit, pick } from '@/lib/helpers/javascriptHelpers';
-import { getRoles } from '@/lib/data/roles';
-import { truthyFilter } from '@/lib/typescript-utils';
-import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
+import { omit } from '@/lib/helpers/javascriptHelpers';
 import {
   getDefinitionsVersionInformation,
   getElementById,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { getInstance } from '@/lib/data/instance';
 import { getProcessBPMN } from '@/lib/data/processes';
 import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
@@ -67,32 +63,6 @@ export default async function getExecutionInfo({
 
     const instance = storedInstance.state;
 
-    const usersWithRoles = await getFullMembersWithRoles(environmentId, ability);
-
-    let roles = await getRoles(environmentId, ability);
-    if (isUserErrorResponse(roles)) roles = [];
-
-    const users = Object.fromEntries(
-      usersWithRoles.map((user) => [
-        user.id,
-        {
-          ...pick(user, ['id', 'username', 'firstName', 'lastName', 'email']),
-          roles: user.roles.map((r) => pick(r, ['id', 'name', 'description'])),
-        },
-      ]),
-    );
-    const roleMap = Object.fromEntries(
-      roles.map((role) => [role.id, pick(role, ['id', 'name', 'description'])]),
-    );
-
-    const idToUser = (id: string) => {
-      if (id in users) return { type: 'user', ...users[id] };
-    };
-
-    const idToRole = (id: string) => {
-      if (id in roleMap) return { type: 'role', ...roleMap[id] };
-    };
-
     const versionBpmn = await getProcessBPMN(
       instance.processId,
       environmentId,
@@ -110,40 +80,19 @@ export default async function getExecutionInfo({
     };
 
     const versionInfo = await getDefinitionsVersionInformation(bpmnObj);
-
-    const transformPerformerInfo = <
-      T extends {
-        actualOwner?: string[];
-        performers?: InstanceInfo['tokens'][number]['performers'];
-      },
-    >(
-      input: T,
-    ) => {
-      return {
-        ...omit(input, ['actualOwner', 'performers']),
-        actualPerformers: input.actualOwner
-          ? input.actualOwner.map(idToUser).filter(truthyFilter)
-          : undefined,
-        potentialPerformers: input.performers
-          ? {
-              user: input.performers.user.map(idToUser).filter(truthyFilter),
-              roles: input.performers.roles.map(idToRole).filter(truthyFilter),
-            }
-          : undefined,
-      };
-    };
-
     // extend the instance information object with data that might be useful to the user and the LLM
     // the most significant changes are mapping from user/role ids to actual user/role information
     // insertions of process element names alongside process element ids
     const mappedInstance = {
       // this information is not needed by/already known to the LLM
-      ...omit(instance, ['managementSystemLocation', 'spaceIdOfProcessInitiator']),
-      processInitiator: instance.processInitiator ? idToUser(instance.processInitiator) : undefined,
+      ...omit(instance, ['managementSystemLocation', 'spaceIdOfProcessInitiator', 'userTasks']),
       tokens: instance.tokens.map((t) => ({
-        ...transformPerformerInfo(t),
+        ...omit(t, ['actualOwner', 'performers', 'costsRealSetByOwner']),
+        actualPerformers: t.actualOwner,
+        potentialPerformers: t.performers,
         // extend with user readable information
         currentFlowElementName: idToName(t.currentFlowElementId),
+        stepExecutionCosts: t.costsRealSetByOwner,
       })),
       variables: Object.fromEntries(
         Object.entries(instance.variables).map(([key, info]) => [
@@ -159,43 +108,15 @@ export default async function getExecutionInfo({
         ]),
       ),
       log: instance.log.map((l) => ({
-        ...transformPerformerInfo(l),
+        ...omit(l, ['actualOwner', 'performers', 'costsRealSetByOwner']),
+        actualPerformers: l.actualOwner,
+        potentialPerformers: l.performers,
         // add the name so the llm can show it instead of the id
         flowElementName: idToName(l.flowElementId),
-        actualPerformers: l.actualOwner ? l.actualOwner.map(idToUser) : undefined,
-        potentialPerformers: l.performers
-          ? {
-              user: l.performers.user.map(idToUser),
-              roles: l.performers.roles.map(idToRole),
-            }
-          : undefined,
+        stepExecutionCosts: l.costsRealSetByOwner,
       })),
       // remove execution information needed by the engine
       processVersion: versionInfo,
-      userTasks: instance.userTasks?.map((uT) => ({
-        // remove execution information needed by the engine
-        ...omit(transformPerformerInfo(uT), [
-          'processInstance',
-          'definitionVersion',
-          '$type',
-          'implementation',
-          'attrs',
-          'resources',
-        ]),
-        // unwrap the name of the file in which the html for the user task is saved
-        fileName: uT.attrs?.['proceed:fileName'],
-        // map engine internal information about potential owners to user readable information
-        potentialPerformers: uT.resources
-          ?.flatMap((r: any) => {
-            try {
-              const { user, roles } = JSON.parse(r.resourceAssignmentExpression.expression.body);
-              return [...user.map(idToUser), ...roles.map(idToRole)];
-            } catch (err) {}
-
-            return undefined;
-          })
-          .filter(truthyFilter),
-      })),
     };
 
     return {

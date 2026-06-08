@@ -21,7 +21,7 @@ export function generateDateString(_date?: Date | string, includeTime: boolean =
     return 'Invalid Date';
   }
 
-  return Intl.DateTimeFormat(undefined, options).format();
+  return Intl.DateTimeFormat(undefined, options).format(date);
 }
 
 export function generateNumberString(number?: number, options?: Intl.NumberFormatOptions): string {

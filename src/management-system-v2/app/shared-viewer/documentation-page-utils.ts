@@ -24,7 +24,6 @@ import {
 
 import { getSVGFromBPMN } from '@/lib/process-export/util';
 
-import { InstanceInfo } from '@/lib/engines/deployment';
 import schema from '@/lib/schema';
 
 import { ResourceViewModule } from '@/lib/modeler-extensions/GenericResources/index';
@@ -36,6 +35,7 @@ import {
 import { ElementInfo } from './table-of-content';
 import { AnchorLinkItemProps } from 'antd/es/anchor/Anchor';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 // generate the title of an elements section based on the type of the element
 export function getTitle(el: any) {
@@ -251,7 +251,7 @@ export async function getElementSVG(
 // returns the svg of BPMN diagram for instance documention page with correcct token position
 export async function getSVGWithInstanceColoring(
   bpmn: string,
-  instance: InstanceInfo,
+  instance: ExtendedInstanceInfo,
   coloring: ColorOptions,
 ): Promise<string> {
   const viewer = await getViewer(bpmn);
@@ -465,7 +465,7 @@ export function isInstanceElementEmpty(node: ElementInfo): boolean {
 }
 
 // variable changes for each individial event or element
-function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo): boolean {
+function hasVariableChangesForElement(instance: ExtendedInstanceInfo, node: ElementInfo): boolean {
   return instance.log
     .filter((l) => l.flowElementId === node.id)
     .some((l) => l.variableChanges && Object.keys(l.variableChanges).length > 0);
@@ -473,7 +473,7 @@ function hasVariableChangesForElement(instance: InstanceInfo, node: ElementInfo)
 
 // get variables changed by or during an element
 export function getVariablesForElement(
-  instance: InstanceInfo,
+  instance: ExtendedInstanceInfo,
   elementId: string,
 ): { name: string; oldValue?: string; value: string; changedTime: number }[] {
   const result: { name: string; oldValue?: string; value: string; changedTime: number }[] = [];
@@ -841,7 +841,7 @@ export function buildProcessTocItems(
 export function buildInstanceTocItems(
   hierarchy: ElementInfo,
   settings: Record<string, boolean>,
-  instance: InstanceInfo,
+  instance: ExtendedInstanceInfo,
   linksDisabled = false,
 ): AnchorLinkItemProps[] {
   const href = (id: string) => (linksDisabled ? '' : id);

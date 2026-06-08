@@ -16,7 +16,7 @@ import styles from './favorite-processes-section.module.scss';
 
 const CARD_WIDTH = 225;
 const CARD_GAP = 20;
-const PADDING_LEFT = 60;
+const PADDING = 60;
 const RIGHT_BUTTON_SPACE = 40;
 
 type FavoriteProcess = {
@@ -147,7 +147,6 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
   const containerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
-  const [visibleCardCount, setVisibleCardCount] = useState(6);
 
   const displayedProcesses = useMemo(() => {
     const sorted = [...processes];
@@ -165,10 +164,9 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     const calculateVisibleCards = () => {
       if (!containerRef.current) return;
       const containerWidth = containerRef.current.clientWidth;
-      const availableWidth = containerWidth - PADDING_LEFT - RIGHT_BUTTON_SPACE;
+      const availableWidth = containerWidth - PADDING - RIGHT_BUTTON_SPACE;
       const cardWithGap = CARD_WIDTH + CARD_GAP;
       const count = Math.max(2, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
-      setVisibleCardCount(count);
     };
 
     calculateVisibleCards();
@@ -220,8 +218,8 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     <div
       className={styles.FavoritesSection}
       style={{
-        paddingLeft: `${PADDING_LEFT}px`,
-        paddingRight: `${PADDING_LEFT}px`,
+        paddingLeft: `${PADDING}px`,
+        paddingRight: `${PADDING}px`,
       }}
     >
       <div
@@ -257,7 +255,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
             shape="circle"
             icon={<DoubleLeftOutlined />}
             onClick={() => scroll('left')}
-            className={`${styles.CarouselButton} ${styles.NavigationButton}`}
+            className={styles.NavigationButton}
             style={{ left: '-35px' }}
           />
         )}
@@ -280,7 +278,7 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
             shape="circle"
             icon={<DoubleRightOutlined />}
             onClick={() => scroll('right')}
-            className={`${styles.CarouselButton} ${styles.NavigationButton}`}
+            className={styles.NavigationButton}
             style={{ right: '-35px' }}
           />
         )}

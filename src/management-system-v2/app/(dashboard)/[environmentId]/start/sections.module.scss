@@ -45,10 +45,6 @@
       transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
 
-      &:hover {
-        transform: translateY(-6px);
-      }
-
       .TileCard {
         text-align: center;
         border: 1px solid #e8e8e8;

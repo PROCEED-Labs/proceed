@@ -64,27 +64,6 @@
         cursor: pointer !important;
       }
     }
-
-    .CarouselButton {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-      border: 1px solid #e8e8e8;
-      background: #ffffff;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-      &:hover {
-        box-shadow: 0 6px 16px rgba(24, 144, 255, 0.2);
-        border-color: #1890ff;
-        transform: translateY(-50%) scale(1.1);
-      }
-
-      :global(.anticon) {
-        color: #1890ff;
-      }
-    }
   }
 
   // card styles
@@ -111,7 +90,6 @@
     }
 
     &:hover {
-      transform: translateY(-4px);
       box-shadow: 0 8px 24px rgba(250, 173, 20, 0.15);
       border-color: #faad14;
 

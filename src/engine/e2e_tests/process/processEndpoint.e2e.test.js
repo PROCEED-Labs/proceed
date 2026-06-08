@@ -42,6 +42,7 @@ describe('Test process endpoints', () => {
               deploymentDate: expect.any(Number),
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
+              active: false,
             },
           ],
           instances: [],
@@ -61,6 +62,7 @@ describe('Test process endpoints', () => {
             definitionName: 'scriptFileRef',
             deploymentMethod: 'dynamic',
             deploymentDate: expect.any(Number),
+            active: false,
             needs: {
               html: [],
               imports: [],
@@ -86,6 +88,7 @@ describe('Test process endpoints', () => {
             definitionName: 'With Image',
             deploymentMethod: 'dynamic',
             deploymentDate: expect.any(Number),
+            active: false,
             needs: {
               html: ['User_Task_1qjpbcl-1671026484009'],
               imports: [],
@@ -113,6 +116,7 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
+              active: false,
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
             },
@@ -137,6 +141,7 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
+              active: false,
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
             });
@@ -185,6 +190,7 @@ describe('Test process endpoints', () => {
                 definitionName: 'With Image',
                 deploymentMethod: 'dynamic',
                 deploymentDate: expect.any(Number),
+                active: false,
                 needs: {
                   html: ['User_Task_1qjpbcl-1671026484009'],
                   imports: [],

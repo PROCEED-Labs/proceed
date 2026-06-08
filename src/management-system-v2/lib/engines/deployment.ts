@@ -265,6 +265,7 @@ export type VersionInfo = {
   versionId: string;
   versionName: string;
   versionDescription: string;
+  active: boolean;
   basedOnVersion?: string;
 };
 

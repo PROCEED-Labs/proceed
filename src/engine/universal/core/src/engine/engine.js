@@ -252,7 +252,7 @@ class Engine {
    * @param {string} versionId the version of the process to check
    * @returns {boolean} true if the version is deployed, false if it is known but not active
    */
-  async isProcessVersionDeployed(versionId) {
+  isProcessVersionDeployed(versionId) {
     return this._versionProcessMapping[versionId]?.isDeployed() ?? false;
   }
 

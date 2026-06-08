@@ -54,18 +54,6 @@
     z-index: 10;
   }
 
-  .Carousel {
-    position: relative;
-
-    .FavoriteProcessPreview {
-      height: 100%;
-
-      :global(*) {
-        cursor: pointer !important;
-      }
-    }
-  }
-
   // card styles
   :global(.ant-card) {
     border-radius: 12px;

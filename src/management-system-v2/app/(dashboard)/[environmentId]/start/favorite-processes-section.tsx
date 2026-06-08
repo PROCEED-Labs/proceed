@@ -17,7 +17,6 @@ import styles from './favorite-processes-section.module.scss';
 const CARD_WIDTH = 225;
 const CARD_GAP = 20;
 const PADDING = 60;
-const RIGHT_BUTTON_SPACE = 40;
 
 type FavoriteProcess = {
   id: string;
@@ -120,7 +119,7 @@ const ProcessCard = ({
           router.push(spaceURL(space, url));
         }}
       >
-        <div className={cn(styles.FavoriteProcessPreview)}>
+        <div>
           {isVisible ? (
             <Suspense fallback={loader}>
               <LazyBPMNViewer
@@ -144,7 +143,6 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
   const space = useEnvironment();
   const [sortType, setSortType] = useState<SortType>('lastEdited');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
 
@@ -159,25 +157,6 @@ const FavoriteProcessesSection = ({ processes }: FavoriteProcessesSectionProps) 
     }
     return sorted;
   }, [processes, sortType]);
-
-  useEffect(() => {
-    const calculateVisibleCards = () => {
-      if (!containerRef.current) return;
-      const containerWidth = containerRef.current.clientWidth;
-      const availableWidth = containerWidth - PADDING - RIGHT_BUTTON_SPACE;
-      const cardWithGap = CARD_WIDTH + CARD_GAP;
-      const count = Math.max(2, Math.floor((availableWidth + CARD_GAP) / cardWithGap));
-    };
-
-    calculateVisibleCards();
-    const resizeObserver = new ResizeObserver(() => {
-      calculateVisibleCards();
-    });
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-    return () => resizeObserver.disconnect();
-  }, []);
 
   useEffect(() => {
     const updateArrowsVisibility = () => {

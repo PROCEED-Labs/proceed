@@ -9,9 +9,6 @@ import { spaceURL } from '@/lib/utils';
 import { useEnvironment } from '@/components/auth-can';
 import { OverflowTooltipTitle } from '@/components/overflow-tooltip';
 import ProceedLoadingIndicator from '@/components/loading-proceed';
-
-import cn from 'classnames';
-
 import styles from './favorite-processes-section.module.scss';
 
 const CARD_WIDTH = 225;

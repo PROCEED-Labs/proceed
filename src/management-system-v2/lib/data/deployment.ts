@@ -57,6 +57,16 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
     include: {
       version: { select: { id: true, processId: true, name: true } },
       instances: { select: { id: true } },
+      engine: {
+        include: {
+          connections: {
+            where: { reachable: true },
+            include: {
+              connection: true,
+            },
+          },
+        },
+      },
     },
   });
 

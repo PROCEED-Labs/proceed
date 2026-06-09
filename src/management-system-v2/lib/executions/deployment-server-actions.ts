@@ -33,6 +33,7 @@ import { addDeployment, getProcessDeployments, updateDeployment } from '../data/
 import { getMSConfig } from '../ms-config/ms-config';
 import { updateTaskInfo } from '../tasks/server-actions';
 import { getSharedRefetch } from '../shared-refetch';
+import { EngineConnection } from '@prisma/client';
 
 export async function deployProcess(
   definitionId: string,
@@ -129,13 +130,11 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     const deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 
-    const availableEngines = await getAllAvailableEngines(spaceId);
-    if (isUserErrorResponse(availableEngines)) return availableEngines;
     await asyncForEach(deployments, async (deployment) => {
       try {
-        const engine = availableEngines.find((aE) => aE.id === deployment.engineId);
+        const { engine } = deployment;
 
-        if (engine) {
+        if (engine.connections.some((c) => c.reachable)) {
           // TODO: we might have deployments of multiple versions of the same process to the same
           // engine => we don't need to call this for every version but only once per engine per
           // process
@@ -177,15 +176,11 @@ export async function changeDeploymentActivation(
 
     let deploymentsToChange = versionDeployments.filter((d) => d.active !== value);
 
-    const engines = await getAllAvailableEngines(spaceId);
-
-    if (isUserErrorResponse(engines)) return engines;
-
     if (value === true) {
       let activated = false;
       for (const deployment of deploymentsToChange) {
-        const engine = engines.find((e) => e.id === deployment.engineId);
-        if (engine) {
+        const { engine } = deployment;
+        if (engine.connections.some((c) => c.reachable)) {
           try {
             // activate the process on a single machine so we do not spawn new instances on multiple machines at once
             await _changeDeploymentActivation(engine, definitionId, version, true);
@@ -211,8 +206,8 @@ export async function changeDeploymentActivation(
         // if deactivating the deployment fails the refetch loop should deactivate it due to the
         // mismatch between the locally stored activation value and the activation value from the
         // engine
-        const engine = engines.find((e) => e.id === d.engineId);
-        if (engine) {
+        const { engine } = d;
+        if (engine && engine.connections.some((c) => c.reachable)) {
           await _changeDeploymentActivation(engine, definitionId, version, false);
           return true;
         }
@@ -236,13 +231,10 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
     let deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 
-    const availableEngines = await getAllAvailableEngines(spaceId);
-    if (isUserErrorResponse(availableEngines)) return availableEngines;
-
     for (const deployment of deployments) {
-      const engine = availableEngines.find((e) => e.id === deployment.engineId);
+      const { engine } = deployment;
 
-      if (engine) {
+      if (engine.connections.some((c) => c.reachable)) {
         try {
           return await getProcessImageFromMachine(engine, definitionId, fileName);
         } catch (err) {}
@@ -260,11 +252,23 @@ async function refetchFn() {
   console.log('Refetching Deployments', new Date().toTimeString());
   try {
     // get all (non-removed) deployments known to the MS
-    const res = await db.processDeployment.findMany({
+    const storedDeployments = await db.processDeployment.findMany({
       where: { removeTime: null },
       select: {
         id: true,
-        engineId: true,
+        // include information about engines the processes were deployed to
+        engine: {
+          select: {
+            id: true,
+            connections: {
+              // we only want currently reachable connections
+              where: {
+                reachable: true,
+              },
+              select: { reachable: true, connection: true },
+            },
+          },
+        },
         toRemove: true,
         active: true,
         version: {
@@ -276,10 +280,15 @@ async function refetchFn() {
 
     // get unique ids of all known engines that have a deployment from this MS with information
     // about what we expect to be deployed on those engines
-    const engineIdsWithDeployments = res.reduce(
+    const engineIdsWithDeployments = storedDeployments.reduce(
       (acc, curr) => {
-        if (!acc[curr.engineId]) acc[curr.engineId] = {};
-        const engineDeploymentMap = acc[curr.engineId];
+        if (!acc[curr.engine.id])
+          acc[curr.engine.id] = {
+            id: curr.engine.id,
+            connections: curr.engine.connections,
+            processes: {},
+          };
+        const engineDeploymentMap = acc[curr.engine.id].processes;
         if (!engineDeploymentMap[curr.version.processId]) {
           engineDeploymentMap[curr.version.processId] = {};
         }
@@ -290,26 +299,19 @@ async function refetchFn() {
       },
       {} as {
         [engineId: string]: {
-          [definitionId: string]: { [versionId: string]: (typeof res)[number] };
+          id: string;
+          connections: { reachable: boolean; connection: EngineConnection }[];
+          processes: {
+            [definitionId: string]: { [versionId: string]: (typeof storedDeployments)[number] };
+          };
         };
       },
     );
 
-    // get all (reachable) engines known to the MS
-    let engines = await db.engine.findMany({
-      where: { connections: { some: { reachable: true, connection: { removed: false } } } },
-      include: { connections: { include: { connection: true } } },
-    });
-    const knownEngines: Record<string, Engine> = {};
-    // deduplicate the engines (an engine might be reachable through multiple connections)
-    engines = engines.filter((engine) => {
-      if (knownEngines[engine.id]) return false;
-      knownEngines[engine.id] = engine;
-      return true;
-    });
-
-    // create a list of all engines we need to fetch new information from
-    const reachableWithDeployments = engines.filter((e) => !!engineIdsWithDeployments[e.id]);
+    // create a list of all engines we can and need to fetch new information from
+    const reachableWithDeployments = Object.values(engineIdsWithDeployments).filter((e) =>
+      e.connections.some((c) => c.reachable),
+    );
 
     const newInstances: {
       id: string;
@@ -347,7 +349,8 @@ async function refetchFn() {
         await asyncForEach(res, async (p) => {
           await asyncForEach(p.versions, async (v) => {
             try {
-              const deployment = engineIdsWithDeployments[e.id]?.[p.definitionId]?.[v.versionId];
+              const deployment =
+                engineIdsWithDeployments[e.id]?.processes[p.definitionId]?.[v.versionId];
               if (!deployment) return;
 
               if (v.active !== deployment.active) {
@@ -374,7 +377,8 @@ async function refetchFn() {
         // can be found on the engine it was started on
         res.forEach((p) => {
           p.instances.forEach((i) => {
-            const deployment = engineIdsWithDeployments[e.id]?.[p.definitionId]?.[i.processVersion];
+            const deployment =
+              engineIdsWithDeployments[e.id]?.processes[p.definitionId]?.[i.processVersion];
             if (!deployment) return;
             const existingInstance = deployment.instances.find(
               (dI) => dI.id === i.processInstanceId,
@@ -414,20 +418,20 @@ async function refetchFn() {
       }),
     );
 
-    const removedOnEngine = await asyncFilter(res, async (d) => {
+    const removedOnEngine = await asyncFilter(storedDeployments, async (d) => {
       // we say the deployment still exists on the engine if the engine cannot be reached to check
-      if (!engineDeployments[d.engineId]) return false;
+      if (!engineDeployments[d.engine.id]) return false;
 
       if (d.toRemove) {
         // remove the deployment from the engine if it is marked for automatic removal
         try {
-          await removeDeploymentFromMachines([knownEngines[d.engineId]], d.version.processId);
+          await removeDeploymentFromMachines([d.engine], d.version.processId);
           return true;
         } catch (err) {}
         return false;
       } else {
         // check if deployment information has been unexpectedly lost on the engine
-        return !engineDeployments[d.engineId][d.version.processId]?.versions[d.version.id];
+        return !engineDeployments[d.engine.id][d.version.processId]?.versions[d.version.id];
       }
     });
 
@@ -466,7 +470,7 @@ async function refetchFn() {
         .map((i) => [i.id, { ...i, instanceId: i.id }]),
     );
 
-    await updateTaskInfo(engines, reachableWithDeployments, knownInstances);
+    await updateTaskInfo(reachableWithDeployments, knownInstances);
   } catch (err) {
     console.error('Error fetching deployment information: ', err);
   }

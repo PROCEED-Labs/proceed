@@ -16,7 +16,6 @@ import { Role } from './role-schema';
 import { getRoles } from './db/iam/roles';
 import { truthyFilter } from '../typescript-utils';
 
-import { getAllAvailableEngines } from './engines';
 import { getProcessBPMN } from './processes';
 import {
   getElementById,
@@ -33,8 +32,37 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 type StoredInstance = Omit<ProcessInstance, 'state'> & {
   state: InstanceInfo;
   versionId: string;
-  engines: { id: string }[];
+  engines: { id: string; name: string | null; connections: { reachable: boolean }[] }[];
 };
+
+export async function getDBInstance(spaceId: string, instanceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const instanceInfo = await db.processInstance.findUnique({
+    where: { id: instanceId },
+    include: {
+      deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true, connection: true } },
+        },
+      },
+    },
+  });
+
+  if (!instanceInfo) return null;
+
+  return {
+    ...instanceInfo,
+    state: instanceInfo.state as InstanceInfo,
+    versionId: instanceInfo.deployment.versionId,
+  };
+}
 
 const getVersionBpmnObject = cache(
   async (spaceId: string, definitionId: string, versionId: string, ability?: Ability) => {
@@ -66,9 +94,6 @@ const getKnownRoles = cache(async (spaceId: string) => {
 async function extendInstance(spaceId: string, instance: StoredInstance, ability?: Ability) {
   const knownUsers = await getKnownUsers(spaceId);
   const knownRoles = await getKnownRoles(spaceId);
-
-  const reachableEngines = await getAllAvailableEngines(spaceId, ability);
-  if (isUserErrorResponse(reachableEngines)) return reachableEngines;
 
   const mapUser = (userId: string) => {
     const user = knownUsers[userId];
@@ -219,12 +244,13 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   return {
     ...instance,
     initiator,
-    engines: instance.engines.map(({ id }) => ({
+    engines: instance.engines.map(({ id, name, connections }) => ({
       id,
-      online: reachableEngines.some((e) => e.id === id),
+      name,
+      online: connections.some(({ reachable }) => reachable),
     })),
     executionStatus,
-    offline: instance.engines.some(({ id }) => !reachableEngines.some((e) => e.id === id)),
+    offline: instance.engines.some(({ connections }) => connections.every((c) => !c.reachable)),
     pausing: instanceState.some((state) => state === 'PAUSING'),
     paused: instanceState.some((state) => state === 'PAUSED'),
     state: {
@@ -263,7 +289,16 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   const instanceInfo = await db.processInstance.findUnique({
     where: { id: instanceId },
-    include: { deployment: { select: { versionId: true } }, engines: { select: { id: true } } },
+    include: {
+      deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true } },
+        },
+      },
+    },
   });
 
   if (!instanceInfo) return null;
@@ -293,7 +328,16 @@ export async function getInstances(spaceId: string, ability: Ability) {
         ],
       },
     },
-    include: { deployment: { select: { versionId: true } }, engines: { select: { id: true } } },
+    include: {
+      deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true } },
+        },
+      },
+    },
   });
 
   const extendedInstances = await asyncMap(instances, async (i) =>

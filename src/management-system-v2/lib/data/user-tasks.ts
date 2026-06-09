@@ -3,7 +3,7 @@
 import db from '@/lib/data/db';
 
 import { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
+import { UserErrorType, userError } from '../user-error';
 import {
   ExtendedTaskListEntry,
   UserTask,
@@ -11,9 +11,9 @@ import {
   UserTaskInputSchema,
 } from '../user-task-schema';
 import { getCurrentEnvironment } from '@/components/auth';
-import { getAllAvailableEngines } from './engines';
 import { getSpaceUsers } from './db/iam/users';
 import { truthyFilter } from '../typescript-utils';
+import { Engine } from '../engines/types';
 
 export async function getUserTasks(spaceId: string) {
   const {
@@ -39,17 +39,29 @@ export async function getUserTasks(spaceId: string) {
           },
         ],
       },
-    })) as UserTask[];
-    const users = await getSpaceUsers(spaceId, isOrganization);
-    const reachableEngines = await getAllAvailableEngines(spaceId, undefined, true);
+      include: {
+        engine: {
+          include: {
+            connections: {
+              where: {
+                reachable: true,
+              },
+              include: {
+                connection: true,
+              },
+            },
+          },
+        },
+      },
+    })) as (UserTask & { engine: Engine | null })[];
 
-    if (isUserErrorResponse(reachableEngines)) return reachableEngines;
+    const users = await getSpaceUsers(spaceId, isOrganization);
 
     // map the ids in the actualOwner array to the users of the current space so the frontend can
     // show richer information about who is working on the task
     return userTasks.map((uT) => ({
       ...uT,
-      offline: !uT.engineId || reachableEngines.some((e) => e.id === uT.engineId) ? false : true,
+      offline: !uT.engine || uT.engine.connections.some((c) => c.reachable) ? false : true,
       actualOwner: uT.actualOwner
         .map((id) => {
           const user = users.find((u) => u.id === id);
@@ -74,9 +86,21 @@ export async function getUserTaskById(userTaskId: string) {
       where: {
         id: userTaskId,
       },
+      include: {
+        engine: {
+          include: {
+            connections: {
+              where: {
+                reachable: true,
+              },
+              include: { connection: true },
+            },
+          },
+        },
+      },
     });
 
-    return userTask as UserTask;
+    return userTask as UserTask & { engine: Engine | null };
   } catch (err) {
     return userError('Error getting user tasks');
   }

@@ -279,6 +279,10 @@ model Engine {
 
   connections   ConnectionEngineReachability[]
 
+  data          Json
+  configuration Json
+  logs          Json
+
   @@map("engine")
 }
 

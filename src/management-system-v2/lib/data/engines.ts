@@ -18,6 +18,8 @@ import { EngineConnection, Prisma, SystemAdmin } from '@prisma/client';
 import db from '@/lib/data/db';
 import { toCaslResource } from '../ability/caslAbility';
 import { Connection, Engine } from '../engines/types';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { engineRequest } from '../engines/endpoints';
 
 export async function getEngineConnections(
   environmentId: string | null,
@@ -168,6 +170,26 @@ export async function addEngineConnection(
       removed: false,
     };
 
+    const engineData = await asyncMap(reachableEngines, async (engine) => {
+      const data = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/machine/',
+      });
+      const configuration = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/configuration/',
+      });
+      const logs = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/logging/standard',
+      });
+
+      return { engine, data, configuration, logs };
+    });
+
     if (existingConnection) {
       // reactivate an older entry if the address was already used before but removed
       await tx.engineConnection.update({
@@ -175,15 +197,18 @@ export async function addEngineConnection(
         data: {
           ...connection,
           engines: {
-            upsert: reachableEngines.map((e) => ({
+            upsert: engineData.map(({ engine, data, configuration, logs }) => ({
               where: {
-                engineId_connectionId: { engineId: e.id, connectionId: existingConnection.id },
+                engineId_connectionId: { engineId: engine.id, connectionId: existingConnection.id },
               },
               update: { reachable: true },
               create: {
                 reachable: true,
                 engine: {
-                  connectOrCreate: { where: { id: e.id }, create: { id: e.id, name: e.name } },
+                  connectOrCreate: {
+                    where: { id: engine.id },
+                    create: { id: engine.id, name: engine.name, data, configuration, logs },
+                  },
                 },
               },
             })),
@@ -195,10 +220,13 @@ export async function addEngineConnection(
         data: {
           ...connection,
           engines: {
-            create: reachableEngines.map((e) => ({
+            create: engineData.map(({ engine, data, configuration, logs }) => ({
               reachable: true,
               engine: {
-                connectOrCreate: { where: { id: e.id }, create: { id: e.id, name: e.name } },
+                connectOrCreate: {
+                  where: { id: engine.id },
+                  create: { id: engine.id, name: engine.name, data, configuration, logs },
+                },
               },
             })),
           },

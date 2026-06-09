@@ -4,6 +4,8 @@ import db from '@/lib/data/db';
 
 import { getSharedRefetch } from '../shared-refetch';
 import { resolveEngines } from './engine-connections-helpers';
+import { engineRequest } from './endpoints';
+import { asyncMap } from '../helpers/javascriptHelpers';
 
 async function refetchFn() {
   try {
@@ -13,7 +15,7 @@ async function refetchFn() {
 
     const requests = await Promise.allSettled(connections.map(async (c) => resolveEngines([c])));
 
-    const changes = connections.map((c, index) => {
+    const changes = await asyncMap(connections, async (c, index) => {
       const request = requests[index];
       let notReachableAnymore = c.engines.reduce(
         (acc, { engine, reachable }) => {
@@ -22,27 +24,54 @@ async function refetchFn() {
         },
         {} as Record<string, true>,
       );
-      let becameReachable: { id: string; name?: string | null }[] = [];
+      type EngineInfo = {
+        id: string;
+        name?: string | null;
+        data: any;
+        configuration: any;
+        logs: any;
+      };
+
+      let becameReachable: EngineInfo[] = [];
+      let updated: EngineInfo[] = [];
 
       if (request.status === 'fulfilled') {
-        request.value.forEach((e) => {
-          if (notReachableAnymore[e.id]) {
-            delete notReachableAnymore[e.id];
+        for (const engine of request.value) {
+          const data = await engineRequest({
+            engine,
+            method: 'get',
+            endpoint: '/machine/',
+          });
+          const configuration = await engineRequest({
+            engine,
+            method: 'get',
+            endpoint: '/configuration/',
+          });
+          const logs = await engineRequest({
+            engine,
+            method: 'get',
+            endpoint: '/logging/standard',
+          });
+
+          if (notReachableAnymore[engine.id]) {
+            delete notReachableAnymore[engine.id];
+            updated.push({ ...engine, data, configuration, logs });
           } else {
-            becameReachable.push(e);
+            becameReachable.push({ ...engine, data, configuration, logs });
           }
-        });
+        }
       } else {
         becameReachable = [];
+        updated = [];
       }
 
-      return { notReachableAnymore: Object.keys(notReachableAnymore), becameReachable };
+      return { notReachableAnymore: Object.keys(notReachableAnymore), becameReachable, updated };
     });
 
     await db.$transaction(async (tx) => {
       await Promise.all([
         ...connections.flatMap((c, index) => {
-          const { notReachableAnymore, becameReachable } = changes[index];
+          const { notReachableAnymore, becameReachable, updated } = changes[index];
 
           return [
             !!notReachableAnymore.length &&
@@ -57,24 +86,35 @@ async function refetchFn() {
                   },
                 },
               }),
-            !!becameReachable.length &&
+            !!(becameReachable.length || updated.length) &&
               tx.engineConnection.update({
                 where: { id: c.id },
                 data: {
                   engines: {
-                    upsert: becameReachable.map((engine) => ({
-                      where: { engineId_connectionId: { engineId: engine.id, connectionId: c.id } },
-                      update: { reachable: true },
-                      create: {
-                        reachable: true,
-                        engine: {
-                          connectOrCreate: {
-                            where: { id: engine.id },
-                            create: { id: engine.id, name: engine.name },
+                    upsert: [...becameReachable, ...updated].map(
+                      ({ id, name, data, configuration, logs }) => ({
+                        where: { engineId_connectionId: { engineId: id, connectionId: c.id } },
+                        update: {
+                          reachable: true,
+                          engine: {
+                            update: {
+                              data,
+                              configuration,
+                              logs,
+                            },
                           },
                         },
-                      },
-                    })),
+                        create: {
+                          reachable: true,
+                          engine: {
+                            connectOrCreate: {
+                              where: { id: id },
+                              create: { id: id, name: name, data, configuration, logs },
+                            },
+                          },
+                        },
+                      }),
+                    ),
                   },
                 },
               }),

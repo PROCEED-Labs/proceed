@@ -10,7 +10,7 @@ import {
   SetStateAction,
 } from 'react';
 import EnginesModal from './engines-modal';
-import { updateDbEngine, addDbEngines, deleteSpaceEngine } from '@/lib/data/engines';
+import { updateDbEngine, addDbEngines, deleteDbEngine } from '@/lib/data/engines';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,7 @@ import { App, Badge, Button, Grid, Spin, TableColumnsType, TableProps } from 'an
 import ElementList from '@/components/item-list-view';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Engine as DBEngine } from '@prisma/client';
-import { Engine } from '@/lib/engines/machines';
+import { Engine } from '@/lib/engines/types';
 import { useUserPreferences } from '@/lib/user-preferences';
 import Link from 'next/link';
 
@@ -63,7 +63,7 @@ const SavedEnginesList = ({
   async function deleteEngine(id: string) {
     setLoading(true);
     await wrapServerCall({
-      fn: () => deleteSpaceEngine(id, spaceId),
+      fn: () => deleteDbEngine(id, spaceId),
       onSuccess: () => {
         app.message.success({ content: 'Engine deleted' });
         router.refresh();

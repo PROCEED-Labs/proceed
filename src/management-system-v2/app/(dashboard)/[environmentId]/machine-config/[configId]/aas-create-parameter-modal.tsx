@@ -688,10 +688,9 @@ const ParameterInputs = ({
               ) : (
                 <Input
                   disabled={
-                    !isAdminLocked &&
-                    (transformationType === 'linked' ||
-                      transformationType === 'algorithm' ||
-                      (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession))
+                    transformationType === 'linked' ||
+                    transformationType === 'algorithm' ||
+                    (formValueTemplateSource !== 'none' && valueTemplateChangedThisSession)
                   }
                 />
               )}
@@ -754,7 +753,27 @@ const ParameterInputs = ({
                   { label: 'Linked', value: 'linked' },
                   { label: 'Formula', value: 'algorithm' },
                 ]}
-                onChange={() => form.setFieldValue([index, 'linkedParameters'], [])}
+                onChange={(newType) => {
+                  const initial = initialData?.[index];
+
+                  // Defer form updates to ensure they happen after all synchronous updates
+                  setTimeout(() => {
+                    if (initial && newType === initial.transformationType) {
+                      // Restore saved values when switching back to the original type
+                      form.setFieldValue(
+                        [index, 'linkedParameters'],
+                        initial.linkedParameters ?? [],
+                      );
+                      if (newType === 'algorithm') {
+                        form.setFieldValue([index, 'formula'], initial.formula ?? '');
+                      }
+                    } else {
+                      // Clear fields when switching to a different type
+                      form.setFieldValue([index, 'linkedParameters'], []);
+                      form.setFieldValue([index, 'formula'], '');
+                    }
+                  }, 10);
+                }}
                 disabled={isTransformationDisabled}
               />
             </Form.Item>
@@ -774,6 +793,7 @@ const ParameterInputs = ({
             {needsLinkedParameters(transformationType) && (
               <Form.Item
                 name={[index, 'linkedParameters']}
+                preserve={false}
                 label={
                   transformationType === 'algorithm'
                     ? 'Linked Parameters (Multiple)'
@@ -805,7 +825,6 @@ const ParameterInputs = ({
                   styles={{ popup: { root: { maxHeight: 600, overflow: 'auto' } } }}
                   virtual={false}
                   onChange={handleLinkedParametersChange}
-                  disabled={isAdminLocked}
                   onOpenChange={(open) => setIsTreeSelectOpen(open)}
                   onKeyDown={(e) => {
                     if (e.key === 'Escape' && isTreeSelectOpen) {
@@ -868,6 +887,7 @@ const ParameterInputs = ({
             {transformationType === 'algorithm' && (
               <Form.Item
                 name={[index, 'formula']}
+                preserve={false}
                 label="Formula"
                 rules={[{ required: true, message: 'Please enter a formula' }]}
                 style={{ marginBottom: '0' }}
@@ -875,7 +895,6 @@ const ParameterInputs = ({
                 <TextArea
                   rows={2}
                   placeholder="Enter formula using variable names (e.g., $IN1 + $IN2 * 0.5)"
-                  disabled={isAdminLocked}
                 />
               </Form.Item>
             )}

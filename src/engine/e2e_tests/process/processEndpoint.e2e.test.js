@@ -42,6 +42,7 @@ describe('Test process endpoints', () => {
               deploymentDate: expect.any(Number),
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
+              active: false,
             },
           ],
           instances: [],
@@ -61,6 +62,7 @@ describe('Test process endpoints', () => {
             definitionName: 'scriptFileRef',
             deploymentMethod: 'dynamic',
             deploymentDate: expect.any(Number),
+            active: false,
             needs: {
               html: [],
               imports: [],
@@ -86,6 +88,7 @@ describe('Test process endpoints', () => {
             definitionName: 'With Image',
             deploymentMethod: 'dynamic',
             deploymentDate: expect.any(Number),
+            active: false,
             needs: {
               html: ['User_Task_1qjpbcl-1671026484009'],
               imports: [],
@@ -113,6 +116,7 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
+              active: false,
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
             },
@@ -137,6 +141,7 @@ describe('Test process endpoints', () => {
               definitionName: 'basicStatic',
               deploymentMethod: 'dynamic',
               deploymentDate: expect.any(Number),
+              active: false,
               needs: { html: ['userTaskFileName'], imports: [], images: [], scripts: [] },
               versionId: '123',
             });
@@ -185,6 +190,7 @@ describe('Test process endpoints', () => {
                 definitionName: 'With Image',
                 deploymentMethod: 'dynamic',
                 deploymentDate: expect.any(Number),
+                active: false,
                 needs: {
                   html: ['User_Task_1qjpbcl-1671026484009'],
                   imports: [],
@@ -234,7 +240,7 @@ describe('Test process endpoints', () => {
           expect(getResponse.body).toStrictEqual([]);
           const postResponse = await request.post('/process/definitionId/versions/123/instance');
           expect(postResponse.status).toBe(201);
-          ({ instanceId } = postResponse.body);
+          ({ processInstanceId: instanceId } = postResponse.body);
           // allow everything to start correctly (the user task should have completely started)
           await new Promise((res) => setTimeout(res, 500));
         });

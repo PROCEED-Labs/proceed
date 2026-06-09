@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { RelevantInstanceInfo } from './instance-info-panel';
 
 import { EditOutlined } from '@ant-design/icons';
 
@@ -17,16 +16,19 @@ import {
   Table,
   Typography,
 } from 'antd';
-import { updateVariables } from '@/lib/engines/server-actions';
+import { updateVariables } from '@/lib/executions/instance-server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import useInstanceVariables, { Variable } from './use-instance-variables';
 import { textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { EntryText } from './entry-text';
 
 type InstanceVariableProps = {
-  info: RelevantInstanceInfo;
+  processId: string;
+  version: { bpmn: string };
+  instance: ExtendedInstanceInfo | undefined;
   refetch: () => void;
 };
 
@@ -35,7 +37,12 @@ const FormFieldTitle = (props: FieldTitleProps) => (
   <EntryText style={{ fontWeight: 600, color: '#777' }} {...props} />
 );
 
-const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) => {
+const InstanceVariables: React.FC<InstanceVariableProps> = ({
+  processId,
+  version,
+  instance,
+  refetch,
+}) => {
   const [updatedValue, setUpdatedValue] = useState<any>(undefined);
   const [submitting, setSubmitting] = useState(false);
 
@@ -45,7 +52,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
 
   const [form] = Form.useForm();
 
-  const { variables } = useInstanceVariables(info);
+  const { variables } = useInstanceVariables({ version, instance });
 
   const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
 
@@ -75,7 +82,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
     },
   ];
 
-  if (info.instance) {
+  if (instance) {
     columns.push({
       title: '',
       key: 'edit',
@@ -164,14 +171,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
           wrapServerCall({
             fn: async () => {
               setSubmitting(true);
-              await updateVariables(
-                spaceId,
-                info.process.definitionId,
-                info.instance!.processInstanceId,
-                {
-                  [variableToEdit!.name]: value,
-                },
-              );
+              return await updateVariables(spaceId, processId, instance!.processInstanceId, {
+                [variableToEdit!.name]: value,
+              });
             },
             onSuccess: () => {
               message.success('Applied Changes');
@@ -179,8 +181,12 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({ info, refetch }) =
               setSubmitting(false);
               handleClose();
             },
-            onError: () => {
-              message.error('Could not apply changes');
+            onError: (err) => {
+              if ('type' in err) {
+                message.error(err.message);
+              } else {
+                message.error('Could not apply changes');
+              }
               setSubmitting(false);
             },
           });

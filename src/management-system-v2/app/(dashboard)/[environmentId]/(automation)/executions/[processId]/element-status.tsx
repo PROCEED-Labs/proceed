@@ -12,11 +12,13 @@ import {
   Typography,
 } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
+import { getTiming, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { DataGrid, DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
+import { DataGrid, DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
+import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import styles from './element-status.module.scss';
 import { InstanceSelector } from './instance-selector';
 import TextViewer from '@/components/text-viewer';
@@ -97,15 +99,22 @@ const TechDetailsSwitch = ({
   );
 };
 
-export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
-  if (!info.instance) return <InstanceSelector />;
+export function ElementStatus({
+  processId,
+  element,
+  instance,
+}: {
+  processId: string;
+  element: ElementLike;
+  instance?: ExtendedInstanceInfo;
+}) {
   const [techDetails, setTechDetails] = useState(false);
   const statusEntries: ReactNode[][] = [];
 
-  const isRootElement = info.element && info.element.type === 'bpmn:Process';
-  const metaData = getMetaDataFromElement(info.element.businessObject);
-  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
-  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+  const isRootElement = element && element.type === 'bpmn:Process';
+  const metaData = getMetaDataFromElement(element.businessObject);
+  const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
+  const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   // TECH DETAILS SWITCH
   statusEntries.push([
@@ -300,14 +309,14 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // Element status
   let status = undefined;
-  if (isRootElement && info.instance) {
-    status = info.instance.instanceState[0];
-  } else if (info.element && info.instance) {
-    const elementInfo = info.instance.log.find((l) => l.flowElementId == info.element.id);
+  if (isRootElement && instance) {
+    status = instance.instanceState[0];
+  } else if (element && instance) {
+    const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
     if (elementInfo) {
       status = elementInfo.executionState;
     } else {
-      const tokenInfo = info.instance.tokens.find((l) => l.currentFlowElementId == info.element.id);
+      const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
       status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
     }
   }
@@ -320,7 +329,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <Checkbox
         key="external"
         disabled
-        value={info.element.businessObject && info.element.businessObject.external}
+        value={element.businessObject && element.businessObject.external}
       />,
     ]);
   }
@@ -328,7 +337,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   // Progress
   // TODO: editable progress
   // see src/management-system/src/frontend/components/deployments/activityInfo/ProgressSetter.vue
-  if (info.instance && !isRootElement) {
+  if (instance && !isRootElement) {
     let progress:
       | { value: number; manual: boolean; milestoneCalculatedProgress?: number }
       | undefined = undefined;
@@ -363,10 +372,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
 
   // User task
   // TODO: editable priority
-  if (info.element.type === 'bpmn:UserTask') {
+  if (element.type === 'bpmn:UserTask') {
     let priority: number | undefined = undefined;
 
-    if (info.instance) {
+    if (instance) {
       if (token) priority = token.priority;
       else if (logInfo) priority = logInfo.priority;
     } else {
@@ -380,14 +389,13 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   }
 
   // Activity time calculation
-  const { start, end, duration } = getTimeInfo({
-    element: info.element,
-    instance: info.instance,
-    logInfo,
+  const timing = getTiming({
+    isRootElement,
+    metaData,
     token,
+    logInfo,
+    instance,
   });
-
-  const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
 
   // Activity time
   // statusEntries.push([

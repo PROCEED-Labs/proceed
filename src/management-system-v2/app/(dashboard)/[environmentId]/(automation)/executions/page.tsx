@@ -3,28 +3,8 @@ import { getCurrentEnvironment } from '@/components/auth';
 import DeploymentsView from './deployments-view';
 import { getRootFolder, getFolderById, getFolderContents } from '@/lib/data/db/folders';
 import { getUsersFavourites } from '@/lib/data/users';
-import { getDeployedProcessesFromSavedEngines } from '@/lib/engines/saved-engines-helpers';
-import { DeployedProcessInfo } from '@/lib/engines/deployment';
+import { getDeployedProcesses } from '@/lib/data/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getDbEngines } from '@/lib/data/db/engines';
-
-function getDeploymentNames<T extends { versions: DeployedProcessInfo['versions'] }>(
-  deployments: T[],
-) {
-  for (const deployment of deployments) {
-    let latestDeploymentIdx = deployment.versions.length - 1;
-    for (let i = deployment.versions.length - 2; i >= 0; i--) {
-      if (deployment.versions[i].versionId > deployment.versions[latestDeploymentIdx].versionId)
-        latestDeploymentIdx = i;
-    }
-    const latestDeployment = deployment.versions[latestDeploymentIdx];
-
-    // @ts-ignore
-    deployment.name = latestDeployment.definitionName || latestDeployment.versionName;
-  }
-
-  return deployments as (T & { name: string })[];
-}
 
 async function Executions({ environmentId }: { environmentId: string }) {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
@@ -32,43 +12,40 @@ async function Executions({ environmentId }: { environmentId: string }) {
   // TODO: check ability
 
   // TODO: once the legacy storage is dropped, it would be better to do one db transaction
-  let [favs, [folder, folderContents], deployedInProceed, deployedInSpaceEngines] =
-    await Promise.all([
-      getUsersFavourites(),
-      (async () => {
-        const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
-        const folder = await getFolderById(rootFolder.id);
-        const folderContents = await getFolderContents(folder.id, ability);
-        return [folder, folderContents];
-      })(),
-      (async () => {
-        const engines = await getDbEngines(null, ability, 'dont-check');
-        return await getDeployedProcessesFromSavedEngines(engines);
-      })(),
-      (async () => {
-        const spaceEngines = await getDbEngines(activeEnvironment.spaceId, ability);
-        if (isUserErrorResponse(spaceEngines)) return [];
-        return await getDeployedProcessesFromSavedEngines(spaceEngines);
-      })(),
-    ]);
+  let [favs, [folder, folderContents], deployedProcesses] = await Promise.all([
+    getUsersFavourites(),
+    (async () => {
+      const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+      const folder = await getFolderById(rootFolder.id);
+      const folderContents = await getFolderContents(folder.id, ability);
+      return [folder, folderContents];
+    })(),
+    (async () => {
+      return getDeployedProcesses(activeEnvironment.spaceId);
+    })(),
+  ]);
 
   folderContents = folderContents.filter((p) => p.type === 'folder' || p.versions.length);
 
-  const deployedWithRemappedIds: (Omit<DeployedProcessInfo, 'definitionId'> & { id: string })[] =
-    deployedInProceed.concat(deployedInSpaceEngines).map((_process) => {
-      const process = _process as any;
-      process.id = process.definitionId;
-      delete process.definitionId;
-      return process;
-    });
-  const deployedProcesses = getDeploymentNames(deployedWithRemappedIds);
+  if (isUserErrorResponse(deployedProcesses)) throw deployedProcesses.error;
+
+  const mappedDeployedProcesses = deployedProcesses.map((p) => {
+    return {
+      id: p.id,
+      name: p.name,
+      versions: p.versions.map((v) => ({ id: v.id, name: v.name })),
+      instances: p.versions.flatMap((v) =>
+        v.deployments.flatMap((d) => d.instances.map((i) => i.id)),
+      ),
+    };
+  });
 
   return (
     <DeploymentsView
       processes={folderContents}
       folder={folder}
       favourites={favs as string[]}
-      deployedProcesses={deployedProcesses}
+      deployedProcesses={mappedDeployedProcesses}
     />
   );
 }

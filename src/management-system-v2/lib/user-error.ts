@@ -27,6 +27,14 @@ export interface UserError {
   type: UserErrorType;
 }
 
+export const permissionDenied = () => {
+  return userError('Permission denied', UserErrorType.PermissionError);
+};
+
+export const schemaValidationError = () => {
+  return userError('Schema validation failed', UserErrorType.SchemaValidationError);
+};
+
 /**
  * Creates a new user error inside an object for server responses.
  *
@@ -52,6 +60,14 @@ export function isUserError(value: any): value is UserError {
 
 export function isUserErrorResponse(value: any): value is { error: UserError } {
   return value && typeof value === 'object' && 'error' in value && isUserError(value.error);
+}
+
+export type SuccessType<T extends any | { error: UserError }> = Exclude<T, { error: UserError }>;
+
+export function isSuccessResponse<U extends any | { error: UserError }>(
+  value: U,
+): value is Exclude<U, { error: UserError }> {
+  return !value || typeof value !== 'object' || !('error' in value && isUserError(value.error));
 }
 
 /** These errors will be sent down to the user */

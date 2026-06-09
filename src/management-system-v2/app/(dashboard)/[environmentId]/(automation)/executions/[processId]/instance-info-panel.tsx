@@ -1,21 +1,14 @@
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
-import { DeployedProcessInfo, InstanceInfo, VersionInfo } from '@/lib/engines/deployment';
-import { Button, Col, Grid, Modal, Row, Tabs } from 'antd';
+import { Drawer, Grid, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
 import { ElementTiming } from './element-timing';
 import { ElementOverview } from './element-overview';
 import { StatusTag } from './status-tag';
-
-export type RelevantInstanceInfo = {
-  instance?: InstanceInfo;
-  process: DeployedProcessInfo;
-  element: ElementLike;
-  version: VersionInfo;
-};
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export function DisplayTable({ data }: { data: ReactNode[][] }) {
   // TODO: make this responsive
@@ -94,22 +87,28 @@ export function DataGrid({ data }: { data: ReactNode[][] }) {
 export default function InstanceInfoPanel({
   open,
   close,
-  info,
+  processId,
+  version,
+  instance,
+  element,
   refetch,
 }: {
   close: () => void;
   open: boolean;
-  info: RelevantInstanceInfo;
+  processId: string;
+  version: { bpmn: string };
+  instance?: ExtendedInstanceInfo;
+  element?: ElementLike;
   refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   const breakpoint = Grid.useBreakpoint();
 
-  const title = info.element?.businessObject?.name || info.element?.id || 'How to PROCEED?';
+  const title = element?.businessObject?.name || element?.id || 'How to PROCEED?';
 
   if (breakpoint.xl && !open) return null;
 
-  const tabs = info.element ? (
+  const tabs = element ? (
     <Tabs
       defaultActiveKey="Overview"
       items={[
@@ -122,11 +121,20 @@ export default function InstanceInfoPanel({
           key: 'Details',
           label: 'Details',
           children: <ElementStatus info={info} />,
+          // children: <ElementStatus processId={processId} element={element} instance={instance} />,
         },
         {
           key: 'Data',
           label: 'Data',
           children: <InstanceVariables refetch={refetch} info={info} />,
+          // children: (
+          //   <InstanceVariables
+          //     refetch={refetch}
+          //     processId={processId}
+          //     version={version}
+          //     instance={instance}
+          //   />
+          // ),
         },
         {
           key: 'Milestones',

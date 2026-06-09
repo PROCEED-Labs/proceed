@@ -330,8 +330,8 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
 
     if (rightClickedType === 'parameter') {
       const currentParameter = rightClickedNode as Parameter;
-      const isChangeable = currentParameter.changeableByUser ?? true;
-
+      const isChangeable =
+        currentParameter.origin === 'external' ? false : currentParameter.changeableByUser;
       // find parent context and determine position
       const ref = findParameter(rightClickedId, parentConfig, 'config');
       const parentArray =
@@ -364,7 +364,11 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
           label: 'Edit',
           key: 'edit',
           onClick: () => setEditFieldOpen(true),
-          disabled: !editMode || (isChangeable ? false : !currentParameter?.origin),
+          disabled: !editMode
+            ? true
+            : isChangeable
+              ? false
+              : !currentParameter?.origin || currentParameter.origin === 'external',
         },
         {
           label: 'Add Nested Parameter',
@@ -374,7 +378,7 @@ const AasConfigurationTreeView: React.FC<ConfigurationTreeViewProps> = ({
             setOpenModal('parameter');
             setCreateFieldOpen(true);
           },
-          disabled: !editMode,
+          disabled: !editMode || currentParameter?.origin === 'external',
         },
         {
           label: 'Delete',

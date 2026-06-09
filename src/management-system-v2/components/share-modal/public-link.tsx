@@ -40,6 +40,7 @@ const ModelerShareModalOptionPublicLink = ({
   const process = toShare.length === 1 && toShare[0].type !== 'folder' ? toShare[0] : undefined;
 
   const environment = useEnvironment();
+  const { spaceId } = environment;
 
   const [selectedVersionId, setSelectedVersionId] = useProcessVersion(process?.versions);
 
@@ -59,7 +60,7 @@ const ModelerShareModalOptionPublicLink = ({
       wrapServerCall({
         fn: () =>
           generateSharedViewerUrl(
-            { processId: process!.id, timestamp: shareTimestamp },
+            { processId: process!.id, timestamp: shareTimestamp, spaceId },
             selectedVersionId || undefined,
           ),
         onSuccess: (url) => setShareLink(url),
@@ -156,7 +157,7 @@ const ModelerShareModalOptionPublicLink = ({
       await wrapServerCall({
         fn: () =>
           generateSharedViewerUrl(
-            { processId: process!.id, timestamp: shareTimestamp },
+            { processId: process!.id, timestamp: shareTimestamp, spaceId },
             selectedVersionId || undefined,
           ),
         onSuccess: (url) => window.open(url, `${process!.id}-${selectedVersionId}-tab`),

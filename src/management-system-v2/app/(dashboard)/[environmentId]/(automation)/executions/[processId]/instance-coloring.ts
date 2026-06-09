@@ -1,7 +1,7 @@
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper/src/getters';
-import { getPlanDelays, getTimeInfo } from './instance-helpers';
+import { getTimeInfo, getTiming } from './instance-helpers';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 export const colorOptions = [
   {
@@ -23,7 +23,7 @@ export const colorOptions = [
 ] as const;
 export type ColorOptions = (typeof colorOptions)[number]['key'];
 
-function getExecutionColor(executionState: string, wasInterrupted: boolean) {
+export function getExecutionColor(executionState: string, wasInterrupted: boolean) {
   switch (executionState) {
     case 'COMPLETED':
       return wasInterrupted ? 'yellow' : 'green';
@@ -42,25 +42,25 @@ function getExecutionColor(executionState: string, wasInterrupted: boolean) {
 }
 
 export function progressToColor(
-  timeInfo: ReturnType<typeof getTimeInfo>,
-  planInfo: ReturnType<typeof getPlanDelays>,
+  actualTime: ReturnType<typeof getTimeInfo>,
+  plan: ReturnType<typeof getTimeInfo>,
 ) {
-  if (planInfo.plan.duration && timeInfo.start) {
-    const criticalTime = Math.floor(0.7 * planInfo.plan.duration);
-    const currentDate = timeInfo.end ? timeInfo.end.getTime() : Date.now();
+  if (plan.duration && actualTime.start) {
+    const criticalTime = Math.floor(0.7 * plan.duration);
+    const currentDate = actualTime.end ? actualTime.end.getTime() : Date.now();
 
-    if (currentDate < timeInfo.start.getTime() + criticalTime) {
+    if (currentDate < actualTime.start.getTime() + criticalTime) {
       return 'green';
-    } else if (currentDate < timeInfo.start.getTime() + planInfo.plan.duration) {
+    } else if (currentDate < actualTime.start.getTime() + plan.duration) {
       return 'orange';
     } else {
       return 'red';
     }
   }
 
-  if (timeInfo.end) {
-    if (!planInfo.plan.end) return 'white';
-    if (planInfo.plan.end.getTime() >= timeInfo.end.getTime()) return 'green';
+  if (actualTime.end) {
+    if (!plan.end) return 'white';
+    if (plan.end.getTime() >= actualTime.end.getTime()) return 'green';
     else return 'red';
   }
 
@@ -69,7 +69,7 @@ export function progressToColor(
 
 export function flowElementsStyling(
   bpmnViewer: BPMNCanvasRef,
-  instance: InstanceInfo,
+  instance: ExtendedInstanceInfo,
   colors: ColorOptions,
 ) {
   const instanceFlowElements = bpmnViewer.getAllElements();
@@ -94,9 +94,14 @@ export function flowElementsStyling(
       switch (colors) {
         case 'timeColors':
           const metaData = getMetaDataFromElement(element.businessObject);
-          const timeInfo = getTimeInfo({ element, logInfo: logEntry, token, instance });
-          const planInfo = getPlanDelays({ elementMetaData: metaData, ...timeInfo });
-          color = progressToColor(timeInfo, planInfo);
+          const timing = getTiming({
+            isRootElement: false,
+            metaData,
+            logInfo: logEntry,
+            token,
+            instance,
+          });
+          color = progressToColor(timing.actual, timing.plan);
           break;
         case 'noColors':
           color = 'white';

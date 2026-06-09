@@ -15,12 +15,14 @@ import {
 import { ClockCircleFilled } from '@ant-design/icons';
 import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
+import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-timing.module.scss';
 import { InstanceSelector } from './instance-selector';
 import { EntryText } from './entry-text';
+import { ElementLike } from 'diagram-js/lib/model/Types';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const TimetableEntryText = (props: EntryTextProps) => (
@@ -37,8 +39,16 @@ const ClockSymbol = () => (
   <ClockCircleFilled style={{ fontSize: '1.1rem', verticalAlign: 'middle' }} />
 );
 
-export function ElementTiming({ info }: { info: RelevantInstanceInfo }) {
-  if (!info.instance) return <InstanceSelector />;
+export function ElementTiming({
+  processId,
+  element,
+  instance,
+}: {
+  processId: string;
+  element?: ElementLike;
+  instance?: ExtendedInstanceInfo;
+}) {
+  if (!instance) return <InstanceSelector />;
   const timingEntries: ReactNode[][] = [];
 
   const activityLog: [string, 'INFO' | 'WARN', string][] = [
@@ -90,8 +100,8 @@ export function ElementTiming({ info }: { info: RelevantInstanceInfo }) {
         className={styles.GridContainer}
         style={{ border: 'solid 1px #ddd', borderRadius: 12, marginBlock: 15 }}
       >
-        {activityLog.map((row) => (
-          <Row className={styles.GridCell}>
+        {activityLog.map((row, idx_row) => (
+          <Row key={"activity" + idx_row} className={styles.GridCell}>
             <Col flex="70px" style={{ display: 'flex', justifyContent: 'center' }}>
               {row[0]}
             </Col>

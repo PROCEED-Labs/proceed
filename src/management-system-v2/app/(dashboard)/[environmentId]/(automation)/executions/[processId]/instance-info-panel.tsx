@@ -1,7 +1,7 @@
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
-import { Drawer, Grid, Tabs } from 'antd';
+import { Button, Col, Drawer, Grid, Modal, Row, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ElementStatus } from './element-status';
 import InstanceVariables from './instance-variables';
@@ -50,7 +50,7 @@ export function DataGrid({ data }: { data: ReactNode[][] }) {
   return (
     <>
       {data.map((row, idx_row) => (
-        <Row style={{ marginBlock: 8 }} wrap={false}>
+        <Row key={"datarid" + idx_row} style={{ marginBlock: 8 }} wrap={false}>
           {row.length == 1 ? (
             <Col flex="auto">{row[0]}</Col>
           ) : (
@@ -115,26 +115,24 @@ export default function InstanceInfoPanel({
         {
           key: 'Overview',
           label: 'Overview',
-          children: <ElementOverview info={info} />,
+          children: <ElementOverview processId={processId} element={element} instance={instance} />,
         },
         {
           key: 'Details',
           label: 'Details',
-          children: <ElementStatus info={info} />,
-          // children: <ElementStatus processId={processId} element={element} instance={instance} />,
+          children: <ElementStatus processId={processId} element={element} instance={instance} />,
         },
         {
           key: 'Data',
           label: 'Data',
-          children: <InstanceVariables refetch={refetch} info={info} />,
-          // children: (
-          //   <InstanceVariables
-          //     refetch={refetch}
-          //     processId={processId}
-          //     version={version}
-          //     instance={instance}
-          //   />
-          // ),
+          children: (
+            <InstanceVariables
+              refetch={refetch}
+              processId={processId}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
           key: 'Milestones',
@@ -144,7 +142,7 @@ export default function InstanceInfoPanel({
         {
           key: 'Activity',
           label: 'Activity',
-          children: <ElementTiming info={info} />,
+          children: <ElementTiming processId={processId} element={element} instance={instance} />,
         },
       ]}
     />
@@ -166,7 +164,7 @@ export default function InstanceInfoPanel({
       ref={resizableElementRef}
     >
       <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
-        <StatusTag info={info} />
+        <StatusTag processId={processId} element={element} instance={instance} />
         {tabs}
       </CollapsibleCard>
     </ResizableElement>

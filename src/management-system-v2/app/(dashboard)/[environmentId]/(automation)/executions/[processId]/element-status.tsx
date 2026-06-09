@@ -118,26 +118,27 @@ export function ElementStatus({
 
   // TECH DETAILS SWITCH
   statusEntries.push([
-    <TechDetailsSwitch techDetails={techDetails} setTechDetailsCb={setTechDetails} />,
+    <TechDetailsSwitch key="instance-techdetails-switch" techDetails={techDetails} setTechDetailsCb={setTechDetails} />,
   ]);
   // INSTANCE DATA
   if (isRootElement) {
     // GENERAL
     statusEntries.push([
-      <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>GENERAL</EntryKeyText>,
+      <EntryKeyText key="instance-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>GENERAL</EntryKeyText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Name</EntryKeyText>,
-      <EntryValueText>Vacation Requests Automated</EntryValueText>,
+      <EntryKeyText key="instance-name-key">Name</EntryKeyText>,
+      <EntryValueText key="instance-name-value">Vacation Requests Automated</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Short Name</EntryKeyText>,
-      <EntryValueText>Vac-Req-Aut</EntryValueText>,
+      <EntryKeyText key="instance-shortname-key">Short Name</EntryKeyText>,
+      <EntryValueText key="instance-shortname-val">Vac-Req-Aut</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Documentation</EntryKeyText>,
+      <EntryKeyText key="instance-documentation-key">Documentation</EntryKeyText>,
 
       <div
+        key="instance-documentation-val"
         style={{
           padding: 10,
           backgroundColor: 'hsla(0, 0%, 50%, 0.05)',
@@ -145,135 +146,136 @@ export function ElementStatus({
           borderRadius: 10,
         }}
       >
-        <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />
+        <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Process Mangager</EntryKeyText>,
-      <EntryValueText>Sandra Sample</EntryValueText>,
+      <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
+      <EntryValueText key="instance-processmanager-val">Sandra Sample</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>ID</TechEntryKey>,
-        <EntryValueText>_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
+        <TechEntryKey key="instance-id-key">ID</TechEntryKey>,
+        <EntryValueText key="instance-id-val">_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
       ]);
 
     // VERSION DATA
     statusEntries.push([
-      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space key="instance-heading-version" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
       </Space>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Version Name</EntryKeyText>,
-      <EntryValueText>v2</EntryValueText>,
+      <EntryKeyText key="instance-versionname-key">Version Name</EntryKeyText>,
+      <EntryValueText  key="instance-versionname-val">v2</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>What changed</EntryKeyText>,
-      <EntryValueText>Version description, yes.</EntryValueText>,
+      <EntryKeyText key="instance-versiondesc-key">What changed</EntryKeyText>,
+      <EntryValueText key="instance-versiondesc-val">Version description, yes.</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Created on</EntryKeyText>,
-      <EntryValueText>2026-05-18T11:39:54.943Z</EntryValueText>,
+      <EntryKeyText key="instance-createdon-key">Created on</EntryKeyText>,
+      <EntryValueText key="instance-createdon-val">2026-05-18T11:39:54.943Z</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Based on</EntryKeyText>,
-      <EntryValueText>v1</EntryValueText>,
+      <EntryKeyText key="instance-basedon-key">Based on</EntryKeyText>,
+      <EntryValueText key="instance-basedon-val">v1</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>Based on ID</TechEntryKey>,
-        <EntryValueText>_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
+        <TechEntryKey key="instance-basedonid-key">Based on ID</TechEntryKey>,
+        <EntryValueText key="instance-basedonid-val">_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
       ]);
 
     // INITIATOR
     statusEntries.push([
-      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space key="instance-initiator" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHO STARTED IT</EntryKeyText>
       </Space>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Started by</EntryKeyText>,
-      <EntryValueText>Timmy Test</EntryValueText>,
+      <EntryKeyText   key="instance-startedby-key">Started by</EntryKeyText>,
+      <EntryValueText key="instance-startedby-val">Timmy Test</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>Username</TechEntryKey>,
-        <EntryValueText>timtes</EntryValueText>,
+        <TechEntryKey   key="instance-startusername-key">Username</TechEntryKey>,
+        <EntryValueText key="instance-startusername-val">timtes</EntryValueText>,
       ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>User ID</TechEntryKey>,
-        <EntryValueText>d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
+        <TechEntryKey   key="instance-startuserid-key">User ID</TechEntryKey>,
+        <EntryValueText key="instance-startuserid-val">d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
       ]);
     statusEntries.push([
-      <EntryKeyText>Workspace</EntryKeyText>,
-      <EntryValueText>org1</EntryValueText>,
+      <EntryKeyText   key="instance-startuser-space-key">Workspace</EntryKeyText>,
+      <EntryValueText key="instance-startuser-space-val">org1</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>Workspace ID</TechEntryKey>,
-        <EntryValueText>e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
+        <TechEntryKey   key="instance-startuser-spaceid-key">Workspace ID</TechEntryKey>,
+        <EntryValueText key="instance-startuser-spaceid-val">e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
       ]);
 
     // TIMING
     statusEntries.push([
-      <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space key="instance-heading-timing" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
       </Space>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey>Run ID</TechEntryKey>,
-        <EntryValueText>
+        <TechEntryKey   key="instance-runid-key">Run ID</TechEntryKey>,
+        <EntryValueText key="instance-runid-val">
           _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
         </EntryValueText>,
       ]);
-    statusEntries.push([<EntryKeyText>Planned duration</EntryKeyText>, <EntryValueText />]);
+    statusEntries.push([<EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>, <EntryValueText  key="instance-plannedduration-val" />]);
     statusEntries.push([
-      <EntryKeyText>Start Time</EntryKeyText>,
-      <EntryValueText>5/20/2026, 12:39 PM</EntryValueText>,
+      <EntryKeyText   key="instance-starttime-key">Start Time</EntryKeyText>,
+      <EntryValueText key="instance-starttime-val">5/20/2026, 12:39 PM</EntryValueText>,
     ]);
-    statusEntries.push([<EntryKeyText>End Time</EntryKeyText>, <EntryValueText />]);
+    statusEntries.push([<EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>, <EntryValueText key="instance-endtime-val" />]);
     statusEntries.push([
-      <EntryKeyText>Time so far</EntryKeyText>,
-      <EntryValueText>2h 47m</EntryValueText>,
+      <EntryKeyText   key="instance-duration-key">Time so far</EntryKeyText>,
+      <EntryValueText key="instance-duration-val">2h 47m</EntryValueText>,
     ]);
 
     // ENGINE
 
     if (techDetails) {
       statusEntries.push([
-        <Space orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Space key="instance-heading-engine" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
           <Divider style={{ padding: 0, margin: 0 }} />
           <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
         </Space>,
       ]);
       statusEntries.push([
-        <TechEntryKey>Engine</TechEntryKey>,
-        <EntryValueText>engine1</EntryValueText>,
+        <TechEntryKey   key="instance-engine-key">Engine</TechEntryKey>,
+        <EntryValueText key="instance-engine-val">engine1</EntryValueText>,
       ]);
       statusEntries.push([
-        <TechEntryKey>Engine ID</TechEntryKey>,
-        <EntryValueText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
+        <TechEntryKey   key="instance-engineid-key">Engine ID</TechEntryKey>,
+        <EntryValueText key="instance-engineid-val">488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
       ]);
     }
     // EVENT DATA
   } else {
     statusEntries.push([
-      <EntryKeyText>{'Step ID (or "Event ID"?)'}</EntryKeyText>,
-      <EntryValueText>Activity_0309v8x</EntryValueText>,
+      <EntryKeyText   key="event-stepid-key">{'Step ID (or "Event ID"?)'}</EntryKeyText>,
+      <EntryValueText key="event-stepid-val">Activity_0309v8x</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Step Name</EntryKeyText>,
-      <EntryValueText>Check vacation application</EntryValueText>,
+      <EntryKeyText   key="event-stepname-key">Step Name</EntryKeyText>,
+      <EntryValueText key="event-stepname-val">Check vacation application</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Documentation</EntryKeyText>,
-      <div
+      <EntryKeyText key="event-docu-key">Documentation</EntryKeyText>,
+      <div 
+        key="event-docu-val"
         style={{
           padding: 10,
           backgroundColor: '#66666605',
@@ -281,29 +283,29 @@ export function ElementStatus({
           borderRadius: 10,
         }}
       >
-        <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />
+        <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
 
     statusEntries.push([
-      <EntryKeyText>Step Type</EntryKeyText>,
-      <EntryValueText>User Task</EntryValueText>,
+      <EntryKeyText   key="event-steptype-key">Step Type</EntryKeyText>,
+      <EntryValueText key="event-steptype-val">User Task</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Previous Step ID</EntryKeyText>,
-      <EntryValueText>Check vacation application</EntryValueText>,
+      <EntryKeyText   key="event-prevstepid-key">Previous Step ID</EntryKeyText>,
+      <EntryValueText key="event-prevstepid-val">Check vacation application</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Actual Performer</EntryKeyText>,
-      <EntryValueText>Sandra Sample</EntryValueText>,
+      <EntryKeyText   key="event-actualperformer-key">Actual Performer</EntryKeyText>,
+      <EntryValueText key="event-actualperformer-val">Sandra Sample</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Actual Performer Username</EntryKeyText>,
-      <EntryValueText>sansam</EntryValueText>,
+      <EntryKeyText   key="event-actualperformername-key">Actual Performer Username</EntryKeyText>,
+      <EntryValueText key="event-actualperformername-val">sansam</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText>Actual Performer ID</EntryKeyText>,
-      <EntryValueText>29880751-c190-4f58-b5cb-438754e9f02d</EntryValueText>,
+      <EntryKeyText key="event-actualperformername-key">Actual Performer ID</EntryKeyText>,
+      <EntryValueText key="event-actualperformername-val">29880751-c190-4f58-b5cb-438754e9f02d</EntryValueText>,
     ]);
   }
 
@@ -325,9 +327,9 @@ export function ElementStatus({
   // Is External
   if (!isRootElement) {
     statusEntries.push([
-      <EntryKeyText>External:</EntryKeyText>,
+      <EntryKeyText key="external-key">External:</EntryKeyText>,
       <Checkbox
-        key="external"
+        key="external-val"
         disabled
         value={element.businessObject && element.businessObject.external}
       />,
@@ -364,8 +366,8 @@ export function ElementStatus({
       else if (statusType === 'error') progressStatus = 'exception';
 
       statusEntries.push([
-        <EntryKeyText>Progress</EntryKeyText>,
-        <Progress key="progress" percent={progress.value} status={progressStatus} />,
+        <EntryKeyText key="progres-key">Progress</EntryKeyText>,
+        <Progress key="progress-val" percent={progress.value} status={progressStatus} />,
       ]);
     }
   }
@@ -383,8 +385,8 @@ export function ElementStatus({
     }
 
     statusEntries.push([
-      <EntryKeyText>Priority</EntryKeyText>,
-      <EntryValueText>{priority}</EntryValueText>,
+      <EntryKeyText key="prio">Priority</EntryKeyText>,
+      <EntryValueText key="hkj">{priority}</EntryValueText>,
     ]);
   }
 

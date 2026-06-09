@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Col, Divider, Menu, Row, Space, Typography } from 'antd';
-import { DataGrid, DisplayTable, RelevantInstanceInfo } from './instance-info-panel';
 import { InstanceSelector } from './instance-selector';
 import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
@@ -9,14 +8,25 @@ import { getPlanDelays, getTimeInfo } from './instance-helpers';
 import { generateDateString, generateDurationString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
 import { EntryText } from './entry-text';
+import { ElementLike } from 'diagram-js/lib/model/Types';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
+import { DataGrid } from './instance-info-panel';
 
-export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
-  if (!info.instance) return <InstanceSelector />;
+export function ElementOverview({
+  processId,
+  element,
+  instance,
+}: {
+  processId: string;
+  element: ElementLike;
+  instance?: ExtendedInstanceInfo;
+}) {
+  if (!instance) return <InstanceSelector />;
   const overviewEntries: ReactNode[][] = [];
-  const metaData = getMetaDataFromElement(info.element.businessObject);
-  const isRootElement = info.element && info.element.type === 'bpmn:Process';
-  const token = info.instance?.tokens.find((l) => l.currentFlowElementId == info.element.id);
-  const logInfo = info.instance?.log.find((logEntry) => logEntry.flowElementId === info.element.id);
+  const metaData = getMetaDataFromElement(element.businessObject);
+  const isRootElement = element && element.type === 'bpmn:Process';
+  const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
+  const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   // Element image
   if (metaData.overviewImage) {
@@ -70,7 +80,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
   if (isRootElement) {
     // Name and Shortname
     overviewEntries.push([
-      <div style={{ margin: 0, padding: 0 }}>
+      <div key="instance-names" style={{ margin: 0, padding: 0 }}>
         <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
           Vacation Requests Automated
         </Typography.Title>
@@ -80,15 +90,15 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
 
     // description
     overviewEntries.push([
-      <div style={{ fontSize: '.95em', color: '#777' }}>
-        <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />
+      <div key="instance-description" style={{ fontSize: '.95em', color: '#777' }}>
+        <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
 
     // time info
     const { start, end, duration } = getTimeInfo({
-      element: info.element,
-      instance: info.instance,
+      element: element,
+      instance: instance,
       logInfo,
       token,
     });
@@ -102,6 +112,7 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
           borderRadius: 12,
           overflow: 'hidden',
         }}
+        key="instance-timing"
       >
         <div className={styles.GridContainer}>
           <div className={styles.GridCell}>
@@ -133,10 +144,11 @@ export function ElementOverview({ info }: { info: RelevantInstanceInfo }) {
 
     // Budget
     overviewEntries.push([
-      <EntryText style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>BUDGET</EntryText>,
+      <EntryText key="instance-budgettitle" style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>BUDGET</EntryText>,
     ]);
     overviewEntries.push([
       <Space
+        key="instance-budget"
         orientation="vertical"
         style={{
           width: '100%',

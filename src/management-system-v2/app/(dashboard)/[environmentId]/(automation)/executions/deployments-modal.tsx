@@ -110,9 +110,9 @@ const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEE
               label: 'Connections',
               children: Object.entries(
                 engine.connections.reduce(
-                  (acc, c) => {
-                    if (isHttpConnection(c)) acc.HTTP = true;
-                    else if (isMqttConnection(c)) acc.MQTT = true;
+                  (acc, { connection }) => {
+                    if (isHttpConnection(connection)) acc.HTTP = true;
+                    else if (isMqttConnection(connection)) acc.MQTT = true;
                     return acc;
                   },
                   { HTTP: false, MQTT: false },

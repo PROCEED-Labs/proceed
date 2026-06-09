@@ -30,7 +30,7 @@ import { Connection, isHttpConnection } from '@/lib/engines/types';
 
 type ConnectionStatus =
   | { online: false }
-  | { online: true; engines: (DBEngine & { reachable: boolean })[] };
+  | { online: true; engines: { reachable: boolean; engine: DBEngine }[] };
 type InputConnection = Connection & { status: ReactNode };
 
 // The status for each connection is streamed in after the page loads, I can't add the status promises
@@ -110,7 +110,7 @@ const EngineConnectionsList = ({
         if (isHttpConnection(record)) {
           return (
             <Link
-              href={`${engineDashboardLinkPrefix}/${record.engines[0].id}`}
+              href={`${engineDashboardLinkPrefix}/${record.engines[0].engine.id}`}
               className={
                 breakpoint.xs
                   ? styles.MobileTitleTruncation
@@ -185,7 +185,7 @@ const EngineConnectionsList = ({
                 const status = connectionsStatus[record.id]!;
                 if (!status.online) return;
 
-                return status.engines.map((engine) => (
+                return status.engines.map(({ engine }) => (
                   <Link key={engine.id} href={`${engineDashboardLinkPrefix}/${engine.id}`}>
                     {engine.name || engine.id}
                   </Link>

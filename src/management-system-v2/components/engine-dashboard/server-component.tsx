@@ -1,11 +1,9 @@
 import Content from '@/components/content';
 import { Result, Space } from 'antd';
-import { type Engine } from '@/lib/engines/types';
+import { Engine } from '@/lib/engines/types';
 import { engineRequest } from '@/lib/engines/endpoints/index';
 import ClientEngineDashboard from '@/components/engine-dashboard/dashboard';
 import { ReactNode } from 'react';
-
-export type TableEngine = Engine & { id: string };
 
 /** Make sure that the user requesting the page has permission to view the engine, this component
  * doesn't check view permissions */

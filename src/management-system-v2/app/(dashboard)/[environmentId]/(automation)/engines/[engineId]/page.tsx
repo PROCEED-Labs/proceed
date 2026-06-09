@@ -4,14 +4,11 @@ import { Button, Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
-import { type Engine } from '@/lib/engines/types';
 import { getEngineById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';
 import { isUserErrorResponse } from '@/lib/user-error';
-
-export type TableEngine = Engine & { id: string };
 
 export default async function EnginesPage(props: {
   params: Promise<{ engineId: string; environmentId: string }>;

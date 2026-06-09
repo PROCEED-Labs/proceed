@@ -8,20 +8,14 @@ export type MqttEngine = {
   id: string;
   brokerAddress: string;
 } & Discriminator;
-export type HttpEngine = {
-  type: 'http';
-  name?: string;
-  id: string;
-  address: string;
-} & Discriminator;
 export type Engine = {
   id: string;
   name?: string | null;
-  connections: (EngineConnection & { reachable: boolean })[];
+  connections: { reachable: boolean; connection: EngineConnection }[];
 } & Discriminator;
 
 export type Connection = EngineConnection & {
-  engines: (DBEngine & { reachable: boolean })[];
+  engines: { reachable: boolean; engine: DBEngine }[];
 };
 
 export function isHttpConnection(connection: EngineConnection) {
@@ -31,5 +25,4 @@ export function isMqttConnection(connection: EngineConnection) {
   return connection.address.startsWith('mqtt');
 }
 
-export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
-export type ProceedEngine = Extract<Engine, { spaceEngine?: undefined }>;
+export type SpaceEngine = { id: string; spaceEngine: true };

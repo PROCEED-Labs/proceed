@@ -296,15 +296,10 @@ async function refetchFn() {
     );
 
     // get all (reachable) engines known to the MS
-    let engines = (
-      await db.engine.findMany({
-        where: { connections: { some: { reachable: true, connection: { removed: false } } } },
-        include: { connections: { include: { connection: true } } },
-      })
-    ).map((e) => ({
-      ...e,
-      connections: e.connections.map(({ reachable, connection }) => ({ reachable, ...connection })),
-    }));
+    let engines = await db.engine.findMany({
+      where: { connections: { some: { reachable: true, connection: { removed: false } } } },
+      include: { connections: { include: { connection: true } } },
+    });
     const knownEngines: Record<string, Engine> = {};
     // deduplicate the engines (an engine might be reachable through multiple connections)
     engines = engines.filter((engine) => {

@@ -24,7 +24,8 @@ export async function engineRequest<
   endpoint: Url;
   body?: any;
 } & Prettify<EndpointBuilderOptions<Method, Url>>) {
-  for (const connection of engine.connections) {
+  for (const { reachable, connection } of engine.connections) {
+    if (!reachable) continue;
     try {
       let queryParams;
       if ('queryParams' in params && isMqttConnection(connection)) {

@@ -25,7 +25,7 @@ async function getMqttEngines(connection: EngineConnection): Promise<Engine[]> {
     if (collectedEngines)
       return collectedEngines.map((e) => ({
         id: e.id,
-        connections: [{ ...connection, reachable: true }],
+        connections: [{ connection, reachable: true }],
       }));
   }
 
@@ -44,7 +44,7 @@ async function getMqttEngines(connection: EngineConnection): Promise<Engine[]> {
     .filter((v) => v.running)
     .map((e) => ({
       id: e.id,
-      connections: [{ ...connection, reachable: true }],
+      connections: [{ connection, reachable: true }],
       spaceEngine: true as const,
     }));
 
@@ -84,7 +84,7 @@ async function getHttpEngine(connection: EngineConnection): Promise<[Engine]> {
     {
       id,
       name,
-      connections: [{ reachable: true, ...connection }],
+      connections: [{ reachable: true, connection }],
       spaceEngine: true,
     },
   ];

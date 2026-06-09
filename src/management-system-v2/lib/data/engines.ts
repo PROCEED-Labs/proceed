@@ -39,13 +39,7 @@ export async function getEngineConnections(
 
   connections = ability ? ability.filter('view', 'Machine', connections) : connections;
 
-  return connections.map((c) => ({
-    ...c,
-    engines: c.engines.map((e) => ({
-      reachable: e.reachable,
-      ...e.engine,
-    })),
-  })) satisfies Connection[];
+  return connections satisfies Connection[];
 }
 
 export async function getEngineById(environmentId: string | null | undefined, engineId: string) {
@@ -70,16 +64,13 @@ export async function getEngineById(environmentId: string | null | undefined, en
 
   if (!engine) return engine;
 
-  return {
-    ...engine,
-    connections: engine.connections.map((c) => ({ reachable: c.reachable, ...c.connection })),
-  } satisfies Engine;
+  return engine satisfies Engine;
 }
 
 async function getAvailableEngines(environmentIds: (string | null)[], ability?: Ability) {
   if (ability && !ability.can('view', 'Machine')) return [];
 
-  const engines = await db.engine.findMany({
+  return await db.engine.findMany({
     where: {
       connections: {
         some: {
@@ -90,13 +81,8 @@ async function getAvailableEngines(environmentIds: (string | null)[], ability?: 
         },
       },
     },
-    include: { connections: { include: { connection: true } } },
+    include: { connections: { select: { reachable: true, connection: true } } },
   });
-
-  return engines.map((e) => ({
-    ...e,
-    connections: e.connections.map(({ reachable, connection }) => ({ reachable, ...connection })),
-  }));
 }
 
 export async function getAvailableAdminEngines() {

@@ -364,9 +364,13 @@ export async function updateTaskInfo(
 
   const fetchedUserTasks = (
     await asyncMap(reachableWithDeployments, async (e) => {
-      const tasklist = await getTaskListFromMachine(e);
+      try {
+        const tasklist = await getTaskListFromMachine(e);
 
-      return tasklist.map((entry) => ({ ...entry, engineId: e.id }));
+        return tasklist.map((entry) => ({ ...entry, engineId: e.id }));
+      } catch (_) {
+        return [];
+      }
     })
   )
     .flat()

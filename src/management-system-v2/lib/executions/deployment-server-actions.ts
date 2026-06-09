@@ -253,7 +253,6 @@ async function refetchFn() {
   try {
     // get all (non-removed) deployments known to the MS
     const storedDeployments = await db.processDeployment.findMany({
-      where: { removeTime: null },
       select: {
         id: true,
         // include information about engines the processes were deployed to
@@ -270,6 +269,7 @@ async function refetchFn() {
           },
         },
         toRemove: true,
+        removeTime: true,
         active: true,
         version: {
           select: { id: true, processId: true, process: { select: { environmentId: true } } },
@@ -278,59 +278,50 @@ async function refetchFn() {
       },
     });
 
-    // get unique ids of all known engines that have a deployment from this MS with information
-    // about what we expect to be deployed on those engines
-    const engineIdsWithDeployments = storedDeployments.reduce(
-      (acc, curr) => {
-        if (!acc[curr.engine.id])
-          acc[curr.engine.id] = {
-            id: curr.engine.id,
-            connections: curr.engine.connections,
-            processes: {},
-          };
-        const engineDeploymentMap = acc[curr.engine.id].processes;
-        if (!engineDeploymentMap[curr.version.processId]) {
-          engineDeploymentMap[curr.version.processId] = {};
-        }
-        const processMap = engineDeploymentMap[curr.version.processId];
-        processMap[curr.version.id] = curr;
+    type InstanceData = {
+      id: string;
+      processId: string;
+      environmentId: string;
+      versionId: string;
+      state: InstanceInfo;
+    };
+    const storedInstances: { [instanceId: string]: InstanceData } = {};
+    const deployments: { [engineProcessAndVersionId: string]: (typeof storedDeployments)[number] } =
+      {};
+    const enginesWithDeployments: {
+      [engineId: string]: {
+        id: string;
+        connections: { reachable: boolean; connection: EngineConnection }[];
+      };
+    } = {};
 
-        return acc;
-      },
-      {} as {
-        [engineId: string]: {
-          id: string;
-          connections: { reachable: boolean; connection: EngineConnection }[];
-          processes: {
-            [definitionId: string]: { [versionId: string]: (typeof storedDeployments)[number] };
-          };
+    storedDeployments.forEach((d) => {
+      deployments[`${d.engine.id}|${d.version.processId}|${d.version.id}`] = d;
+      // only consider engines that are actually have deployments that were not already removed
+      if (!d.removeTime) enginesWithDeployments[d.engine.id] = d.engine;
+      d.instances.forEach((i) => {
+        storedInstances[i.id] = {
+          ...i,
+          state: i.state as InstanceInfo,
+          processId: d.version.processId,
+          versionId: d.version.id,
+          environmentId: d.version.process.environmentId,
         };
-      },
-    );
+      });
+    });
 
     // create a list of all engines we can and need to fetch new information from
-    const reachableWithDeployments = Object.values(engineIdsWithDeployments).filter((e) =>
+    const reachableWithDeployments = Object.values(enginesWithDeployments).filter((e) =>
       e.connections.some((c) => c.reachable),
     );
 
-    const newInstances: {
-      id: string;
-      processId: string;
-      environmentId: string;
-      versionId: string;
+    const newInstances: (InstanceData & {
       deploymentId: string;
       initiatorId: null;
       engineIds: string[];
-      state: InstanceInfo;
-    }[] = [];
-    const instanceUpdates: {
-      id: string;
-      processId: string;
-      environmentId: string;
-      versionId: string;
-      state: InstanceInfo;
-    }[] = [];
-    const unchangedInstances: typeof instanceUpdates = [];
+    })[] = [];
+    const instanceUpdates: InstanceData[] = [];
+    const unchangedInstances: InstanceData[] = [];
 
     // fetch deployment data from the engines
     const engineDeployments = Object.fromEntries(
@@ -349,8 +340,7 @@ async function refetchFn() {
         await asyncForEach(res, async (p) => {
           await asyncForEach(p.versions, async (v) => {
             try {
-              const deployment =
-                engineIdsWithDeployments[e.id]?.processes[p.definitionId]?.[v.versionId];
+              const deployment = deployments[`${e.id}|${p.definitionId}|${v.versionId}`];
               if (!deployment) return;
 
               if (v.active !== deployment.active) {
@@ -377,18 +367,15 @@ async function refetchFn() {
         // can be found on the engine it was started on
         res.forEach((p) => {
           p.instances.forEach((i) => {
-            const deployment =
-              engineIdsWithDeployments[e.id]?.processes[p.definitionId]?.[i.processVersion];
+            const deployment = deployments[`${e.id}|${i.processId}|${i.processVersion}`];
             if (!deployment) return;
-            const existingInstance = deployment.instances.find(
-              (dI) => dI.id === i.processInstanceId,
-            );
+            const existingInstance = storedInstances[i.processInstanceId];
             if (!existingInstance) {
               newInstances.push({
                 id: i.processInstanceId,
                 processId: p.definitionId,
                 environmentId: deployment.version.process.environmentId,
-                versionId: deployment.version.id,
+                versionId: i.processVersion,
                 deploymentId: deployment.id,
                 initiatorId: null,
                 engineIds: [e.id],
@@ -403,13 +390,7 @@ async function refetchFn() {
                 state: i,
               });
             } else {
-              unchangedInstances.push({
-                id: i.processInstanceId,
-                processId: p.definitionId,
-                environmentId: deployment.version.process.environmentId,
-                versionId: deployment.version.id,
-                state: existingInstance.state as InstanceInfo,
-              });
+              unchangedInstances.push(existingInstance);
             }
           });
         });
@@ -464,7 +445,7 @@ async function refetchFn() {
     });
 
     const knownInstances = Object.fromEntries(
-      unchangedInstances
+      Object.values(storedInstances)
         .concat(instanceUpdates)
         .concat(newInstances)
         .map((i) => [i.id, { ...i, instanceId: i.id }]),

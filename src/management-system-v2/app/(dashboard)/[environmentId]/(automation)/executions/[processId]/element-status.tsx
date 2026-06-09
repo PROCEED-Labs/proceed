@@ -111,6 +111,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   statusEntries.push([
     <TechDetailsSwitch techDetails={techDetails} setTechDetailsCb={setTechDetails} />,
   ]);
+  // INSTANCE DATA
   if (isRootElement) {
     // GENERAL
     statusEntries.push([
@@ -127,7 +128,16 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
     statusEntries.push([
       <EntryKeyText>Documentation</EntryKeyText>,
 
-      <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />,
+      <div
+        style={{
+          padding: 10,
+          backgroundColor: 'hsla(0, 0%, 50%, 0.05)',
+          // border: '1px solid #77777733',
+          borderRadius: 10,
+        }}
+      >
+        <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />
+      </div>,
     ]);
     statusEntries.push([
       <EntryKeyText>Process Mangager</EntryKeyText>,
@@ -242,6 +252,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
         <EntryValueText>488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
       ]);
     }
+    // EVENT DATA
   } else {
     statusEntries.push([
       <EntryKeyText>{'Step ID (or "Event ID"?)'}</EntryKeyText>,
@@ -251,7 +262,20 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       <EntryKeyText>Step Name</EntryKeyText>,
       <EntryValueText>Check vacation application</EntryValueText>,
     ]);
-    statusEntries.push(['Documentation:', info.element.businessObject?.documentation?.[0]?.text]);
+    statusEntries.push([
+      <EntryKeyText>Documentation</EntryKeyText>,
+      <div
+        style={{
+          padding: 10,
+          backgroundColor: '#66666605',
+          border: '1px solid #0001',
+          borderRadius: 10,
+        }}
+      >
+        <TextViewer initialValue={info.element.businessObject?.documentation?.[0]?.text} />
+      </div>,
+    ]);
+
     statusEntries.push([
       <EntryKeyText>Step Type</EntryKeyText>,
       <EntryValueText>User Task</EntryValueText>,
@@ -289,18 +313,10 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
   }
   const statusType = status && statusToType(status);
 
-  statusEntries.push([
-    'Current state:',
-    status && statusType && <Alert type={statusType} title={status} showIcon />,
-  ]);
-
-  // from ./src/management-system/src/frontend/components/deployments/activityInfo/ActivityStatusInformation.vue
-  // TODO: Editable state?
-
   // Is External
   if (!isRootElement) {
     statusEntries.push([
-      'External:',
+      <EntryKeyText>External:</EntryKeyText>,
       <Checkbox
         key="external"
         disabled
@@ -339,7 +355,7 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       else if (statusType === 'error') progressStatus = 'exception';
 
       statusEntries.push([
-        'Progress',
+        <EntryKeyText>Progress</EntryKeyText>,
         <Progress key="progress" percent={progress.value} status={progressStatus} />,
       ]);
     }
@@ -357,43 +373,11 @@ export function ElementStatus({ info }: { info: RelevantInstanceInfo }) {
       priority = metaData['defaultPriority'];
     }
 
-    statusEntries.push(['Priority:', priority]);
+    statusEntries.push([
+      <EntryKeyText>Priority</EntryKeyText>,
+      <EntryValueText>{priority}</EntryValueText>,
+    ]);
   }
-
-  // Budget
-  const costs: { value: string; unit: string } | undefined = metaData['costsPlanned'];
-  statusEntries.push([
-    'Budget:',
-    costs &&
-      generateNumberString(+costs.value, {
-        style: 'currency',
-        currency: costs.unit,
-      }),
-  ]);
-
-  // Real Costs
-  // TODO: Set real costs
-  if (info.instance && !isRootElement) {
-    let costs: string | undefined = undefined;
-    if (token) costs = token.costsRealSetByOwner;
-    else if (logInfo) costs = logInfo.costsRealSetByOwner;
-
-    statusEntries.push(['Real Costs:', costs]);
-  }
-
-  // Documentation
-  statusEntries.push([
-    <Collapse
-      size="small"
-      items={[
-        {
-          key: '1',
-          label: 'Documentation',
-          children: <p>{info.element.businessObject?.documentation?.[0]?.text}</p>,
-        },
-      ]}
-    />,
-  ]);
 
   // Activity time calculation
   const { start, end, duration } = getTimeInfo({

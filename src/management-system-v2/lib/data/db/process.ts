@@ -512,22 +512,7 @@ export async function removeProcess(processDefinitionsId: string, tx?: Prisma.Tr
     });
   }
 
-  const process = await tx.process.findUnique({
-    where: { id: processDefinitionsId },
-    include: { artifactProcessReferences: { include: { artifact: true } } },
-  });
-
-  if (!process) {
-    throw new Error(`Process with id: ${processDefinitionsId} not found`);
-  }
-
-  await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) => {
-      return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
-    }),
-  );
-
-  await tx.process.delete({ where: { id: processDefinitionsId } });
+  await tx.process.update({ where: { id: processDefinitionsId }, data: { folderId: null } });
 
   eventHandler.dispatch('processRemoved', { processDefinitionsId });
 }

@@ -10,19 +10,20 @@ type EntryTextProps = React.ComponentProps<typeof Typography.Text> & {
  * @param props of component <Typography.Text/>
  */
 export const EntryText = (props: EntryTextProps) => {
-  return props.children ? (
-    <Typography.Text {...props} />
+  const { missingColorOverride, missingTextOverride, ...restProps } = props;
+  return restProps.children ? (
+    <Typography.Text {...restProps} />
   ) : (
     <Typography.Text
-      {...props}
+      {...restProps}
       style={{
-        color: props.missingColorOverride || '#aaa',
+        color: missingColorOverride || '#aaa',
         fontStyle: 'normal',
         fontSize: 'normal',
         fontWeight: 'normal',
       }}
     >
-      {props.missingTextOverride ?? 'N/A'}
+      {missingTextOverride ?? 'N/A'}
     </Typography.Text>
   );
 };

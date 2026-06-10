@@ -19,6 +19,7 @@ export async function getDeployedProcesses(environmentId: string) {
       // currently deployed
       AND: [
         { environmentId },
+        { NOT: { folderId: null } },
         {
           versions: {
             some: { deployments: { some: deploymentIsNotDeleted } },
@@ -53,7 +54,13 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   const deployments = await db.processDeployment.findMany({
-    where: { AND: [{ version: { processId } }, { removeTime: null }, { toRemove: false }] },
+    where: {
+      AND: [
+        { version: { AND: [{ processId }, { NOT: { process: { folderId: null } } }] } },
+        { removeTime: null },
+        { toRemove: false },
+      ],
+    },
     include: {
       version: { select: { id: true, processId: true, name: true } },
       instances: { select: { id: true } },

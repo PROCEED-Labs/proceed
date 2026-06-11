@@ -327,9 +327,10 @@ export async function moveProcess(processId: string, newParentId: string, abilit
   if (process.folderId === newParentId) return;
 
   const [oldParentFolder, newParentFolder] = await Promise.all([
-    db.folder.findUnique({
-      where: { id: process.folderId },
-    }),
+    process.folderId &&
+      db.folder.findUnique({
+        where: { id: process.folderId },
+      }),
 
     db.folder.findUnique({
       where: { id: newParentId },
@@ -344,11 +345,11 @@ export async function moveProcess(processId: string, newParentId: string, abilit
   // Check permissions
   if (
     ability &&
-    !(
-      ability.can('update', toCaslResource('Process', process)) &&
-      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
-      ability.can('update', toCaslResource('Folder', oldParentFolder!))
-    )
+    !(ability.can('update', toCaslResource('Process', process)) &&
+    ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+    oldParentFolder
+      ? ability.can('update', toCaslResource('Folder', oldParentFolder!))
+      : true)
   ) {
     throw new UnauthorizedError();
   }

@@ -49,10 +49,7 @@ export async function getUserTasks(spaceId: string) {
     // show richer information about who is working on the task
     return userTasks.map((uT) => ({
       ...uT,
-      offline:
-        uT.machineId === 'ms-local' || reachableEngines.some((e) => e.id === uT.machineId)
-          ? false
-          : true,
+      offline: uT.machineId !== 'ms-local' && !reachableEngines.some((e) => e.id === uT.machineId),
       actualOwner: uT.actualOwner
         .map((id) => {
           const user = users.find((u) => u.id === id);

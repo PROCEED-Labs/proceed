@@ -430,7 +430,7 @@ export async function updateTaskInfo(
 
         let html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
           const path = match.split('/');
-          return `/api/private/${spaceId}/engine/resources/process/${task.instanceID}/images/${path.pop()}`;
+          return `/api/private/${spaceId}/engine/resources/process/${relatedInstanceInfo.processId}/images/${path.pop()}`;
         });
 
         const processIds = await getProcessIds(bpmn);

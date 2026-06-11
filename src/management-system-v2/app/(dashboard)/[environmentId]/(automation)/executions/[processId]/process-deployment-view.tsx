@@ -1,7 +1,7 @@
 // TODO: remove the use client if this page is used in server
 'use client';
 
-import { Button, Select, Tooltip, Space, Dropdown, Result, App } from 'antd';
+import { Button, Select, Tooltip, Space, Dropdown, Result, Skeleton, Avatar } from 'antd';
 import Content from '@/components/content';
 import BPMNCanvas, { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import { Toolbar, ToolbarGroup } from '@/components/toolbar';
@@ -12,6 +12,8 @@ import {
   CaretRightOutlined,
   PauseOutlined,
   StopOutlined,
+  ExportOutlined,
+  WarningTwoTone,
 } from '@ant-design/icons';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import contentStyles from './content.module.scss';
@@ -21,38 +23,42 @@ import InstanceInfoPanel from './instance-info-panel';
 import { useSearchParamState } from '@/lib/use-search-param-state';
 import { MdOutlineColorLens, MdOutlineSync, MdOutlineSyncDisabled } from 'react-icons/md';
 import { ColorOptions, colorOptions } from './instance-coloring';
-import { RemoveReadOnly } from '@/lib/typescript-utils';
+import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import useDeployment from '../deployment-hook';
 import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
 import useTokens from './use-tokens';
-import { DeployedProcessInfo } from '@/lib/engines/deployment';
 import StartFormModal from './start-form-modal';
 import useInstanceVariables from './use-instance-variables';
 import { inlineScript, inlineUserTaskData } from '@proceed/user-task-helper';
 import { toBpmnObject, getElementsByTagName } from '@proceed/bpmn-helper';
-import {
-  changeDeploymentActivation,
-  getProcessActivationStatus,
-  getGlobalVariablesForHTML,
-} from '@/lib/engines/server-actions';
+import { changeDeploymentActivation } from '@/lib/executions/deployment-server-actions';
+import { getGlobalVariablesForHTML } from '@/lib/tasks/server-actions';
 import { useSession } from 'next-auth/react';
 import { useEnvironment } from '@/components/auth-can';
 
 import { GrDocumentUser } from 'react-icons/gr';
 import { handleOpenDocumentation } from '../../../processes/processes-helper';
+import {
+  exportInstanceData,
+  getProcessStartForm,
+  pauseInstance,
+  resumeInstance,
+  startInstance,
+  stopInstance,
+} from '@/lib/executions/instance-server-actions';
+import { useQuery } from '@tanstack/react-query';
+import { getProcessDeployments } from '@/lib/data/deployment';
+import { isSuccessResponse, isUserErrorResponse, userError } from '@/lib/user-error';
+import { getInstance } from '@/lib/data/instance';
+import { asyncMap, pick } from '@/lib/helpers/javascriptHelpers';
+import { getProcessBPMN } from '@/lib/data/processes';
+import { enableInstanceCSVExport } from 'FeatureFlags';
+import jsonToCsvExport from 'json-to-csv-export';
 
-export default function ProcessDeploymentView({
-  processId,
-  initialDeploymentInfo,
-}: {
-  processId: string;
-  initialDeploymentInfo: DeployedProcessInfo;
-}) {
-  const app = App.useApp();
+export default function ProcessDeploymentView({ processId }: { processId: string }) {
   const { data: session } = useSession();
   const { spaceId } = useEnvironment();
 
@@ -66,8 +72,6 @@ export default function ProcessDeploymentView({
   const [pausingInstance, setPausingInstance] = useState(false);
   const [stoppingInstance, setStoppingInstance] = useState(false);
   const [togglingActivation, setTogglingActivation] = useState(false);
-  const [isProcessActivated, setIsProcessActivated] = useState(false);
-  const [isActivationLoading, setIsActivationLoading] = useState(false);
   const [hasTimerStartEvents, setHasTimerStartEvents] = useState(false);
   const [hasPlainStartEvents, setHasPlainStartEvents] = useState(false);
 
@@ -76,79 +80,119 @@ export default function ProcessDeploymentView({
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
-  const {
-    data: deploymentInfo,
-    refetch,
-    startInstance,
-    resumeInstance,
-    pauseInstance,
-    stopInstance,
-    getStartForm,
-  } = useDeployment(processId, initialDeploymentInfo);
+  // get information where the process is deployed and which instances exist
+  const { data: deployments, refetch: refetchDeployments } = useQuery({
+    queryFn: async () => {
+      const deployments = await getProcessDeployments(spaceId, processId);
+      if (isUserErrorResponse(deployments)) return null;
+      return deployments;
+    },
+    queryKey: ['processDeployments', spaceId, processId],
+    refetchInterval: 1000,
+  });
 
-  const {
-    selectedVersion,
-    instances,
-    selectedInstance,
-    currentVersion,
-    instanceIsRunning,
-    instanceIsPausing,
-    instanceIsPaused,
-  } = useMemo(() => {
-    let selectedVersion, instances, selectedInstance, currentVersion;
-    let instanceIsRunning = false;
-    let instanceIsPausing = false;
-    let instanceIsPaused = false;
+  // keep a list of known instances to trigger refetches only when necessary
+  const instanceIds = useMemo(() => {
+    if (!deployments) return '';
 
-    const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+    const instanceMap = {} as Record<string, boolean>;
 
-    if (deploymentInfo) {
-      selectedVersion = deploymentInfo.versions.find((v) => v.versionId === selectedVersionId);
+    for (const deployment of deployments) {
+      for (const instanceId of deployment.instances) {
+        instanceMap[instanceId] = true;
+      }
+    }
+
+    return Object.keys(instanceMap).join(',');
+  }, [deployments]);
+
+  // fetch initial data for all instances of the process when the list of instances changed
+  const { data: knownInstances, refetch: refetchInstances } = useQuery({
+    queryFn: async () => {
+      if (!instanceIds) return [];
+
+      const instances = (
+        await asyncMap(instanceIds.split(','), async (instanceId) =>
+          getInstance(spaceId, instanceId),
+        )
+      )
+        .filter(isSuccessResponse)
+        .filter(truthyFilter)
+        .map((i) => i.state);
+
+      return instances;
+    },
+    queryKey: ['processDeployments', spaceId, processId, 'instances', instanceIds],
+    initialData: [],
+    enabled: !!instanceIds,
+  });
+
+  const { selectedVersion, versionInstances, currentVersion } = useMemo(() => {
+    let selectedVersion, versionInstances, currentVersion;
+
+    if (deployments?.length) {
+      selectedVersion = deployments.find((d) => d.versionId === selectedVersionId)?.version;
 
       // sort instances newest first
-      const rawInstances = getVersionInstances(deploymentInfo, selectedVersionId);
-      instances = [...rawInstances].sort(
+      const rawInstances = getVersionInstances(knownInstances, selectedVersionId);
+      versionInstances = [...rawInstances].sort(
         (a, b) => new Date(b.globalStartTime).getTime() - new Date(a.globalStartTime).getTime(),
       );
 
-      selectedInstance = selectedInstanceId
-        ? instances.find((i) => i.processInstanceId === selectedInstanceId)
+      const selectedInstance = selectedInstanceId
+        ? versionInstances.find((i) => i.processInstanceId === selectedInstanceId)
         : undefined;
 
-      let currentVersionId = getLatestDeployment(deploymentInfo).versionId;
+      let currentVersionId = getLatestDeployment(deployments)!.versionId;
       if (selectedInstance) {
         currentVersionId = selectedInstance.processVersion;
-        instanceIsRunning = selectedInstance.instanceState.some((state) =>
-          activeStates.includes(state),
-        );
-        instanceIsPausing = selectedInstance.instanceState.some((state) => state === 'PAUSING');
-        instanceIsPaused = selectedInstance.instanceState.some((state) => state === 'PAUSED');
       } else if (selectedVersionId) {
         currentVersionId = selectedVersionId;
       }
-      currentVersion = deploymentInfo.versions.find(
-        (version) => version.versionId === currentVersionId,
-      );
+      currentVersion = deployments.find((d) => d.versionId === currentVersionId)!.version;
     }
 
     return {
       selectedVersion,
-      instances,
-      selectedInstance,
+      versionInstances,
       currentVersion,
-      instanceIsRunning,
-      instanceIsPausing,
-      instanceIsPaused,
     };
-  }, [deploymentInfo, selectedVersionId, selectedInstanceId]);
+  }, [deployments, knownInstances, selectedVersionId, selectedInstanceId]);
+
+  const { data: currentInstance, refetch: refetchCurrentInstance } = useQuery({
+    queryKey: ['processDeployments', spaceId, processId, 'instance', selectedInstanceId],
+    queryFn: async () => {
+      if (!selectedInstanceId) return null;
+      const instance = await getInstance(spaceId, selectedInstanceId);
+
+      if (isUserErrorResponse(instance)) return null;
+      if (!instance) return null;
+
+      return {
+        ...instance.state,
+        ...pick(instance, ['engines', 'executionStatus', 'pausing', 'paused', 'offline']),
+      };
+    },
+    enabled: !!selectedInstanceId,
+    refetchInterval: 1000,
+  });
+
+  const { data: selectedBpmn } = useQuery({
+    queryFn: async () => {
+      const bpmn = await getProcessBPMN(processId, spaceId, currentVersion?.id);
+      if (isUserErrorResponse(bpmn)) return undefined;
+      return { bpmn };
+    },
+    queryKey: ['space', spaceId, 'process', processId, 'version', currentVersion?.id || '', 'bpmn'],
+  });
 
   useEffect(() => {
-    if (!currentVersion?.bpmn) return;
-
     async function initStartEventInfo() {
+      if (!selectedBpmn) return;
+
       try {
-        const bpmnObj = await toBpmnObject(currentVersion!.bpmn);
-        const startEvents = await getElementsByTagName(bpmnObj, 'bpmn:StartEvent');
+        const bpmnObj = await toBpmnObject(selectedBpmn.bpmn);
+        const startEvents = getElementsByTagName(bpmnObj, 'bpmn:StartEvent');
         let hasTimer = false;
         let hasPlain = false;
         (startEvents as any[]).forEach((el) => {
@@ -161,10 +205,7 @@ export default function ProcessDeploymentView({
         });
         setHasTimerStartEvents(hasTimer);
         setHasPlainStartEvents(hasPlain);
-      } catch (_) {
-        setHasTimerStartEvents(false);
-        setHasPlainStartEvents(false);
-      }
+      } catch (_) {}
     }
 
     initStartEventInfo();
@@ -173,50 +214,17 @@ export default function ProcessDeploymentView({
       setHasTimerStartEvents(false);
       setHasPlainStartEvents(false);
     };
-  }, [currentVersion?.bpmn]);
-
-  useEffect(() => {
-    if (!currentVersion) return;
-    let cancelled = false;
-
-    async function fetchActivationStatus() {
-      setIsActivationLoading(true);
-      await wrapServerCall({
-        fn: () => getProcessActivationStatus(processId, spaceId, currentVersion!.versionId),
-        onSuccess: (active) => {
-          if (!cancelled) setIsProcessActivated(active as boolean);
-        },
-        onError: (error) => {
-          if (!cancelled) {
-            app.message.error(error.message);
-            setIsProcessActivated(false);
-          }
-        },
-      });
-      if (!cancelled) setIsActivationLoading(false);
-    }
-
-    fetchActivationStatus();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [currentVersion?.versionId]);
+  }, [selectedBpmn]);
 
   const { variableDefinitions, variables } = useInstanceVariables({
-    process: deploymentInfo,
-    version: currentVersion,
+    version: selectedBpmn,
   });
 
-  const selectedBpmn = useMemo(() => {
-    return { bpmn: currentVersion?.bpmn || '' };
-  }, [currentVersion]);
-
-  const { refreshTokens } = useTokens(selectedInstance || null, canvasRef);
+  const { refreshTokens } = useTokens(currentInstance || null, canvasRef);
   const { refreshColoring } = useColors(
     selectedBpmn,
     selectedColoring,
-    selectedInstance,
+    currentInstance || undefined,
     canvasRef,
   );
   const refreshVisuals = useCallback(() => {
@@ -224,10 +232,23 @@ export default function ProcessDeploymentView({
     refreshColoring();
   }, [refreshTokens, refreshColoring]);
 
-  if (!deploymentInfo) {
+  const isProcessActivated = useMemo(() => {
+    if (!deployments || !currentVersion) return false;
+    return !!deployments.some((d) => d.versionId === currentVersion.id && d.active);
+  }, [deployments, currentVersion]);
+
+  if (!deployments || !selectedBpmn) {
     return (
       <Content>
-        <Result status="404" title="Process data is not available anymore" />
+        <Skeleton loading />
+      </Content>
+    );
+  }
+
+  if (!deployments.length) {
+    return (
+      <Content>
+        <Result status="404" title="The process does not seem to be deployed anymore." />
       </Content>
     );
   }
@@ -252,19 +273,30 @@ export default function ProcessDeploymentView({
             {/* Left group: Select Instance + Filter + Color */}
             <ToolbarGroup>
               <Select
-                value={
-                  selectedInstanceId && selectedInstance
-                    ? selectedInstance.processInstanceId
-                    : undefined
-                }
+                value={currentInstance?.processInstanceId}
                 variant="borderless"
                 onSelect={(value) => setSelectedInstanceId(value)}
-                options={instances?.map((instance, idx) => ({
+                options={versionInstances?.map((instance, idx) => ({
                   value: instance.processInstanceId,
                   label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
                 }))}
                 placeholder="Select an instance"
               />
+
+              {currentInstance?.offline && (
+                <Tooltip title="Some of the engines this process is executed on are not reachable!">
+                  <Avatar
+                    icon={
+                      <WarningTwoTone
+                        twoToneColor="orange"
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                    }
+                    size={40}
+                    style={{ backgroundColor: 'inherit' }}
+                  />
+                </Tooltip>
+              )}
 
               <Tooltip title="Filter by version">
                 <Dropdown
@@ -283,9 +315,9 @@ export default function ProcessDeploymentView({
                             },
                           ]
                         : []),
-                      ...deploymentInfo.versions.map((version) => ({
-                        label: version.versionName || version.definitionName,
-                        key: `${version.versionId}`,
+                      ...deployments.map(({ version }) => ({
+                        label: version.name,
+                        key: `${version.id}`,
                         disabled: false,
                       })),
                     ],
@@ -294,7 +326,7 @@ export default function ProcessDeploymentView({
                       const versionId = key === '-2' ? undefined : key;
                       setSelectedVersionId(versionId);
 
-                      const instances = getVersionInstances(deploymentInfo, versionId);
+                      const instances = getVersionInstances(knownInstances, versionId);
                       if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
                         const youngestInstance = getYoungestInstance(instances);
                         setSelectedInstanceId(youngestInstance?.processInstanceId);
@@ -305,7 +337,7 @@ export default function ProcessDeploymentView({
                 >
                   <Button icon={<FilterOutlined />}>
                     {selectedVersion
-                      ? selectedVersion.versionName || selectedVersion.definitionName
+                      ? selectedVersion.name || selectedVersion.processId
                       : undefined}
                   </Button>
                 </Dropdown>
@@ -338,10 +370,16 @@ export default function ProcessDeploymentView({
                       setStartingInstance(true);
                       await wrapServerCall({
                         fn: async () => {
-                          const latestDeployment = getLatestDeployment(deploymentInfo);
-                          const versionId = latestDeployment.versionId;
+                          const latestDeployment = getLatestDeployment(deployments);
+                          if (!latestDeployment) {
+                            return userError(
+                              'The current process does not seem to be deployed anymore.',
+                            );
+                          }
 
-                          let startForm = await getStartForm(versionId);
+                          const { versionId } = latestDeployment;
+
+                          let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
                           if (typeof startForm !== 'string') return startForm;
 
@@ -353,7 +391,7 @@ export default function ProcessDeploymentView({
                             );
 
                             if (!session)
-                              throw new Error('Unknown user tries to start an instance!');
+                              return userError('Unknown user tries to start an instance!');
 
                             const globalVars = await getGlobalVariablesForHTML(
                               spaceId,
@@ -370,12 +408,17 @@ export default function ProcessDeploymentView({
 
                             setStartForm(startForm);
                           } else {
-                            return startInstance(versionId);
+                            return startInstance(spaceId, processId, versionId);
                           }
                         },
                         onSuccess: async (instanceId) => {
-                          await refetch();
-                          setSelectedInstanceId(instanceId);
+                          if (instanceId) {
+                            await refetchDeployments();
+                            setTimeout(async () => {
+                              await refetchInstances();
+                              setSelectedInstanceId(instanceId);
+                            }, 1000);
+                          }
                         },
                       });
                       setStartingInstance(false);
@@ -395,7 +438,7 @@ export default function ProcessDeploymentView({
                 >
                   <Button
                     type="text"
-                    loading={togglingActivation || isActivationLoading}
+                    loading={togglingActivation}
                     icon={
                       isProcessActivated ? (
                         <span className={styles.SpinIcon}>
@@ -408,14 +451,11 @@ export default function ProcessDeploymentView({
                     onClick={async () => {
                       setTogglingActivation(true);
                       const nextState = !isProcessActivated;
-                      const versionId = getLatestDeployment(deploymentInfo).versionId;
+                      const versionId = getLatestDeployment(deployments)!.versionId;
                       await wrapServerCall({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
-                        onSuccess: async () => {
-                          setIsProcessActivated(nextState);
-                          await refetch();
-                        },
+                        onSuccess: () => refetchDeployments(),
                       });
                       setTogglingActivation(false);
                     }}
@@ -426,24 +466,28 @@ export default function ProcessDeploymentView({
 
             {/* 2-icon group: 1. Play shown when paused, Pause shown when running. 2. Stop button */}
             <div>
-              {selectedInstance && (
+              {currentInstance && (
                 <ToolbarGroup>
-                  {instanceIsPaused || instanceIsPausing ? (
+                  {currentInstance.paused || currentInstance.pausing ? (
                     // Show Resume (Play) when paused or pausing
                     <Tooltip
                       title={
-                        instanceIsPausing ? 'Abort pausing the instance' : 'Resume the instance'
+                        currentInstance.pausing
+                          ? 'Abort pausing the instance'
+                          : 'Resume the instance'
                       }
                     >
                       <Button
                         className={styles.PlayIcon}
                         icon={<CaretRightOutlined />}
+                        disabled={currentInstance.offline}
                         loading={resumingInstance}
                         onClick={async () => {
                           setResumingInstance(true);
                           await wrapServerCall({
-                            fn: () => resumeInstance(selectedInstance.processInstanceId),
-                            onSuccess: async () => await refetch(),
+                            fn: () =>
+                              resumeInstance(spaceId, processId, currentInstance.processInstanceId),
+                            onSuccess: async () => await refetchCurrentInstance(),
                           });
                           setResumingInstance(false);
                         }}
@@ -456,12 +500,15 @@ export default function ProcessDeploymentView({
                         className={styles.PauseIcon}
                         icon={<PauseOutlined />}
                         loading={pausingInstance}
-                        disabled={!instanceIsRunning}
+                        disabled={
+                          currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                        }
                         onClick={async () => {
                           setPausingInstance(true);
                           await wrapServerCall({
-                            fn: async () => pauseInstance(selectedInstance.processInstanceId),
-                            onSuccess: async () => await refetch(),
+                            fn: async () =>
+                              pauseInstance(spaceId, processId, currentInstance.processInstanceId),
+                            onSuccess: async () => await refetchCurrentInstance(),
                           });
                           setPausingInstance(false);
                         }}
@@ -474,12 +521,15 @@ export default function ProcessDeploymentView({
                       className={styles.StopIcon}
                       icon={<StopOutlined />}
                       loading={stoppingInstance}
-                      disabled={!instanceIsRunning}
+                      disabled={
+                        currentInstance.offline || currentInstance.executionStatus !== 'Running'
+                      }
                       onClick={async () => {
                         setStoppingInstance(true);
                         await wrapServerCall({
-                          fn: async () => stopInstance(selectedInstance.processInstanceId),
-                          onSuccess: async () => await refetch(),
+                          fn: async () =>
+                            stopInstance(spaceId, processId, currentInstance.processInstanceId),
+                          onSuccess: async () => await refetchCurrentInstance(),
                         });
                         setStoppingInstance(false);
                       }}
@@ -491,7 +541,59 @@ export default function ProcessDeploymentView({
 
             <Space style={{ alignItems: 'start' }}>
               <ToolbarGroup>
-                {selectedInstance && (
+                {enableInstanceCSVExport && (
+                  <>
+                    <Tooltip title={'Export data of this selected instance as a csv file'}>
+                      <Button
+                        onClick={() => {
+                          if (currentInstance) {
+                            wrapServerCall({
+                              fn: () =>
+                                exportInstanceData(
+                                  spaceId,
+                                  processId,
+                                  currentInstance.processInstanceId,
+                                ),
+                              onSuccess: (data) =>
+                                jsonToCsvExport({
+                                  data,
+                                }),
+                            });
+                          }
+                        }}
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            THIS
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                      <Button
+                        onClick={() =>
+                          wrapServerCall({
+                            fn: () => exportInstanceData(spaceId, processId),
+                            onSuccess: (data) => jsonToCsvExport({ data }),
+                          })
+                        }
+                      >
+                        <div
+                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+                        >
+                          <ExportOutlined style={{ fontSize: '18px' }} />
+                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                            ALL
+                          </span>
+                        </div>
+                      </Button>
+                    </Tooltip>
+                  </>
+                )}
+                {currentInstance && (
                   <Tooltip title="View Instance Documentation">
                     <Button
                       aria-label="view-instance-documentation"
@@ -500,8 +602,8 @@ export default function ProcessDeploymentView({
                         handleOpenDocumentation(
                           processId,
                           spaceId,
-                          selectedInstance.processVersion,
-                          selectedInstance.processInstanceId,
+                          currentInstance.processVersion,
+                          currentInstance.processInstanceId,
                           selectedColoring,
                         )
                       }
@@ -516,19 +618,19 @@ export default function ProcessDeploymentView({
                 </Tooltip>
               </ToolbarGroup>
 
-              <div style={{ height: '0' }}>
-                <InstanceInfoPanel
-                  info={{
-                    instance: selectedInstance,
-                    element: selectedElement!,
-                    process: deploymentInfo,
-                    version: currentVersion!,
-                  }}
-                  open={infoPanelOpen}
-                  close={() => setInfoPanelOpen(false)}
-                  refetch={refetch}
-                />
-              </div>
+              {selectedBpmn && (
+                <div style={{ height: '0' }}>
+                  <InstanceInfoPanel
+                    processId={processId}
+                    version={selectedBpmn}
+                    instance={currentInstance || undefined}
+                    element={selectedElement}
+                    open={infoPanelOpen}
+                    close={() => setInfoPanelOpen(false)}
+                    refetch={refetchCurrentInstance}
+                  />
+                </div>
+              )}
             </Space>
           </Space>
         </Toolbar>
@@ -536,21 +638,31 @@ export default function ProcessDeploymentView({
         <StartFormModal
           html={startForm}
           onSubmit={async (submitVariables) => {
-            const versionId = getLatestDeployment(deploymentInfo).versionId;
-
-            const mappedVariables: Record<string, { value: any }> = {};
-
-            // set the values of variables to the ones coming from the start form
-            Object.entries(submitVariables).forEach(
-              ([key, value]) => (mappedVariables[key] = { value }),
-            );
-
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
-              fn: () => startInstance(versionId, mappedVariables),
+              fn: async () => {
+                const deployment = getLatestDeployment(deployments);
 
+                if (!deployment) {
+                  return userError('The current process does not seem to be deployed.');
+                }
+
+                const mappedVariables: Record<string, { value: any }> = {};
+
+                // set the values of variables to the ones coming from the start form
+                Object.entries(submitVariables).forEach(
+                  ([key, value]) => (mappedVariables[key] = { value }),
+                );
+
+                return startInstance(
+                  spaceId,
+                  deployment.processId,
+                  deployment.version.id,
+                  mappedVariables,
+                );
+              },
               onSuccess: async (instanceId) => {
-                await refetch();
+                await refetchDeployments();
                 setSelectedInstanceId(instanceId);
                 setStartForm('');
               },
@@ -559,27 +671,29 @@ export default function ProcessDeploymentView({
           onCancel={() => setStartForm('')}
         />
 
-        <div style={{ zIndex: '100', height: '100%' }}>
-          <BPMNCanvas
-            bpmn={selectedBpmn}
-            type="navigatedviewer"
-            ref={canvasRef}
-            onSelectionChange={(_, newSelection) => {
-              const element = newSelection.at(-1);
+        {selectedBpmn && (
+          <div style={{ zIndex: '100', height: '100%' }}>
+            <BPMNCanvas
+              bpmn={selectedBpmn}
+              type="navigatedviewer"
+              ref={canvasRef}
+              onSelectionChange={(_, newSelection) => {
+                const element = newSelection.at(-1);
 
-              if (
-                element?.type === 'bpmn:Process' ||
-                element?.id.includes('_plane') ||
-                element?.type === 'bpmn:SequenceFlow'
-              )
-                return;
+                if (
+                  element?.type === 'bpmn:Process' ||
+                  element?.id.includes('_plane') ||
+                  element?.type === 'bpmn:SequenceFlow'
+                )
+                  return;
 
-              setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
-              setInfoPanelOpen(true);
-            }}
-            onRootChange={refreshVisuals}
-          />
-        </div>
+                setSelectedElement(element ?? canvasRef.current?.getCurrentRoot());
+                setInfoPanelOpen(true);
+              }}
+              onRootChange={refreshVisuals}
+            />
+          </div>
+        )}
       </div>
     </Content>
   );

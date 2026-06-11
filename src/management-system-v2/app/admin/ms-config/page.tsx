@@ -87,6 +87,12 @@ async function ConfigPage() {
           key: 'PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE',
           value: msConfig.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE,
         },
+        {
+          type: 'number',
+          name: 'PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL',
+          key: 'PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL',
+          value: msConfig.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL,
+        },
       ],
     },
     {

@@ -10,7 +10,7 @@ import {
 // TODO: remove this ignore once the decider is typed
 // @ts-ignore
 // import decider from '@proceed/decider';
-import { Engine } from './machines';
+import { Engine } from './types';
 import { prepareExport } from '../process-export/export-preparation';
 import { Prettify } from '../typescript-utils';
 import { engineRequest } from './endpoints/index';
@@ -265,7 +265,10 @@ export type VersionInfo = {
   versionId: string;
   versionName: string;
   versionDescription: string;
+  active: boolean;
+  basedOnVersion?: string;
 };
+
 export type InstanceInfo = {
   processId: string;
   processInstanceId: string;
@@ -287,7 +290,7 @@ export type InstanceInfo = {
     currentFlowNodeProgress?: { value: number; manual: boolean };
     milestones: { [name: string]: number };
     priority?: number;
-    costsRealSetByOwner?: string;
+    costsRealSetByOwner?: { value: string; unit: string };
     performers?: {
       user: string[];
       roles: string[];
@@ -318,7 +321,7 @@ export type InstanceInfo = {
     };
     executionWasInterrupted?: true;
     priority?: number;
-    costsRealSetByOwner?: string;
+    costsRealSetByOwner?: { value: string; unit: string };
     performers?: {
       user: string[];
       roles: string[];

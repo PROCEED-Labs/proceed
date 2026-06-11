@@ -31,7 +31,7 @@ module.exports = {
   // -----------------------------------------------------------------------------
 
   // Features needed for the recovery of instances that were interrupted unexpectedly (e.g. when the engine crashes and is restarted)
-  enableInterruptedInstanceRecovery: false,
+  enableInterruptedInstanceRecovery: true,
 
   // Features needed to send data to messaging servers (currently only using mqtt)
   enableMessaging: true,
@@ -45,8 +45,9 @@ module.exports = {
   // Whether the Chatbot UserInterface and its functionality should be enabled
   enableChatbot: false,
 
-  //feature to switch to prisma from fs
-  enableUseDB: true,
+  // CSV export buttons for process instances
+  enableInstanceCSVExport: true,
+
   //feature to use GCP_bucket / fs depending on deployment env to store blobs
   // -----------------------------------------------------------------------------
   // Chopping Block

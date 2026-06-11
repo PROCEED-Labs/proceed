@@ -5,13 +5,13 @@ import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils
 import { isUserErrorResponse } from '@/lib/user-error';
 import {
   completeTasklistEntry,
-  getCorrectTargetEngines,
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
-} from '@/lib/engines/server-actions';
+} from '@/lib/tasks/server-actions';
 import { getDeployment } from '@/lib/engines/deployment';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { getAllAvailableEngines } from '@/lib/data/engines';
 
 const variableSchema = z
   .array(z.object({ name: z.string(), value: z.any() }))
@@ -70,11 +70,12 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
 
     if (!task) return 'Error: Task not found';
 
-    const engines = await getCorrectTargetEngines(environmentId, false, undefined, ability);
+    const engines = await getAllAvailableEngines(environmentId, ability);
+    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
     const engine = engines.find((engine) => engine.id === task.machineId);
     if (!engine) return 'Error: Could not find the engine that triggered the task';
 
-    const html = await getTasklistEntryHTML(environmentId, id, task.fileName, engine);
+    const html = await getTasklistEntryHTML(environmentId, id, task.fileName, engine, ability);
     if (isUserErrorResponse(html)) return `Error: ${html.error.message}`;
 
     const [taskId, instanceId, startTimeString] = id.split('|');

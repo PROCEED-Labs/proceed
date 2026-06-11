@@ -66,7 +66,7 @@ async function startInstance(definitionId, version, engineName, variables = {}, 
     await request
       .post(`:${engine.port}/process/${definitionId}/versions/${version}/instance`)
       .send({ variables, extras })
-  ).body.instanceId;
+  ).body.processInstanceId;
 }
 
 async function getInstanceInformation(definitionId, instanceId, engineName) {

@@ -56,19 +56,35 @@ export const msConfigSchema = {
       .string()
       .default('FALSE')
       .transform(boolParser)
-      .refine((val) => !val || process.env.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE, {
-        message:
-          'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_GANTT_ACTIVE',
-      }),
+      .refine(
+        (val) => !val || boolParser(process.env.PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE),
+        {
+          message:
+            'PROCEED_PUBLIC_PROCESS_DOCUMENTATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_GANTT_ACTIVE',
+        },
+      ),
     PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE: z.string().default('FALSE').transform(boolParser),
     PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE: z
       .string()
       .default('FALSE')
       .transform(boolParser)
-      .refine((val) => !val || process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE, {
+      .refine((val) => !val || boolParser(process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE), {
         message:
           'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE',
       }),
+    PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL: z.coerce
+      .number()
+      .default(5)
+      .refine(
+        () =>
+          // we need to check the env value instead of "val" because our default value is not falsy
+          !process.env.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL ||
+          boolParser(process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE),
+        {
+          message:
+            'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL',
+        },
+      ),
     PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE: z.string().default('FALSE').transform(boolParser),
 
     PROCEED_PUBLIC_MCP_ACTIVE: z.string().default('FALSE').transform(boolParser),

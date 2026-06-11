@@ -1,7 +1,8 @@
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getAvailableTaskListEntries, getCorrectTargetEngines } from '@/lib/engines/server-actions';
+import { getAvailableTaskListEntries } from '@/lib/tasks/server-actions';
+import { getAllAvailableEngines } from '@/lib/data/engines';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -38,7 +39,8 @@ export default async function getTasks({ userCode }: InferSchema<typeof schema>)
     if (!accessible)
       return 'Error: The user cannot access tasks in this space. This might be due to a space wide setting or due to the user not having the permission to view tasks.';
 
-    const engines = await getCorrectTargetEngines(environmentId, false, undefined, ability);
+    const engines = await getAllAvailableEngines(environmentId, ability);
+    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
 
     const tasks = await getAvailableTaskListEntries(environmentId, engines);
 

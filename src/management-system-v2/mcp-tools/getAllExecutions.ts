@@ -1,8 +1,8 @@
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { getCorrectTargetEngines } from '@/lib/engines/server-actions';
-import { getDeployments } from '@/lib/engines/deployment';
+import { getInstances } from '@/lib/data/instance';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -41,16 +41,12 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
     if (!accessible)
       return 'Error: The user cannot access execution information in this space. This might be due to a space wide setting or due to the user not having the permission to view execution information.';
 
-    const engines = await getCorrectTargetEngines(environmentId, undefined, undefined, ability);
-
-    const deployments = await getDeployments(engines, 'instances');
-
-    const instanceIds = new Set<string>();
-
-    deployments.forEach((d) => d.instances.forEach((i) => instanceIds.add(i.processInstanceId)));
+    await refetchDeployments();
+    const instances = await getInstances(environmentId, ability);
+    if (isUserErrorResponse(instances)) return `Error: ${instances.error.message}.`;
 
     return {
-      content: [{ type: 'text', text: JSON.stringify([...instanceIds]) }],
+      content: [{ type: 'text', text: JSON.stringify([...instances.map((i) => i.id)]) }],
     };
   } catch (err) {
     if (err instanceof Error) return err.message;

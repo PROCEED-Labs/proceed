@@ -10,13 +10,14 @@ import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
-import type { DeployedProcessInfo } from '@/lib/engines/deployment';
 import { useRouter } from 'next/navigation';
-import { deployProcess as serverDeployProcess } from '@/lib/engines/server-actions';
+import {
+  deployProcess as serverDeployProcess,
+  removeDeployment as serverRemoveDeployment,
+} from '@/lib/executions/deployment-server-actions';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { SpaceEngine } from '@/lib/engines/machines';
+import { SpaceEngine } from '@/lib/engines/types';
 import { isUserErrorResponse, userError } from '@/lib/user-error';
-import { removeDeployment as serverRemoveDeployment } from '@/lib/engines/server-actions';
 import { useQueryClient } from '@tanstack/react-query';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
@@ -33,8 +34,8 @@ const DeploymentsView = ({
   deployedProcesses: {
     id: string;
     name: string;
-    versions: DeployedProcessInfo['versions'];
-    instances: DeployedProcessInfo['instances'];
+    versions: { id: string; name: string }[];
+    instances: string[];
   }[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);

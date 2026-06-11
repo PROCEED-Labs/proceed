@@ -1,9 +1,9 @@
 import React from 'react';
 import { Table } from 'antd';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { generateDateString } from '@/lib/utils';
 import { ElementInfo } from '@/app/shared-viewer/table-of-content';
 import { getElementTypeLabel } from '@/app/shared-viewer/documentation-page-utils';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 type VariableLogEntry = {
   changedTime: number;
@@ -18,7 +18,7 @@ type VariableEntry = {
 };
 
 type FinalVariablesTableProps = {
-  instance: InstanceInfo;
+  instance: ExtendedInstanceInfo;
   processHierarchy?: ElementInfo;
 };
 

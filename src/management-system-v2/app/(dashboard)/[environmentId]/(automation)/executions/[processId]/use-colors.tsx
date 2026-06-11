@@ -1,13 +1,13 @@
 import { RefObject, useCallback, useEffect, useRef } from 'react';
 
 import { ColorOptions, flowElementsStyling } from './instance-coloring';
-import { InstanceInfo } from '@/lib/engines/deployment';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
+import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
 const useColors = (
-  selectedBpmn: { bpmn: string },
+  selectedBpmn: { bpmn: string } | undefined,
   selectedColoring: ColorOptions,
-  selectedInstance: InstanceInfo | undefined,
+  selectedInstance: ExtendedInstanceInfo | undefined,
   canvasRef: RefObject<BPMNCanvasRef | null>,
 ) => {
   const appliedStylingRef = useRef<{ elementId: string; color: string }[]>([]);

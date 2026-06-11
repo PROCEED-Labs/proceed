@@ -45,7 +45,7 @@ module.exports = (path, management) => {
       }
     }
 
-    const instanceId = await management.createInstance(
+    const instance = await management.createInstance(
       definitionId,
       version,
       variables,
@@ -57,7 +57,7 @@ module.exports = (path, management) => {
       },
     );
 
-    if (!instanceId) {
+    if (!instance) {
       throw new APIError(
         406,
         `Engine not allowed to start the instance for the process (id: ${definitionId}).`,
@@ -70,7 +70,7 @@ module.exports = (path, management) => {
     return {
       statusCode: 201,
       mimeType: 'application/json',
-      response: JSON.stringify({ instanceId }),
+      response: JSON.stringify(instance),
     };
   });
 
@@ -287,6 +287,8 @@ module.exports = (path, management) => {
           `Updating the variables in the instance (id: ${instanceId}) for the process (id: ${definitionId}) failed. Reason: ${err.message}`,
         );
       }
+
+      return { response: '', mimeType: 'text' };
     },
   );
 
@@ -480,7 +482,7 @@ module.exports = (path, management) => {
       statusCode: 200,
       mimeType: 'application/json',
       response: JSON.stringify({
-        active: engine ? await engine.isProcessVersionDeployed(version) : false,
+        active: engine ? engine.isProcessVersionDeployed(version) : false,
       }),
     };
   });

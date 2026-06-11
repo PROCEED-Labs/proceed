@@ -28,7 +28,7 @@ export async function asyncFilter<Type>(array: Array<Type>, cb: (entry: Type) =>
   ).filter((entry) => entry) as Array<Type>;
 }
 
-export function pick<T extends object, PickKeys extends (keyof T)[]>(
+export function pick<T extends object, PickKeys extends ReadonlyArray<keyof T>>(
   obj: T,
   keys: PickKeys,
 ): Prettify<Pick<T, PickKeys[number]>> {
@@ -37,7 +37,7 @@ export function pick<T extends object, PickKeys extends (keyof T)[]>(
   ) as Prettify<Pick<T, PickKeys[number]>>;
 }
 
-export function omit<T extends object, OmitKeys extends (keyof T)[]>(
+export function omit<T extends object, OmitKeys extends ReadonlyArray<keyof T>>(
   obj: T,
   keys: OmitKeys,
 ): Prettify<Omit<T, OmitKeys[number]>> {

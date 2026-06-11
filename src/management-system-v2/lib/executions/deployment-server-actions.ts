@@ -20,13 +20,13 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  getDeploymentActivation,
   InstanceInfo,
 } from '../engines/deployment';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
 import { getMSConfig } from '../ms-config/ms-config';
+import { updateTaskInfo } from '../tasks/server-actions';
 import { engineRequest } from '../engines/endpoints';
 
 export async function deployProcess(
@@ -337,13 +337,23 @@ export async function refetchDeployments() {
 
         const newInstances: {
           id: string;
+          processId: string;
+          environmentId: string;
+          versionId: string;
           deploymentId: string;
           initiatorId: null;
           engineIds: string[];
           state: InstanceInfo;
           logs: any[];
         }[] = [];
-        const instanceUpdates: { id: string; state: InstanceInfo; logs: any[] }[] = [];
+        const instanceUpdates: {
+          id: string;
+          processId: string;
+          environmentId: string;
+          versionId: string;
+          state: InstanceInfo;
+          logs: any[];
+        }[] = [];
 
         // fetch deployment data from the engines
         const engineDeployments = Object.fromEntries(
@@ -369,7 +379,6 @@ export async function refetchDeployments() {
                   if (v.active !== deployment.active) {
                     // mismatch of the active state on the engine and the locally stored active
                     // state => change the state on the engine
-                    console.log('Mismatch in active state', deployment.active, v.active);
                     await _changeDeploymentActivation(
                       e,
                       p.definitionId,
@@ -406,6 +415,9 @@ export async function refetchDeployments() {
                 if (!existingInstance) {
                   newInstances.push({
                     id: i.processInstanceId,
+                    processId: p.definitionId,
+                    environmentId: deployment.version.process.environmentId,
+                    versionId: deployment.version.id,
                     deploymentId: deployment.id,
                     initiatorId: null,
                     engineIds: [e.id],
@@ -416,7 +428,14 @@ export async function refetchDeployments() {
                   !deepEquals(i, existingInstance.state) ||
                   !deepEquals(logs, existingInstance.logs)
                 ) {
-                  instanceUpdates.push({ id: i.processInstanceId, state: i, logs });
+                  instanceUpdates.push({
+                    id: i.processInstanceId,
+                    processId: p.definitionId,
+                    environmentId: deployment.version.process.environmentId,
+                    versionId: deployment.version.id,
+                    state: i,
+                    logs,
+                  });
                 }
               });
             });
@@ -457,9 +476,23 @@ export async function refetchDeployments() {
                 data: { state, logs },
               });
             }),
-            newInstances.length && tx.processInstance.createMany({ data: newInstances }),
+            newInstances.length &&
+              tx.processInstance.createMany({
+                data: newInstances.map((i) => ({
+                  ...i,
+                  processId: undefined,
+                  versionId: undefined,
+                  environmentId: undefined,
+                })),
+              }),
           ]);
         });
+
+        const knownInstances = Object.fromEntries(
+          instanceUpdates.concat(newInstances).map((i) => [i.id, { ...i, instanceId: i.id }]),
+        );
+
+        await updateTaskInfo(engines, reachableWithDeployments, knownInstances);
       } catch (err) {
         console.error('Error fetching deployment information: ', err);
       }

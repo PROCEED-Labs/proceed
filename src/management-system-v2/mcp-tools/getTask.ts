@@ -2,9 +2,8 @@ import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { z } from 'zod';
-import prisma from '@/lib/data/db';
-import { getAllAvailableEngines } from '@/lib/data/engines';
 import { getTasklistEntryHTML } from '@/lib/tasks/server-actions';
+import { getUserTaskById } from '@/lib/data/user-tasks';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -44,18 +43,11 @@ export default async function getTask({ userCode, id }: InferSchema<typeof schem
     if (!accessible)
       return 'Error: The user cannot access tasks in this space. This might be due to a space wide setting or due to the user not having the permission to view tasks.';
 
-    const task = await prisma.userTask.findUnique({ where: { id } });
-
+    const task = await getUserTaskById(id);
+    if (isUserErrorResponse(task)) return `Error: ${task.error.message}`;
     if (!task) return 'Error: Task not found';
 
-    const engines = await getAllAvailableEngines(environmentId, ability);
-    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
-
-    const engine = engines.find((engine) => engine.id === task.machineId);
-
-    if (!engine) return 'Error: Could not find the engine that triggered the task';
-
-    const html = await getTasklistEntryHTML(environmentId, id, task.fileName, engine, ability);
+    const html = await getTasklistEntryHTML(environmentId, id, ability);
 
     if (isUserErrorResponse(html)) return `Error: ${html.error.message}`;
 

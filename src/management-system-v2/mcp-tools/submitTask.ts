@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import prisma from '@/lib/data/db';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
@@ -8,10 +7,11 @@ import {
   getTasklistEntryHTML,
   setTasklistEntryVariableValues,
 } from '@/lib/tasks/server-actions';
-import { getDeployment } from '@/lib/engines/deployment';
 import { getProcessIds, getVariablesFromElementById } from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { getAllAvailableEngines } from '@/lib/data/engines';
+import { getUserTaskById } from '@/lib/data/user-tasks';
+import { getDBInstance } from '@/lib/data/instance';
+import { getProcessBPMN } from '@/lib/data/processes';
 
 const variableSchema = z
   .array(z.object({ name: z.string(), value: z.any() }))
@@ -66,22 +66,12 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       return 'Error: The given variables are not in the required format';
     }
 
-    const task = await prisma.userTask.findUnique({ where: { id } });
-
+    const task = await getUserTaskById(id);
+    if (isUserErrorResponse(task)) return `Error: ${task.error.message}`;
     if (!task) return 'Error: Task not found';
 
-    const engines = await getAllAvailableEngines(environmentId, ability);
-    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
-    const engine = engines.find((engine) => engine.id === task.machineId);
-    if (!engine) return 'Error: Could not find the engine that triggered the task';
-
-    const html = await getTasklistEntryHTML(environmentId, id, task.fileName, engine, ability);
+    const html = await getTasklistEntryHTML(environmentId, id, ability);
     if (isUserErrorResponse(html)) return `Error: ${html.error.message}`;
-
-    const [taskId, instanceId, startTimeString] = id.split('|');
-    const [definitionId] = instanceId.split('-_');
-    const deployment = await getDeployment(engine, definitionId);
-    const instance = deployment.instances.find((i) => i.processInstanceId === instanceId);
 
     // map the input variables to the submission format expected by the engine
     let mappedVariables: Record<string, any> = {};
@@ -110,15 +100,26 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       return error;
     }
 
-    if (instance) {
-      const version = deployment.versions.find((v) => v.versionId === instance.processVersion)!;
+    if (task.instanceID) {
+      const instance = await getDBInstance(environmentId, task.instanceID, ability);
+      if (isUserErrorResponse(instance)) return `Error: ${instance.error.message}`;
+      if (!instance) return `Error: The related instance could not be found.`;
 
-      if (!version) return 'Error: Unable to access required data';
+      const versionBpmn = await getProcessBPMN(
+        instance.state.processId,
+        environmentId,
+        instance.state.processVersion,
+        ability,
+      );
 
-      const processIds = await getProcessIds(version.bpmn);
+      if (isUserErrorResponse(versionBpmn)) {
+        return `Error: Could not get related bpmn for variable information.`;
+      }
+
+      const processIds = await getProcessIds(versionBpmn);
       if (processIds.length) {
         const [processId] = processIds;
-        const variableDefinitions = await getVariablesFromElementById(version.bpmn, processId);
+        const variableDefinitions = await getVariablesFromElementById(versionBpmn, processId);
 
         const invalidTypedVariables = matches
           .map((varName) => {
@@ -161,11 +162,15 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       }
     }
 
-    const variableUpdate = await setTasklistEntryVariableValues(id, mappedVariables, engine);
-
+    const variableUpdate = await setTasklistEntryVariableValues(
+      environmentId,
+      id,
+      mappedVariables,
+      ability,
+    );
     if (isUserErrorResponse(variableUpdate)) return `Error: ${variableUpdate.error.message}`;
 
-    const result = await completeTasklistEntry(id, mappedVariables, engine);
+    const result = await completeTasklistEntry(environmentId, id, mappedVariables, ability);
 
     if (isUserErrorResponse(result)) return `Error: ${result.error.message} `;
 

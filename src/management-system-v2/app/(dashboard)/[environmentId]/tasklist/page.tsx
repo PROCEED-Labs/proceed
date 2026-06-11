@@ -38,7 +38,7 @@ const TasklistPage = async (props: { params: Promise<{ environmentId: string }> 
     return notFound();
   }
 
-  let pollingInterval = 5000;
+  let pollingInterval = 1000;
   if (Number.isInteger(automationSettings.tasklist?.pollingInterval)) {
     pollingInterval = automationSettings.tasklist.pollingInterval;
   }

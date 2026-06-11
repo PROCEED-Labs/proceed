@@ -3,7 +3,13 @@
 import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
 import { SpaceEngineInput, SpaceEngineInputSchema } from '@/lib/space-engine-schema';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { getErrorMessage, permissionDenied, schemaValidationError, userError } from '../user-error';
+import {
+  getErrorMessage,
+  isUserErrorResponse,
+  permissionDenied,
+  schemaValidationError,
+  userError,
+} from '../user-error';
 import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
 import { Engine, SpaceEngine } from '../engines/types';
 import { SystemAdmin } from '@prisma/client';
@@ -98,9 +104,13 @@ export async function getAvailableSpaceEngines(spaceId: string) {
   }
 }
 
-export async function getAllAvailableEngines(spaceId: string, ability?: Ability) {
+export async function getAllAvailableEngines(
+  spaceId: string,
+  ability?: Ability,
+  skipAbilityCheck = false,
+) {
   try {
-    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+    if (!ability && !skipAbilityCheck) ({ ability } = await getCurrentEnvironment(spaceId));
 
     let engines: Engine[] = [];
     const [proceedEngines, spaceEngines] = await Promise.allSettled([
@@ -116,6 +126,12 @@ export async function getAllAvailableEngines(spaceId: string, ability?: Ability)
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+
+export async function getEngineIfAvailable(environmentId: string, engineId: string) {
+  const engines = await getAvailableSpaceEngines(environmentId);
+  if (isUserErrorResponse(engines)) return engines;
+  return engines.find((e) => e.id === engineId);
 }
 
 const SpaceEngineArraySchema = SpaceEngineInputSchema.array();

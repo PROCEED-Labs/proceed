@@ -473,5 +473,7 @@ model ProcessInstance {
   engineIds           String[]
   state               Json
 
+  logs                Json
+
   @@map("process_instance")
 }

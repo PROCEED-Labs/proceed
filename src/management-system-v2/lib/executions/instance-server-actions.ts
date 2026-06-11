@@ -98,13 +98,17 @@ export async function startInstance(
 
       if (isUserErrorResponse(result)) continue;
 
-      await addInstance(spaceId, {
-        id: result.processInstanceId,
-        deploymentId: deployment.id,
-        engineIds: [engine.id],
-        initiatorId: userId,
-        state: result,
-      });
+      await addInstance(
+        spaceId,
+        {
+          id: result.processInstanceId,
+          deploymentId: deployment.id,
+          engineIds: [engine.id],
+          initiatorId: userId,
+          state: result,
+        },
+        true,
+      );
 
       return result.processInstanceId;
     }

@@ -50,7 +50,7 @@ export function DataGrid({ data }: { data: ReactNode[][] }) {
   return (
     <>
       {data.map((row, idx_row) => (
-        <Row key={"datarid" + idx_row} style={{ marginBlock: 8 }} wrap={false}>
+        <Row key={'datarid' + idx_row} style={{ marginBlock: 8 }} wrap={false}>
           {row.length == 1 ? (
             <Col flex="auto">{row[0]}</Col>
           ) : (
@@ -120,7 +120,14 @@ export default function InstanceInfoPanel({
         {
           key: 'Details',
           label: 'Details',
-          children: <ElementStatus processId={processId} element={element} instance={instance} />,
+          children: (
+            <ElementStatus
+              processId={processId}
+              element={element}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
           key: 'Data',

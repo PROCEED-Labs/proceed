@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import {
   Alert,
   Checkbox,
@@ -13,7 +13,12 @@ import {
 } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
 import { getTiming, statusToType } from './instance-helpers';
-import { getMetaDataFromElement } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsInfos,
+  getDefinitionsVersionInformation,
+  getMetaDataFromElement,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import { DataGrid, DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
@@ -23,6 +28,8 @@ import styles from './element-status.module.scss';
 import { InstanceSelector } from './instance-selector';
 import TextViewer from '@/components/text-viewer';
 import { EntryText } from './entry-text';
+import { getProcess } from '@/lib/data/db/process';
+import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
@@ -102,13 +109,23 @@ const TechDetailsSwitch = ({
 export function ElementStatus({
   processId,
   element,
+  version,
   instance,
 }: {
   processId: string;
   element: ElementLike;
+  version: { bpmn: string };
   instance?: ExtendedInstanceInfo;
 }) {
   const [techDetails, setTechDetails] = useState(false);
+  const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
+  const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<{
+    versionId?: string | undefined;
+    name?: string | undefined;
+    description?: string | undefined;
+    versionBasedOn?: string | undefined;
+    versionCreatedOn?: string | undefined;
+  }>();
   const statusEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -116,23 +133,42 @@ export function ElementStatus({
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
+  useEffect(() => {
+    async function getBpmnObject() {
+      const bpmnObj = await toBpmnObject(version.bpmn);
+      const defInfos = await getDefinitionsInfos(bpmnObj);
+      const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
+      setDefinitionsInfos(defInfos);
+      setDefinitionsVersionInfos(defVersionInfos);
+    }
+    getBpmnObject();
+  }, [version]);
+
   // TECH DETAILS SWITCH
   statusEntries.push([
-    <TechDetailsSwitch key="instance-techdetails-switch" techDetails={techDetails} setTechDetailsCb={setTechDetails} />,
+    <TechDetailsSwitch
+      key="instance-techdetails-switch"
+      techDetails={techDetails}
+      setTechDetailsCb={setTechDetails}
+    />,
   ]);
   // INSTANCE DATA
   if (isRootElement) {
     // GENERAL
     statusEntries.push([
-      <EntryKeyText key="instance-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>GENERAL</EntryKeyText>,
+      <EntryKeyText key="instance-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
+        GENERAL
+      </EntryKeyText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-name-key">Name</EntryKeyText>,
-      <EntryValueText key="instance-name-value">Vacation Requests Automated</EntryValueText>,
+      <EntryValueText key="instance-name-value">{definitionsInfos?.name}</EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-shortname-key">Short Name</EntryKeyText>,
-      <EntryValueText key="instance-shortname-val">Vac-Req-Aut</EntryValueText>,
+      <EntryValueText key="instance-shortname-val">
+        {definitionsInfos?.userDefinedId}
+      </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-documentation-key">Documentation</EntryKeyText>,
@@ -151,130 +187,176 @@ export function ElementStatus({
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
-      <EntryValueText key="instance-processmanager-val">Sandra Sample</EntryValueText>,
+      <EntryValueText key="instance-processmanager-val">TODO</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
         <TechEntryKey key="instance-id-key">ID</TechEntryKey>,
-        <EntryValueText key="instance-id-val">_e7543fc7-6f55-4175-8ff0-5ed1d3a303ac</EntryValueText>,
+        <EntryValueText key="instance-id-val">{processId}</EntryValueText>,
       ]);
 
     // VERSION DATA
     statusEntries.push([
-      <Space key="instance-heading-version" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space
+        key="instance-heading-version"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
       </Space>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-versionname-key">Version Name</EntryKeyText>,
-      <EntryValueText  key="instance-versionname-val">v2</EntryValueText>,
+      <EntryValueText key="instance-versionname-val">
+        {definitionsVersionInfos?.name}
+      </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-versiondesc-key">What changed</EntryKeyText>,
-      <EntryValueText key="instance-versiondesc-val">Version description, yes.</EntryValueText>,
+      <EntryValueText key="instance-versiondesc-val">
+        {definitionsVersionInfos?.description}
+      </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-createdon-key">Created on</EntryKeyText>,
-      <EntryValueText key="instance-createdon-val">2026-05-18T11:39:54.943Z</EntryValueText>,
+      <EntryValueText key="instance-createdon-val">
+        {definitionsVersionInfos?.versionCreatedOn}
+      </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-basedon-key">Based on</EntryKeyText>,
-      <EntryValueText key="instance-basedon-val">v1</EntryValueText>,
+      <EntryValueText key="instance-basedon-val">TODO</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
         <TechEntryKey key="instance-basedonid-key">Based on ID</TechEntryKey>,
-        <EntryValueText key="instance-basedonid-val">_66fac292-e026-40cb-9d96-a406e00d5ef2</EntryValueText>,
+        <EntryValueText key="instance-basedonid-val">
+          {definitionsVersionInfos?.versionBasedOn}
+        </EntryValueText>,
       ]);
 
     // INITIATOR
     statusEntries.push([
-      <Space key="instance-initiator" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space
+        key="instance-initiator"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHO STARTED IT</EntryKeyText>
       </Space>,
     ]);
-    statusEntries.push([
-      <EntryKeyText   key="instance-startedby-key">Started by</EntryKeyText>,
-      <EntryValueText key="instance-startedby-val">Timmy Test</EntryValueText>,
-    ]);
-    if (techDetails)
+    const initiator = instance?.processInitiator;
+    if (typeof initiator === 'object') {
       statusEntries.push([
-        <TechEntryKey   key="instance-startusername-key">Username</TechEntryKey>,
-        <EntryValueText key="instance-startusername-val">timtes</EntryValueText>,
+        <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
+        <EntryValueText key="instance-startedby-val">{initiator.fullName}</EntryValueText>,
       ]);
-    if (techDetails)
+      if (techDetails)
+        statusEntries.push([
+          <TechEntryKey key="instance-startusername-key">Username</TechEntryKey>,
+          <EntryValueText key="instance-startusername-val">{initiator.username}</EntryValueText>,
+        ]);
+      if (techDetails)
+        statusEntries.push([
+          <TechEntryKey key="instance-startuserid-key">User ID</TechEntryKey>,
+          <EntryValueText key="instance-startuserid-val">{initiator.id}</EntryValueText>,
+        ]);
       statusEntries.push([
-        <TechEntryKey   key="instance-startuserid-key">User ID</TechEntryKey>,
-        <EntryValueText key="instance-startuserid-val">d0dc354a-5d8a-455d-b3f4-d8dcc09768f2</EntryValueText>,
+        <EntryKeyText key="instance-startuser-space-key">Workspace</EntryKeyText>,
+        <EntryValueText key="instance-startuser-space-val">
+          {instance?.spaceOfProcessInitiator?.name}
+        </EntryValueText>,
       ]);
-    statusEntries.push([
-      <EntryKeyText   key="instance-startuser-space-key">Workspace</EntryKeyText>,
-      <EntryValueText key="instance-startuser-space-val">org1</EntryValueText>,
-    ]);
-    if (techDetails)
-      statusEntries.push([
-        <TechEntryKey   key="instance-startuser-spaceid-key">Workspace ID</TechEntryKey>,
-        <EntryValueText key="instance-startuser-spaceid-val">e1d5a6ae-667f-4d15-87f6-ec49391535d6</EntryValueText>,
-      ]);
+      if (techDetails)
+        statusEntries.push([
+          <TechEntryKey key="instance-startuser-spaceid-key">Workspace ID</TechEntryKey>,
+          <EntryValueText key="instance-startuser-spaceid-val">
+            {instance?.spaceOfProcessInitiator?.id}
+          </EntryValueText>,
+        ]);
+    }
 
     // TIMING
     statusEntries.push([
-      <Space key="instance-heading-timing" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+      <Space
+        key="instance-heading-timing"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
         <Divider style={{ padding: 0, margin: 0 }} />
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
       </Space>,
     ]);
     if (techDetails)
       statusEntries.push([
-        <TechEntryKey   key="instance-runid-key">Run ID</TechEntryKey>,
-        <EntryValueText key="instance-runid-val">
-          _e7543fc7-6f55-4175-8ff0-5ed1d3a303ac-_3b0e251c-8863-4371-ae3c-d63140a3b9fd-6979d78d-954c-4df7-8b08-52e137fadc17
-        </EntryValueText>,
+        <TechEntryKey key="instance-runid-key">Run ID</TechEntryKey>,
+        <EntryValueText key="instance-runid-val">{instance?.processInstanceId}</EntryValueText>,
       ]);
-    statusEntries.push([<EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>, <EntryValueText  key="instance-plannedduration-val" />]);
     statusEntries.push([
-      <EntryKeyText   key="instance-starttime-key">Start Time</EntryKeyText>,
-      <EntryValueText key="instance-starttime-val">5/20/2026, 12:39 PM</EntryValueText>,
+      <EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>,
+      <EntryValueText key="instance-plannedduration-val">TODO</EntryValueText>,
     ]);
-    statusEntries.push([<EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>, <EntryValueText key="instance-endtime-val" />]);
+    const startDate = instance?.timing?.actual.start;
+    const endDate = instance?.timing?.actual.end;
+    const duration = instance?.timing?.actual.duration;
     statusEntries.push([
-      <EntryKeyText   key="instance-duration-key">Time so far</EntryKeyText>,
-      <EntryValueText key="instance-duration-val">2h 47m</EntryValueText>,
+      <EntryKeyText key="instance-starttime-key">Start Time</EntryKeyText>,
+      <EntryValueText key="instance-starttime-val">
+        {startDate && new Date(startDate).toISOString()}
+      </EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>,
+      <EntryValueText key="instance-endtime-val">
+        {endDate && new Date(endDate).toISOString()}
+      </EntryValueText>,
+    ]);
+    statusEntries.push([
+      <EntryKeyText key="instance-duration-key">Time so far</EntryKeyText>,
+      <EntryValueText key="instance-duration-val">
+        {generateDurationString(duration)}
+      </EntryValueText>,
     ]);
 
     // ENGINE
 
     if (techDetails) {
       statusEntries.push([
-        <Space key="instance-heading-engine" orientation="vertical" style={{ width: '100%', padding: 0, margin: 0 }}>
+        <Space
+          key="instance-heading-engine"
+          orientation="vertical"
+          style={{ width: '100%', padding: 0, margin: 0 }}
+        >
           <Divider style={{ padding: 0, margin: 0 }} />
           <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
         </Space>,
       ]);
       statusEntries.push([
-        <TechEntryKey   key="instance-engine-key">Engine</TechEntryKey>,
+        <TechEntryKey key="instance-engine-key">Engine</TechEntryKey>,
         <EntryValueText key="instance-engine-val">engine1</EntryValueText>,
       ]);
       statusEntries.push([
-        <TechEntryKey   key="instance-engineid-key">Engine ID</TechEntryKey>,
-        <EntryValueText key="instance-engineid-val">488200f1-aec4-4188-843e-e0b6de4c5ed1</EntryValueText>,
+        <TechEntryKey key="instance-engineid-key">Engine ID</TechEntryKey>,
+        <EntryValueText key="instance-engineid-val">
+          488200f1-aec4-4188-843e-e0b6de4c5ed1
+        </EntryValueText>,
       ]);
     }
     // EVENT DATA
   } else {
     statusEntries.push([
-      <EntryKeyText   key="event-stepid-key">{'Step ID (or "Event ID"?)'}</EntryKeyText>,
+      <EntryKeyText key="event-stepid-key">{'Step ID (or "Event ID"?)'}</EntryKeyText>,
       <EntryValueText key="event-stepid-val">Activity_0309v8x</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText   key="event-stepname-key">Step Name</EntryKeyText>,
+      <EntryKeyText key="event-stepname-key">Step Name</EntryKeyText>,
       <EntryValueText key="event-stepname-val">Check vacation application</EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="event-docu-key">Documentation</EntryKeyText>,
-      <div 
+      <div
         key="event-docu-val"
         style={{
           padding: 10,
@@ -288,24 +370,26 @@ export function ElementStatus({
     ]);
 
     statusEntries.push([
-      <EntryKeyText   key="event-steptype-key">Step Type</EntryKeyText>,
+      <EntryKeyText key="event-steptype-key">Step Type</EntryKeyText>,
       <EntryValueText key="event-steptype-val">User Task</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText   key="event-prevstepid-key">Previous Step ID</EntryKeyText>,
+      <EntryKeyText key="event-prevstepid-key">Previous Step ID</EntryKeyText>,
       <EntryValueText key="event-prevstepid-val">Check vacation application</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText   key="event-actualperformer-key">Actual Performer</EntryKeyText>,
+      <EntryKeyText key="event-actualperformer-key">Actual Performer</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">Sandra Sample</EntryValueText>,
     ]);
     statusEntries.push([
-      <EntryKeyText   key="event-actualperformername-key">Actual Performer Username</EntryKeyText>,
+      <EntryKeyText key="event-actualperformername-key">Actual Performer Username</EntryKeyText>,
       <EntryValueText key="event-actualperformername-val">sansam</EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="event-actualperformername-key">Actual Performer ID</EntryKeyText>,
-      <EntryValueText key="event-actualperformername-val">29880751-c190-4f58-b5cb-438754e9f02d</EntryValueText>,
+      <EntryValueText key="event-actualperformername-val">
+        29880751-c190-4f58-b5cb-438754e9f02d
+      </EntryValueText>,
     ]);
   }
 

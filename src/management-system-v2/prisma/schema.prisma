@@ -480,5 +480,7 @@ model ProcessInstance {
 
   userTasks           UserTask[]
 
+  logs                Json
+
   @@map("process_instance")
 }

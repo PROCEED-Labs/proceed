@@ -47,7 +47,11 @@ export async function getDeployedProcesses(environmentId: string) {
   return ability.filter('view', 'Process', deployedProcesses);
 }
 
-export async function getProcessDeployments(spaceId: string, processId: string) {
+export async function getProcessDeployments(
+  spaceId: string,
+  processId: string,
+  showArchivedProcesses = false,
+) {
   const { ability } = await getCurrentEnvironment(spaceId);
 
   if (!ability.can('view', 'Execution'))
@@ -56,7 +60,14 @@ export async function getProcessDeployments(spaceId: string, processId: string) 
   const deployments = await db.processDeployment.findMany({
     where: {
       AND: [
-        { version: { AND: [{ processId }, { NOT: { process: { folderId: null } } }] } },
+        {
+          version: {
+            AND: [
+              { processId },
+              { NOT: !showArchivedProcesses ? { process: { folderId: null } } : undefined },
+            ],
+          },
+        },
         { removeTime: null },
         { toRemove: false },
       ],

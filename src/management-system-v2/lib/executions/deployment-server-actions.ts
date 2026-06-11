@@ -20,7 +20,6 @@ import {
   getProcessImageFromMachine,
   removeDeploymentFromMachines,
   changeDeploymentActivation as _changeDeploymentActivation,
-  getDeploymentActivation,
   InstanceInfo,
 } from '../engines/deployment';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
@@ -121,7 +120,7 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
-    const deployments = await getProcessDeployments(spaceId, definitionId);
+    const deployments = await getProcessDeployments(spaceId, definitionId, true);
     if (isUserErrorResponse(deployments)) return deployments;
 
     const availableEngines = await getAllAvailableEngines(spaceId);
@@ -369,7 +368,6 @@ export async function refetchDeployments() {
                   if (v.active !== deployment.active) {
                     // mismatch of the active state on the engine and the locally stored active
                     // state => change the state on the engine
-                    console.log('Mismatch in active state', deployment.active, v.active);
                     await _changeDeploymentActivation(
                       e,
                       p.definitionId,

@@ -23,6 +23,9 @@ import {
   Badge,
   Divider,
   Typography,
+  Modal,
+  Tree,
+  TreeDataNode,
 } from 'antd';
 import { InfoCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 
@@ -32,8 +35,11 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   FolderOutlined,
+  PartitionOutlined,
   FileOutlined,
   ShareAltOutlined,
+  CloseCircleTwoTone,
+  CheckCircleTwoTone,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
@@ -46,6 +52,7 @@ import { useAbilityStore } from '@/lib/abilityStore';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import { useRouter } from 'next/navigation';
 import {
+  canDeleteProcess,
   checkIfProcessExistsByName,
   copyProcesses,
   createVersion,
@@ -53,7 +60,6 @@ import {
   updateProcesses,
 } from '@/lib/data/processes';
 import ProcessModal from '@/components/process-modal';
-import ConfirmationButton from '@/components/confirmation-button';
 import ProcessImportButton from '@/components/process-import';
 import { ProcessMetadata } from '@/lib/data/process-schema';
 import MetaDataContent from '@/components/process-info-card-content';
@@ -61,7 +67,8 @@ import { useEnvironment } from '@/components/auth-can';
 import { Folder } from '@/lib/data/folder-schema';
 import { FolderCreationModal } from '@/components/folder-creation';
 import {
-  deleteFolder,
+  canDeleteFolder,
+  deleteFolders,
   moveIntoFolder,
   updateFolder as updateFolderServer,
 } from '@/lib/data/folders';
@@ -87,6 +94,8 @@ import { ContextActions, RowActions } from './types';
 import { canDoActionOnResource } from './helpers';
 import { useInitialisePotentialOwnerStore } from '@/app/(dashboard)/[environmentId]/processes/[mode]/[processId]/use-potentialOwner-store';
 import { useSession } from 'next-auth/react';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 
 // TODO: improve ordering
 export type ProcessActions = {
@@ -219,7 +228,7 @@ const Processes = ({
     'del',
     () => {
       if (canDeleteSelected && !isListView) {
-        setOpenDeleteModal(true);
+        deleteItems(selectedRowElements);
         /* Clear copy selection */
         setCopySelection([]);
       }
@@ -321,37 +330,103 @@ const Processes = ({
   };
 
   async function deleteItems(items: ProcessListProcess[]) {
-    const promises = [];
+    const evaluation = await asyncMap(items, async (item) => {
+      if (item.type === 'folder') {
+        return canDeleteFolder(space.spaceId, item.id);
+      } else {
+        const result = await canDeleteProcess(space.spaceId, item.id);
 
-    const folderIds = items.filter((item) => item.type === 'folder').map((item) => item.id);
-    const folderPromise = folderIds.length > 0 ? deleteFolder(folderIds, space.spaceId) : undefined;
-    if (folderPromise) promises.push(folderPromise);
+        return {
+          id: item.id,
+          name: item.name.value,
+          type: item.type,
+          error: isUserErrorResponse(result) ? result.error.message : undefined,
+        };
+      }
+    });
 
-    const processIds = items.filter((item) => item.type !== 'folder').map((item) => item.id);
-    const processPromise = deleteProcesses(processIds, space.spaceId);
-    if (processPromise) promises.push(processPromise);
-
-    await Promise.allSettled(promises);
-
-    const processesResult = await processPromise;
-    const folderResult = await folderPromise;
-
-    if (processesResult && !('error' in processesResult)) {
-      removeFromFavouriteProcesses(selectedRowKeys as string[]);
-    }
-
-    if (
-      (folderResult && 'error' in folderResult) ||
-      (processesResult && 'error' in processesResult)
-    ) {
-      return app.message.open({
-        type: 'error',
-        content: 'Something went wrong',
+    function toTree(data: typeof evaluation): TreeDataNode[] {
+      return data.map((entry) => {
+        return {
+          title: (
+            <>
+              {entry.name}{' '}
+              {entry.error ? (
+                <Tooltip title={entry.error}>
+                  <CloseCircleTwoTone twoToneColor="#eb2f96" />
+                </Tooltip>
+              ) : (
+                <CheckCircleTwoTone twoToneColor="#52c41a" />
+              )}
+            </>
+          ),
+          key: entry.id,
+          icon: entry.type === 'folder' ? <FolderOutlined /> : <PartitionOutlined />,
+          children: entry.nestedResults && toTree(entry.nestedResults),
+        };
       });
     }
 
-    setSelectedRowElements([]);
-    router.refresh();
+    let message;
+    if (evaluation.some((entry) => entry.error)) {
+      message =
+        'Some of the the selected elements cannot be deleted. Do you want to continue with the deletable elements?';
+    } else {
+      message = 'Are you sure you want to delete the selected elements?';
+    }
+
+    Modal.confirm({
+      title: 'Delete Processes',
+      type: 'error',
+      width: 600,
+      content: (
+        <>
+          <Typography.Paragraph>{message}</Typography.Paragraph>
+          <Tree showIcon selectable={false} treeData={toTree(evaluation)} />
+        </>
+      ),
+      maskClosable: true,
+      onOk: async () => {
+        const promises = [];
+
+        const toRemove = items.filter((_, index) => !evaluation[index].error);
+
+        const folderIds = toRemove.filter((item) => item.type === 'folder').map((item) => item.id);
+        const folderPromise =
+          folderIds.length > 0 ? deleteFolders(folderIds, space.spaceId) : undefined;
+        if (folderPromise) promises.push(folderPromise);
+
+        const processIds = toRemove.filter((item) => item.type !== 'folder').map((item) => item.id);
+        const processPromise =
+          processIds.length > 0 ? deleteProcesses(processIds, space.spaceId) : undefined;
+        if (processPromise) promises.push(processPromise);
+
+        const res = await Promise.all(promises);
+
+        if (res.some(isUserErrorResponse)) {
+          app.message.error('Some elements could not be removed');
+        }
+
+        const notRemoved = items.filter((_, index) => !!evaluation[index].error);
+        const processResult = await processPromise;
+        if (processResult && processResult.failed) {
+          notRemoved.push(...processResult.failed.map((id) => toRemove.find((i) => i.id === id)!));
+        }
+        const folderResult = await folderPromise;
+        if (folderResult && 'failed' in folderResult) {
+          notRemoved.push(...folderResult.failed.map((id) => toRemove.find((i) => i.id === id)!));
+        }
+
+        const removedProcesses = toRemove
+          .filter((r) => r.type !== 'folder' && !notRemoved.some(({ id }) => id === r.id))
+          .map(({ id }) => id);
+
+        removeFromFavouriteProcesses(removedProcesses);
+
+        setSelectedRowElements(notRemoved);
+        router.refresh();
+      },
+    });
   }
 
   function copyItem(items: ProcessListProcess[]) {
@@ -488,7 +563,7 @@ const Processes = ({
     copyItems: copyItem,
     deleteItems: (items) => {
       setSelectedRowElements(items);
-      setOpenDeleteModal(true);
+      deleteItems(items);
     },
   };
 
@@ -654,17 +729,10 @@ const Processes = ({
                               </Tooltip>
                             )}
                             {canDeleteSelected && (
-                              <ConfirmationButton
-                                tooltip="Delete"
-                                title="Delete Processes"
-                                externalOpen={openDeleteModal}
-                                onExternalClose={() => setOpenDeleteModal(false)}
-                                description="Are you sure you want to delete the selected processes?"
-                                onConfirm={() => deleteItems(selectedRowElements)}
-                                buttonProps={{
-                                  icon: <DeleteOutlined className={styles.Icon} />,
-                                  type: 'text',
-                                }}
+                              <Button
+                                type="text"
+                                icon={<DeleteOutlined className={styles.Icon} />}
+                                onClick={() => deleteItems(selectedRowElements)}
                               />
                             )}
                           </div>

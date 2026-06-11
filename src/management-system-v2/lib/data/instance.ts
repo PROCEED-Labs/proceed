@@ -27,6 +27,7 @@ import {
 import {
   getPlanDelays,
   getTimeInfo,
+  isActive,
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -196,9 +197,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   }
 
   let executionStatus: 'Running' | 'Ended' | 'Failed' = 'Ended';
-  const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
   const { instanceState } = state;
-  if (instanceState.some((state) => activeStates.includes(state))) {
+  if (isActive(state)) {
     executionStatus = 'Running';
   }
   const failStates = [

@@ -35,6 +35,12 @@ import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
+import { getProcessDeployments } from '../deployment';
+import { removeDeployment } from '@/lib/executions/deployment-server-actions';
+import { isUserError, isUserErrorResponse, userError } from '@/lib/user-error';
+import { InstanceInfo } from '@/lib/engines/deployment';
+import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 /**
  * Returns all processes in an environment
@@ -505,16 +511,24 @@ export async function updateProcessMetaData(
 }
 
 /** Removes an existing process */
-export async function removeProcess(processDefinitionsId: string, tx?: Prisma.TransactionClient) {
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      await removeProcess(processDefinitionsId, trx);
+export async function removeProcess(spaceId: string, processDefinitionsId: string) {
+  const config = await getMSConfig();
+
+  if (config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+    const deployments = await db.processDeployment.findMany({
+      where: { AND: [{ removeTime: null }, { version: { processId: processDefinitionsId } }] },
+      include: { instances: { select: { state: true } } },
     });
+
+    if (deployments.length) {
+      const res = await removeDeployment(processDefinitionsId, spaceId);
+      if (isUserErrorResponse(res)) return res;
+    }
   }
 
-  await tx.process.update({ where: { id: processDefinitionsId }, data: { folderId: null } });
+  await db.process.update({ where: { id: processDefinitionsId }, data: { folderId: null } });
 
-  eventHandler.dispatch('processRemoved', { processDefinitionsId });
+  return true;
 }
 
 /** Stores a new version of an existing process */

@@ -2,7 +2,7 @@
 
 import db from '@/lib/data/db';
 
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import {
   ExtendedTaskListEntry,
@@ -10,15 +10,14 @@ import {
   UserTaskInput,
   UserTaskInputSchema,
 } from '../user-task-schema';
-import { getCurrentEnvironment } from '@/components/auth';
 import { getAllAvailableEngines } from './engines';
 import { getSpaceUsers } from './db/iam/users';
 import { truthyFilter } from '../typescript-utils';
+import { getEnvironmentById } from './db/iam/environments';
 
-export async function getUserTasks(spaceId: string) {
-  const {
-    activeEnvironment: { isOrganization },
-  } = await getCurrentEnvironment(spaceId);
+export async function getUserTasks(spaceId: string, ability?: Ability) {
+  const space = await getEnvironmentById(spaceId, ability);
+  if (!space) return userError('Unknown Space');
 
   try {
     const userTasks = (await db.userTask.findMany({
@@ -40,7 +39,7 @@ export async function getUserTasks(spaceId: string) {
         ],
       },
     })) as UserTask[];
-    const users = await getSpaceUsers(spaceId, isOrganization);
+    const users = await getSpaceUsers(spaceId, space.isOrganization);
     const reachableEngines = await getAllAvailableEngines(spaceId, undefined, true);
 
     if (isUserErrorResponse(reachableEngines)) return reachableEngines;
@@ -78,7 +77,7 @@ export async function getUserTaskById(userTaskId: string) {
 
     return userTask as UserTask;
   } catch (err) {
-    return userError('Error getting user tasks');
+    return userError('Error getting user task');
   }
 }
 

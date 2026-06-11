@@ -92,9 +92,9 @@ export async function getAvailableAdminEngines() {
 }
 
 /** Returns space engines that are currently online */
-export async function getAvailableSpaceEngines(spaceId: string) {
+export async function getAvailableSpaceEngines(spaceId: string, ability?: Ability) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
     const spaceEngines = await getDbEngines(spaceId, ability);
     const engines = await savedEnginesToEngines(spaceEngines);
     return getUniqueEngines(engines) as SpaceEngine[];
@@ -128,8 +128,12 @@ export async function getAllAvailableEngines(
   }
 }
 
-export async function getEngineIfAvailable(environmentId: string, engineId: string) {
-  const engines = await getAvailableSpaceEngines(environmentId);
+export async function getEngineIfAvailable(
+  environmentId: string,
+  engineId: string,
+  ability?: Ability,
+) {
+  const engines = await getAvailableSpaceEngines(environmentId, ability);
   if (isUserErrorResponse(engines)) return engines;
   return engines.find((e) => e.id === engineId);
 }

@@ -15,6 +15,7 @@ import TimelinePerformanceCard from '@/components/dashboard-charts/timeline-perf
 import StatCard from '@/components/stat-card';
 import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
+import { FolderTreeNode } from '../dashboard-view';
 
 const { Title, Text } = Typography;
 
@@ -32,6 +33,9 @@ interface AdminOverviewTabProps {
   instanceDistributionData: any[];
   totalInstances: number;
   monthlyData: { month: string; completed: number; failed: number }[];
+  folderTree: FolderTreeNode | null;
+  selectedFolderId: string | null;
+  onFolderChange: (folderId: string | null) => void;
 }
 
 const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
@@ -39,12 +43,10 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   instanceDistributionData,
   totalInstances,
   monthlyData,
+  folderTree,
+  selectedFolderId,
+  onFolderChange,
 }) => {
-  const [selectedFolder, setSelectedFolder] = useState<string>('root');
-
-  // TODO
-  const folderTreeData = [{ title: 'Root', value: 'root' }];
-
   return (
     <>
       {/* Folder Selector */}
@@ -52,11 +54,14 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
         <FolderOutlined style={{ fontSize: '18px', color: COLORS.blue }} />
         <Text strong>System Folder:</Text>
         <TreeSelect
-          value={selectedFolder}
-          onChange={setSelectedFolder}
-          treeData={folderTreeData}
+          value={selectedFolderId ?? folderTree?.value}
+          onChange={(val) => onFolderChange(val)}
+          treeData={folderTree ? [folderTree] : []}
           style={{ width: 250 }}
           placeholder="Select folder"
+          allowClear
+          onClear={() => onFolderChange(null)}
+          treeDefaultExpandAll
         />
       </div>
 

@@ -28,6 +28,13 @@ const { RangePicker } = DatePicker;
 
 type TimeRange = 'week' | 'month' | 'year' | 'custom';
 
+export interface FolderTreeNode {
+  title: string;
+  value: string;
+  processIds: string[];
+  children: FolderTreeNode[];
+}
+
 interface DashboardProps {
   userRole: 'user' | 'manager' | 'admin';
   userId: string;
@@ -35,6 +42,7 @@ interface DashboardProps {
   executableProcesses: number;
   teamMemberCount: number;
   teamMemberIds: string[];
+  folderTree: FolderTreeNode | null;
 }
 
 const COLORS = {
@@ -52,11 +60,12 @@ const DashboardView: React.FC<DashboardProps> = ({
   executableProcesses,
   teamMemberCount,
   teamMemberIds,
+  folderTree,
 }) => {
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState<string>('user');
-
+  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const isManager = userRole === 'manager' || userRole === 'admin';
   const isAdmin = userRole === 'admin';
 
@@ -110,6 +119,7 @@ const DashboardView: React.FC<DashboardProps> = ({
       return {
         openTasks: myTasks.filter((t) => t.state !== 'COMPLETED').length,
         completedTasks: myTasks.filter((t) => t.state === 'COMPLETED').length,
+        allTasks: myTasks,
       };
     },
     refetchInterval: 5000,
@@ -145,6 +155,20 @@ const DashboardView: React.FC<DashboardProps> = ({
     return { start, end };
   }, [timeRange, customDateRange]);
 
+  // filter tasks by date range
+  const filteredUserTasks = useMemo(() => {
+    if (!userTasksData?.allTasks) return { openTasks: 0, completedTasks: 0 };
+    const filtered = userTasksData.allTasks.filter((t) => {
+      if (!t.startTime) return true;
+      const taskDate = new Date(t.startTime);
+      return taskDate >= dateRange.start && taskDate <= dateRange.end;
+    });
+    return {
+      openTasks: filtered.filter((t) => t.state !== 'COMPLETED').length,
+      completedTasks: filtered.filter((t) => t.state === 'COMPLETED').length,
+    };
+  }, [userTasksData, dateRange]);
+
   // filter all instances by date range
   const filteredInstances = useMemo(() => {
     if (!deploymentData?.instances?.length) return [];
@@ -160,6 +184,33 @@ const DashboardView: React.FC<DashboardProps> = ({
     if (!filteredInstances.length) return [];
     return filteredInstances.filter((instance) => instance.initiatorId === userId);
   }, [filteredInstances, userId]);
+
+  // helper: collect all processIds under a folder node recursively
+  const getProcessIdsInTree = (node: FolderTreeNode, targetId: string): string[] | null => {
+    if (node.value === targetId) {
+      const collectAll = (n: FolderTreeNode): string[] => [
+        ...n.processIds,
+        ...n.children.flatMap(collectAll),
+      ];
+      return collectAll(node);
+    }
+    for (const child of node.children) {
+      const result = getProcessIdsInTree(child, targetId);
+      if (result) return result;
+    }
+    return null;
+  };
+
+  // admin instances filtered by selected folder
+  const adminInstances = useMemo(() => {
+    if (!filteredInstances.length) return [];
+    if (!selectedFolderId || !folderTree) return filteredInstances;
+    const allowedProcessIds = getProcessIdsInTree(folderTree, selectedFolderId);
+    if (!allowedProcessIds) return filteredInstances;
+    return filteredInstances.filter((instance) =>
+      allowedProcessIds.includes(instance.state?.processId),
+    );
+  }, [filteredInstances, selectedFolderId, folderTree]);
 
   // filter instances for manager's direct reports only (admin sees all)
   const managerInstances = useMemo(() => {
@@ -185,8 +236,8 @@ const DashboardView: React.FC<DashboardProps> = ({
       userBaseStats,
       accessibleProcesses,
       executableProcesses,
-      userTasksData?.openTasks ?? 0,
-      userTasksData?.completedTasks ?? 0,
+      filteredUserTasks.openTasks,
+      filteredUserTasks.completedTasks,
     );
 
     // manager stats
@@ -202,12 +253,9 @@ const DashboardView: React.FC<DashboardProps> = ({
       teamMemberCount,
     );
 
-    // admin stats from all instances
+    // admin stats filtered by folder selection
     const adminBaseStats =
-      filteredInstances.length > 0
-        ? calculateInstanceStats(filteredInstances as any[])
-        : getEmptyStats();
-
+      adminInstances.length > 0 ? calculateInstanceStats(adminInstances as any[]) : getEmptyStats();
     const adminStats = {
       engines: engines.length,
       ...calculateManagerStats(
@@ -231,7 +279,8 @@ const DashboardView: React.FC<DashboardProps> = ({
     filteredInstances,
     userInstances,
     managerInstances,
-    userTasksData,
+    adminInstances,
+    filteredUserTasks,
     accessibleProcesses,
     executableProcesses,
     teamMemberCount,
@@ -240,9 +289,6 @@ const DashboardView: React.FC<DashboardProps> = ({
   // instance distribution uses all instances for radial chart
   const buildDistributionData = (instances: any[], label: string) => {
     const s = instances.length > 0 ? calculateInstanceStats(instances as any[]) : getEmptyStats();
-
-    console.log(`[Dashboard] ${label} raw instances (${instances.length}):`, instances);
-    console.log(`[Dashboard] ${label} calculated stats:`, s);
 
     const result = [
       { name: 'Completed', value: Math.max(s.completedInstances, 0), fill: COLORS.blue },
@@ -264,8 +310,8 @@ const DashboardView: React.FC<DashboardProps> = ({
     [managerInstances],
   );
   const adminDistributionData = useMemo(
-    () => buildDistributionData(filteredInstances, 'ADMIN'),
-    [filteredInstances],
+    () => buildDistributionData(adminInstances, 'ADMIN'),
+    [adminInstances],
   );
 
   const handleTimeRangeChange = (value: TimeRange) => {
@@ -335,6 +381,9 @@ const DashboardView: React.FC<DashboardProps> = ({
           instanceDistributionData={adminDistributionData}
           totalInstances={stats.adminStats.startedProcesses}
           monthlyData={stats.adminStats.monthlyData}
+          folderTree={folderTree}
+          selectedFolderId={selectedFolderId}
+          onFolderChange={setSelectedFolderId}
         />
       ),
     });

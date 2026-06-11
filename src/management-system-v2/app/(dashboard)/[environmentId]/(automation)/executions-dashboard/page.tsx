@@ -7,7 +7,7 @@ import DashboardView from './dashboard-view';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { getUserRoles } from '@/lib/data/db/iam/roles';
 import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
-import { getDashboardProcessStats } from './dashboard-data';
+import { getDashboardProcessStats, getFolderTree } from './dashboard-data';
 import db from '@/lib/data/db';
 
 const Page = async (props: any) => {
@@ -52,6 +52,9 @@ const Page = async (props: any) => {
 
   // Process Stats (accessible or executable)
   const processStats = await getDashboardProcessStats(activeEnvironment.spaceId);
+
+  // Folder tree for admin tab
+  const folderTree = userRole === 'admin' ? await getFolderTree(activeEnvironment.spaceId) : null;
 
   // Team Members
   let teamMemberIds: string[] = [];
@@ -99,6 +102,7 @@ const Page = async (props: any) => {
         executableProcesses={processStats.executableProcesses}
         teamMemberCount={teamMemberCount}
         teamMemberIds={teamMemberIds}
+        folderTree={folderTree}
       />
     </Content>
   );

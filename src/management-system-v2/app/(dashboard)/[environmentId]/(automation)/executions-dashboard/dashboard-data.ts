@@ -4,12 +4,13 @@ import { getCurrentEnvironment } from '@/components/auth';
 import { getRootFolder, getFolderContents } from '@/lib/data/db/folders';
 import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
+import Ability from '@/lib/ability/abilityHelper';
 
 type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 async function getAllProcessesRecursive(
   folderId: string,
-  ability: any,
+  ability: Ability,
   collected: ListItem[] = [],
 ): Promise<ListItem[]> {
   const contents = await getFolderContents(folderId, ability);
@@ -22,6 +23,27 @@ async function getAllProcessesRecursive(
     }
   }
   return collected;
+}
+
+async function buildFolderTree(folderId: string, folderName: string, ability: any): Promise<any> {
+  const contents = await getFolderContents(folderId, ability);
+  const subFolders = contents.filter((item) => item.type === 'folder') as (Folder & {
+    type: 'folder';
+  })[];
+  const processes = contents.filter((item) => item.type === 'process') as ProcessMetadata[];
+
+  return {
+    title: folderName,
+    value: folderId,
+    processIds: processes.map((p) => p.id),
+    children: await Promise.all(subFolders.map((f) => buildFolderTree(f.id, f.name, ability))),
+  };
+}
+
+export async function getFolderTree(spaceId: string) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+  const rootFolder = await getRootFolder(spaceId, ability);
+  return buildFolderTree(rootFolder.id, 'Root', ability);
 }
 
 export async function getDashboardProcessStats(spaceId: string) {

@@ -1,5 +1,12 @@
 import { Card } from 'antd';
-import { RadialBarChart, RadialBar, Legend, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  RadialBarChart,
+  RadialBar,
+  Legend,
+  Tooltip,
+  ResponsiveContainer,
+  PolarAngleAxis,
+} from 'recharts';
 
 interface RadialDistributionChartProps {
   data: Array<{
@@ -11,6 +18,14 @@ interface RadialDistributionChartProps {
 }
 
 const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data, title }) => {
+  // calculate total from raw counts
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+  const chartData = data.map((d) => ({
+    ...d,
+    count: d.value,
+    value: total > 0 ? parseFloat(((d.value / total) * 100).toFixed(1)) : 0,
+  }));
+
   return (
     <Card title={title} bordered={false}>
       <ResponsiveContainer width="100%" height={280}>
@@ -20,14 +35,17 @@ const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data,
           innerRadius="20%"
           outerRadius="80%"
           barSize={14}
-          data={data}
+          data={chartData}
         >
-          <RadialBar background dataKey="value" />
+          {/* domain [0,100] ensures bar fill is proportional to percentage */}
+          <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+          <RadialBar background dataKey="value" angleAxisId={0} />
           <Legend
             iconSize={10}
             layout="vertical"
             verticalAlign="middle"
             align="right"
+            formatter={(value) => value}
             wrapperStyle={{
               top: '50%',
               right: 0,
@@ -36,7 +54,11 @@ const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data,
             }}
           />
           <Tooltip
-            formatter={(value) => (value ? `${Number(value).toFixed(1)}%` : '')}
+            formatter={(value: any, props: any) => [
+              `${props.payload.count} instances (${props.payload.value}%)`,
+              props.payload.name,
+            ]}
+            labelFormatter={() => ''}
             contentStyle={{
               backgroundColor: '#fff',
               border: '1px solid #d9d9d9',

@@ -6,7 +6,7 @@ const config: XmcpConfig = {
     adapter: 'nextjs',
   },
   paths: {
-    tools: 'tools',
+    tools: 'mcp-tools',
     prompts: false,
     resources: false,
   },

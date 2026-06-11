@@ -30,9 +30,10 @@ import {
   setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
 } from '@/lib/engines/tasklist';
-import { getInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { getEngineIfAvailable } from '../data/engines';
+import { getDBInstance } from '@/lib/data/instance';
+import Ability from '../ability/abilityHelper';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -70,7 +71,7 @@ export async function getGlobalVariablesForHTML(
   });
 }
 
-export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) {
+export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, ability?: Ability) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -84,7 +85,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
       let activated = true;
       if (storedUserTask.instanceID && storedUserTask.machineId) {
         try {
-          const engine = await getEngineIfAvailable(spaceId, storedUserTask.machineId);
+          const engine = await getEngineIfAvailable(spaceId, storedUserTask.machineId, ability);
           if (engine && !isUserErrorResponse(engine)) {
             await activateUserTask(
               engine,
@@ -113,7 +114,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
     }
 
     if (storedUserTask.instanceID) {
-      const instance = await getInstance(spaceId, storedUserTask.instanceID);
+      const instance = await getDBInstance(spaceId, storedUserTask.instanceID, ability);
       if (isUserErrorResponse(instance)) return instance;
       if (!instance) throw new Error('Cannot retrieve the instance initiator information.');
 
@@ -188,6 +189,7 @@ export async function setTasklistEntryVariableValues(
   spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
+  ability?: Ability,
 ) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
@@ -202,7 +204,7 @@ export async function setTasklistEntryVariableValues(
 
     if (storedUserTask.instanceID) {
       const { machineId } = storedUserTask;
-      const engine = machineId && (await getEngineIfAvailable(spaceId, machineId));
+      const engine = machineId && (await getEngineIfAvailable(spaceId, machineId, ability));
 
       if (!engine || isUserErrorResponse(engine)) {
         return userError('Could not find the engine this user task is running on.');
@@ -256,6 +258,7 @@ export async function completeTasklistEntry(
   spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
+  ability?: Ability,
 ) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
@@ -268,7 +271,7 @@ export async function completeTasklistEntry(
 
     if (storedUserTask.instanceID) {
       const { machineId } = storedUserTask;
-      const engine = machineId && (await getEngineIfAvailable(spaceId, machineId));
+      const engine = machineId && (await getEngineIfAvailable(spaceId, machineId, ability));
 
       if (!engine || isUserErrorResponse(engine)) {
         return userError('Could not find the engine this user task is running on.');

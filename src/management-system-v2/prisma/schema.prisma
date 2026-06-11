@@ -496,5 +496,7 @@ model ProcessInstance {
   userTasks           UserTask[]
   artifactReferences  ArtifactInstanceReference[]
 
+  logs                Json
+
   @@map("process_instance")
 }

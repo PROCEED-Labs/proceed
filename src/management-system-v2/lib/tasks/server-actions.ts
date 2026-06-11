@@ -441,7 +441,7 @@ export async function updateTaskInfo(
 
         let html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
           const path = match.split('/');
-          return `/api/private/${spaceId}/engine/resources/process/${task.instanceID}/images/${path.pop()}`;
+          return `/api/private/${spaceId}/engine/resources/process/${relatedInstanceInfo.processId}/images/${path.pop()}`;
         });
 
         const processIds = await getProcessIds(bpmn);
@@ -470,7 +470,7 @@ export async function updateTaskInfo(
           html,
         };
       } catch (err) {
-        console.error('Error', err);
+        console.error(`Failed to process user task (id: ${id}): ${err}`);
       }
     })
   ).filter(truthyFilter);

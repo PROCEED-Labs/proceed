@@ -459,7 +459,7 @@ export async function updateTaskInfo(
           html,
         };
       } catch (err) {
-        console.error('Error', err);
+        console.error(`Failed to process user task (id: ${id}): ${err}`);
       }
     })
   ).filter(truthyFilter);

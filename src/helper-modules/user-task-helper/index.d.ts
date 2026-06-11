@@ -13,7 +13,7 @@ export type UserTaskInfo = {
   /**
    * - the time at which execution of the element ended
    */
-  endTime?: number;
+  endTime?: number | null;
   /**
    * - the current execution state of the user task
    */
@@ -143,7 +143,7 @@ export type InstanceInfo = {
  * @type {object}
  * @property {string} id - the id of the user task
  * @property {number} startTime - the time at which execution of the element started
- * @property {number} [endTime] - the time at which execution of the element ended
+ * @property {number | null} [endTime] - the time at which execution of the element ended
  * @property {string} state - the current execution state of the user task
  * @property {{ [key: string]: number }} [milestones] - the values of the milestones of the user task
  * @property {{ [key: string]: any }} [variableChanges] - the variables that were changed by the user task

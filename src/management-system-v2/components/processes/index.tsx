@@ -39,7 +39,7 @@ import {
   PartitionOutlined,
   FileOutlined,
   ShareAltOutlined,
-  QuestionCircleOutlined,
+  CheckCircleTwoTone,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
@@ -352,12 +352,12 @@ const Processes = ({
           title: (
             <>
               {entry.name}{' '}
-              {!!entry.error && (
+              {entry.error ? (
                 <Tooltip placement="right" title={entry.error}>
-                  <Tag color="error">
-                    Cannot be Deleted <QuestionCircleOutlined />
-                  </Tag>
+                  <Tag color="error">Cannot be Deleted</Tag>
                 </Tooltip>
+              ) : (
+                <CheckCircleTwoTone twoToneColor="rgb(82, 196, 26)" />
               )}
             </>
           ),
@@ -371,7 +371,7 @@ const Processes = ({
     let message;
     if (evaluation.some((entry) => entry.error)) {
       message =
-        'Some of the the selected elements cannot be deleted. Do you want to continue with the deletable elements?';
+        'Warning: Some of the selected processes cannot be deleted because they are currently running. Do you want to proceed and permanently remove the processes that are currently not running?';
     } else {
       message = 'Are you sure you want to delete the selected elements?';
     }

@@ -1,5 +1,7 @@
 'use server';
 
+import db from '@/lib/data/db';
+
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { toCaslResource } from '../ability/caslAbility';
 import {
@@ -8,7 +10,6 @@ import {
   generateScriptTaskFileName,
   generateStartFormFileName,
   generateUserTaskFileName,
-  getDefinitionsId,
   getDefinitionsVersionInformation,
   getElementsByTagName,
   setDefinitionsName,
@@ -18,7 +19,13 @@ import {
   updateBpmnCreatorAttributes,
 } from '@proceed/bpmn-helper';
 import { createProcess, getFinalBpmn, updateFileNames } from '../helpers/processHelpers';
-import { UserErrorType, getErrorMessage, isUserErrorResponse, userError } from '../user-error';
+import {
+  UserErrorType,
+  getErrorMessage,
+  internalError,
+  isUserErrorResponse,
+  userError,
+} from '../user-error';
 import {
   areVersionsEqual,
   getLocalVersionBpmn,
@@ -68,6 +75,10 @@ import { truthyFilter } from '../typescript-utils';
 import { createFolder, getFolder, getFolderContents } from './folders';
 import Ability from '../ability/abilityHelper';
 import { isDummyFolderProcess } from '../process-export/export-preparation';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import { InstanceInfo } from '../engines/deployment';
+import { getMSConfig } from '../ms-config/ms-config';
 
 // Import necessary functions from processModule
 
@@ -175,14 +186,57 @@ export const getProcessBPMN = async (
   return await getBpmnVersion(definitionId, versionId);
 };
 
-export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
-  for (const definitionId of definitionIds) {
-    const error = await checkValidity(definitionId, 'delete', spaceId);
+export const canDeleteProcess = async (spaceId: string, definitionId: string) => {
+  const error = await checkValidity(definitionId, 'delete', spaceId);
 
-    if (error) return error;
+  if (error) return error;
 
-    await removeProcess(definitionId);
+  const config = await getMSConfig();
+
+  if (config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+    const instances = await db.processInstance.findMany({
+      where: {
+        deployment: { AND: [{ removeTime: null }, { version: { processId: definitionId } }] },
+      },
+      select: { state: true },
+    });
+
+    if (instances.some((i) => isActive(i.state as InstanceInfo))) {
+      return userError(
+        'The process can currently not be deleted because it has running executions. Please, stop all executions if you want to delete the process.',
+      );
+    }
   }
+
+  return true;
+};
+
+export const deleteProcesses = async (definitionIds: string[], spaceId: string) => {
+  const res = await asyncMap(definitionIds, async (id) => {
+    try {
+      const validation = await canDeleteProcess(spaceId, id);
+
+      if (isUserErrorResponse(validation)) return validation;
+
+      return await removeProcess(spaceId, id);
+    } catch (err) {
+      return internalError();
+    }
+  });
+
+  if (res.some(isUserErrorResponse)) {
+    return {
+      failed: res
+        .map((r, index) => isUserErrorResponse(r) && definitionIds[index])
+        .filter(truthyFilter),
+      error: {
+        message: 'Could not remove all of the requested processes.',
+        type: UserErrorType.UnknownError,
+      },
+    };
+  }
+
+  return { success: true };
 };
 
 export const addProcesses = async (

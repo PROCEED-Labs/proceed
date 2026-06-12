@@ -6,6 +6,7 @@ import { Process, ProcessMetadata } from '../process-schema';
 import db from '@/lib/data/db';
 import { getProcess } from './process';
 import { Prisma } from '@prisma/client';
+import { permissionDenied, userError } from '@/lib/user-error';
 
 export async function getRootFolder(environmentId: string, ability?: Ability) {
   const rootFolder = await db.folder.findFirst({
@@ -74,7 +75,7 @@ export async function getFolderChildren(folderId: string, ability?: Ability) {
   }
 
   const combinedResults = [
-    ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' })),
+    ...folder.childrenFolder.map((child) => ({ ...child, type: 'folder' as const })),
     ...folder.processes.map((process) => ({ ...process, type: process.type.toLowerCase() })),
   ];
   return combinedResults;
@@ -187,11 +188,11 @@ export async function deleteFolder(folderId: string, ability?: Ability) {
   });
 
   if (!folderToDelete) {
-    throw new Error('Folder not found');
+    return userError('Folder not found');
   }
 
   if (ability && !ability.can('delete', toCaslResource('Folder', folderToDelete))) {
-    throw new UnauthorizedError();
+    return permissionDenied();
   }
 
   await db.folder.delete({
@@ -326,9 +327,10 @@ export async function moveProcess(processId: string, newParentId: string, abilit
   if (process.folderId === newParentId) return;
 
   const [oldParentFolder, newParentFolder] = await Promise.all([
-    db.folder.findUnique({
-      where: { id: process.folderId },
-    }),
+    process.folderId &&
+      db.folder.findUnique({
+        where: { id: process.folderId },
+      }),
 
     db.folder.findUnique({
       where: { id: newParentId },
@@ -343,11 +345,11 @@ export async function moveProcess(processId: string, newParentId: string, abilit
   // Check permissions
   if (
     ability &&
-    !(
-      ability.can('update', toCaslResource('Process', process)) &&
-      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
-      ability.can('update', toCaslResource('Folder', oldParentFolder!))
-    )
+    !(ability.can('update', toCaslResource('Process', process)) &&
+    ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+    oldParentFolder
+      ? ability.can('update', toCaslResource('Folder', oldParentFolder!))
+      : true)
   ) {
     throw new UnauthorizedError();
   }

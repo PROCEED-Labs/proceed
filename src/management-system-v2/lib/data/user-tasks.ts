@@ -2,7 +2,7 @@
 
 import db from '@/lib/data/db';
 
-import { UnauthorizedError } from '../ability/abilityHelper';
+import Ability, { UnauthorizedError } from '../ability/abilityHelper';
 import { UserErrorType, userError } from '../user-error';
 import {
   ExtendedTaskListEntry,
@@ -10,15 +10,14 @@ import {
   UserTaskInput,
   UserTaskInputSchema,
 } from '../user-task-schema';
-import { getCurrentEnvironment } from '@/components/auth';
 import { getSpaceUsers } from './db/iam/users';
+import { getEnvironmentById } from './db/iam/environments';
 import { truthyFilter } from '../typescript-utils';
 import { Engine } from '../engines/types';
 
-export async function getUserTasks(spaceId: string) {
-  const {
-    activeEnvironment: { isOrganization },
-  } = await getCurrentEnvironment(spaceId);
+export async function getUserTasks(spaceId: string, ability?: Ability) {
+  const space = await getEnvironmentById(spaceId, ability);
+  if (!space) return userError('Unknown Space');
 
   try {
     const userTasks = (await db.userTask.findMany({
@@ -55,13 +54,13 @@ export async function getUserTasks(spaceId: string) {
       },
     })) as (UserTask & { engine: Engine | null })[];
 
-    const users = await getSpaceUsers(spaceId, isOrganization);
+    const users = await getSpaceUsers(spaceId, space.isOrganization);
 
     // map the ids in the actualOwner array to the users of the current space so the frontend can
     // show richer information about who is working on the task
     return userTasks.map((uT) => ({
       ...uT,
-      offline: !uT.engine || uT.engine.connections.some((c) => c.reachable) ? false : true,
+      offline: !!uT.engine && !uT.engine.connections.some((c) => c.reachable),
       actualOwner: uT.actualOwner
         .map((id) => {
           const user = users.find((u) => u.id === id);
@@ -102,7 +101,7 @@ export async function getUserTaskById(userTaskId: string) {
 
     return userTask as UserTask & { engine: Engine | null };
   } catch (err) {
-    return userError('Error getting user tasks');
+    return userError('Error getting user task');
   }
 }
 

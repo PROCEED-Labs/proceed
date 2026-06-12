@@ -31,6 +31,7 @@ import {
 import { truthyFilter } from '@/lib/typescript-utils';
 import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { getProcessVersion } from '../data/db/process';
+import Ability from '../ability/abilityHelper';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -54,11 +55,18 @@ export async function startInstance(
   definitionId: string,
   versionId: string,
   variables: { [key: string]: any } = {},
+  ability?: Ability,
+  userId?: string,
 ) {
-  const deployments = await getProcessDeployments(spaceId, definitionId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('create', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const deployments = await getProcessDeployments(spaceId, definitionId, ability);
   if (isUserErrorResponse(deployments)) return deployments;
 
-  const { userId } = await getCurrentUser();
+  if (!userId) ({ userId } = await getCurrentUser());
 
   const versionDeployments = deployments.filter((d) => {
     return d.versionId === versionId;
@@ -78,13 +86,17 @@ export async function startInstance(
 
       if (isUserErrorResponse(result)) continue;
 
-      await addInstance(spaceId, {
-        id: result.processInstanceId,
-        deploymentId: deployment.id,
-        engines: [engine.id],
-        initiatorId: userId,
-        state: result,
-      });
+      await addInstance(
+        spaceId,
+        {
+          id: result.processInstanceId,
+          deploymentId: deployment.id,
+          engines: [engine.id],
+          initiatorId: userId,
+          state: result,
+        },
+        true,
+      );
 
       return result.processInstanceId;
     }

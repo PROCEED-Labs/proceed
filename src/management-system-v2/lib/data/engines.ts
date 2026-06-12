@@ -97,9 +97,9 @@ export async function getAvailableAdminEngines() {
 }
 
 /** Returns space engines that are currently online */
-export async function getAvailableSpaceEngines(environmentId: string) {
+export async function getAvailableSpaceEngines(environmentId: string, ability?: Ability) {
   try {
-    const engines = await getAvailableEngines([environmentId]);
+    const engines = await getAvailableEngines([environmentId], ability);
     return engines.map((e) => ({ ...e, spaceEngine: true as const }));
   } catch (e) {
     const message = getErrorMessage(e);

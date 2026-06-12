@@ -4,6 +4,7 @@ import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { SuccessType, UserErrorType, userError } from '../user-error';
+import Ability from '../ability/abilityHelper';
 
 export async function getDeployedProcesses(environmentId: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
@@ -46,8 +47,8 @@ export async function getDeployedProcesses(environmentId: string) {
   return ability.filter('view', 'Process', deployedProcesses);
 }
 
-export async function getProcessDeployments(spaceId: string, processId: string) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function getProcessDeployments(spaceId: string, processId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
@@ -81,8 +82,8 @@ export type StoredDeployment = SuccessType<
   Awaited<ReturnType<typeof getProcessDeployments>>
 >[number];
 
-export async function addDeployment(spaceId: string, input: DeploymentInput) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function addDeployment(spaceId: string, input: DeploymentInput, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('create', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
@@ -98,8 +99,9 @@ export async function updateDeployment(
   spaceId: string,
   deploymentId: string,
   input: Partial<DeploymentInput>,
+  ability?: Ability,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('update', 'Execution')) {
     return userError('Invalid Permissions', UserErrorType.PermissionError);

@@ -7,6 +7,7 @@ export const InstanceInputSchema = z.object({
   initiatorId: z.string().nullish().default(null),
   engines: z.string().array(),
   state: z.object({}).passthrough(),
+  logs: z.any().array().default([]),
 });
 
 export type InstanceInput = Omit<z.input<typeof InstanceInputSchema>, 'state'> & {

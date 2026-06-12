@@ -34,6 +34,8 @@ import { getMSConfig } from '../ms-config/ms-config';
 import { updateTaskInfo } from '../tasks/server-actions';
 import { getSharedRefetch } from '../shared-refetch';
 import { EngineConnection } from '@prisma/client';
+import { engineRequest } from '../engines/endpoints';
+import Ability from '../ability/abilityHelper';
 
 export async function deployProcess(
   definitionId: string,
@@ -41,16 +43,18 @@ export async function deployProcess(
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
   _forceEngine?: SpaceEngine | 'PROCEED',
+  ability?: Ability,
+  userId?: string,
 ) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
     if (!ability.can('create', 'Execution'))
       return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-    const { userId } = await getCurrentUser();
+    if (!userId) ({ userId } = await getCurrentUser());
 
-    const allEngines = await getAllAvailableEngines(spaceId);
+    const allEngines = await getAllAvailableEngines(spaceId, ability);
 
     if (isUserErrorResponse(allEngines)) return allEngines;
 
@@ -74,7 +78,7 @@ export async function deployProcess(
 
     if (!engines.length) throw new UserFacingError('No fitting engine found.');
 
-    const alreadyDeployed = await getProcessDeployments(spaceId, definitionId);
+    const alreadyDeployed = await getProcessDeployments(spaceId, definitionId, ability);
     if (isUserErrorResponse(alreadyDeployed)) return alreadyDeployed;
 
     const processAlreadyDeployedInfo = alreadyDeployed
@@ -95,7 +99,14 @@ export async function deployProcess(
       engines = processAlreadyDeployedInfo.map((i) => i.engine);
     }
 
-    const deployedTo = await _deployProcess(definitionId, versionId, spaceId, method, engines);
+    const deployedTo = await _deployProcess(
+      definitionId,
+      versionId,
+      spaceId,
+      method,
+      engines,
+      ability,
+    );
 
     await addDeployment(spaceId, {
       versionId,
@@ -110,7 +121,7 @@ export async function deployProcess(
     await Promise.allSettled(
       alreadyDeployed.map(async (deployment) => {
         if (deployment.active && !deployedTo.some((e) => e.id === deployment.engineId)) {
-          await updateDeployment(spaceId, deployment.id, { active: false });
+          await updateDeployment(spaceId, deployment.id, { active: false }, ability);
 
           const engine = allEngines.find((e) => e.id === deployment.engineId);
           if (engine) {
@@ -284,6 +295,7 @@ async function refetchFn() {
       environmentId: string;
       versionId: string;
       state: InstanceInfo;
+      logs: any[];
     };
     const storedInstances: { [instanceId: string]: InstanceData } = {};
     const deployments: { [engineProcessAndVersionId: string]: (typeof storedDeployments)[number] } =
@@ -306,6 +318,7 @@ async function refetchFn() {
           processId: d.version.processId,
           versionId: d.version.id,
           environmentId: d.version.process.environmentId,
+          logs: i.logs as any[],
         };
       });
     });
@@ -346,7 +359,6 @@ async function refetchFn() {
               if (v.active !== deployment.active) {
                 // mismatch of the active state on the engine and the locally stored active
                 // state => change the state on the engine
-                console.log('Mismatch in active state', deployment.active, v.active);
                 await _changeDeploymentActivation(
                   e,
                   p.definitionId,
@@ -365,11 +377,19 @@ async function refetchFn() {
         // TODO: when we want to handle instances that move to other engines automatically, we
         // will have to change this logic since it assumes that all available data of the instance
         // can be found on the engine it was started on
-        res.forEach((p) => {
-          p.instances.forEach((i) => {
+        await asyncForEach(res, async (p) => {
+          await asyncForEach(p.instances, async (i) => {
             const deployment = deployments[`${e.id}|${i.processId}|${i.processVersion}`];
             if (!deployment) return;
             const existingInstance = storedInstances[i.processInstanceId];
+
+            const logs = await engineRequest({
+              engine: e,
+              method: 'get',
+              endpoint: '/logging/process/:definitionId/instance/:instanceId',
+              pathParams: { definitionId: p.definitionId, instanceId: i.processInstanceId },
+            });
+
             if (!existingInstance) {
               newInstances.push({
                 id: i.processInstanceId,
@@ -380,14 +400,19 @@ async function refetchFn() {
                 initiatorId: null,
                 engineIds: [e.id],
                 state: i,
+                logs,
               });
-            } else if (!deepEquals(i, existingInstance.state)) {
+            } else if (
+              !deepEquals(i, existingInstance.state) ||
+              !deepEquals(logs, existingInstance.logs)
+            ) {
               instanceUpdates.push({
                 id: i.processInstanceId,
                 processId: p.definitionId,
                 environmentId: deployment.version.process.environmentId,
                 versionId: deployment.version.id,
                 state: i,
+                logs,
               });
             } else {
               unchangedInstances.push(existingInstance);
@@ -425,16 +450,16 @@ async function refetchFn() {
             data: { removeTime: new Date(), toRemove: false, active: false },
           });
         }),
-        ...instanceUpdates.map(async ({ id, state }) => {
+        ...instanceUpdates.map(async ({ id, state, logs }) => {
           await tx.processInstance.update({
             where: { id },
-            data: { state },
+            data: { state, logs },
           });
         }),
         ...newInstances.map((i) =>
           tx.processInstance.create({
             data: {
-              ...pick(i, ['id', 'deploymentId', 'initiatorId', 'state']),
+              ...pick(i, ['id', 'deploymentId', 'initiatorId', 'state', 'logs']),
               engines: {
                 connect: i.engineIds.map((id) => ({ id })),
               },

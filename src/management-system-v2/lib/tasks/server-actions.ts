@@ -30,9 +30,10 @@ import {
   setTasklistEntryMilestoneValuesOnMachine,
   setTasklistEntryVariableValuesOnMachine,
 } from '@/lib/engines/tasklist';
-import { getInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { saveInstanceArtifact } from '../data/file-manager-facade';
+import { getDBInstance } from '@/lib/data/instance';
+import Ability from '../ability/abilityHelper';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -70,7 +71,7 @@ export async function getGlobalVariablesForHTML(
   });
 }
 
-export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) {
+export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, ability?: Ability) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -113,7 +114,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string) 
     }
 
     if (storedUserTask.instanceID) {
-      const instance = await getInstance(spaceId, storedUserTask.instanceID);
+      const instance = await getDBInstance(spaceId, storedUserTask.instanceID, ability);
       if (isUserErrorResponse(instance)) return instance;
       if (!instance) throw new Error('Cannot retrieve the instance initiator information.');
 
@@ -190,7 +191,7 @@ export async function setTasklistEntryVariableValues(
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -251,7 +252,7 @@ export async function completeTasklistEntry(userTaskId: string, variables: { [ke
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -417,7 +418,7 @@ export async function updateTaskInfo(
 
         let html = htmlForm.replace(/\/resources\/process[^"]*/g, (match) => {
           const path = match.split('/');
-          return `/api/private/${spaceId}/engine/resources/process/${task.instanceID}/images/${path.pop()}`;
+          return `/api/private/${spaceId}/engine/resources/process/${relatedInstanceInfo.processId}/images/${path.pop()}`;
         });
 
         const processIds = await getProcessIds(bpmn);
@@ -446,7 +447,7 @@ export async function updateTaskInfo(
           html,
         };
       } catch (err) {
-        console.error('Error', err);
+        console.error(`Failed to process user task (id: ${id}): ${err}`);
       }
     })
   ).filter(truthyFilter);

@@ -354,7 +354,7 @@ const Processes = ({
               {entry.name}{' '}
               {entry.error ? (
                 <Tooltip placement="right" title={entry.error}>
-                  <Tag color="error">Cannot be Deleted</Tag>
+                  <Tag color="error">Cannot be deleted</Tag>
                 </Tooltip>
               ) : (
                 <CheckCircleTwoTone twoToneColor="rgb(82, 196, 26)" />
@@ -388,9 +388,6 @@ const Processes = ({
       ),
       maskClosable: true,
       okText: 'Delete',
-      okButtonProps: {
-        danger: true,
-      },
       onOk: async () => {
         const promises = [];
 

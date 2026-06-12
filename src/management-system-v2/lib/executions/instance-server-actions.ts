@@ -31,7 +31,9 @@ import {
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { truthyFilter } from '@/lib/typescript-utils';
+import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { getProcessVersion } from '../data/db/process';
+import Ability from '../ability/abilityHelper';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -55,8 +57,15 @@ export async function startInstance(
   definitionId: string,
   versionId: string,
   variables: { [key: string]: any } = {},
+  ability?: Ability,
+  userId?: string,
 ) {
-  const engines = await getAllAvailableEngines(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('create', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const engines = await getAllAvailableEngines(spaceId, ability);
   if (isUserErrorResponse(engines)) return engines;
 
   const engineMap = engines.reduce(
@@ -67,10 +76,10 @@ export async function startInstance(
     {} as Record<string, Engine>,
   );
 
-  const deployments = await getProcessDeployments(spaceId, definitionId);
+  const deployments = await getProcessDeployments(spaceId, definitionId, ability);
   if (isUserErrorResponse(deployments)) return deployments;
 
-  const { userId } = await getCurrentUser();
+  if (!userId) ({ userId } = await getCurrentUser());
 
   const versionDeployments = deployments.filter((d) => {
     return d.versionId === versionId;
@@ -90,13 +99,17 @@ export async function startInstance(
 
       if (isUserErrorResponse(result)) continue;
 
-      await addInstance(spaceId, {
-        id: result.processInstanceId,
-        deploymentId: deployment.id,
-        engineIds: [engine.id],
-        initiatorId: userId,
-        state: result,
-      });
+      await addInstance(
+        spaceId,
+        {
+          id: result.processInstanceId,
+          deploymentId: deployment.id,
+          engineIds: [engine.id],
+          initiatorId: userId,
+          state: result,
+        },
+        true,
+      );
 
       return result.processInstanceId;
     }
@@ -156,6 +169,9 @@ export async function getFile(
     return userError('Unknown Instance', UserErrorType.NotFoundError);
   }
 
+  const savedFile = await getInstanceFile(instanceId, fileName);
+  if (savedFile) return savedFile;
+
   try {
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
@@ -167,6 +183,22 @@ export async function getFile(
     }
 
     const file = await getFileFromMachine(definitionId, instanceId, fileName, availableEngines[0]);
+
+    try {
+      const res = await saveInstanceArtifact(
+        spaceId,
+        instanceId,
+        fileName,
+        file.type,
+        Buffer.from(await file.arrayBuffer()),
+      );
+
+      if (res.presignedUrl) {
+        // TODO: handle cloud storage case
+      }
+    } catch (err) {
+      console.error(`Failed to cache instance file ${fileName}.`);
+    }
 
     return file;
   } catch (err) {

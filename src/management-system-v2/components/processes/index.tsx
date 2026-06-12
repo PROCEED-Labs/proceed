@@ -26,6 +26,7 @@ import {
   Modal,
   Tree,
   TreeDataNode,
+  Tag,
 } from 'antd';
 import { InfoCircleOutlined, EllipsisOutlined } from '@ant-design/icons';
 
@@ -38,8 +39,7 @@ import {
   PartitionOutlined,
   FileOutlined,
   ShareAltOutlined,
-  CloseCircleTwoTone,
-  CheckCircleTwoTone,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import IconView from '@/components/process-icon-list';
 import ProcessList from '@/components/process-list';
@@ -175,7 +175,6 @@ const Processes = ({
   );
   const [openCopyModal, setOpenCopyModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openFolderMoveModal, setOpenFolderMoveModal] = useState(false);
   const [moveTargetFolderId, setMoveTargetFolderId] = useState<string>();
   const [elementsToMove, setElementsToMove] = useState<ProcessListProcess[]>([]);
@@ -351,12 +350,12 @@ const Processes = ({
           title: (
             <>
               {entry.name}{' '}
-              {entry.error ? (
-                <Tooltip title={entry.error}>
-                  <CloseCircleTwoTone twoToneColor="rgb(255, 77, 79)" />
+              {!!entry.error && (
+                <Tooltip placement="right" title={entry.error}>
+                  <Tag color="error">
+                    Cannot be Deleted <QuestionCircleOutlined />
+                  </Tag>
                 </Tooltip>
-              ) : (
-                <CheckCircleTwoTone twoToneColor="rgb(82, 196, 26)" />
               )}
             </>
           ),
@@ -386,6 +385,10 @@ const Processes = ({
         </>
       ),
       maskClosable: true,
+      okText: 'Delete',
+      okButtonProps: {
+        danger: true,
+      },
       onOk: async () => {
         const promises = [];
 

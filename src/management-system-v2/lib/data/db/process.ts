@@ -8,7 +8,6 @@ import {
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
 import {
-  getAllElements,
   getDefinitionsVersionInformation,
   generateBpmnId,
   toBpmnObject,
@@ -17,7 +16,7 @@ import {
   getProcessDocumentation,
   getElementsByTagName,
 } from '@proceed/bpmn-helper';
-import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -35,11 +34,8 @@ import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
-import { getProcessDeployments } from '../deployment';
 import { removeDeployment } from '@/lib/executions/deployment-server-actions';
-import { isUserError, isUserErrorResponse, userError } from '@/lib/user-error';
-import { InstanceInfo } from '@/lib/engines/deployment';
-import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import { isUserErrorResponse } from '@/lib/user-error';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 /**

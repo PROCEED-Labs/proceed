@@ -33,6 +33,28 @@ import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
 
+export async function getDBInstance(spaceId: string, instanceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const instanceInfo = await db.processInstance.findUnique({
+    where: { id: instanceId },
+    include: {
+      deployment: { select: { versionId: true } },
+    },
+  });
+
+  if (!instanceInfo) return null;
+
+  return {
+    ...instanceInfo,
+    state: instanceInfo.state as InstanceInfo,
+    versionId: instanceInfo.deployment.versionId,
+  };
+}
+
 const getVersionBpmnObject = cache(
   async (spaceId: string, definitionId: string, versionId: string, ability?: Ability) => {
     const bpmn = await getProcessBPMN(definitionId, spaceId, versionId, ability);

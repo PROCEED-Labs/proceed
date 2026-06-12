@@ -4,6 +4,7 @@ import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { SuccessType, UserErrorType, userError } from '../user-error';
+import Ability from '../ability/abilityHelper';
 
 export async function getDeployedProcesses(environmentId: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
@@ -50,9 +51,10 @@ export async function getDeployedProcesses(environmentId: string) {
 export async function getProcessDeployments(
   spaceId: string,
   processId: string,
+  ability?: Ability,
   showArchivedProcesses = false,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);

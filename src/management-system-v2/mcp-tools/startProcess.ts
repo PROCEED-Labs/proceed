@@ -7,6 +7,7 @@ import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getAllAvailableEngines } from '@/lib/data/engines';
+import { startInstance } from '@/lib/executions/instance-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -90,23 +91,21 @@ export default async function startProcess({
 
     if (isUserErrorResponse(deployment)) return deployment.error.message;
 
-    const instance = await startInstanceOnMachine(
+    const instanceId = await startInstance(
+      environmentId,
       processId,
       process.version.id,
-      engine,
       startParameters &&
         Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
-      {
-        processInitiator: userId,
-        spaceIdOfProcessInitiator: environmentId,
-      },
+      ability,
+      userId,
     );
 
-    if (isUserErrorResponse(instance)) {
-      return instance.error.message;
+    if (isUserErrorResponse(instanceId)) {
+      return instanceId.error.message;
     }
 
-    return `Started the process with instance id ${instance.processInstanceId}. Please check the PROCEED website to inspect the execution state.`;
+    return `Started the process with instance id ${instanceId}.`;
   } catch (err) {
     if (err instanceof Error) return err.message;
     else return 'Error: Something went wrong';

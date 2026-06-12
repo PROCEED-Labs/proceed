@@ -19,7 +19,7 @@ export type TaskListEntry = {
   performers: { user?: string[]; roles: string[] };
   progress: 0;
   startTime: number;
-  endTime: number;
+  endTime: number | null;
 };
 
 export async function getTaskListFromMachine(machine: Engine) {

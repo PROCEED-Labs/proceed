@@ -175,10 +175,13 @@ export const getProcessBPMN = async (
   spaceId: string,
   versionId?: string,
   ability?: Ability,
+  skipAbilityCheck = false,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId, ability);
+  if (!skipAbilityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
-  if (error) return error;
+    if (error) return error;
+  }
 
   return await getBpmnVersion(definitionId, versionId);
 };
@@ -754,10 +757,13 @@ export const getProcessHtmlFormHTML = async (
   fileName: string,
   spaceId: string,
   ability?: Ability,
+  skipAbilityCheck = false,
 ) => {
-  const error = await checkValidity(definitionId, 'view', spaceId, ability);
+  if (!skipAbilityCheck) {
+    const error = await checkValidity(definitionId, 'view', spaceId, ability);
 
-  if (error) return error;
+    if (error) return error;
+  }
 
   try {
     return await _getHtmlForm(definitionId, fileName);

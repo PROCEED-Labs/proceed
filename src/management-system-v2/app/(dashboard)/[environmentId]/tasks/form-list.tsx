@@ -195,7 +195,8 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           id: v4(),
           name: task.name,
           taskId: '',
-          instanceID: '',
+          instanceID: null,
+          environmentId: space.spaceId,
           fileName: '',
           state: 'READY',
           machineId: 'ms-local',
@@ -206,7 +207,9 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           startTime: Date.now(),
           html,
           milestones: [],
+          milestonesChanges: {},
           initialVariables: {},
+          variableChanges: {},
         };
       } else {
         message.error(`Failed to get the form data for ${task.name}.`);

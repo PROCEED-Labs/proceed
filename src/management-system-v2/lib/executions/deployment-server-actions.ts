@@ -108,13 +108,17 @@ export async function deployProcess(
       ability,
     );
 
-    await addDeployment(spaceId, {
-      versionId,
-      deployerId: userId,
-      deployTime: new Date(),
-      engineIds: deployedTo.map((engine) => engine.id),
-      active: true,
-    });
+    await addDeployment(
+      spaceId,
+      {
+        versionId,
+        deployerId: userId,
+        deployTime: new Date(),
+        engineIds: deployedTo.map((engine) => engine.id),
+        active: true,
+      },
+      ability,
+    );
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
@@ -260,7 +264,6 @@ export async function getProcessImage(spaceId: string, definitionId: string, fil
 }
 
 async function refetchFn() {
-  console.log('Refetching Deployments', new Date().toTimeString());
   try {
     // get all (non-removed) deployments known to the MS
     const storedDeployments = await db.processDeployment.findMany({

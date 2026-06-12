@@ -77,6 +77,7 @@ export default async function startProcess({
       'dynamic',
       undefined,
       ability,
+      userId,
     );
 
     if (isUserErrorResponse(deployment)) return deployment.error.message;

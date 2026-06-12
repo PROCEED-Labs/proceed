@@ -329,6 +329,8 @@ const Processes = ({
   };
 
   async function deleteItems(items: ProcessListProcess[]) {
+    // filter out the "< Parent Folder >" entry when inside a directory
+    items = items.filter((i) => !!i.environmentId);
     const evaluation = await asyncMap(items, async (item) => {
       if (item.type === 'folder') {
         return canDeleteFolder(space.spaceId, item.id);

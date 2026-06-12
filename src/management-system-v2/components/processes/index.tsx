@@ -353,10 +353,10 @@ const Processes = ({
               {entry.name}{' '}
               {entry.error ? (
                 <Tooltip title={entry.error}>
-                  <CloseCircleTwoTone twoToneColor="#eb2f96" />
+                  <CloseCircleTwoTone twoToneColor="rgb(255, 77, 79)" />
                 </Tooltip>
               ) : (
-                <CheckCircleTwoTone twoToneColor="#52c41a" />
+                <CheckCircleTwoTone twoToneColor="rgb(82, 196, 26)" />
               )}
             </>
           ),

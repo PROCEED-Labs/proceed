@@ -5,13 +5,14 @@ import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@an
 import { HiUser } from 'react-icons/hi';
 import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
 import {
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Bar,
+  Cell,
+  BarChart,
 } from 'recharts';
 import GaugeChart from '@/components/dashboard-charts/gauge-chart';
 import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';
@@ -35,14 +36,12 @@ interface UserProcessesTabProps {
   userStats: any;
   instanceDistributionData: any[];
   weeklyTrendData: any[];
-  totalInstances: number;
 }
 
 const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
   userStats,
   instanceDistributionData,
   weeklyTrendData,
-  totalInstances,
 }) => {
   return (
     <>
@@ -176,26 +175,16 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         <Col xs={24} lg={12}>
           <Card title="Task Overview" bordered={false}>
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart
+              <BarChart
                 data={[
-                  { label: 'Open', value: userStats.openTasks },
-                  { label: 'Completed', value: userStats.completedTasks },
+                  { label: 'Open', value: userStats.openTasks, fill: COLORS.orange },
+                  { label: 'Completed', value: userStats.completedTasks, fill: COLORS.green },
                 ]}
                 margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
               >
-                <defs>
-                  <linearGradient id="colorTaskOpen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.orange} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={COLORS.orange} stopOpacity={0.1} />
-                  </linearGradient>
-                  <linearGradient id="colorTaskCompleted" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={COLORS.green} stopOpacity={0.8} />
-                    <stop offset="95%" stopColor={COLORS.green} stopOpacity={0.1} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="label" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#fff',
@@ -203,16 +192,15 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
                     borderRadius: '6px',
                   }}
                 />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={COLORS.green}
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorTaskCompleted)"
-                  name="Tasks"
-                />
-              </AreaChart>
+                <Bar dataKey="value" name="Tasks" radius={[6, 6, 0, 0]} barSize={80}>
+                  {[
+                    { label: 'Open', fill: COLORS.orange },
+                    { label: 'Completed', fill: COLORS.green },
+                  ].map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </Card>
         </Col>

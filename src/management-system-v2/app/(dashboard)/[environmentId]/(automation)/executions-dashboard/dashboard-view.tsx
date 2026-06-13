@@ -349,7 +349,6 @@ const DashboardView: React.FC<DashboardProps> = ({
           userStats={stats.userStats}
           instanceDistributionData={userDistributionData}
           weeklyTrendData={stats.userStats.weeklyData}
-          totalInstances={stats.userStats.startedProcesses}
         />
       ),
     },
@@ -369,7 +368,6 @@ const DashboardView: React.FC<DashboardProps> = ({
           managerStats={stats.managerStats}
           instanceDistributionData={managerDistributionData}
           weeklyTrendData={stats.managerStats.monthlyData}
-          totalInstances={stats.managerStats.startedProcesses}
         />
       ),
     });
@@ -388,7 +386,6 @@ const DashboardView: React.FC<DashboardProps> = ({
         <AdminOverviewTab
           adminStats={stats.adminStats}
           instanceDistributionData={adminDistributionData}
-          totalInstances={stats.adminStats.startedProcesses}
           monthlyData={stats.adminStats.monthlyData}
           folderTree={folderTree}
           selectedFolderId={selectedFolderId}

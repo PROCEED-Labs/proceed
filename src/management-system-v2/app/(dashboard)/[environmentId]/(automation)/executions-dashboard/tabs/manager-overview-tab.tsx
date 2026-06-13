@@ -25,14 +25,12 @@ interface ManagerOverviewTabProps {
   managerStats: any;
   instanceDistributionData: any[];
   weeklyTrendData: any[];
-  totalInstances: number;
 }
 
 const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
   managerStats,
   instanceDistributionData,
   weeklyTrendData,
-  totalInstances,
 }) => {
   return (
     <>

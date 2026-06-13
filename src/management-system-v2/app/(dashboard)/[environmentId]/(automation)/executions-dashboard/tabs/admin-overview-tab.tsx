@@ -1,6 +1,6 @@
 'use client';
 
-import { Col, Row, Typography, Statistic, Progress, TreeSelect } from 'antd';
+import { Col, Row, Typography, TreeSelect } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -30,7 +30,6 @@ const COLORS = {
 interface AdminOverviewTabProps {
   adminStats: any;
   instanceDistributionData: any[];
-  totalInstances: number;
   monthlyData: { month: string; completed: number; failed: number }[];
   folderTree: FolderTreeNode | null;
   selectedFolderId: string | null;
@@ -40,7 +39,6 @@ interface AdminOverviewTabProps {
 const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   adminStats,
   instanceDistributionData,
-  totalInstances,
   monthlyData,
   folderTree,
   selectedFolderId,

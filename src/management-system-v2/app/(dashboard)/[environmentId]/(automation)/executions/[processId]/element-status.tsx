@@ -12,7 +12,7 @@ import {
   Typography,
 } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getTiming, statusToType } from './instance-helpers';
+import { getPlanDelays, getTiming, statusToType } from './instance-helpers';
 import {
   getDefinitionsInfos,
   getDefinitionsVersionInformation,
@@ -143,6 +143,8 @@ export function ElementStatus({
     }
     getBpmnObject();
   }, [version]);
+
+  console.log(metaData)
 
   // TECH DETAILS SWITCH
   statusEntries.push([
@@ -294,23 +296,27 @@ export function ElementStatus({
         <TechEntryKey key="instance-runid-key">Run ID</TechEntryKey>,
         <EntryValueText key="instance-runid-val">{instance?.processInstanceId}</EntryValueText>,
       ]);
+      
+    const start = instance?.timing?.actual.start;
+    const end = instance?.timing?.actual.end;
+    const duration = instance?.timing?.actual.duration;
+    const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
     statusEntries.push([
       <EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>,
-      <EntryValueText key="instance-plannedduration-val">TODO</EntryValueText>,
+      <EntryValueText key="instance-plannedduration-val">
+        {generateDurationString(plan.duration)}
+        </EntryValueText>,
     ]);
-    const startDate = instance?.timing?.actual.start;
-    const endDate = instance?.timing?.actual.end;
-    const duration = instance?.timing?.actual.duration;
     statusEntries.push([
       <EntryKeyText key="instance-starttime-key">Start Time</EntryKeyText>,
       <EntryValueText key="instance-starttime-val">
-        {startDate && new Date(startDate).toISOString()}
+        {start && new Date(start).toISOString()}
       </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>,
       <EntryValueText key="instance-endtime-val">
-        {endDate && new Date(endDate).toISOString()}
+        {end && new Date(end).toISOString()}
       </EntryValueText>,
     ]);
     statusEntries.push([

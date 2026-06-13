@@ -6,9 +6,7 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import DashboardView from './dashboard-view';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 import { getUserRoles } from '@/lib/data/db/iam/roles';
-import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
-import { getDashboardProcessStats, getFolderTree } from './dashboard-data';
-import db from '@/lib/data/db';
+import { getDashboardProcessStats, getFolderTree, getTeamMemberIds } from './dashboard-data';
 
 const Page = async (props: any) => {
   const params = await props.params;
@@ -58,40 +56,10 @@ const Page = async (props: any) => {
 
   // Team Members
   let teamMemberIds: string[] = [];
-  let teamMemberCount = 0;
-
-  if (userRole === 'manager') {
-    try {
-      // get loggedin user's membership
-      const myMembership = await db.membership.findUnique({
-        where: {
-          userId_environmentId: {
-            userId,
-            environmentId: activeEnvironment.spaceId,
-          },
-        },
-      });
-
-      if (myMembership) {
-        // find all members who report directly to this manager
-        const directReports = await db.userOrganigram.findMany({
-          where: { directManagerId: myMembership.id },
-          include: { member: { select: { userId: true } } },
-        });
-        teamMemberIds = directReports.map((r) => r.member.userId);
-        teamMemberCount = teamMemberIds.length;
-      }
-    } catch (_) {}
-  }
-
-  if (userRole === 'admin') {
-    try {
-      // admin sees all members
-      const allMembers = await getFullMembersWithRoles(activeEnvironment.spaceId, ability);
-      teamMemberCount = allMembers.length;
-      teamMemberIds = allMembers.map((m) => m.id);
-    } catch (_) {}
-  }
+  try {
+    teamMemberIds = await getTeamMemberIds(activeEnvironment.spaceId, userId, userRole, ability);
+  } catch (_) {}
+  const teamMemberCount = teamMemberIds.length;
 
   return (
     <Content title="Dashboard">

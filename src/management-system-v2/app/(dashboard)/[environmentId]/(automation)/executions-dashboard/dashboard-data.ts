@@ -10,31 +10,42 @@ import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
 
 type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
+// Returns the user's membership id and whether they have direct reports to determine is user a manager
+export async function getMembershipAndManagerStatus(spaceId: string, userId: string) {
+  const myMembership = await db.membership.findUnique({
+    where: { userId_environmentId: { userId, environmentId: spaceId } },
+  });
+
+  if (!myMembership) return { membershipId: null, isManager: false };
+
+  const directReportsCount = await db.userOrganigram.count({
+    where: { directManagerId: myMembership.id },
+  });
+
+  return { membershipId: myMembership.id, isManager: directReportsCount > 0 };
+}
+
 export async function getTeamMemberIds(
   spaceId: string,
-  userId: string,
   userRole: 'user' | 'manager' | 'admin',
   ability: Ability,
+  membershipId?: string | null,
 ): Promise<string[]> {
   let teamMemberIds: string[] = [];
 
-  if (userRole === 'manager') {
-    const myMembership = await db.membership.findUnique({
-      where: { userId_environmentId: { userId, environmentId: spaceId } },
-    });
-
-    if (myMembership) {
-      const directReports = await db.userOrganigram.findMany({
-        where: { directManagerId: myMembership.id },
-        include: { member: { select: { userId: true } } },
-      });
-      teamMemberIds = directReports.map((r) => r.member.userId);
-    }
-  }
-
+  // admin sees everyone
   if (userRole === 'admin') {
     const allMembers = await getFullMembersWithRoles(spaceId, ability);
-    teamMemberIds = allMembers.map((m) => m.id);
+    return allMembers.map((m) => m.id);
+  }
+
+  // manager sees only their direct reports
+  if (userRole === 'manager' && membershipId) {
+    const directReports = await db.userOrganigram.findMany({
+      where: { directManagerId: membershipId },
+      include: { member: { select: { userId: true } } },
+    });
+    teamMemberIds = directReports.map((r) => r.member.userId);
   }
 
   return teamMemberIds;
@@ -57,7 +68,11 @@ async function getAllProcessesRecursive(
   return collected;
 }
 
-async function buildFolderTree(folderId: string, folderName: string, ability: Ability): Promise<any> {
+async function buildFolderTree(
+  folderId: string,
+  folderName: string,
+  ability: Ability,
+): Promise<any> {
   const contents = await getFolderContents(folderId, ability);
   const subFolders = contents.filter((item) => item.type === 'folder') as (Folder & {
     type: 'folder';

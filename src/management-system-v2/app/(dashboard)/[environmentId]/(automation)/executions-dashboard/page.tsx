@@ -5,8 +5,12 @@ import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import DashboardView from './dashboard-view';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { getUserRoles } from '@/lib/data/db/iam/roles';
-import { getDashboardProcessStats, getFolderTree, getTeamMemberIds } from './dashboard-data';
+import {
+  getDashboardProcessStats,
+  getFolderTree,
+  getMembershipAndManagerStatus,
+  getTeamMemberIds,
+} from './dashboard-data';
 
 const Page = async (props: any) => {
   const params = await props.params;
@@ -30,22 +34,17 @@ const Page = async (props: any) => {
   }
 
   // Role Detection
+  const { membershipId, isManager: hasDirectReports } = await getMembershipAndManagerStatus(
+    activeEnvironment.spaceId,
+    userId,
+  );
+
   let userRole: 'user' | 'manager' | 'admin' = 'user';
   if (systemAdmin || ability.can('admin', 'All')) {
     userRole = 'admin';
-  } else if (
-    ability.can('manage', 'User') ||
-    ability.can('manage', 'RoleMapping') ||
-    ability.can('manage', 'Role')
-  ) {
+  } else if (hasDirectReports) {
+    // check for manager tab visibility based on organigram
     userRole = 'manager';
-  } else {
-    // check if user has a team role
-    const userRoles = await getUserRoles(userId, activeEnvironment.spaceId);
-    const hasTeamRole = userRoles.some((r) =>
-      (r.organizationRoleType as string[])?.includes('team'),
-    );
-    if (hasTeamRole) userRole = 'manager';
   }
 
   // Process Stats (accessible or executable)
@@ -57,7 +56,12 @@ const Page = async (props: any) => {
   // Team Members
   let teamMemberIds: string[] = [];
   try {
-    teamMemberIds = await getTeamMemberIds(activeEnvironment.spaceId, userId, userRole, ability);
+    teamMemberIds = await getTeamMemberIds(
+      activeEnvironment.spaceId,
+      userRole,
+      ability,
+      membershipId,
+    );
   } catch (_) {}
   const teamMemberCount = teamMemberIds.length;
 

@@ -12,6 +12,7 @@ import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-c
 import ProcessStatsCards from '@/components/dashboard-charts/process-stats-overview';
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import TaskOverviewChart from '@/components/dashboard-charts/task-overview-bar-chart';
+import styles from '../dashboard-tabs.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -20,7 +21,6 @@ const COLORS = {
   green: '#52c41a',
   orange: '#fa8c16',
   red: '#f5222d',
-  gray: '#8c8c8c',
 };
 
 interface UserProcessesTabProps {
@@ -37,8 +37,8 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
   return (
     <>
       {/* Process Initiator Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '0' }}>
-        <HiUser style={{ marginRight: '8px' }} /> Your Processes
+      <Title level={4} className={styles.sectionTitleNoTop}>
+        <HiUser className={styles.iconMarginRight} /> Your Processes
       </Title>
 
       <ProcessStatsCards
@@ -50,7 +50,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         startedProcesses={userStats.startedProcesses}
       />
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <RadialDistributionChart title="Instance Distribution" data={instanceDistributionData} />
         </Col>
@@ -65,7 +65,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <ProcessActivityChart
             title="Weekly Process Activity"
@@ -86,7 +86,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Avg. Open Process Time"
@@ -120,17 +120,17 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
       </Row>
 
       {/* Participant Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '32px' }}>
-        <MdAddTask style={{ marginRight: '8px' }} /> Your Tasks (As Participant)
+      <Title level={4} className={styles.sectionTitleTopGap}>
+        <MdAddTask className={styles.iconMarginRight} /> Your Tasks (As Participant)
       </Title>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} sm={12}>
           <Card variant="borderless">
             <Statistic
               title={<Text type="secondary">Open Tasks</Text>}
               value={userStats.openTasks}
-              prefix={<MdPlayArrow style={{ color: COLORS.orange, fontSize: '24px' }} />}
+              prefix={<MdPlayArrow className={styles.statisticPrefixOrange} />}
               styles={{
                 content: {
                   fontSize: '32px',
@@ -146,7 +146,7 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             <Statistic
               title={<Text type="secondary">Completed Tasks</Text>}
               value={userStats.completedTasks}
-              prefix={<MdCheckCircle style={{ color: COLORS.green, fontSize: '24px' }} />}
+              prefix={<MdCheckCircle className={styles.statisticPrefixGreen} />}
               styles={{
                 content: {
                   fontSize: '32px',

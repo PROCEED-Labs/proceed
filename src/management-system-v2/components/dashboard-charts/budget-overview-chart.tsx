@@ -16,9 +16,8 @@ const { Text } = Typography;
 
 const COLORS = {
   blue: '#1677ff',
-  green: '#52c41a',
   orange: '#fa8c16',
-  error: '#f5222d',
+  red: '#f5222d',
 };
 
 interface BudgetOverviewChartProps {
@@ -114,7 +113,7 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
             <Bar
               dataKey="exceeded"
               stackId="b"
-              fill={COLORS.error}
+              fill={COLORS.red}
               name="Exceeded"
               radius={[0, 4, 4, 0]}
             />

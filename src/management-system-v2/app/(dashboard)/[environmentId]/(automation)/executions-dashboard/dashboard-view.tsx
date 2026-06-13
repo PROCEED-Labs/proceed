@@ -23,6 +23,7 @@ import {
 import AdminOverviewTab from './tabs/admin-overview-tab';
 import ManagerOverviewTab from './tabs/manager-overview-tab';
 import UserProcessesTab from './tabs/user-processes-tab';
+import styles from './dashboard-tabs.module.scss';
 
 const { RangePicker } = DatePicker;
 
@@ -339,8 +340,8 @@ const DashboardView: React.FC<DashboardProps> = ({
     {
       key: 'user',
       label: (
-        <span style={{ fontSize: '16px', fontWeight: 500 }}>
-          <HiUser style={{ marginRight: '6px', fontSize: '18px' }} />
+        <span className={styles.tabLabel}>
+          <HiUser className={styles.tabIconMargin} />
           Your Processes
         </span>
       ),
@@ -358,8 +359,8 @@ const DashboardView: React.FC<DashboardProps> = ({
     tabItems.push({
       key: 'manager',
       label: (
-        <span style={{ fontSize: '16px', fontWeight: 500 }}>
-          <HiUserGroup style={{ marginRight: '6px', fontSize: '18px' }} />
+        <span className={styles.tabLabel}>
+          <HiUserGroup className={styles.tabIconMargin} />
           Manager Overview
         </span>
       ),
@@ -377,8 +378,8 @@ const DashboardView: React.FC<DashboardProps> = ({
     tabItems.push({
       key: 'admin',
       label: (
-        <span style={{ fontSize: '16px', fontWeight: 500 }}>
-          <HiShieldCheck style={{ marginRight: '6px', fontSize: '18px' }} />
+        <span className={styles.tabLabel}>
+          <HiShieldCheck className={styles.tabIconMargin} />
           Admin Overview
         </span>
       ),
@@ -403,12 +404,12 @@ const DashboardView: React.FC<DashboardProps> = ({
         items={tabItems}
         size="large"
         tabBarStyle={{
-          marginBottom: '24px',
+          marginBottom: 24,
           borderBottom: '1px solid #f0f0f0',
-          paddingBottom: '12px',
+          paddingBottom: 12,
         }}
         tabBarExtraContent={
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div className={styles.tabExtraContent}>
             {timeRange === 'custom' && (
               <RangePicker
                 value={customDateRange}
@@ -420,7 +421,7 @@ const DashboardView: React.FC<DashboardProps> = ({
             <Select
               value={timeRange}
               onChange={handleTimeRangeChange}
-              style={{ width: 150 }}
+              className={styles.rangeSelectWidth}
               options={[
                 { label: 'Last Week', value: 'week' },
                 { label: 'Last Month', value: 'month' },

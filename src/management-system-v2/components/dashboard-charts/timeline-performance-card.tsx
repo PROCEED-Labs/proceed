@@ -4,9 +4,9 @@ import styles from './dashboard-charts.module.scss';
 const { Text } = Typography;
 
 const COLORS = {
-  success: '#52c41a',
-  warning: '#fa8c16',
-  error: '#f5222d',
+  green: '#52c41a',
+  orange: '#fa8c16',
+  red: '#f5222d',
 };
 
 interface TimelinePerformanceCardProps {
@@ -34,7 +34,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
           </div>
           <Progress
             percent={runningProcesses > 0 ? (onSchedule / runningProcesses) * 100 : 0}
-            strokeColor={COLORS.success}
+            strokeColor={COLORS.green}
             showInfo={true}
             format={(percent) => `${percent?.toFixed(0)}%`}
           />
@@ -46,7 +46,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
           </div>
           <Progress
             percent={runningProcesses > 0 ? (closeToExceed / runningProcesses) * 100 : 0}
-            strokeColor={COLORS.warning}
+            strokeColor={COLORS.orange}
             showInfo={true}
             format={(percent) => `${percent?.toFixed(0)}%`}
           />
@@ -58,7 +58,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
           </div>
           <Progress
             percent={runningProcesses > 0 ? (exceededTime / runningProcesses) * 100 : 0}
-            strokeColor={COLORS.error}
+            strokeColor={COLORS.red}
             showInfo={true}
             format={(percent) => `${percent?.toFixed(0)}%`}
           />

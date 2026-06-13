@@ -12,10 +12,8 @@ import {
 } from 'recharts';
 
 const COLORS = {
-  success: '#52c41a',
-  error: '#f5222d',
-  blue: '#1677ff',
-  purple: '#722ed1',
+  green: '#52c41a',
+  red: '#f5222d',
 };
 
 interface ProcessActivityChartProps {
@@ -33,8 +31,8 @@ const ProcessActivityChart: React.FC<ProcessActivityChartProps> = ({
   data,
   dataKeys = {
     x: 'month',
-    line1: { key: 'completed', name: 'completed', color: COLORS.success },
-    line2: { key: 'failed', name: 'failed', color: COLORS.error },
+    line1: { key: 'completed', name: 'completed', color: COLORS.green },
+    line2: { key: 'failed', name: 'failed', color: COLORS.red },
   },
 }) => {
   return (
@@ -55,7 +53,7 @@ const ProcessActivityChart: React.FC<ProcessActivityChartProps> = ({
           <Line
             type="monotone"
             dataKey={dataKeys.line1.key}
-            stroke={dataKeys.line1.color || COLORS.success}
+            stroke={dataKeys.line1.color || COLORS.green}
             strokeWidth={3}
             dot={{ r: 5 }}
             name={dataKeys.line1.name}
@@ -64,7 +62,7 @@ const ProcessActivityChart: React.FC<ProcessActivityChartProps> = ({
             <Line
               type="monotone"
               dataKey={dataKeys.line2.key}
-              stroke={dataKeys.line2.color || COLORS.error}
+              stroke={dataKeys.line2.color || COLORS.red}
               strokeWidth={3}
               dot={{ r: 5 }}
               name={dataKeys.line2.name}

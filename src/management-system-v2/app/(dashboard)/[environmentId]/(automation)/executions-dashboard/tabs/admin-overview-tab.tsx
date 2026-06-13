@@ -15,6 +15,7 @@ import StatCard from '@/components/stat-card';
 import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import { FolderTreeNode } from '../dashboard-view';
+import styles from '../dashboard-tabs.module.scss';
 
 const { Title, Text } = Typography;
 
@@ -24,7 +25,6 @@ const COLORS = {
   green: '#52c41a',
   orange: '#fa8c16',
   red: '#f5222d',
-  gray: '#8c8c8c',
 };
 
 interface AdminOverviewTabProps {
@@ -47,14 +47,14 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
   return (
     <>
       {/* Folder Selector */}
-      <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <FolderOutlined style={{ fontSize: '18px', color: COLORS.blue }} />
+      <div className={styles.folderSelector}>
+        <FolderOutlined className={styles.folderIcon} />
         <Text strong>System Folder:</Text>
         <TreeSelect
           value={selectedFolderId ?? folderTree?.value}
           onChange={(val) => onFolderChange(val)}
           treeData={folderTree ? [folderTree] : []}
-          style={{ width: 250 }}
+          className={styles.treeSelectWidth}
           placeholder="Select folder"
           allowClear
           onClear={() => onFolderChange(null)}
@@ -63,18 +63,11 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       </div>
 
       {/* System Overview Section */}
-      <Title level={4} style={{ marginBottom: '16px' }}>
-        <HiShieldCheck style={{ marginRight: '8px' }} /> System Overview
+      <Title level={4} className={styles.sectionTitle}>
+        <HiShieldCheck className={styles.iconMarginRight} /> System Overview
       </Title>
 
-      <Row
-        gutter={[16, 16]}
-        style={{
-          marginBottom: '24px',
-          display: 'flex',
-          flexWrap: 'wrap',
-        }}
-      >
+      <Row gutter={[16, 16]} className={styles.statsRowWrap}>
         {[
           {
             title: 'Engines Online',
@@ -107,20 +100,14 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             color: COLORS.purple,
           },
         ].map((item, index) => (
-          <Col
-            key={index}
-            flex="1 1 20%"
-            style={{
-              minWidth: '220px',
-            }}
-          >
+          <Col key={index} flex="1 1 20%" className={styles.statColMinWidth}>
             <StatCard title={item.title} value={item.value} icon={item.icon} color={item.color} />
           </Col>
         ))}
       </Row>
 
       {/* Charts Row 1 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <RadialDistributionChart
             title="System Instance Distribution"
@@ -139,7 +126,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       </Row>
 
       {/* Charts Row 2 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <ProcessActivityChart
             title="System Process Activity"
@@ -161,7 +148,7 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
       </Row>
 
       {/* Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="System Avg. Open Time"

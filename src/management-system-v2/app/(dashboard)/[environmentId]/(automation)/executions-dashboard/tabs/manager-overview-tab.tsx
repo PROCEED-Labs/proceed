@@ -9,6 +9,7 @@ import StatCard from '@/components/stat-card';
 import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import { MdPlayArrow, MdCheckCircle, MdPause } from 'react-icons/md';
+import styles from '../dashboard-tabs.module.scss';
 
 const { Title } = Typography;
 
@@ -18,7 +19,6 @@ const COLORS = {
   green: '#52c41a',
   orange: '#fa8c16',
   red: '#f5222d',
-  gray: '#8c8c8c',
 };
 
 interface ManagerOverviewTabProps {
@@ -35,11 +35,11 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
   return (
     <>
       {/* Team Overview Section */}
-      <Title level={4} style={{ marginBottom: '16px', marginTop: '0' }}>
-        <HiUserGroup style={{ marginRight: '8px' }} /> Team Overview
+      <Title level={4} className={styles.sectionTitleNoTop}>
+        <HiUserGroup className={styles.iconMarginRight} /> Team Overview
       </Title>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} sm={12} lg={6}>
           <StatCard
             title="Running Processes"
@@ -75,7 +75,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
       </Row>
 
       {/* Charts Row 1 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <RadialDistributionChart
             title="Team Instance Distribution"
@@ -94,7 +94,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
       </Row>
 
       {/* Charts Row 2 */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} lg={12}>
           <ProcessActivityChart
             title="Team Process Activity"
@@ -116,7 +116,7 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
       </Row>
 
       {/* Stats Row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
         <Col xs={24} sm={12} lg={8}>
           <StatCard
             title="Team Avg. Open Time"

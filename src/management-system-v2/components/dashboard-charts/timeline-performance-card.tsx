@@ -1,4 +1,5 @@
 import { Card, Space, Typography, Progress } from 'antd';
+import styles from './dashboard-charts.module.scss';
 
 const { Text } = Typography;
 
@@ -27,7 +28,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
     <Card title={title} variant="borderless">
       <Space orientation="vertical" style={{ width: '100%' }} size="large">
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div className={styles.timelineRow}>
             <Text>On Schedule</Text>
             <Text strong>{onSchedule}</Text>
           </div>
@@ -39,7 +40,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
           />
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div className={styles.timelineRow}>
             <Text>Close to Exceed (10%)</Text>
             <Text strong>{closeToExceed}</Text>
           </div>
@@ -51,7 +52,7 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
           />
         </div>
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+          <div className={styles.timelineRow}>
             <Text>Exceeded Time</Text>
             <Text strong>{exceededTime}</Text>
           </div>

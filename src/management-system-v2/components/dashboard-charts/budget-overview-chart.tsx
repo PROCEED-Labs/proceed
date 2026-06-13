@@ -1,6 +1,16 @@
 import React from 'react';
 import { Card, Col, Row, Typography } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import styles from './dashboard-charts.module.scss';
 
 const { Text } = Typography;
 
@@ -26,45 +36,51 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
   const remaining = plannedBudget - spentBudget;
 
   return (
-    <Card title={title} bordered={false}>
-      <div style={{ padding: '20px 10px' }}>
-        <Row gutter={16} style={{ marginBottom: '24px' }}>
+    <Card title={title} variant="borderless">
+      <div className={styles.budgetPadding}>
+        <Row gutter={16} className={styles.budgetRow}>
           <Col span={8}>
-            <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>Planned</Text>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: COLORS.blue }}>
-                ${plannedBudget.toLocaleString()}
-              </div>
+            <div className={styles.budgetColCenter}>
+              <Text type="secondary" className={styles.budgetLabel}>
+                Planned
+              </Text>
+              <div className={styles.budgetValuePlanned}>${plannedBudget.toLocaleString()}</div>
             </div>
           </Col>
           <Col span={8}>
-            <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>Spent</Text>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: isOverBudget ? COLORS.error : COLORS.orange }}>
+            <div className={styles.budgetColCenter}>
+              <Text type="secondary" className={styles.budgetLabel}>
+                Spent
+              </Text>
+              <div
+                className={`${styles.budgetValueSpent} ${isOverBudget ? styles.budgetValueSpentOver : styles.budgetValueSpentNormal}`}
+              >
                 ${spentBudget.toLocaleString()}
               </div>
             </div>
           </Col>
           <Col span={8}>
-            <div style={{ textAlign: 'center' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
+            <div className={styles.budgetColCenter}>
+              <Text type="secondary" className={styles.budgetLabel}>
                 {isOverBudget ? 'Over Budget' : 'Remaining'}
               </Text>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: isOverBudget ? COLORS.error : COLORS.green }}>
+              <div
+                className={`${styles.budgetValueRemaining} ${isOverBudget ? styles.budgetValueRemainingOver : styles.budgetValueRemainingNormal}`}
+              >
                 {isOverBudget ? '+' : ''}${Math.abs(remaining).toLocaleString()}
               </div>
             </div>
           </Col>
         </Row>
         <ResponsiveContainer width="100%" height={140}>
-          <BarChart 
+          <BarChart
             data={[
-              { 
+              {
                 name: 'Budget',
                 planned: plannedBudget,
                 spent: Math.min(spentBudget, plannedBudget),
-                exceeded: isOverBudget ? spentBudget - plannedBudget : 0
-              }
+                exceeded: isOverBudget ? spentBudget - plannedBudget : 0,
+              },
             ]}
             layout="vertical"
             margin={{ top: 20, right: 30, left: 80, bottom: 5 }}
@@ -72,14 +88,36 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis type="number" />
             <YAxis dataKey="name" type="category" hide />
-            <Tooltip 
+            <Tooltip
               formatter={(value) => `$${Number(value).toLocaleString()}`}
-              contentStyle={{ backgroundColor: '#fff', border: '1px solid #d9d9d9', borderRadius: '6px' }}
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #d9d9d9',
+                borderRadius: '6px',
+              }}
             />
             <Legend />
-            <Bar dataKey="planned" stackId="a" fill={COLORS.blue} name="Planned Budget" radius={[0, 4, 4, 0]} />
-            <Bar dataKey="spent" stackId="b" fill={COLORS.orange} name="Spent (Within Budget)" radius={[0, 4, 4, 0]} />
-            <Bar dataKey="exceeded" stackId="b" fill={COLORS.error} name="Exceeded" radius={[0, 4, 4, 0]} />
+            <Bar
+              dataKey="planned"
+              stackId="a"
+              fill={COLORS.blue}
+              name="Planned Budget"
+              radius={[0, 4, 4, 0]}
+            />
+            <Bar
+              dataKey="spent"
+              stackId="b"
+              fill={COLORS.orange}
+              name="Spent (Within Budget)"
+              radius={[0, 4, 4, 0]}
+            />
+            <Bar
+              dataKey="exceeded"
+              stackId="b"
+              fill={COLORS.error}
+              name="Exceeded"
+              radius={[0, 4, 4, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

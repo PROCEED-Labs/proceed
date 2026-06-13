@@ -1,5 +1,6 @@
 import { Card } from 'antd';
 import { RadialBarChart, RadialBar, PolarAngleAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import styles from './dashboard-charts.module.scss';
 
 interface GaugeChartProps {
   percentage: number;
@@ -17,8 +18,8 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
   color = '#52c41a',
 }) => {
   return (
-    <Card title={title} bordered={false}>
-      <div style={{ position: 'relative', height: '300px' }}>
+    <Card title={title} variant="borderless">
+      <div className={styles.gaugeWrapper}>
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart
             cx="50%"
@@ -41,20 +42,11 @@ const GaugeChart: React.FC<GaugeChartProps> = ({
             <Tooltip formatter={(value) => (value ? `${Number(value).toFixed(1)}%` : '')} />
           </RadialBarChart>
         </ResponsiveContainer>
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-            pointerEvents: 'none',
-          }}
-        >
-          <div style={{ fontSize: '48px', fontWeight: 'bold', color, lineHeight: 1 }}>
+        <div className={styles.gaugeCenter}>
+          <div className={styles.gaugePercentage} style={{ color }}>
             {percentage.toFixed(0)}%
           </div>
-          <div style={{ fontSize: '14px', color: '#8c8c8c', marginTop: '8px' }}>
+          <div className={styles.gaugeSubtext}>
             {completed} / {total} Tasks
           </div>
         </div>

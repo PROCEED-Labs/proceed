@@ -48,7 +48,6 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
         pausedProcesses={userStats.pausedProcesses}
         completedProcesses={userStats.completedProcesses}
         startedProcesses={userStats.startedProcesses}
-        type="user"
       />
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>

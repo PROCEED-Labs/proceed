@@ -21,7 +21,7 @@ const StatCard: React.FC<StatCardProps> = ({
   prefix,
   precision = 0,
 }) => (
-  <Card bordered={false} style={{ height: '100%' }}>
+  <Card variant="borderless" style={{ height: '100%' }}>
     <Statistic
       title={<Text type="secondary">{title}</Text>}
       value={value}
@@ -34,7 +34,12 @@ const StatCard: React.FC<StatCardProps> = ({
         )
       }
       suffix={suffix}
-      valueStyle={{ fontSize: '24px', fontWeight: 600 }}
+      styles={{
+        content: {
+          fontSize: '24px',
+          fontWeight: 600,
+        },
+      }}
     />
   </Card>
 );

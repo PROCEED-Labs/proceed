@@ -27,7 +27,7 @@ const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data,
   }));
 
   return (
-    <Card title={title} bordered={false}>
+    <Card title={title} variant="borderless">
       <ResponsiveContainer width="100%" height={280}>
         <RadialBarChart
           cx="50%"

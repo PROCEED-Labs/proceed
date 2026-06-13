@@ -50,7 +50,7 @@ const ProcessStatsCards: React.FC<ProcessStatsCardsProps> = ({
           minWidth: '280px',
         }}
       >
-        <Card bordered={false} style={{ height: '100%' }}>
+        <Card variant="borderless" style={{ height: '100%' }}>
           <div style={{ marginBottom: '16px' }}>
             <Text type="secondary">Accessible Processes</Text>
             <div style={{ fontSize: '24px', fontWeight: 600 }}>{accessibleProcesses}</div>
@@ -104,7 +104,7 @@ const ProcessStatsCards: React.FC<ProcessStatsCardsProps> = ({
           minWidth: '280px',
         }}
       >
-        <Card bordered={false} style={{ height: '100%' }}>
+        <Card variant="borderless" style={{ height: '100%' }}>
           <div style={{ marginBottom: '16px' }}>
             <Text type="secondary">Completed Processes</Text>
             <div style={{ fontSize: '24px', fontWeight: 600 }}>{completedProcesses}</div>

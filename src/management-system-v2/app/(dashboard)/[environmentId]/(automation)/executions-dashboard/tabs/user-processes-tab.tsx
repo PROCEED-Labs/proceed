@@ -4,16 +4,6 @@ import { Card, Col, Row, Typography, Statistic } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUser } from 'react-icons/hi';
 import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Bar,
-  Cell,
-  BarChart,
-} from 'recharts';
 import GaugeChart from '@/components/dashboard-charts/gauge-chart';
 import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';
 import TimelinePerformanceCard from '@/components/dashboard-charts/timeline-performance-card';
@@ -21,6 +11,7 @@ import StatCard from '@/components/stat-card';
 import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-chart';
 import ProcessStatsCards from '@/components/dashboard-charts/process-stats-overview';
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
+import TaskOverviewChart from '@/components/dashboard-charts/task-overview-bar-chart';
 
 const { Title, Text } = Typography;
 
@@ -136,22 +127,34 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
 
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} sm={12}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title={<Text type="secondary">Open Tasks</Text>}
               value={userStats.openTasks}
               prefix={<MdPlayArrow style={{ color: COLORS.orange, fontSize: '24px' }} />}
-              valueStyle={{ fontSize: '32px', fontWeight: 600, color: COLORS.orange }}
+              styles={{
+                content: {
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: COLORS.orange,
+                },
+              }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12}>
-          <Card bordered={false}>
+          <Card variant="borderless">
             <Statistic
               title={<Text type="secondary">Completed Tasks</Text>}
               value={userStats.completedTasks}
               prefix={<MdCheckCircle style={{ color: COLORS.green, fontSize: '24px' }} />}
-              valueStyle={{ fontSize: '32px', fontWeight: 600, color: COLORS.green }}
+              styles={{
+                content: {
+                  fontSize: '32px',
+                  fontWeight: 600,
+                  color: COLORS.green,
+                },
+              }}
             />
           </Card>
         </Col>
@@ -173,36 +176,10 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
           />
         </Col>
         <Col xs={24} lg={12}>
-          <Card title="Task Overview" bordered={false}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart
-                data={[
-                  { label: 'Open', value: userStats.openTasks, fill: COLORS.orange },
-                  { label: 'Completed', value: userStats.completedTasks, fill: COLORS.green },
-                ]}
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="label" />
-                <YAxis allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #d9d9d9',
-                    borderRadius: '6px',
-                  }}
-                />
-                <Bar dataKey="value" name="Tasks" radius={[6, 6, 0, 0]} barSize={80}>
-                  {[
-                    { label: 'Open', fill: COLORS.orange },
-                    { label: 'Completed', fill: COLORS.green },
-                  ].map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
+          <TaskOverviewChart
+            openTasks={userStats.openTasks}
+            completedTasks={userStats.completedTasks}
+          />
         </Col>
       </Row>
     </>

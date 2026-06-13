@@ -24,8 +24,8 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
   title = 'Timeline Performance',
 }) => {
   return (
-    <Card title={title} bordered={false}>
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
+    <Card title={title} variant="borderless">
+      <Space orientation="vertical" style={{ width: '100%' }} size="large">
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
             <Text>On Schedule</Text>

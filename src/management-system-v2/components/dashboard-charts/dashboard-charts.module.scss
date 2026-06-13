@@ -1,0 +1,110 @@
+.budgetPadding {
+  padding: 20px 10px;
+}
+
+.budgetRow {
+  margin-bottom: 24px;
+}
+
+.budgetColCenter {
+  text-align: center;
+}
+
+.budgetLabel {
+  font-size: 12px;
+}
+
+.budgetValuePlanned {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1677ff;
+}
+
+.budgetValueSpent {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.budgetValueSpentOver {
+  color: #f5222d;
+}
+
+.budgetValueSpentNormal {
+  color: #fa8c16;
+}
+
+.budgetValueRemaining {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.budgetValueRemainingOver {
+  color: #f5222d;
+}
+
+.budgetValueRemainingNormal {
+  color: #52c41a;
+}
+
+.gaugeWrapper {
+  position: relative;
+  height: 300px;
+}
+
+.gaugeCenter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.gaugePercentage {
+  font-size: 48px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.gaugeSubtext {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-top: 8px;
+}
+
+.statsRow {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.statsCol {
+  min-width: 280px;
+}
+
+.statsCardFull {
+  height: 100%;
+}
+
+.statsBlockMargin {
+  margin-bottom: 16px;
+}
+
+.statsValue {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.statsValueGreen {
+  color: #52c41a;
+}
+
+.statsValueOrange {
+  color: #fa8c16;
+}
+
+.timelineRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}

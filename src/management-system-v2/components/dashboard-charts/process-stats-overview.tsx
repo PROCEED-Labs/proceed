@@ -111,7 +111,7 @@ const ProcessStatsCards: React.FC<ProcessStatsCardsProps> = ({
           </div>
 
           <div>
-            <Text type="secondary">Started Processes</Text>
+            <Text type="secondary">Total Processes</Text>
             <div style={{ fontSize: '24px', fontWeight: 600 }}>{startedProcesses}</div>
           </div>
         </Card>

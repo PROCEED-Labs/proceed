@@ -54,7 +54,7 @@ const RadialDistributionChart: React.FC<RadialDistributionChartProps> = ({ data,
             }}
           />
           <Tooltip
-            formatter={(value: any, props: any) => [
+            formatter={(count: any, value: any, props: any) => [
               `${props.payload.count} instances (${props.payload.value}%)`,
               props.payload.name,
             ]}

@@ -94,7 +94,7 @@ const Page = async (props: any) => {
   }
 
   return (
-    <Content>
+    <Content title="Dashboard">
       <DashboardView
         userRole={userRole}
         userId={userId}

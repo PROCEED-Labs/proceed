@@ -1,6 +1,6 @@
 'use client';
 
-import { Col, Row, Space, Typography } from 'antd';
+import { Col, Row, Typography } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUserGroup } from 'react-icons/hi';
 import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';

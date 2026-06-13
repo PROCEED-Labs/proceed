@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Col, Row, Space, Typography, Statistic } from 'antd';
+import { Card, Col, Row, Typography, Statistic } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUser } from 'react-icons/hi';
 import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';

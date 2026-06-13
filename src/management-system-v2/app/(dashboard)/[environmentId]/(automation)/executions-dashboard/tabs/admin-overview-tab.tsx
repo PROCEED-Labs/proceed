@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, Col, Row, Typography, Statistic, Progress, TreeSelect } from 'antd';
+import { Col, Row, Typography, Statistic, Progress, TreeSelect } from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,

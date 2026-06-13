@@ -112,10 +112,19 @@ const DashboardView: React.FC<DashboardProps> = ({
   // fetch user tasks for current user
   const { data: userTasksData } = useQuery({
     queryFn: async () => {
-      const tasks = await getUserTasks();
-      if (isUserErrorResponse(tasks)) return { openTasks: 0, completedTasks: 0 };
-      // filter tasks where current user is an actual owner
-      const myTasks = tasks.filter((t) => t.actualOwner?.includes(userId));
+      const tasks = await getUserTasks(space.spaceId);
+      console.log(tasks);
+
+      if (isUserErrorResponse(tasks)) return { openTasks: 0, completedTasks: 0, allTasks: [] };
+      // filter tasks where current user is actual owner, or it's a potential owner match ,or is open to everyone
+      const myTasks = tasks.filter((t) => {
+        const isActualOwner = t.actualOwner?.some((o) => o.id === userId);
+        const potentialUsers = t.potentialOwners?.user || [];
+        const potentialRoles = t.potentialOwners?.roles || [];
+        const isPotentialOwner = potentialUsers.includes(userId);
+        const isOpenToEveryone = potentialUsers.length === 0 && potentialRoles.length === 0;
+        return isActualOwner || isPotentialOwner || isOpenToEveryone;
+      });
       return {
         openTasks: myTasks.filter((t) => t.state !== 'COMPLETED').length,
         completedTasks: myTasks.filter((t) => t.state === 'COMPLETED').length,
@@ -160,7 +169,7 @@ const DashboardView: React.FC<DashboardProps> = ({
     if (!userTasksData?.allTasks) return { openTasks: 0, completedTasks: 0 };
     const filtered = userTasksData.allTasks.filter((t) => {
       if (!t.startTime) return true;
-      const taskDate = new Date(t.startTime);
+      const taskDate = t.startTime instanceof Date ? t.startTime : new Date(t.startTime);
       return taskDate >= dateRange.start && taskDate <= dateRange.end;
     });
     return {

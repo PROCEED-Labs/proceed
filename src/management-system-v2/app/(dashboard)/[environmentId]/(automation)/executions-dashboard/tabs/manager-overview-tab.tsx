@@ -88,7 +88,9 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
             onSchedule={managerStats.onSchedule}
             closeToExceed={managerStats.closeToExceed}
             exceededTime={managerStats.exceededTime}
-            runningProcesses={managerStats.runningProcesses}
+            onScheduleRunning={managerStats.onScheduleRunning}
+            closeToExceedRunning={managerStats.closeToExceedRunning}
+            exceededTimeRunning={managerStats.exceededTimeRunning}
           />
         </Col>
       </Row>

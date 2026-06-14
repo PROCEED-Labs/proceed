@@ -83,6 +83,9 @@ export interface InstanceStats {
   onSchedule: number;
   exceededTime: number;
   closeToExceed: number;
+  onScheduleRunning: number;
+  closeToExceedRunning: number;
+  exceededTimeRunning: number;
   spentBudget: number;
   plannedBudget: number;
   monthlyData: { month: string; completed: number; failed: number }[];
@@ -117,24 +120,32 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
   let totalCompletedTimeMs = 0;
   let completedTimeCount = 0;
   let longestRunningMs = 0;
+  // all instances (for count display)
   let onSchedule = 0;
   let exceededTime = 0;
   let closeToExceed = 0;
+  // running or paused instances only (for percentage/bar calculation)
+  let onScheduleRunning = 0;
+  let closeToExceedRunning = 0;
+  let exceededTimeRunning = 0;
   let spentBudget = 0;
   let plannedBudget = 0;
 
   instances.forEach((instance) => {
     // Status
+    const isStoppedManually = instance.state?.instanceState?.some(
+      (s) => s === 'STOPPED' || s === 'TERMINATED',
+    );
     if (instance.paused) {
       pausedInstances++;
     } else if (instance.executionStatus === 'Running') {
       runningInstances++;
-    } else if (instance.executionStatus === 'Ended') {
-      completedInstances++;
     } else if (instance.executionStatus === 'Failed') {
       failedInstances++;
-    } else {
+    } else if (isStoppedManually) {
       stoppedInstances++;
+    } else if (instance.executionStatus === 'Ended') {
+      completedInstances++;
     }
 
     // Timing
@@ -153,13 +164,26 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
           completedTimeCount++;
         }
 
+        const isRunning = instance.executionStatus === 'Running' || instance.paused;
+
         if (plannedDuration != null && plannedDuration > 0) {
           const ratio = actualDuration / plannedDuration;
+
+          // count for all instances
           if (ratio >= 1.0) exceededTime++;
           else if (ratio >= 0.9) closeToExceed++;
           else onSchedule++;
+
+          // count for running or paused instances only (for % bar)
+          if (isRunning) {
+            if (ratio >= 1.0) exceededTimeRunning++;
+            else if (ratio >= 0.9) closeToExceedRunning++;
+            else onScheduleRunning++;
+          }
         } else {
+          // no planned duration is treated as on schedule
           onSchedule++;
+          if (isRunning) onScheduleRunning++;
         }
       }
     }
@@ -187,6 +211,9 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
     onSchedule,
     exceededTime,
     closeToExceed,
+    onScheduleRunning,
+    closeToExceedRunning,
+    exceededTimeRunning,
     spentBudget: Math.round(spentBudget),
     plannedBudget: Math.round(plannedBudget),
     monthlyData: groupByMonth(instances),
@@ -210,6 +237,9 @@ export function getEmptyStats(): InstanceStats {
     onSchedule: 0,
     exceededTime: 0,
     closeToExceed: 0,
+    onScheduleRunning: 0,
+    closeToExceedRunning: 0,
+    exceededTimeRunning: 0,
     spentBudget: 0,
     plannedBudget: 0,
     monthlyData: [],
@@ -233,6 +263,9 @@ export function calculateUserStats(
     onSchedule: baseStats.onSchedule,
     exceededTime: baseStats.exceededTime,
     closeToExceed: baseStats.closeToExceed,
+    onScheduleRunning: baseStats.onScheduleRunning,
+    closeToExceedRunning: baseStats.closeToExceedRunning,
+    exceededTimeRunning: baseStats.exceededTimeRunning,
     spentBudget: baseStats.spentBudget,
     plannedBudget: baseStats.plannedBudget,
     avgOpenTime: msToHours(baseStats.avgOpenTimeMs),
@@ -263,6 +296,9 @@ export function calculateManagerStats(
     onSchedule: baseStats?.onSchedule ?? 0,
     exceededTime: baseStats?.exceededTime ?? 0,
     closeToExceed: baseStats?.closeToExceed ?? 0,
+    onScheduleRunning: baseStats?.onScheduleRunning ?? 0,
+    closeToExceedRunning: baseStats?.closeToExceedRunning ?? 0,
+    exceededTimeRunning: baseStats?.exceededTimeRunning ?? 0,
     avgOpenTime: msToHours(baseStats?.avgOpenTimeMs) || 0,
     avgCompletedTime: msToHours(baseStats?.avgCompletedTimeMs) || 0,
     longestRunning: msToHours(baseStats?.longestRunningMs) || 0,

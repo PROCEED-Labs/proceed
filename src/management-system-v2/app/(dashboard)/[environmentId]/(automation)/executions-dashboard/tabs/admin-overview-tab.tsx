@@ -120,7 +120,9 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             onSchedule={adminStats.onSchedule}
             closeToExceed={adminStats.closeToExceed}
             exceededTime={adminStats.exceededTime}
-            runningProcesses={adminStats.runningProcesses}
+            onScheduleRunning={adminStats.onScheduleRunning}
+            closeToExceedRunning={adminStats.closeToExceedRunning}
+            exceededTimeRunning={adminStats.exceededTimeRunning}
           />
         </Col>
       </Row>

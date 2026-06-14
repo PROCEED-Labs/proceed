@@ -60,7 +60,9 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             onSchedule={userStats.onSchedule}
             closeToExceed={userStats.closeToExceed}
             exceededTime={userStats.exceededTime}
-            runningProcesses={userStats.runningProcesses}
+            onScheduleRunning={userStats.onScheduleRunning}
+            closeToExceedRunning={userStats.closeToExceedRunning}
+            exceededTimeRunning={userStats.exceededTimeRunning}
           />
         </Col>
       </Row>

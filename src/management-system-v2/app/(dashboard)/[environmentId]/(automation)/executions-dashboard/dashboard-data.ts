@@ -27,28 +27,27 @@ export async function getMembershipAndManagerStatus(spaceId: string, userId: str
 
 export async function getTeamMemberIds(
   spaceId: string,
-  userRole: 'user' | 'manager' | 'admin',
+  isAdmin: boolean,
+  isManager: boolean,
   ability: Ability,
   membershipId?: string | null,
 ): Promise<string[]> {
-  let teamMemberIds: string[] = [];
-
-  // admin sees everyone
-  if (userRole === 'admin') {
+  // admin sees all members in the space
+  if (isAdmin) {
     const allMembers = await getFullMembersWithRoles(spaceId, ability);
     return allMembers.map((m) => m.id);
   }
 
   // manager sees only their direct reports
-  if (userRole === 'manager' && membershipId) {
+  if (isManager && membershipId) {
     const directReports = await db.userOrganigram.findMany({
       where: { directManagerId: membershipId },
       include: { member: { select: { userId: true } } },
     });
-    teamMemberIds = directReports.map((r) => r.member.userId);
+    return directReports.map((r) => r.member.userId);
   }
 
-  return teamMemberIds;
+  return [];
 }
 
 async function getAllProcessesRecursive(

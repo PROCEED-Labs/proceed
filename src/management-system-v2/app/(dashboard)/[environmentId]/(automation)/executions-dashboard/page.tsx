@@ -34,7 +34,8 @@ const Page = async (props: any) => {
   }
 
   // Role Detection Manager/Admin tabs only apply to organization spaces
-  let userRole: 'user' | 'manager' | 'admin' = 'user';
+  let isAdmin = false;
+  let isManager = false;
   let membershipId: string | null = null;
 
   if (activeEnvironment.isOrganization) {
@@ -44,11 +45,14 @@ const Page = async (props: any) => {
     );
     membershipId = mId;
 
+    // check for admin tab based on role or permission
     if (systemAdmin || ability.can('admin', 'All')) {
-      userRole = 'admin';
-    } else if (hasDirectReports) {
-      // check for manager tab visibility based on organigram
-      userRole = 'manager';
+      isAdmin = true;
+    }
+
+    // check for manager tab visibility based on organigram
+    if (hasDirectReports) {
+      isManager = true;
     }
   }
 
@@ -56,14 +60,15 @@ const Page = async (props: any) => {
   const processStats = await getDashboardProcessStats(activeEnvironment.spaceId);
 
   // Folder tree for admin tab
-  const folderTree = userRole === 'admin' ? await getFolderTree(activeEnvironment.spaceId) : null;
+  const folderTree = isAdmin ? await getFolderTree(activeEnvironment.spaceId) : null;
 
-  // Team Members
+  // Team Members: fetch direct reports if manager, all members if admin
   let teamMemberIds: string[] = [];
   try {
     teamMemberIds = await getTeamMemberIds(
       activeEnvironment.spaceId,
-      userRole,
+      isAdmin,
+      isManager,
       ability,
       membershipId,
     );
@@ -73,7 +78,8 @@ const Page = async (props: any) => {
   return (
     <Content title="Dashboard">
       <DashboardView
-        userRole={userRole}
+        isAdmin={isAdmin}
+        isManager={isManager}
         userId={userId}
         accessibleProcesses={processStats.accessibleProcesses}
         executableProcesses={processStats.executableProcesses}

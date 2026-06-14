@@ -37,7 +37,8 @@ export interface FolderTreeNode {
 }
 
 interface DashboardProps {
-  userRole: 'user' | 'manager' | 'admin';
+  isAdmin: boolean;
+  isManager: boolean;
   userId: string;
   accessibleProcesses: number;
   executableProcesses: number;
@@ -55,7 +56,8 @@ const COLORS = {
 };
 
 const DashboardView: React.FC<DashboardProps> = ({
-  userRole,
+  isAdmin,
+  isManager,
   userId,
   accessibleProcesses,
   executableProcesses,
@@ -67,8 +69,6 @@ const DashboardView: React.FC<DashboardProps> = ({
   const [customDateRange, setCustomDateRange] = useState<[Dayjs | null, Dayjs | null] | null>(null);
   const [activeTab, setActiveTab] = useState<string>('user');
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-  const isManager = userRole === 'manager' || userRole === 'admin';
-  const isAdmin = userRole === 'admin';
 
   const space = useEnvironment();
 
@@ -114,7 +114,6 @@ const DashboardView: React.FC<DashboardProps> = ({
   const { data: userTasksData } = useQuery({
     queryFn: async () => {
       const tasks = await getUserTasks(space.spaceId);
-      console.log(tasks);
 
       if (isUserErrorResponse(tasks)) return { openTasks: 0, completedTasks: 0, allTasks: [] };
       // filter tasks where current user is actual owner, or it's a potential owner match ,or is open to everyone
@@ -222,15 +221,16 @@ const DashboardView: React.FC<DashboardProps> = ({
     );
   }, [filteredInstances, selectedFolderId, folderTree]);
 
-  // filter instances for manager's direct reports only (admin sees all)
+  // filter instances for manager's direct reports only
   const managerInstances = useMemo(() => {
     if (!filteredInstances.length) return [];
-    if (userRole === 'admin') return filteredInstances;
     return filteredInstances.filter((instance) => {
       if (!instance.initiatorId) return false;
+      // exclude manager's own instances (they appear in Your Processes tab)
+      if (instance.initiatorId === userId) return false;
       return teamMemberIds.includes(instance.initiatorId);
     });
-  }, [filteredInstances, teamMemberIds, userRole]);
+  }, [filteredInstances, teamMemberIds, userId]);
 
   // calculate all stats
   const stats = useMemo(() => {
@@ -263,9 +263,13 @@ const DashboardView: React.FC<DashboardProps> = ({
       teamMemberCount,
     );
 
-    // admin stats filtered by folder selection
-    const adminBaseStats =
-      adminInstances.length > 0 ? calculateInstanceStats(adminInstances as any[]) : getEmptyStats();
+    // admin stats
+    const adminBaseStats = isAdmin
+      ? adminInstances.length > 0
+        ? calculateInstanceStats(adminInstances as any[])
+        : getEmptyStats()
+      : getEmptyStats();
+
     const adminStats = {
       engines: engines.length,
       ...calculateManagerStats(

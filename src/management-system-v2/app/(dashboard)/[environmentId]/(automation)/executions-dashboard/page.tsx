@@ -33,18 +33,23 @@ const Page = async (props: any) => {
     return notFound();
   }
 
-  // Role Detection
-  const { membershipId, isManager: hasDirectReports } = await getMembershipAndManagerStatus(
-    activeEnvironment.spaceId,
-    userId,
-  );
-
+  // Role Detection Manager/Admin tabs only apply to organization spaces
   let userRole: 'user' | 'manager' | 'admin' = 'user';
-  if (systemAdmin || ability.can('admin', 'All')) {
-    userRole = 'admin';
-  } else if (hasDirectReports) {
-    // check for manager tab visibility based on organigram
-    userRole = 'manager';
+  let membershipId: string | null = null;
+
+  if (activeEnvironment.isOrganization) {
+    const { membershipId: mId, isManager: hasDirectReports } = await getMembershipAndManagerStatus(
+      activeEnvironment.spaceId,
+      userId,
+    );
+    membershipId = mId;
+
+    if (systemAdmin || ability.can('admin', 'All')) {
+      userRole = 'admin';
+    } else if (hasDirectReports) {
+      // check for manager tab visibility based on organigram
+      userRole = 'manager';
+    }
   }
 
   // Process Stats (accessible or executable)

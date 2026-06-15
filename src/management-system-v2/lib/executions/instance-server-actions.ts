@@ -9,7 +9,6 @@ import { getAllAvailableEngines } from '@/lib/data/engines';
 import {
   deployProcess as _deployProcess,
   getDeployment,
-  changeDeploymentActivation as _changeDeploymentActivation,
   InstanceInfo,
 } from '@/lib/engines/deployment';
 import {

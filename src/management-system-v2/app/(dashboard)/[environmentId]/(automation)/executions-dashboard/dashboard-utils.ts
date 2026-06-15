@@ -252,8 +252,13 @@ export function calculateUserStats(
   baseStats: InstanceStats,
   accessibleProcesses: number = 0,
   executableProcesses: number = 0,
-  openTasks: number = 0,
-  completedTasks: number = 0,
+  yourOpenTasks: number = 0,
+  yourCompletedTasks: number = 0,
+  groupOpenTasks: number = 0,
+  groupCompletedTasks: number = 0,
+  unassignedTasks: number = 0,
+  isAdmin: boolean = false,
+  isOrganization: boolean = false,
 ) {
   return {
     startedProcesses: baseStats.totalInstances,
@@ -276,8 +281,13 @@ export function calculateUserStats(
     weeklyData: baseStats.weeklyData,
     accessibleProcesses,
     executableProcesses,
-    openTasks,
-    completedTasks,
+    yourOpenTasks,
+    yourCompletedTasks,
+    groupOpenTasks,
+    groupCompletedTasks,
+    unassignedTasks,
+    isAdmin,
+    isOrganization,
   };
 }
 

@@ -24,6 +24,7 @@ import AdminOverviewTab from './tabs/admin-overview-tab';
 import ManagerOverviewTab from './tabs/manager-overview-tab';
 import UserProcessesTab from './tabs/user-processes-tab';
 import styles from './dashboard-tabs.module.scss';
+import { getUserRoles } from '@/lib/data/roles';
 
 const { RangePicker } = DatePicker;
 
@@ -39,6 +40,7 @@ export interface FolderTreeNode {
 interface DashboardProps {
   isAdmin: boolean;
   isManager: boolean;
+  isOrganization: boolean;
   userId: string;
   accessibleProcesses: number;
   executableProcesses: number;
@@ -58,6 +60,7 @@ const COLORS = {
 const DashboardView: React.FC<DashboardProps> = ({
   isAdmin,
   isManager,
+  isOrganization,
   userId,
   accessibleProcesses,
   executableProcesses,
@@ -110,29 +113,60 @@ const DashboardView: React.FC<DashboardProps> = ({
     queryKey: ['space', space.spaceId, 'deployments'],
   });
 
-  // fetch user tasks for current user
+  // fetch user roles for group task matching
+  const { data: myRoleIds } = useQuery({
+    queryFn: async () => {
+      const roles = await getUserRoles(space.spaceId, userId);
+      if (isUserErrorResponse(roles)) return [];
+      return roles.map((r) => r.id);
+    },
+    queryKey: ['user-roles', space.spaceId, userId],
+  });
+
   const { data: userTasksData } = useQuery({
     queryFn: async () => {
       const tasks = await getUserTasks(space.spaceId);
+      if (isUserErrorResponse(tasks))
+        return {
+          directTasks: [],
+          groupTasks: [],
+          unassignedTasks: [],
+        };
 
-      if (isUserErrorResponse(tasks)) return { openTasks: 0, completedTasks: 0, allTasks: [] };
-      // filter tasks where current user is actual owner, or it's a potential owner match ,or is open to everyone
-      const myTasks = tasks.filter((t) => {
-        const isActualOwner = t.actualOwner?.some((o) => o.id === userId);
+      // personal space
+      if (!isOrganization) {
+        return {
+          directTasks: tasks,
+          groupTasks: [],
+          unassignedTasks: [],
+        };
+      }
+
+      // for organization space split into direct, group, unassigned
+      const roleIds = myRoleIds || [];
+
+      const directTasks = tasks.filter((t) => {
+        const potentialUsers = t.potentialOwners?.user || [];
+        return potentialUsers.includes(userId);
+      });
+
+      const groupTasks = tasks.filter((t) => {
         const potentialUsers = t.potentialOwners?.user || [];
         const potentialRoles = t.potentialOwners?.roles || [];
-        const isPotentialOwner = potentialUsers.includes(userId);
-        const isOpenToEveryone = potentialUsers.length === 0 && potentialRoles.length === 0;
-        return isActualOwner || isPotentialOwner || isOpenToEveryone;
+        if (potentialUsers.includes(userId)) return false;
+        return potentialRoles.some((roleId) => roleIds.includes(roleId));
       });
-      return {
-        openTasks: myTasks.filter((t) => t.state !== 'COMPLETED').length,
-        completedTasks: myTasks.filter((t) => t.state === 'COMPLETED').length,
-        allTasks: myTasks,
-      };
+
+      const unassignedTasks = tasks.filter((t) => {
+        const potentialUsers = t.potentialOwners?.user || [];
+        const potentialRoles = t.potentialOwners?.roles || [];
+        return potentialUsers.length === 0 && potentialRoles.length === 0;
+      });
+
+      return { directTasks, groupTasks, unassignedTasks };
     },
     refetchInterval: 5000,
-    queryKey: ['space', space.spaceId, 'userTasks', userId],
+    queryKey: ['space', space.spaceId, 'userTasks', userId, myRoleIds, isOrganization],
   });
 
   const isLoading = enginesLoading || deploymentsLoading;
@@ -164,17 +198,34 @@ const DashboardView: React.FC<DashboardProps> = ({
     return { start, end };
   }, [timeRange, customDateRange]);
 
-  // filter tasks by date range
-  const filteredUserTasks = useMemo(() => {
-    if (!userTasksData?.allTasks) return { openTasks: 0, completedTasks: 0 };
-    const filtered = userTasksData.allTasks.filter((t) => {
+  const filterByDate = (tasks: any[]) =>
+    tasks.filter((t) => {
       if (!t.startTime) return true;
       const taskDate = t.startTime instanceof Date ? t.startTime : new Date(t.startTime);
       return taskDate >= dateRange.start && taskDate <= dateRange.end;
     });
+
+  // filter tasks by date range
+  const filteredUserTasks = useMemo(() => {
+    if (!userTasksData)
+      return {
+        yourOpenTasks: 0,
+        yourCompletedTasks: 0,
+        groupOpenTasks: 0,
+        groupCompletedTasks: 0,
+        unassignedTasks: 0,
+      };
+
+    const directFiltered = filterByDate(userTasksData.directTasks || []);
+    const groupFiltered = filterByDate(userTasksData.groupTasks || []);
+    const unassignedFiltered = filterByDate(userTasksData.unassignedTasks || []);
+
     return {
-      openTasks: filtered.filter((t) => t.state !== 'COMPLETED').length,
-      completedTasks: filtered.filter((t) => t.state === 'COMPLETED').length,
+      yourOpenTasks: directFiltered.filter((t) => t.state !== 'COMPLETED').length,
+      yourCompletedTasks: directFiltered.filter((t) => t.state === 'COMPLETED').length,
+      groupOpenTasks: groupFiltered.filter((t) => t.state !== 'COMPLETED').length,
+      groupCompletedTasks: groupFiltered.filter((t) => t.state === 'COMPLETED').length,
+      unassignedTasks: unassignedFiltered.filter((t) => t.state !== 'COMPLETED').length,
     };
   }, [userTasksData, dateRange]);
 
@@ -246,8 +297,13 @@ const DashboardView: React.FC<DashboardProps> = ({
       userBaseStats,
       accessibleProcesses,
       executableProcesses,
-      filteredUserTasks.openTasks,
-      filteredUserTasks.completedTasks,
+      filteredUserTasks.yourOpenTasks,
+      filteredUserTasks.yourCompletedTasks,
+      filteredUserTasks.groupOpenTasks,
+      filteredUserTasks.groupCompletedTasks,
+      filteredUserTasks.unassignedTasks,
+      isAdmin,
+      isOrganization,
     );
 
     // manager stats

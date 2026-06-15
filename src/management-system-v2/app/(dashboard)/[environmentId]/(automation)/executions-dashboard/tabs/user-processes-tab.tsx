@@ -13,8 +13,9 @@ import ProcessStatsCards from '@/components/dashboard-charts/process-stats-overv
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import TaskOverviewChart from '@/components/dashboard-charts/task-overview-bar-chart';
 import styles from '../dashboard-tabs.module.scss';
+import TaskSummaryCard from '@/components/dashboard-charts/task-summary-card';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const COLORS = {
   blue: '#1677ff',
@@ -127,59 +128,35 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
       </Title>
 
       <Row gutter={[16, 16]} className={styles.rowMarginBottom}>
-        <Col xs={24} sm={12}>
-          <Card variant="borderless">
-            <Statistic
-              title={<Text type="secondary">Open Tasks</Text>}
-              value={userStats.openTasks}
-              prefix={<MdPlayArrow className={styles.statisticPrefixOrange} />}
-              styles={{
-                content: {
-                  fontSize: '32px',
-                  fontWeight: 600,
-                  color: COLORS.orange,
-                },
-              }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Card variant="borderless">
-            <Statistic
-              title={<Text type="secondary">Completed Tasks</Text>}
-              value={userStats.completedTasks}
-              prefix={<MdCheckCircle className={styles.statisticPrefixGreen} />}
-              styles={{
-                content: {
-                  fontSize: '32px',
-                  fontWeight: 600,
-                  color: COLORS.green,
-                },
-              }}
-            />
-          </Card>
+        <Col xs={24}>
+          <TaskSummaryCard userStats={userStats} />
         </Col>
       </Row>
 
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <GaugeChart
-            title="Task Completion Rate"
+            title="Direct Task Completion Rate"
             percentage={
-              userStats.completedTasks + userStats.openTasks > 0
-                ? (userStats.completedTasks / (userStats.completedTasks + userStats.openTasks)) *
+              userStats.yourCompletedTasks + userStats.yourOpenTasks > 0
+                ? (userStats.yourCompletedTasks /
+                    (userStats.yourCompletedTasks + userStats.yourOpenTasks)) *
                   100
                 : 0
             }
-            completed={userStats.completedTasks}
-            total={userStats.completedTasks + userStats.openTasks}
+            completed={userStats.yourCompletedTasks}
+            total={userStats.yourCompletedTasks + userStats.yourOpenTasks}
             color={COLORS.green}
           />
         </Col>
         <Col xs={24} lg={12}>
           <TaskOverviewChart
-            openTasks={userStats.openTasks}
-            completedTasks={userStats.completedTasks}
+            yourOpenTasks={userStats.yourOpenTasks}
+            yourCompletedTasks={userStats.yourCompletedTasks}
+            groupOpenTasks={userStats.groupOpenTasks}
+            groupCompletedTasks={userStats.groupCompletedTasks}
+            unassignedTasks={userStats.isAdmin ? userStats.unassignedTasks : undefined}
+            isOrganization={userStats.isOrganization}
           />
         </Col>
       </Row>

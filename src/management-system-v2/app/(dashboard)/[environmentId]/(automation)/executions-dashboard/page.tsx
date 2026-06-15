@@ -80,6 +80,7 @@ const Page = async (props: any) => {
       <DashboardView
         isAdmin={isAdmin}
         isManager={isManager}
+        isOrganization={activeEnvironment.isOrganization}
         userId={userId}
         accessibleProcesses={processStats.accessibleProcesses}
         executableProcesses={processStats.executableProcesses}

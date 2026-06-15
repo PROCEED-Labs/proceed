@@ -112,3 +112,34 @@
 .timelineProgressInfo {
   color: #000000;
 }
+
+.taskSummarySection {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.taskSummaryIcon {
+  font-size: 18px;
+}
+
+.taskSummaryTags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.taskSummaryTag {
+  font-size: 13px;
+  padding: 4px 10px;
+}
+
+.taskSummaryDivider {
+  height: 72px;
+}
+
+.taskSummaryHelpIcon {
+  font-size: 12px;
+  color: #8c8c8c;
+}

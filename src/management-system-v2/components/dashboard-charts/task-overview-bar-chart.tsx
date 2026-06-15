@@ -5,9 +5,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Bar,
-  Cell,
   BarChart,
+  Bar,
+  Legend,
 } from 'recharts';
 
 const COLORS = {
@@ -16,23 +16,78 @@ const COLORS = {
 };
 
 interface TaskOverviewChartProps {
-  openTasks: number;
-  completedTasks: number;
+  yourOpenTasks: number;
+  yourCompletedTasks: number;
+  groupOpenTasks: number;
+  groupCompletedTasks: number;
+  unassignedTasks?: number;
+  isOrganization?: boolean;
 }
 
-const TaskOverviewChart: React.FC<TaskOverviewChartProps> = ({ openTasks, completedTasks }) => {
+const TaskOverviewChart: React.FC<TaskOverviewChartProps> = ({
+  yourOpenTasks,
+  yourCompletedTasks,
+  groupOpenTasks,
+  groupCompletedTasks,
+  unassignedTasks,
+  isOrganization = false,
+}) => {
+  // simple 2 for personal space bars: Open and Completed
+  if (!isOrganization) {
+    const data = [
+      {
+        category: 'Tasks',
+        Open: yourOpenTasks,
+        Completed: yourCompletedTasks,
+      },
+    ];
+
+    return (
+      <Card title="Task Breakdown" variant="borderless">
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="category" tick={{ fontSize: 11 }} />
+            <YAxis allowDecimals={false} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: '#fff',
+                border: '1px solid #d9d9d9',
+                borderRadius: '6px',
+              }}
+            />
+            <Legend />
+            <Bar dataKey="Open" fill={COLORS.orange} radius={[4, 4, 0, 0]} barSize={60} />
+            <Bar dataKey="Completed" fill={COLORS.green} radius={[4, 4, 0, 0]} barSize={60} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    );
+  }
+
+  // grouped bars per category for organization space
+  const data = [
+    {
+      category: 'Directly Assigned',
+      Open: yourOpenTasks,
+      Completed: yourCompletedTasks,
+    },
+    {
+      category: 'Via Role / Group',
+      Open: groupOpenTasks,
+      Completed: groupCompletedTasks,
+    },
+    ...(unassignedTasks !== undefined
+      ? [{ category: 'Unassigned', Open: unassignedTasks, Completed: 0 }]
+      : []),
+  ];
+
   return (
-    <Card title="Task Overview" variant="borderless">
+    <Card title="Task Breakdown" variant="borderless">
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart
-          data={[
-            { label: 'Open', value: openTasks, fill: COLORS.orange },
-            { label: 'Completed', value: completedTasks, fill: COLORS.green },
-          ]}
-          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-        >
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="label" />
+          <XAxis dataKey="category" tick={{ fontSize: 11 }} />
           <YAxis allowDecimals={false} />
           <Tooltip
             contentStyle={{
@@ -41,14 +96,9 @@ const TaskOverviewChart: React.FC<TaskOverviewChartProps> = ({ openTasks, comple
               borderRadius: '6px',
             }}
           />
-          <Bar dataKey="value" name="Tasks" radius={[6, 6, 0, 0]} barSize={80}>
-            {[
-              { label: 'Open', fill: COLORS.orange },
-              { label: 'Completed', fill: COLORS.green },
-            ].map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Bar>
+          <Legend />
+          <Bar dataKey="Open" fill={COLORS.orange} radius={[4, 4, 0, 0]} barSize={30} />
+          <Bar dataKey="Completed" fill={COLORS.green} radius={[4, 4, 0, 0]} barSize={30} />
         </BarChart>
       </ResponsiveContainer>
     </Card>

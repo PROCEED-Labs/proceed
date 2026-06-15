@@ -271,6 +271,15 @@ model RoleMember {
   @@map("role_member")
 }
 
+model Engine {
+  id            String @id
+  name          String?
+
+  connections   ConnectionEngineReachability[]
+
+  @@map("engine")
+}
+
 model EngineConnection {
   id            String   @id @default(uuid())
   space         Space?   @relation(fields: [environmentId], references: [id], onDelete: Cascade)
@@ -280,7 +289,22 @@ model EngineConnection {
   createdOn     DateTime @default(now())
   lastEditedOn  DateTime @updatedAt
 
+  removed       Boolean  @default(false)
+
+  engines       ConnectionEngineReachability[]
+
   @@map("engine-connection")
+}
+
+model ConnectionEngineReachability {
+  engine        Engine              @relation(fields: [engineId], references: [id])
+  engineId      String
+  connection    EngineConnection    @relation(fields: [connectionId], references: [id])
+  connectionId  String
+
+  // TODO: add entry for current reachability and last time the engine was reached using this connection
+
+  @@id([engineId, connectionId])
 }
 
 model GuestSignin {

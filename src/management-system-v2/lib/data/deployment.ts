@@ -66,7 +66,7 @@ export async function getProcessDeployments(
           version: {
             AND: [
               { processId },
-              { NOT: !showArchivedProcesses ? { process: { folderId: null } } : undefined },
+              ...(!showArchivedProcesses ? [{ NOT: { process: { folderId: null } } }] : []),
             ],
           },
         },

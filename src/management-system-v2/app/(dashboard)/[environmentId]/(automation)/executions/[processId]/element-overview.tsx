@@ -1,5 +1,5 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Col, Divider, Menu, Row, Space, Typography } from 'antd';
+import { Col, Divider, Image, Menu, message, Row, Space, Typography } from 'antd';
 import { InstanceSelector } from './instance-selector';
 import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
@@ -12,6 +12,9 @@ import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { DataGrid } from './instance-info-panel';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import dynamic from 'next/dynamic';
+import { fallbackImage } from '@/components/image-upload';
+import { EntityType } from '@/lib/helpers/fileManagerHelpers';
+import { useFileManager } from '@/lib/useFileManager';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 export function ElementOverview({
@@ -26,14 +29,53 @@ export function ElementOverview({
   instance?: ExtendedInstanceInfo;
 }) {
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
+  const [fileUrl, setFileUrl] = useState<string | undefined>();
+  const { download } = useFileManager({
+    entityType: EntityType.PROCESS,
+    errorToasts: true,
+    dontUpdateProcessArtifactsReferences: true,
+  });
+
   useEffect(() => {
     async function getBpmnObject() {
       const bpmnObj = await toBpmnObject(version.bpmn);
       const defInfos = await getDefinitionsInfos(bpmnObj);
       setDefinitionsInfos(defInfos);
     }
+    async function downloadFile() {
+      // "loading" state
+      setFileUrl(undefined);
+      const metaData = getMetaDataFromElement(element.businessObject);
+      const fileName = metaData.overviewImage;
+
+      console.log('Downloading image for fileName:', fileName);
+
+      if (fileName === undefined) {
+        return;
+      }
+
+      if (fileName.startsWith('public/')) {
+        setFileUrl(fileName.replace('public/', '/'));
+        return;
+      }
+
+      try {
+        const result = await download({
+          entityId: processId,
+          filePath: fileName,
+        });
+        if (!result.fileUrl) throw new Error('Response does not contain fileUrl');
+
+        setFileUrl(result.fileUrl);
+      } catch (error) {
+        console.error('Download failed:', error);
+        message.error('Failed to download image.');
+      }
+    }
+
+    downloadFile();
     getBpmnObject();
-  }, [version]);
+  }, [processId, version, element, download]);
 
   if (!instance) return <InstanceSelector />;
 
@@ -50,20 +92,31 @@ export function ElementOverview({
       <div
         key="image"
         style={{
-          // width: '75%',
-          height: '7.5rem',
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
           margin: 'auto',
           marginTop: '1rem',
-          // overflow: 'hidden',
         }}
       >
-        {/** TODO: correct image url */}
-        <ImageSelectionSection
-          imageFilePath={metaData.overviewImage}
-          onImageUpdate={() => {}}
-          disabled={true}
+        <Image
+          src={fileUrl || fallbackImage}
+          fallback={fallbackImage}
+          alt="Image"
+          width={'75%'}
+          height={'7.5rem'}
+          style={{
+            borderRadius: '6px',
+            border: '1px solid #d9d9d9',
+            objectFit: 'cover',
+            objectPosition: 'center',
+          }}
+          styles={{
+            cover: {
+              borderRadius: '6px',
+              border: '1px solid #d9d9d9',
+            },
+          }}
         />
       </div>,
     ]);

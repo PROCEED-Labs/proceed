@@ -123,7 +123,7 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
-    const deployments = await getProcessDeployments(spaceId, definitionId);
+    const deployments = await getProcessDeployments(spaceId, definitionId, undefined, true);
     if (isUserErrorResponse(deployments)) return deployments;
 
     const availableEngines = await getAllAvailableEngines(spaceId);

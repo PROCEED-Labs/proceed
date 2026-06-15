@@ -7,6 +7,8 @@ import {
 } from './endpoints/mqtt-endpoints';
 import endpointBuilder from './endpoints/endpoint-builder';
 import { httpRequest } from './endpoints/http-endpoints';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { engineRequest } from './endpoints';
 
 const mqttTimeout = 2000;
 
@@ -34,20 +36,40 @@ async function getMqttEngines(connection: EngineConnection): Promise<MqttEngine[
   // NOTE: not awaiting this could be a problem if hosted on vercel
   client.endAsync();
 
-  return Array.from(engineMap.values())
+  const reachableEngines = Array.from(engineMap.values())
     .filter((v) => v.running)
     .map((e) => ({
       id: e.id,
-      type: 'mqtt',
-      spaceEngine: true,
+      type: 'mqtt' as const,
+      spaceEngine: true as const,
       brokerAddress: connection.address,
     }));
+
+  const extendedEngineData = await asyncMap(reachableEngines, async (e) => {
+    let name;
+
+    try {
+      ({ name } = await engineRequest({
+        engine: e,
+        method: 'get',
+        endpoint: '/machine/:properties',
+        pathParams: { properties: 'name' },
+      }));
+    } catch (err) {}
+
+    return {
+      ...e,
+      name,
+    };
+  });
+
+  return extendedEngineData;
 }
 
 async function getHttpEngine(connection: EngineConnection): Promise<[HttpEngine]> {
-  const { id } = await httpRequest(
+  const { id, name } = await httpRequest(
     connection.address,
-    endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
+    endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id,name' } }),
     'GET',
   );
 
@@ -55,6 +77,7 @@ async function getHttpEngine(connection: EngineConnection): Promise<[HttpEngine]
     {
       type: 'http',
       id,
+      name,
       address: connection.address,
       spaceEngine: true,
     },

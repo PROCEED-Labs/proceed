@@ -35,6 +35,10 @@ export const schemaValidationError = () => {
   return userError('Schema validation failed', UserErrorType.SchemaValidationError);
 };
 
+export const internalError = () => {
+  return userError('Something went wrong');
+};
+
 /**
  * Creates a new user error inside an object for server responses.
  *

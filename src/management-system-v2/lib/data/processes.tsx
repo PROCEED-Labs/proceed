@@ -60,6 +60,7 @@ import {
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
   getFolderScriptTasks as _getFolderScriptTasks,
   getFolderPathScriptTasks as _getFolderPathScriptTasks,
+  getProcessVersion as _getProcessVersion,
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
@@ -910,4 +911,10 @@ export async function checkIfProcessExistsByName(
     console.log(error);
     return data.batch === true ? [] : false;
   }
+}
+
+export async function getProcessVersion(processDefinitionsId?: string, versionId?: string) {
+  return processDefinitionsId && versionId
+    ? await _getProcessVersion(processDefinitionsId, versionId)
+    : undefined;
 }

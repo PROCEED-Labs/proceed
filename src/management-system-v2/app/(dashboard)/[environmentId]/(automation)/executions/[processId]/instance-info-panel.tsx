@@ -97,7 +97,12 @@ export default function InstanceInfoPanel({
   open: boolean;
   processId: string;
   version: { bpmn: string };
-  instance?: ExtendedInstanceInfo;
+  instance?: {
+    engines: {
+      id: string;
+      online: boolean;
+    }[];
+  } & ExtendedInstanceInfo;
   element?: ElementLike;
   refetch: () => void;
 }) {
@@ -115,7 +120,14 @@ export default function InstanceInfoPanel({
         {
           key: 'Overview',
           label: 'Overview',
-          children: <ElementOverview processId={processId} element={element} instance={instance} />,
+          children: (
+            <ElementOverview
+              processId={processId}
+              element={element}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
           key: 'Details',

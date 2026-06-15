@@ -11,25 +11,43 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, getTiming, statusToType } from './instance-helpers';
+import { getTiming, statusToType } from './instance-helpers';
 import {
   getDefinitionsInfos,
   getDefinitionsVersionInformation,
   getMetaDataFromElement,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
-import { DataGrid, DisplayTable } from './instance-info-panel';
-import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
-import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
+import { DataGrid } from './instance-info-panel';
+import { generateDurationString } from '@/lib/utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import styles from './element-status.module.scss';
-import { InstanceSelector } from './instance-selector';
 import TextViewer from '@/components/text-viewer';
 import { EntryText } from './entry-text';
-import { getProcess } from '@/lib/data/db/process';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
+import { getProcessVersion } from '@/lib/data/processes';
+
+type PreviousVersion =
+  | {
+      name: string;
+      id: string;
+      createdOn: Date;
+      description: string;
+      processId: string;
+      versionBasedOn: string | null;
+      bpmnFilePath: string;
+    }
+  | null
+  | undefined;
+
+type VersionInfo = {
+  versionId?: string | undefined;
+  name?: string | undefined;
+  description?: string | undefined;
+  versionBasedOn?: string | undefined;
+  versionCreatedOn?: string | undefined;
+};
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
@@ -115,17 +133,17 @@ export function ElementStatus({
   processId: string;
   element: ElementLike;
   version: { bpmn: string };
-  instance?: ExtendedInstanceInfo;
+  instance?: {
+    engines: {
+      id: string;
+      online: boolean;
+    }[];
+  } & ExtendedInstanceInfo;
 }) {
   const [techDetails, setTechDetails] = useState(false);
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
-  const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<{
-    versionId?: string | undefined;
-    name?: string | undefined;
-    description?: string | undefined;
-    versionBasedOn?: string | undefined;
-    versionCreatedOn?: string | undefined;
-  }>();
+  const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
+  const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
   const statusEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -134,17 +152,18 @@ export function ElementStatus({
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   useEffect(() => {
+    // using version because it contains the parent object containing some more metadata
     async function getBpmnObject() {
       const bpmnObj = await toBpmnObject(version.bpmn);
       const defInfos = await getDefinitionsInfos(bpmnObj);
       const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
+      const previous = await getProcessVersion(processId, defVersionInfos.versionBasedOn);
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
+      setPreviousVersion(previous);
     }
     getBpmnObject();
-  }, [version]);
-
-  console.log(metaData)
+  }, [processId, version]);
 
   // TECH DETAILS SWITCH
   statusEntries.push([
@@ -180,6 +199,7 @@ export function ElementStatus({
         style={{
           padding: 10,
           backgroundColor: 'hsla(0, 0%, 50%, 0.05)',
+          // TODO: check styling
           // border: '1px solid #77777733',
           borderRadius: 10,
         }}
@@ -189,6 +209,7 @@ export function ElementStatus({
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
+      // TODO:
       <EntryValueText key="instance-processmanager-val">TODO</EntryValueText>,
     ]);
     if (techDetails)
@@ -228,7 +249,7 @@ export function ElementStatus({
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-basedon-key">Based on</EntryKeyText>,
-      <EntryValueText key="instance-basedon-val">TODO</EntryValueText>,
+      <EntryValueText key="instance-basedon-val">{previousVersion?.name}</EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([
@@ -250,11 +271,13 @@ export function ElementStatus({
       </Space>,
     ]);
     const initiator = instance?.processInitiator;
+    statusEntries.push([
+      <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
+      <EntryValueText key="instance-startedby-val">
+        {typeof initiator === 'object' ? initiator.fullName : initiator}
+      </EntryValueText>,
+    ]);
     if (typeof initiator === 'object') {
-      statusEntries.push([
-        <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
-        <EntryValueText key="instance-startedby-val">{initiator.fullName}</EntryValueText>,
-      ]);
       if (techDetails)
         statusEntries.push([
           <TechEntryKey key="instance-startusername-key">Username</TechEntryKey>,
@@ -281,6 +304,17 @@ export function ElementStatus({
     }
 
     // TIMING
+    const {
+      actual: { start, end, duration },
+      plan: { duration: plannedDuration },
+    } = getTiming({
+      isRootElement,
+      metaData,
+      token,
+      logInfo,
+      instance,
+    });
+
     statusEntries.push([
       <Space
         key="instance-heading-timing"
@@ -296,16 +330,11 @@ export function ElementStatus({
         <TechEntryKey key="instance-runid-key">Run ID</TechEntryKey>,
         <EntryValueText key="instance-runid-val">{instance?.processInstanceId}</EntryValueText>,
       ]);
-      
-    const start = instance?.timing?.actual.start;
-    const end = instance?.timing?.actual.end;
-    const duration = instance?.timing?.actual.duration;
-    const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
     statusEntries.push([
       <EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>,
       <EntryValueText key="instance-plannedduration-val">
-        {generateDurationString(plan.duration)}
-        </EntryValueText>,
+        {generateDurationString(plannedDuration)}
+      </EntryValueText>,
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-starttime-key">Start Time</EntryKeyText>,
@@ -341,12 +370,13 @@ export function ElementStatus({
       ]);
       statusEntries.push([
         <TechEntryKey key="instance-engine-key">Engine</TechEntryKey>,
-        <EntryValueText key="instance-engine-val">engine1</EntryValueText>,
+        // TODO:
+        <EntryValueText key="instance-engine-val">TODO</EntryValueText>,
       ]);
       statusEntries.push([
         <TechEntryKey key="instance-engineid-key">Engine ID</TechEntryKey>,
         <EntryValueText key="instance-engineid-val">
-          488200f1-aec4-4188-843e-e0b6de4c5ed1
+          {instance?.engines.map((e: any) => e.id)}
         </EntryValueText>,
       ]);
     }
@@ -479,76 +509,6 @@ export function ElementStatus({
       <EntryValueText key="hkj">{priority}</EntryValueText>,
     ]);
   }
-
-  // Activity time calculation
-  const timing = getTiming({
-    isRootElement,
-    metaData,
-    token,
-    logInfo,
-    instance,
-  });
-
-  // Activity time
-  // statusEntries.push([
-  //   <Space key="started">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Started:</EntryKeyText>
-  //     <EntryValueText>{generateDateString(start, true)}</EntryValueText>
-  //   </Space>,
-  //   <Space key="planned-start">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Planned Start:</EntryKeyText>
-  //     <EntryValueText>{generateDateString(plan.start, true) || ''}</EntryValueText>
-  //   </Space>,
-  //   <Space key="start-delay">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Delay:</EntryKeyText>
-  //     <EntryValueText type={delays.start && delays.start >= 1000 ? 'danger' : undefined}>
-  //       {generateDurationString(delays.start)}
-  //     </EntryValueText>
-  //   </Space>,
-  // ]);
-
-  // statusEntries.push([
-  //   <Space key="duration">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Duration:</EntryKeyText>
-  //     <EntryValueText>{generateDurationString(duration)}</EntryValueText>
-  //   </Space>,
-  //   <Space key="duration-planned">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Planned Duration:</EntryKeyText>
-  //     <EntryValueText>{generateDurationString(plan.duration)}</EntryValueText>
-  //   </Space>,
-  //   <Space key="duration-delay">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Delay:</EntryKeyText>
-  //     <EntryValueText type={delays.duration && delays.duration >= 1000 ? 'danger' : undefined}>
-  //       {generateDurationString(delays.duration)}
-  //     </EntryValueText>
-  //   </Space>,
-  // ]);
-
-  // statusEntries.push([
-  //   <Space key="end">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Ended:</EntryKeyText>
-  //     <EntryValueText>{generateDateString(end, true)}</EntryValueText>
-  //   </Space>,
-  //   <Space key="end-planned">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Planned End:</EntryKeyText>
-  //     <EntryValueText>{generateDateString(plan.end, true) || ''}</EntryValueText>
-  //   </Space>,
-  //   <Space key="end-delay">
-  //     <ClockSymbol />
-  //     <EntryKeyText strong>Delay:</EntryKeyText>
-  //     <EntryValueText type={delays.end && delays.end >= 1000 ? 'danger' : undefined}>
-  //       {generateDurationString(delays.end)}
-  //     </EntryValueText>
-  //   </Space>,
-  // ]);
 
   return (
     <>

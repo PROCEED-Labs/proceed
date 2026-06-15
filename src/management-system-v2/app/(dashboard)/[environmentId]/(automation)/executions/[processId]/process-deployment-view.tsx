@@ -280,78 +280,78 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 alignItems: 'start',
               }}
             >
-            {/* Left group: Select Instance + Filter + Color */}
-            <ToolbarGroup>
-              <Select
-                value={currentInstance?.processInstanceId}
-                variant="borderless"
-                onSelect={(value) => setSelectedInstanceId(value)}
-                options={versionInstances?.map((instance, idx) => ({
-                  value: instance.processInstanceId,
-                  label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
-                }))}
-                placeholder="Select an instance"
-              />
+              {/* Left group: Select Instance + Filter + Color */}
+              <ToolbarGroup>
+                <Select
+                  value={currentInstance?.processInstanceId}
+                  variant="borderless"
+                  onSelect={(value) => setSelectedInstanceId(value)}
+                  options={versionInstances?.map((instance, idx) => ({
+                    value: instance.processInstanceId,
+                    label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
+                  }))}
+                  placeholder="Select an instance"
+                />
 
-              {currentInstance?.offline && (
-                <Tooltip title="Some of the engines this process is executed on are not reachable!">
-                  <Avatar
-                    icon={
-                      <WarningTwoTone
-                        twoToneColor="orange"
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                    }
-                    size={40}
-                    style={{ backgroundColor: 'inherit' }}
-                  />
-                </Tooltip>
-              )}
-
-              <Tooltip title="Filter by version">
-                <Dropdown
-                  menu={{
-                    items: [
-                      {
-                        key: '-1',
-                        label: 'Select a version',
-                        disabled: true,
-                      },
-                      ...(selectedVersion
-                        ? [
-                            {
-                              label: '<none>',
-                              key: '-2',
-                            },
-                          ]
-                        : []),
-                      ...deployments.map(({ version }) => ({
-                        label: version.name,
-                        key: `${version.id}`,
-                        disabled: false,
-                      })),
-                    ],
-                    selectable: true,
-                    onSelect: ({ key }) => {
-                      const versionId = key === '-2' ? undefined : key;
-                      setSelectedVersionId(versionId);
-
-                      const instances = getVersionInstances(knownInstances, versionId);
-                      if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
-                        const youngestInstance = getYoungestInstance(instances);
-                        setSelectedInstanceId(youngestInstance?.processInstanceId);
+                {currentInstance?.offline && (
+                  <Tooltip title="Some of the engines this process is executed on are not reachable!">
+                    <Avatar
+                      icon={
+                        <WarningTwoTone
+                          twoToneColor="orange"
+                          style={{ width: '16px', height: '16px' }}
+                        />
                       }
-                    },
-                    selectedKeys: selectedVersionId ? [selectedVersionId] : [],
-                  }}
-                >
-                  <Button icon={<FilterOutlined />}>
-                    {selectedVersion
-                      ? selectedVersion.name || selectedVersion.processId
-                      : undefined}
-                  </Button>
-                </Dropdown>
-              </Tooltip>
+                      size={40}
+                      style={{ backgroundColor: 'inherit' }}
+                    />
+                  </Tooltip>
+                )}
+
+                <Tooltip title="Filter by version">
+                  <Dropdown
+                    menu={{
+                      items: [
+                        {
+                          key: '-1',
+                          label: 'Select a version',
+                          disabled: true,
+                        },
+                        ...(selectedVersion
+                          ? [
+                              {
+                                label: '<none>',
+                                key: '-2',
+                              },
+                            ]
+                          : []),
+                        ...deployments.map(({ version }) => ({
+                          label: version.name,
+                          key: `${version.id}`,
+                          disabled: false,
+                        })),
+                      ],
+                      selectable: true,
+                      onSelect: ({ key }) => {
+                        const versionId = key === '-2' ? undefined : key;
+                        setSelectedVersionId(versionId);
+
+                        const instances = getVersionInstances(knownInstances, versionId);
+                        if (!instances.some((i) => i.processInstanceId === selectedInstanceId)) {
+                          const youngestInstance = getYoungestInstance(instances);
+                          setSelectedInstanceId(youngestInstance?.processInstanceId);
+                        }
+                      },
+                      selectedKeys: selectedVersionId ? [selectedVersionId] : [],
+                    }}
+                  >
+                    <Button icon={<FilterOutlined />}>
+                      {selectedVersion
+                        ? selectedVersion.name || selectedVersion.processId
+                        : undefined}
+                    </Button>
+                  </Dropdown>
+                </Tooltip>
 
                 <Tooltip title="Coloring">
                   <Dropdown
@@ -369,27 +369,31 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                 </Tooltip>
               </ToolbarGroup>
 
-            {/* Middle group: Start + Activate/Deactivate */}
-            <ToolbarGroup>
-              {hasPlainStartEvents && (
-                <Tooltip title="Start new instance">
-                  <Button
-                    icon={<PlusOutlined style={{ color: '#52c41a' }} />}
-                    loading={startingInstance}
-                    onClick={async () => {
-                      setStartingInstance(true);
-                      await wrapServerCall({
-                        fn: async () => {
-                          const latestDeployment = getLatestDeployment(deployments);
-                          if (!latestDeployment) {
-                            return userError(
-                              'The current process does not seem to be deployed anymore.',
+              {/* Middle group: Start + Activate/Deactivate */}
+              <ToolbarGroup>
+                {hasPlainStartEvents && (
+                  <Tooltip title="Start new instance">
+                    <Button
+                      icon={<PlusOutlined style={{ color: '#52c41a' }} />}
+                      loading={startingInstance}
+                      onClick={async () => {
+                        setStartingInstance(true);
+                        await wrapServerCall({
+                          fn: async () => {
+                            const latestDeployment = getLatestDeployment(deployments);
+                            if (!latestDeployment) {
+                              return userError(
+                                'The current process does not seem to be deployed anymore.',
+                              );
+                            }
+
+                            const { versionId } = latestDeployment;
+
+                            let startForm = await getProcessStartForm(
+                              spaceId,
+                              processId,
+                              versionId,
                             );
-                          }
-
-                          const { versionId } = latestDeployment;
-
-                          let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
                             if (typeof startForm !== 'string') return startForm;
 
@@ -400,8 +404,8 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                                   .map((variable) => [variable.name, variable.value]),
                               );
 
-                            if (!session)
-                              return userError('Unknown user tries to start an instance!');
+                              if (!session)
+                                return userError('Unknown user tries to start an instance!');
 
                               const globalVars = await getGlobalVariablesForHTML(
                                 spaceId,
@@ -416,233 +420,249 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                                 [],
                               );
 
-                            setStartForm(startForm);
-                          } else {
-                            return startInstance(spaceId, processId, versionId);
-                          }
-                        },
-                        onSuccess: async (instanceId) => {
-                          if (instanceId) {
-                            await refetchDeployments();
-                            setTimeout(async () => {
-                              await refetchInstances();
-                              setSelectedInstanceId(instanceId);
-                            }, 1000);
-                          }
-                        },
-                      });
-                      setStartingInstance(false);
-                    }}
-                  />
-                </Tooltip>
-              )}
-
-              {/* Activate/Deactivate button which is only shown when timer start events exist */}
-              {hasTimerStartEvents && (
-                <Tooltip
-                  title={
-                    isProcessActivated
-                      ? 'The process is active. Any automatically triggered Start Events, such as Timer Start Events, automatically launch new process executions. Click to deactivate.'
-                      : 'The process is deactivated. Any automatically triggered Start Events, such as Timer Start Events, will not launch new process executions. Click to activate.'
-                  }
-                >
-                  <Button
-                    type="text"
-                    loading={togglingActivation}
-                    icon={
-                      isProcessActivated ? (
-                        <span className={styles.SpinIcon}>
-                          <MdOutlineSync size={18} style={{ color: '#52c41a' }} />
-                        </span>
-                      ) : (
-                        <MdOutlineSyncDisabled size={18} />
-                      )
-                    }
-                    onClick={async () => {
-                      setTogglingActivation(true);
-                      const nextState = !isProcessActivated;
-                      const versionId = getLatestDeployment(deployments)!.versionId;
-                      await wrapServerCall({
-                        fn: () =>
-                          changeDeploymentActivation(processId, spaceId, versionId, nextState),
-                        onSuccess: () => refetchDeployments(),
-                      });
-                      setTogglingActivation(false);
-                    }}
-                  />
-                </Tooltip>
-              )}
-            </ToolbarGroup>
-
-            {/* 2-icon group: 1. Play shown when paused, Pause shown when running. 2. Stop button */}
-            <div>
-              {currentInstance && (
-                <ToolbarGroup>
-                  {currentInstance.paused || currentInstance.pausing ? (
-                    // Show Resume (Play) when paused or pausing
-                    <Tooltip
-                      title={
-                        currentInstance.pausing
-                          ? 'Abort pausing the instance'
-                          : 'Resume the instance'
-                      }
-                    >
-                      <Button
-                        className={styles.PlayIcon}
-                        icon={<CaretRightOutlined />}
-                        disabled={currentInstance.offline}
-                        loading={resumingInstance}
-                        onClick={async () => {
-                          setResumingInstance(true);
-                          await wrapServerCall({
-                            fn: () =>
-                              resumeInstance(spaceId, processId, currentInstance.processInstanceId),
-                            onSuccess: async () => await refetchCurrentInstance(),
-                          });
-                          setResumingInstance(false);
-                        }}
-                      />
-                    </Tooltip>
-                  ) : (
-                    // Show Pause when running (or any other non-paused state)
-                    <Tooltip title="Pause the instance">
-                      <Button
-                        className={styles.PauseIcon}
-                        icon={<PauseOutlined />}
-                        loading={pausingInstance}
-                        disabled={
-                          currentInstance.offline || currentInstance.executionStatus !== 'Running'
-                        }
-                        onClick={async () => {
-                          setPausingInstance(true);
-                          await wrapServerCall({
-                            fn: async () =>
-                              pauseInstance(spaceId, processId, currentInstance.processInstanceId),
-                            onSuccess: async () => await refetchCurrentInstance(),
-                          });
-                          setPausingInstance(false);
-                        }}
-                      />
-                    </Tooltip>
-                  )}
-
-                  <Tooltip title="Stop the instance">
-                    <Button
-                      className={styles.StopIcon}
-                      icon={<StopOutlined />}
-                      loading={stoppingInstance}
-                      disabled={
-                        currentInstance.offline || currentInstance.executionStatus !== 'Running'
-                      }
-                      onClick={async () => {
-                        setStoppingInstance(true);
-                        await wrapServerCall({
-                          fn: async () =>
-                            stopInstance(spaceId, processId, currentInstance.processInstanceId),
-                          onSuccess: async () => await refetchCurrentInstance(),
+                              setStartForm(startForm);
+                            } else {
+                              return startInstance(spaceId, processId, versionId);
+                            }
+                          },
+                          onSuccess: async (instanceId) => {
+                            if (instanceId) {
+                              await refetchDeployments();
+                              setTimeout(async () => {
+                                await refetchInstances();
+                                setSelectedInstanceId(instanceId);
+                              }, 1000);
+                            }
+                          },
                         });
-                        setStoppingInstance(false);
+                        setStartingInstance(false);
                       }}
                     />
                   </Tooltip>
-                </ToolbarGroup>
-              )}
-            </div>
+                )}
 
-            <Space style={{ alignItems: 'start' }}>
-              <ToolbarGroup>
-                {enableInstanceCSVExport && (
-                  <>
-                    <Tooltip title={'Export data of this selected instance as a csv file'}>
-                      <Button
-                        onClick={() => {
-                          if (currentInstance) {
-                            wrapServerCall({
+                {/* Activate/Deactivate button which is only shown when timer start events exist */}
+                {hasTimerStartEvents && (
+                  <Tooltip
+                    title={
+                      isProcessActivated
+                        ? 'The process is active. Any automatically triggered Start Events, such as Timer Start Events, automatically launch new process executions. Click to deactivate.'
+                        : 'The process is deactivated. Any automatically triggered Start Events, such as Timer Start Events, will not launch new process executions. Click to activate.'
+                    }
+                  >
+                    <Button
+                      type="text"
+                      loading={togglingActivation}
+                      icon={
+                        isProcessActivated ? (
+                          <span className={styles.SpinIcon}>
+                            <MdOutlineSync size={18} style={{ color: '#52c41a' }} />
+                          </span>
+                        ) : (
+                          <MdOutlineSyncDisabled size={18} />
+                        )
+                      }
+                      onClick={async () => {
+                        setTogglingActivation(true);
+                        const nextState = !isProcessActivated;
+                        const versionId = getLatestDeployment(deployments)!.versionId;
+                        await wrapServerCall({
+                          fn: () =>
+                            changeDeploymentActivation(processId, spaceId, versionId, nextState),
+                          onSuccess: () => refetchDeployments(),
+                        });
+                        setTogglingActivation(false);
+                      }}
+                    />
+                  </Tooltip>
+                )}
+              </ToolbarGroup>
+
+              {/* 2-icon group: 1. Play shown when paused, Pause shown when running. 2. Stop button */}
+              <div>
+                {currentInstance && (
+                  <ToolbarGroup>
+                    {currentInstance.paused || currentInstance.pausing ? (
+                      // Show Resume (Play) when paused or pausing
+                      <Tooltip
+                        title={
+                          currentInstance.pausing
+                            ? 'Abort pausing the instance'
+                            : 'Resume the instance'
+                        }
+                      >
+                        <Button
+                          className={styles.PlayIcon}
+                          icon={<CaretRightOutlined />}
+                          disabled={currentInstance.offline}
+                          loading={resumingInstance}
+                          onClick={async () => {
+                            setResumingInstance(true);
+                            await wrapServerCall({
                               fn: () =>
-                                exportInstanceData(
+                                resumeInstance(
                                   spaceId,
                                   processId,
                                   currentInstance.processInstanceId,
                                 ),
-                              onSuccess: (data) =>
-                                jsonToCsvExport({
-                                  data,
-                                }),
+                              onSuccess: async () => await refetchCurrentInstance(),
                             });
+                            setResumingInstance(false);
+                          }}
+                        />
+                      </Tooltip>
+                    ) : (
+                      // Show Pause when running (or any other non-paused state)
+                      <Tooltip title="Pause the instance">
+                        <Button
+                          className={styles.PauseIcon}
+                          icon={<PauseOutlined />}
+                          loading={pausingInstance}
+                          disabled={
+                            currentInstance.offline || currentInstance.executionStatus !== 'Running'
                           }
-                        }}
-                      >
-                        <div
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        >
-                          <ExportOutlined style={{ fontSize: '18px' }} />
-                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
-                            THIS
-                          </span>
-                        </div>
-                      </Button>
-                    </Tooltip>
-                    <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                          onClick={async () => {
+                            setPausingInstance(true);
+                            await wrapServerCall({
+                              fn: async () =>
+                                pauseInstance(
+                                  spaceId,
+                                  processId,
+                                  currentInstance.processInstanceId,
+                                ),
+                              onSuccess: async () => await refetchCurrentInstance(),
+                            });
+                            setPausingInstance(false);
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+
+                    <Tooltip title="Stop the instance">
                       <Button
-                        onClick={() =>
-                          wrapServerCall({
-                            fn: () => exportInstanceData(spaceId, processId),
-                            onSuccess: (data) => jsonToCsvExport({ data }),
-                          })
+                        className={styles.StopIcon}
+                        icon={<StopOutlined />}
+                        loading={stoppingInstance}
+                        disabled={
+                          currentInstance.offline || currentInstance.executionStatus !== 'Running'
                         }
-                      >
-                        <div
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-                        >
-                          <ExportOutlined style={{ fontSize: '18px' }} />
-                          <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
-                            ALL
-                          </span>
-                        </div>
-                      </Button>
+                        onClick={async () => {
+                          setStoppingInstance(true);
+                          await wrapServerCall({
+                            fn: async () =>
+                              stopInstance(spaceId, processId, currentInstance.processInstanceId),
+                            onSuccess: async () => await refetchCurrentInstance(),
+                          });
+                          setStoppingInstance(false);
+                        }}
+                      />
                     </Tooltip>
-                  </>
+                  </ToolbarGroup>
                 )}
-                {currentInstance && (
-                  <Tooltip title="View Instance Documentation">
+              </div>
+
+              <Space style={{ alignItems: 'start' }}>
+                <ToolbarGroup>
+                  {enableInstanceCSVExport && (
+                    <>
+                      <Tooltip title={'Export data of this selected instance as a csv file'}>
+                        <Button
+                          onClick={() => {
+                            if (currentInstance) {
+                              wrapServerCall({
+                                fn: () =>
+                                  exportInstanceData(
+                                    spaceId,
+                                    processId,
+                                    currentInstance.processInstanceId,
+                                  ),
+                                onSuccess: (data) =>
+                                  jsonToCsvExport({
+                                    data,
+                                  }),
+                              });
+                            }
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <ExportOutlined style={{ fontSize: '18px' }} />
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                              THIS
+                            </span>
+                          </div>
+                        </Button>
+                      </Tooltip>
+                      <Tooltip title={'Export data of all instances to this process as a csv file'}>
+                        <Button
+                          onClick={() =>
+                            wrapServerCall({
+                              fn: () => exportInstanceData(spaceId, processId),
+                              onSuccess: (data) => jsonToCsvExport({ data }),
+                            })
+                          }
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <ExportOutlined style={{ fontSize: '18px' }} />
+                            <span style={{ fontSize: '8px', fontWeight: 'bold', lineHeight: 1 }}>
+                              ALL
+                            </span>
+                          </div>
+                        </Button>
+                      </Tooltip>
+                    </>
+                  )}
+                  {currentInstance && (
+                    <Tooltip title="View Instance Documentation">
+                      <Button
+                        aria-label="view-instance-documentation"
+                        icon={<GrDocumentUser />}
+                        onClick={() =>
+                          handleOpenDocumentation(
+                            processId,
+                            spaceId,
+                            currentInstance.processVersion,
+                            currentInstance.processInstanceId,
+                            selectedColoring,
+                          )
+                        }
+                      />
+                    </Tooltip>
+                  )}
+                  <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
                     <Button
-                      aria-label="view-instance-documentation"
-                      icon={<GrDocumentUser />}
-                      onClick={() =>
-                        handleOpenDocumentation(
-                          processId,
-                          spaceId,
-                          currentInstance.processVersion,
-                          currentInstance.processInstanceId,
-                          selectedColoring,
-                        )
-                      }
+                      icon={<InfoCircleOutlined />}
+                      onClick={() => setInfoPanelOpen((prev) => !prev)}
                     />
                   </Tooltip>
-                )}
-                <Tooltip title={infoPanelOpen ? 'Close Info Panel' : 'Open Info Panel'}>
-                  <Button
-                    icon={<InfoCircleOutlined />}
-                    onClick={() => setInfoPanelOpen((prev) => !prev)}
-                  />
-                </Tooltip>
-              </ToolbarGroup>
+                </ToolbarGroup>
 
-              {selectedBpmn && (
-                <div style={{ height: '0' }}>
-                  <InstanceInfoPanel
-                    processId={processId}
-                    version={selectedBpmn}
-                    instance={currentInstance || undefined}
-                    element={selectedElement}
-                    open={infoPanelOpen}
-                    close={() => setInfoPanelOpen(false)}
-                    refetch={refetchCurrentInstance}
-                  />
-                </div>
-              )}
+                {selectedBpmn && (
+                  <div style={{ height: '0' }}>
+                    <InstanceInfoPanel
+                      processId={processId}
+                      version={selectedBpmn}
+                      instance={currentInstance || undefined}
+                      element={selectedElement}
+                      open={infoPanelOpen}
+                      close={() => setInfoPanelOpen(false)}
+                      refetch={refetchCurrentInstance}
+                    />
+                  </div>
+                )}
+              </Space>
             </Space>
-          </Space>
           </div>
         </Toolbar>
 

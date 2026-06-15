@@ -1,32 +1,48 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { Col, Divider, Menu, Row, Space, Typography } from 'antd';
 import { InstanceSelector } from './instance-selector';
-import { getMetaDataFromElement } from '@proceed/bpmn-helper';
+import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
 import TextViewer from '@/components/text-viewer';
-import { getPlanDelays, getTimeInfo } from './instance-helpers';
-import { generateDateString, generateDurationString } from '@/lib/utils';
+import { getPlanDelays, getTimeInfo, getTiming } from './instance-helpers';
+import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
 import { EntryText } from './entry-text';
 import { ElementLike } from 'diagram-js/lib/model/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { DataGrid } from './instance-info-panel';
+import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 
 export function ElementOverview({
   processId,
   element,
+  version,
   instance,
 }: {
   processId: string;
   element: ElementLike;
+  version: { bpmn: string };
   instance?: ExtendedInstanceInfo;
 }) {
+  const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
+  useEffect(() => {
+    async function getBpmnObject() {
+      const bpmnObj = await toBpmnObject(version.bpmn);
+      const defInfos = await getDefinitionsInfos(bpmnObj);
+      setDefinitionsInfos(defInfos);
+    }
+    getBpmnObject();
+  }, [version]);
+
   if (!instance) return <InstanceSelector />;
+
   const overviewEntries: ReactNode[][] = [];
   const metaData = getMetaDataFromElement(element.businessObject);
   const isRootElement = element && element.type === 'bpmn:Process';
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
+
+  const initiator = instance?.processInitiator;
 
   // Element image
   if (metaData.overviewImage) {
@@ -82,9 +98,11 @@ export function ElementOverview({
     overviewEntries.push([
       <div key="instance-names" style={{ margin: 0, padding: 0 }}>
         <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
-          Vacation Requests Automated
+          {definitionsInfos?.name}
         </Typography.Title>
-        <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>Vac-Req-Aut</EntryText>
+        <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>
+          {definitionsInfos?.userDefinedId}
+        </EntryText>
       </div>,
     ]);
 
@@ -96,14 +114,16 @@ export function ElementOverview({
     ]);
 
     // time info
-    const { start, end, duration } = getTimeInfo({
-      element: element,
-      instance: instance,
-      logInfo,
+    const {
+      actual: { start: startDate, duration },
+      plan: { duration: plannedDuration },
+    } = getTiming({
+      isRootElement,
+      metaData,
       token,
+      logInfo,
+      instance,
     });
-    const { delays, plan } = getPlanDelays({ elementMetaData: metaData, start, end, duration });
-
     // Timing
     overviewEntries.push([
       <div
@@ -118,7 +138,7 @@ export function ElementOverview({
           <div className={styles.GridCell}>
             <EntryText>Started</EntryText>
             <br />
-            <EntryText>{generateDateString(start, true)}</EntryText>
+            <EntryText>{generateDateString(startDate, true)}</EntryText>
           </div>
 
           <div className={styles.GridCell}>
@@ -130,13 +150,13 @@ export function ElementOverview({
           <div className={styles.GridCell}>
             <EntryText>Planned</EntryText>
             <br />
-            <EntryText>{generateDurationString(plan.duration)}</EntryText>
+            <EntryText>{generateDurationString(plannedDuration)}</EntryText>
           </div>
 
           <div className={styles.GridCell}>
             <EntryText>Started by</EntryText>
             <br />
-            <EntryText>Timmy Test</EntryText>
+            <EntryText>{typeof initiator === 'object' ? initiator.fullName : initiator}</EntryText>
           </div>
         </div>
       </div>,
@@ -144,8 +164,14 @@ export function ElementOverview({
 
     // Budget
     overviewEntries.push([
-      <EntryText key="instance-budgettitle" style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}>BUDGET</EntryText>,
+      <EntryText
+        key="instance-budgettitle"
+        style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}
+      >
+        BUDGET
+      </EntryText>,
     ]);
+    // TODO:
     overviewEntries.push([
       <Space
         key="instance-budget"
@@ -165,7 +191,14 @@ export function ElementOverview({
             Planned
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>$500</EntryText>
+            <EntryText style={{ fontSize: '.9em' }}>
+              {metaData.costsPlanned
+                ? generateNumberString(metaData.costsPlanned.value, {
+                    style: 'currency',
+                    currency: metaData.costsPlanned.unit,
+                  })
+                : metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit}
+            </EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -175,7 +208,7 @@ export function ElementOverview({
           </Col>
 
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>$520</EntryText>
+            <EntryText style={{ fontSize: '.9em' }}>TODO</EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -184,7 +217,7 @@ export function ElementOverview({
             Actual
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontWeight: 1000 }}>$520</EntryText>
+            <EntryText style={{ fontWeight: 1000 }}>TODO</EntryText>
             <Typography.Text
               style={{
                 fontWeight: 1000,

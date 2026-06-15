@@ -8,10 +8,12 @@ import {
   UserFacingError,
   getErrorMessage,
   isUserErrorResponse,
+  permissionDenied,
   userError,
 } from '@/lib/user-error';
 
 import { getAllAvailableEngines, getAvailableAdminEngines } from '@/lib/data/engines';
+import { getProcessImage as getStoredProcessImage } from '../data/processes';
 
 import { Engine, SpaceEngine } from '@/lib/engines/types';
 import {
@@ -121,7 +123,7 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
-    const deployments = await getProcessDeployments(spaceId, definitionId);
+    const deployments = await getProcessDeployments(spaceId, definitionId, undefined, true);
     if (isUserErrorResponse(deployments)) return deployments;
 
     const availableEngines = await getAllAvailableEngines(spaceId);
@@ -228,6 +230,18 @@ export async function changeDeploymentActivation(
 
 export async function getProcessImage(spaceId: string, definitionId: string, fileName: string) {
   try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('view', 'Execution')) {
+      return permissionDenied();
+    }
+
+    const image = await getStoredProcessImage(definitionId, fileName, spaceId);
+
+    if (!isUserErrorResponse(image)) {
+      return new Blob([image]);
+    }
+
     let deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 

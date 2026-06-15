@@ -8,7 +8,6 @@ import {
   transformBpmnAttributes,
 } from '../../helpers/processHelpers';
 import {
-  getAllElements,
   getDefinitionsVersionInformation,
   generateBpmnId,
   toBpmnObject,
@@ -17,7 +16,7 @@ import {
   getProcessDocumentation,
   getElementsByTagName,
 } from '@proceed/bpmn-helper';
-import Ability, { UnauthorizedError } from '@/lib/ability/abilityHelper';
+import Ability from '@/lib/ability/abilityHelper';
 import { ProcessMetadata, ProcessServerInput, ProcessServerInputSchema } from '../process-schema';
 import { getRootFolder } from './folders';
 import { toCaslResource } from '@/lib/ability/caslAbility';
@@ -35,6 +34,9 @@ import { copyFile, retrieveFile } from '../file-manager/file-manager';
 import { generateProcessFilePath } from '@/lib/helpers/fileManagerHelpers';
 import { Prisma } from '@prisma/client';
 import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-format-utils';
+import { removeDeployment } from '@/lib/executions/deployment-server-actions';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 /**
  * Returns all processes in an environment
@@ -505,31 +507,24 @@ export async function updateProcessMetaData(
 }
 
 /** Removes an existing process */
-export async function removeProcess(processDefinitionsId: string, tx?: Prisma.TransactionClient) {
-  if (!tx) {
-    return await db.$transaction(async (trx: Prisma.TransactionClient) => {
-      await removeProcess(processDefinitionsId, trx);
+export async function removeProcess(spaceId: string, processDefinitionsId: string) {
+  const config = await getMSConfig();
+
+  if (config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+    const deployments = await db.processDeployment.findMany({
+      where: { AND: [{ removeTime: null }, { version: { processId: processDefinitionsId } }] },
+      include: { instances: { select: { state: true } } },
     });
+
+    if (deployments.length) {
+      const res = await removeDeployment(processDefinitionsId, spaceId);
+      if (isUserErrorResponse(res)) return res;
+    }
   }
 
-  const process = await tx.process.findUnique({
-    where: { id: processDefinitionsId },
-    include: { artifactProcessReferences: { include: { artifact: true } } },
-  });
+  await db.process.update({ where: { id: processDefinitionsId }, data: { folderId: null } });
 
-  if (!process) {
-    throw new Error(`Process with id: ${processDefinitionsId} not found`);
-  }
-
-  await Promise.all(
-    process.artifactProcessReferences.map((artifactRef) => {
-      return deleteProcessArtifact(artifactRef.artifact.filePath, true, processDefinitionsId, tx);
-    }),
-  );
-
-  await tx.process.delete({ where: { id: processDefinitionsId } });
-
-  eventHandler.dispatch('processRemoved', { processDefinitionsId });
+  return true;
 }
 
 /** Stores a new version of an existing process */

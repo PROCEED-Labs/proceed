@@ -1,5 +1,6 @@
 import { StoredDeployment } from '@/lib/data/deployment';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
+import { InstanceInfo } from '@/lib/engines/deployment';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -198,4 +199,10 @@ export function getYoungestInstance<T extends ExtendedInstanceInfo[]>(instances:
     if (instances[i].globalStartTime < instances[firstInstance].globalStartTime) firstInstance = i;
   }
   return instances[firstInstance];
+}
+
+export const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
+
+export function isActive(state: InstanceInfo) {
+  return state.instanceState.some((s) => activeStates.includes(s));
 }

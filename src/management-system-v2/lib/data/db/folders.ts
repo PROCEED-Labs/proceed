@@ -345,11 +345,11 @@ export async function moveProcess(processId: string, newParentId: string, abilit
   // Check permissions
   if (
     ability &&
-    !(ability.can('update', toCaslResource('Process', process)) &&
-    ability.can('update', toCaslResource('Folder', newParentFolder)) &&
-    oldParentFolder
-      ? ability.can('update', toCaslResource('Folder', oldParentFolder!))
-      : true)
+    !(
+      ability.can('update', toCaslResource('Process', process)) &&
+      ability.can('update', toCaslResource('Folder', newParentFolder)) &&
+      (oldParentFolder ? ability.can('update', toCaslResource('Folder', oldParentFolder!)) : true)
+    )
   ) {
     throw new UnauthorizedError();
   }

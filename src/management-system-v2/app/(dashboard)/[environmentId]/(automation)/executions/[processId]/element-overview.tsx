@@ -42,7 +42,6 @@ export function ElementOverview({
   const isRootElement = element && element.type === 'bpmn:Process';
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
-
   const initiator = instance?.processInitiator;
 
   // Element image
@@ -197,8 +196,8 @@ export function ElementOverview({
                 ? generateNumberString(metaData.costsPlanned.value, {
                     style: 'currency',
                     currency: metaData.costsPlanned.unit,
-                  })
-                : metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit}
+                  }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
+                : undefined}
             </EntryText>
           </Col>
         </Row>

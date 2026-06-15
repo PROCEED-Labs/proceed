@@ -302,7 +302,8 @@ model ConnectionEngineReachability {
   connection    EngineConnection    @relation(fields: [connectionId], references: [id])
   connectionId  String
 
-  // TODO: add entry for current reachability and last time the engine was reached using this connection
+  reachable     Boolean
+  lastContact   DateTime            @default(now())
 
   @@id([engineId, connectionId])
 }

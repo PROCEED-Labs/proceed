@@ -188,6 +188,8 @@ export async function addEngineConnection(
       removed: false,
     };
 
+    const currentDate = new Date();
+
     if (existingConnection) {
       // reactivate an older entry if the address was already used before but removed
       await tx.engineConnection.update({
@@ -199,8 +201,10 @@ export async function addEngineConnection(
               where: {
                 engineId_connectionId: { engineId: engine.id, connectionId: existingConnection.id },
               },
-              update: {},
+              update: { reachable: true, lastContact: currentDate },
               create: {
+                reachable: true,
+                lastContact: currentDate,
                 engine: {
                   connectOrCreate: {
                     where: { id: engine.id },
@@ -218,6 +222,8 @@ export async function addEngineConnection(
           ...connection,
           engines: {
             create: reachableEngines.map((engine) => ({
+              reachable: true,
+              lastContact: currentDate,
               engine: {
                 connectOrCreate: {
                   where: { id: engine.id },

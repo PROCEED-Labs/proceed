@@ -120,14 +120,14 @@ export async function submitFileToMachine(
   fileType: string,
   file: any,
 ) {
-  return await engineRequest({
+  return (await engineRequest({
     method: 'put',
     endpoint: '/resources/process/:definitionId/instance/:instanceId/file/:fileName',
     engine: machine,
     pathParams: { definitionId, instanceId, fileName },
     body: file,
     queryParams: { mimeType: fileType },
-  });
+  })) as string;
 }
 
 export async function getFileFromMachine(
@@ -136,10 +136,10 @@ export async function getFileFromMachine(
   fileName: string,
   machine: Engine,
 ) {
-  return await engineRequest({
+  return (await engineRequest({
     method: 'get',
     endpoint: '/resources/process/:definitionId/instance/:instanceId/file/:fileName',
     engine: machine,
     pathParams: { definitionId, instanceId, fileName },
-  });
+  })) as Blob;
 }

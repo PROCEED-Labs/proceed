@@ -109,15 +109,16 @@ model Process {
 }
 
 model Artifact {
-  id                String                     @id @default(uuid())
-  filePath          String                     @unique
-  fileName          String                     @unique
-  deletable         Boolean?                   @default(false)
-  deletedOn         DateTime?
-  artifactType      String // html-forms, script, image, etc.
-  processReferences ArtifactProcessReference[] // Relation to track references
-  versionReferences ArtifactVersionReference[]
-  refCounter        Int                        @default(0)
+  id                 String                      @id @default(uuid())
+  filePath           String                      @unique
+  fileName           String                      @unique
+  deletable          Boolean?                    @default(false)
+  deletedOn          DateTime?
+  artifactType       String // html-forms, script, image, etc.
+  processReferences  ArtifactProcessReference[] // Relation to track references
+  versionReferences  ArtifactVersionReference[]
+  instanceReferences ArtifactInstanceReference[]
+  refCounter         Int                         @default(0)
 
   @@map("artifact")
 }
@@ -144,6 +145,20 @@ model ArtifactVersionReference {
 
   @@unique([artifactId, versionId])
   @@map("artifact_version_reference")
+}
+
+model ArtifactInstanceReference {
+  id           String           @id @default(uuid())
+  artifact     Artifact         @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  artifactId   String
+  instance     ProcessInstance  @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId   String
+  createdAt    DateTime         @default(now())
+  originalName String
+  mimeType     String
+
+  @@unique([artifactId, instanceId])
+  @@map("artiface_instance_reference")
 }
 
 model Space {
@@ -480,6 +495,7 @@ model ProcessInstance {
   state               Json
 
   userTasks           UserTask[]
+  artifactReferences  ArtifactInstanceReference[]
 
   logs                Json
 

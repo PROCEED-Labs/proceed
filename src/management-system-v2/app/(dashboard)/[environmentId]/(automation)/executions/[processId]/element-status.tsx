@@ -23,10 +23,11 @@ import { generateDurationString } from '@/lib/utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import styles from './element-status.module.scss';
-import TextViewer from '@/components/text-viewer';
 import { EntryText } from './entry-text';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import { getProcessVersion } from '@/lib/data/processes';
+import dynamic from 'next/dynamic';
+const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 type PreviousVersion =
   | {

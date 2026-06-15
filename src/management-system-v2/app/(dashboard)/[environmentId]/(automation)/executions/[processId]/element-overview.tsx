@@ -3,7 +3,6 @@ import { Col, Divider, Menu, Row, Space, Typography } from 'antd';
 import { InstanceSelector } from './instance-selector';
 import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
-import TextViewer from '@/components/text-viewer';
 import { getPlanDelays, getTimeInfo, getTiming } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
@@ -12,6 +11,8 @@ import { ElementLike } from 'diagram-js/lib/model/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { DataGrid } from './instance-info-panel';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
+import dynamic from 'next/dynamic';
+const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 export function ElementOverview({
   processId,

@@ -1,4 +1,4 @@
-import { Engine as SavedEngine } from '@prisma/client';
+import { type EngineConnection } from '@prisma/client';
 import { Engine, HttpEngine, MqttEngine } from './types';
 import {
   collectEnginesStatus,
@@ -11,22 +11,22 @@ import { httpRequest } from './endpoints/http-endpoints';
 const mqttTimeout = 2000;
 
 /* -------------------------------------------------------------------------------------------------
- * Saved Engines -> Engines
+ * Saved Engine Connections -> Engines
  * -----------------------------------------------------------------------------------------------*/
 
 // TODO: find a better more standardized way to do this
-async function getMqttEngines(engine: SavedEngine): Promise<MqttEngine[]> {
-  const client = await getClient(engine.address, !engine.environmentId);
+async function getMqttEngines(connection: EngineConnection): Promise<MqttEngine[]> {
+  const client = await getClient(connection.address, !connection.environmentId);
 
-  if (!engine.environmentId) {
-    const collectedEngines = await getCollectedProceedMqttEngines(engine.address, mqttTimeout);
+  if (!connection.environmentId) {
+    const collectedEngines = await getCollectedProceedMqttEngines(connection.address, mqttTimeout);
     if (collectedEngines) return collectedEngines;
   }
 
   const engineMap = new Map();
   await collectEnginesStatus({
     client,
-    brokerAddress: engine.address,
+    brokerAddress: connection.address,
     engineMap,
   });
   await new Promise((res) => setTimeout(res, mqttTimeout));
@@ -40,13 +40,13 @@ async function getMqttEngines(engine: SavedEngine): Promise<MqttEngine[]> {
       id: e.id,
       type: 'mqtt',
       spaceEngine: true,
-      brokerAddress: engine.address,
+      brokerAddress: connection.address,
     }));
 }
 
-async function getHttpEngine(engine: SavedEngine): Promise<[HttpEngine]> {
+async function getHttpEngine(connection: EngineConnection): Promise<[HttpEngine]> {
   const { id } = await httpRequest(
-    engine.address,
+    connection.address,
     endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id' } }),
     'GET',
   );
@@ -55,18 +55,18 @@ async function getHttpEngine(engine: SavedEngine): Promise<[HttpEngine]> {
     {
       type: 'http',
       id,
-      address: engine.address,
+      address: connection.address,
       spaceEngine: true,
     },
   ];
 }
 
-export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promise<Engine[]> {
+export async function resolveEngines(connections: EngineConnection[]): Promise<Engine[]> {
   const enginesRequests = [];
-  for (const savedEngine of spaceEngines) {
-    if (savedEngine.address.startsWith('http')) enginesRequests.push(getHttpEngine(savedEngine));
-    else if (savedEngine.address.startsWith('mqtt'))
-      enginesRequests.push(getMqttEngines(savedEngine));
+  for (const connection of connections) {
+    if (connection.address.startsWith('http')) enginesRequests.push(getHttpEngine(connection));
+    else if (connection.address.startsWith('mqtt'))
+      enginesRequests.push(getMqttEngines(connection));
   }
 
   const engines = [];
@@ -75,7 +75,3 @@ export async function savedEnginesToEngines(spaceEngines: SavedEngine[]): Promis
 
   return engines;
 }
-
-/* -------------------------------------------------------------------------------------------------
- * Saved Engines -> Deployed processes
- * -----------------------------------------------------------------------------------------------*/

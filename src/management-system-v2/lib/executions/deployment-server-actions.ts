@@ -26,7 +26,7 @@ import {
 } from '../engines/deployment';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
-import { savedEnginesToEngines } from '../engines/saved-engines-helpers';
+import { resolveEngines } from '../engines/engine-connections-helpers';
 import { getMSConfig } from '../ms-config/ms-config';
 import { updateTaskInfo } from '../tasks/server-actions';
 import { engineRequest } from '../engines/endpoints';
@@ -336,10 +336,10 @@ export async function refetchDeployments() {
         );
 
         // get all (reachable) engines known to the MS
-        const dbEngines = await db.engine.findMany();
-        let engines = await savedEnginesToEngines(dbEngines);
+        const connections = await db.engineConnection.findMany();
+        let engines = await resolveEngines(connections);
         const knownEngines: Record<string, Engine> = {};
-        // deduplicate the engines (an engine might be reachable through multiple "dbEngines")
+        // deduplicate the engines (an engine might be reachable through multiple connections)
         engines = engines.filter((engine) => {
           if (knownEngines[engine.id]) return false;
           knownEngines[engine.id] = engine;

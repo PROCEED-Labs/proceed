@@ -195,16 +195,7 @@ export function ElementStatus({
     statusEntries.push([
       <EntryKeyText key="instance-documentation-key">Documentation</EntryKeyText>,
 
-      <div
-        key="instance-documentation-val"
-        style={{
-          padding: 10,
-          backgroundColor: 'hsla(0, 0%, 50%, 0.05)',
-          // TODO: check styling
-          // border: '1px solid #77777733',
-          borderRadius: 10,
-        }}
-      >
+      <div key="instance-documentation-val">
         <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);

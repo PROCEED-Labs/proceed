@@ -173,7 +173,7 @@ const EngineConnectionsList = ({
             fixed: 'right',
             width: '100px',
             responsive: ['xl'],
-            render: (id, record) => (
+            render: (_, record) => (
               <div style={{ float: 'right', display: 'flex', flexDirection: 'row' }}>
                 <Button
                   type="text"

@@ -7,7 +7,6 @@ import { UserErrorType, getErrorMessage, isUserErrorResponse, userError } from '
 import {
   deployProcess as _deployProcess,
   getDeployment,
-  changeDeploymentActivation as _changeDeploymentActivation,
   InstanceInfo,
 } from '@/lib/engines/deployment';
 import {

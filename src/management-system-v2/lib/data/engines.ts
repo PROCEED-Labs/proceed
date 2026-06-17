@@ -123,17 +123,17 @@ export async function getAllAvailableEngines(
 }
 
 export async function addEngineConnection(
-  connectionsInput: EngineConnectionInput,
+  connectionInput: EngineConnectionInput,
   environmentId: string | null,
   tx?: Prisma.TransactionClient,
   skipAbilityCheck = false,
 ): Promise<void | { error: UserError }> {
   if (!tx) {
     return db.$transaction(async (tx) =>
-      addEngineConnection(connectionsInput, environmentId, tx, skipAbilityCheck),
+      addEngineConnection(connectionInput, environmentId, tx, skipAbilityCheck),
     );
   }
-  const newConnection = EngineConnectionInputSchema.safeParse(connectionsInput);
+  const newConnection = EngineConnectionInputSchema.safeParse(connectionInput);
   if (!newConnection.success) {
     return schemaValidationError();
   }
@@ -190,6 +190,8 @@ export async function addEngineConnection(
       return { engine, data, configuration, logs };
     });
 
+    const currentDate = new Date();
+
     if (existingConnection) {
       // reactivate an older entry if the address was already used before but removed
       await tx.engineConnection.update({
@@ -201,9 +203,10 @@ export async function addEngineConnection(
               where: {
                 engineId_connectionId: { engineId: engine.id, connectionId: existingConnection.id },
               },
-              update: { reachable: true },
+              update: { reachable: true, lastContact: currentDate },
               create: {
                 reachable: true,
+                lastContact: currentDate,
                 engine: {
                   connectOrCreate: {
                     where: { id: engine.id },
@@ -222,6 +225,7 @@ export async function addEngineConnection(
           engines: {
             create: engineData.map(({ engine, data, configuration, logs }) => ({
               reachable: true,
+              lastContact: currentDate,
               engine: {
                 connectOrCreate: {
                   where: { id: engine.id },
@@ -234,17 +238,17 @@ export async function addEngineConnection(
       });
     }
   } catch (e) {
+    console.error(`Failed to add a new engine connection: ${e}`);
     return userError('Error saving engine connections.');
   }
 }
 
-const PartialEngineConnectionInputSchema = EngineConnectionInputSchema.partial();
 export async function updateEngineConnection(
   connectionId: string,
   connectionInput: Partial<EngineConnectionInput>,
   environmentId: string | null,
 ) {
-  const newConnectionData = PartialEngineConnectionInputSchema.safeParse(connectionInput);
+  const newConnectionData = EngineConnectionInputSchema.partial().safeParse(connectionInput);
 
   if (!newConnectionData.success) {
     return schemaValidationError();
@@ -279,8 +283,6 @@ export async function updateEngineConnection(
     const newAddress = newConnectionData.data.address;
     if (newAddress && newAddress !== connection.address) {
       return await db.$transaction(async (tx) => {
-        // keep the entry with the old id for future reference and create a new entry for the new
-        // address as long as that address is not already in use by another connection in the space
         await deleteEngineConnection(connection.id, environmentId, tx, true);
         const res = await addEngineConnection(
           {
@@ -302,6 +304,7 @@ export async function updateEngineConnection(
       });
     }
   } catch (e) {
+    console.error(`Failed to update an engine connection: ${e}`);
     if (isUserError(e)) return userError(e.message, e.type);
     return userError('Error updating engine connection');
   }
@@ -352,6 +355,7 @@ export async function deleteEngineConnection(
 
     return res;
   } catch (e) {
-    return userError('Error getting space engines');
+    console.error(`Failed to remove an engine connection: ${e}`);
+    return userError('Error deleting engine connection');
   }
 }

@@ -274,15 +274,15 @@ model RoleMember {
 model Engine {
   id            String   @id
   name          String?
-  deployments   ProcessDeployment[]
-  instances     ProcessInstance[]
-  userTasks     UserTask[]
-
-  connections   ConnectionEngineReachability[]
-
   data          Json
   configuration Json
   logs          Json
+
+  connections   ConnectionEngineReachability[]
+
+  deployments   ProcessDeployment[]
+  instances     ProcessInstance[]
+  userTasks     UserTask[]
 
   @@map("engine")
 }
@@ -310,7 +310,8 @@ model ConnectionEngineReachability {
   connectionId  String
 
   reachable     Boolean
-  
+  lastContact   DateTime            @default(now())
+
   @@id([engineId, connectionId])
 }
 

@@ -15,6 +15,8 @@ async function refetchFn() {
 
     const requests = await Promise.allSettled(connections.map(async (c) => resolveEngines([c])));
 
+    const currentDate = new Date();
+
     const changes = await asyncMap(connections, async (c, index) => {
       const request = requests[index];
       let notReachableAnymore = c.engines.reduce(
@@ -60,9 +62,6 @@ async function refetchFn() {
             becameReachable.push({ ...engine, data, configuration, logs });
           }
         }
-      } else {
-        becameReachable = [];
-        updated = [];
       }
 
       return { notReachableAnymore: Object.keys(notReachableAnymore), becameReachable, updated };
@@ -96,6 +95,7 @@ async function refetchFn() {
                         where: { engineId_connectionId: { engineId: id, connectionId: c.id } },
                         update: {
                           reachable: true,
+                          lastContact: currentDate,
                           engine: {
                             update: {
                               data,
@@ -106,6 +106,7 @@ async function refetchFn() {
                         },
                         create: {
                           reachable: true,
+                          lastContact: currentDate,
                           engine: {
                             connectOrCreate: {
                               where: { id: id },

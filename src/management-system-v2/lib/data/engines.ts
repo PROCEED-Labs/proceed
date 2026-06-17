@@ -236,7 +236,7 @@ export async function addEngineConnection(
       });
     }
   } catch (e) {
-    console.log(e);
+    console.error(`Failed to add a new engine connection: ${e}`);
     return userError('Error saving engine connections.');
   }
 }
@@ -302,6 +302,7 @@ export async function updateEngineConnection(
       });
     }
   } catch (e) {
+    console.error(`Failed to update an engine connection: ${e}`);
     return userError('Error updating engine connection.');
   }
 }
@@ -351,7 +352,7 @@ export async function deleteEngineConnection(
 
     return res;
   } catch (e) {
-    console.log(e);
+    console.error(`Failed to remove an engine connection: ${e}`);
     return userError('Error deleting engine connection');
   }
 }

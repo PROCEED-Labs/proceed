@@ -1,6 +1,6 @@
 'use client';
 
-import {Col, Row, Typography } from 'antd';
+import { Col, Row, Typography } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUser } from 'react-icons/hi';
 import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
@@ -18,7 +18,6 @@ import { DASHBOARD_COLORS as COLORS } from '@/components/dashboard-charts/dashbo
 import type { calculateUserStats } from '../dashboard-utils';
 
 const { Title } = Typography;
-
 
 type UserStats = ReturnType<typeof calculateUserStats>;
 

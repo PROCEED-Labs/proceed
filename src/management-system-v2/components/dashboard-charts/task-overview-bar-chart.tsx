@@ -11,7 +11,6 @@ import {
 } from 'recharts';
 import { DASHBOARD_COLORS as COLORS } from './dashboard-colors';
 
-
 interface TaskOverviewChartProps {
   yourOpenTasks: number;
   yourCompletedTasks: number;

@@ -90,9 +90,11 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
                 backgroundColor: '#fff',
                 border: '1px solid #d9d9d9',
                 borderRadius: '6px',
+                zIndex: 100,
               }}
+              wrapperStyle={{ zIndex: 100 }}
             />
-            <Legend />
+            <Legend wrapperStyle={{ paddingTop: '20px' }} />
             <Bar
               dataKey="planned"
               stackId="a"

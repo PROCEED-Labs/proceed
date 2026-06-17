@@ -9,6 +9,7 @@ import App from '@/components/app';
 import classNames from 'classnames';
 import { getPublicMSConfig } from '@/lib/ms-config/ms-config';
 import DeploymentRefetchBoundary from './deployment-refetch-boundary';
+import EngineRefetchBoundary from './transfer-processes/engine-refetch-boundary';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 
@@ -26,12 +27,17 @@ const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
   return (
     <html lang="en">
       <body className={classNames(inter.variable, myFont.variable)}>
-        <DeploymentRefetchBoundary
+        <EngineRefetchBoundary
           enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
-          interval={publicEnv.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL}
+          interval={5}
         >
-          <App env={publicEnv}>{children}</App>
-        </DeploymentRefetchBoundary>
+          <DeploymentRefetchBoundary
+            enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
+            interval={publicEnv.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL}
+          >
+            <App env={publicEnv}>{children}</App>
+          </DeploymentRefetchBoundary>
+        </EngineRefetchBoundary>
       </body>
     </html>
   );

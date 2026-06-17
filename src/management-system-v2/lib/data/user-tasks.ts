@@ -3,17 +3,17 @@
 import db from '@/lib/data/db';
 
 import Ability, { UnauthorizedError } from '../ability/abilityHelper';
-import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
+import { UserErrorType, userError } from '../user-error';
 import {
   ExtendedTaskListEntry,
   UserTask,
   UserTaskInput,
   UserTaskInputSchema,
 } from '../user-task-schema';
-import { getAllAvailableEngines } from './engines';
 import { getSpaceUsers } from './db/iam/users';
 import { truthyFilter } from '../typescript-utils';
 import { getEnvironmentById } from './db/iam/environments';
+import { EngineWithConnections } from '../engines/types';
 
 export async function getUserTasks(spaceId: string, ability?: Ability) {
   const space = await getEnvironmentById(spaceId, ability);
@@ -38,17 +38,29 @@ export async function getUserTasks(spaceId: string, ability?: Ability) {
           },
         ],
       },
-    })) as UserTask[];
-    const users = await getSpaceUsers(spaceId, space.isOrganization);
-    const reachableEngines = await getAllAvailableEngines(spaceId, undefined, true);
+      include: {
+        engine: {
+          include: {
+            connections: {
+              where: {
+                reachable: true,
+              },
+              include: {
+                connection: true,
+              },
+            },
+          },
+        },
+      },
+    })) as (UserTask & { engine: EngineWithConnections | null })[];
 
-    if (isUserErrorResponse(reachableEngines)) return reachableEngines;
+    const users = await getSpaceUsers(spaceId, space.isOrganization);
 
     // map the ids in the actualOwner array to the users of the current space so the frontend can
     // show richer information about who is working on the task
     return userTasks.map((uT) => ({
       ...uT,
-      offline: uT.machineId !== 'ms-local' && !reachableEngines.some((e) => e.id === uT.machineId),
+      offline: !!uT.engine && !uT.engine.connections.some((c) => c.reachable),
       actualOwner: uT.actualOwner
         .map((id) => {
           const user = users.find((u) => u.id === id);
@@ -73,9 +85,21 @@ export async function getUserTaskById(userTaskId: string) {
       where: {
         id: userTaskId,
       },
+      include: {
+        engine: {
+          include: {
+            connections: {
+              where: {
+                reachable: true,
+              },
+              include: { connection: true },
+            },
+          },
+        },
+      },
     });
 
-    return userTask as UserTask;
+    return userTask as UserTask & { engine: EngineWithConnections | null };
   } catch (err) {
     return userError('Error getting user task');
   }

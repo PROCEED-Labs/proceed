@@ -3,7 +3,6 @@ import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { deployProcess } from '@/lib/engines/deployment';
-import { startInstanceOnMachine } from '@/lib/engines/instances';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { getAllAvailableEngines } from '@/lib/data/engines';

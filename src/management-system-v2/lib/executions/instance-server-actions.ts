@@ -103,7 +103,7 @@ export async function startInstance(
         {
           id: result.processInstanceId,
           deploymentId: deployment.id,
-          engineIds: [engine.id],
+          engines: [engine.id],
           initiatorId: userId,
           state: result,
         },
@@ -133,7 +133,9 @@ export async function updateVariables(
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    availableEngines = availableEngines.filter((engine) => instance.engineIds.includes(engine.id));
+    availableEngines = availableEngines.filter((engine) =>
+      instance.engines.some((e) => e.id === engine.id),
+    );
 
     await asyncForEach(
       availableEngines,
@@ -175,7 +177,9 @@ export async function getFile(
     // find the engine the instance is running on
     let availableEngines = await getAllAvailableEngines(spaceId);
     if (isUserErrorResponse(availableEngines)) return availableEngines;
-    availableEngines = availableEngines.filter((engine) => instance.engineIds.includes(engine.id));
+    availableEngines = availableEngines.filter((engine) =>
+      instance.engines.some((e) => e.id === engine.id),
+    );
 
     if (!availableEngines.length) {
       return userError('Failed to find the engine the instance is running on!');
@@ -225,7 +229,7 @@ async function changeInstanceState(
   if (isUserErrorResponse(instance)) return instance;
   if (!instance) return userError('Unknown instance!', UserErrorType.NotFoundError);
 
-  if (!instance.engineIds.length) return userError('The instance is not being executed anymore.');
+  if (!instance.engines.length) return userError('The instance is not being executed anymore.');
 
   try {
     // TODO: how do we handle this correctly if some engines are reachable but others aren't?
@@ -239,7 +243,7 @@ async function changeInstanceState(
       {} as Record<string, Engine>,
     );
 
-    let instanceMachinesToChange = await asyncMap(instance.engineIds, async (id) => {
+    let instanceMachinesToChange = await asyncMap(instance.engines, async ({ id }) => {
       const machine = engineMap[id];
       if (!machine) return false;
 

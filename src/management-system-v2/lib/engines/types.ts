@@ -1,3 +1,5 @@
+import { EngineConnection } from '@prisma/client';
+
 type Discriminator = { spaceEngine?: undefined } | { spaceEngine: true };
 
 export type MqttEngine = {
@@ -13,6 +15,11 @@ export type HttpEngine = {
   address: string;
 } & Discriminator;
 export type Engine = MqttEngine | HttpEngine;
+export type EngineWithConnections = {
+  id: string;
+  name?: string | null;
+  connections: { reachable: boolean; connection: EngineConnection }[];
+} & Discriminator;
 
 export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
 export type ProceedEngine = Extract<Engine, { spaceEngine?: undefined }>;

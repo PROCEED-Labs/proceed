@@ -199,7 +199,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
           environmentId: space.spaceId,
           fileName: '',
           state: 'READY',
-          machineId: 'ms-local',
+          engineId: null,
           actualOwner: [],
           potentialOwners: resourceIds,
           priority: 1,

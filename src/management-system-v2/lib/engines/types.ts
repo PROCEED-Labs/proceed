@@ -8,12 +8,6 @@ export type MqttEngine = {
   id: string;
   brokerAddress: string;
 } & Discriminator;
-export type HttpEngine = {
-  type: 'http';
-  name?: string;
-  id: string;
-  address: string;
-} & Discriminator;
 export type Engine = {
   id: string;
   name?: string | null;

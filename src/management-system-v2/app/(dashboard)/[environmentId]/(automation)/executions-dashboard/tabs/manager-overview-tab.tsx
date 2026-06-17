@@ -10,21 +10,23 @@ import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-c
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import { MdPlayArrow, MdCheckCircle, MdPause } from 'react-icons/md';
 import styles from '../dashboard-tabs.module.scss';
+import { DASHBOARD_COLORS as COLORS } from '@/components/dashboard-charts/dashboard-colors';
+import type { calculateManagerStats } from '../dashboard-utils';
 
 const { Title } = Typography;
 
-const COLORS = {
-  purple: '#722ed1',
-  blue: '#1677ff',
-  green: '#52c41a',
-  orange: '#fa8c16',
-  red: '#f5222d',
-};
+type ManagerStats = ReturnType<typeof calculateManagerStats>;
+
+interface DistributionDataPoint {
+  name: string;
+  value: number;
+  fill: string;
+}
 
 interface ManagerOverviewTabProps {
-  managerStats: any;
-  instanceDistributionData: any[];
-  weeklyTrendData: any[];
+  managerStats: ManagerStats;
+  instanceDistributionData: DistributionDataPoint[];
+  weeklyTrendData: ManagerStats['monthlyData'];
 }
 
 const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
@@ -125,7 +127,6 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
             value={managerStats.avgOpenTime}
             icon={<ClockCircleOutlined />}
             color={COLORS.blue}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -135,7 +136,6 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
             value={managerStats.avgCompletedTime}
             icon={<CheckCircleOutlined />}
             color={COLORS.green}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -145,7 +145,6 @@ const ManagerOverviewTab: React.FC<ManagerOverviewTabProps> = ({
             value={managerStats.longestRunning}
             icon={<HourglassOutlined />}
             color={COLORS.red}
-            suffix="hrs"
             precision={1}
           />
         </Col>

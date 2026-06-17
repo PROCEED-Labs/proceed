@@ -11,13 +11,14 @@ import {
   getMembershipAndManagerStatus,
   getTeamMemberIds,
 } from './dashboard-data';
+import { isUserErrorResponse } from '@/lib/user-error';
 
-const Page = async (props: any) => {
-  const params = await props.params;
+const Page = async ({ params }: { params: Promise<{ environmentId: string }> }) => {
+  const { environmentId } = await params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
   const { systemAdmin, userId } = await getCurrentUser();
 
   if (!ability.can('view', 'Machine') || !ability.can('view', 'Execution'))
@@ -39,10 +40,11 @@ const Page = async (props: any) => {
   let membershipId: string | null = null;
 
   if (activeEnvironment.isOrganization) {
-    const { membershipId: mId, isManager: hasDirectReports } = await getMembershipAndManagerStatus(
-      activeEnvironment.spaceId,
-      userId,
-    );
+    const membershipStatus = await getMembershipAndManagerStatus(activeEnvironment.spaceId, userId);
+    if (isUserErrorResponse(membershipStatus)) {
+      return <UnauthorizedFallback />;
+    }
+    const { membershipId: mId, isManager: hasDirectReports } = membershipStatus;
     membershipId = mId;
 
     // check for admin tab based on role or permission

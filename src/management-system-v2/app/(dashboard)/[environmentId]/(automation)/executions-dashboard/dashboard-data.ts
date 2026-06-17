@@ -7,6 +7,8 @@ import type { Folder } from '@/lib/data/folder-schema';
 import Ability from '@/lib/ability/abilityHelper';
 import db from '@/lib/data/db';
 import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
+import { permissionDenied } from '@/lib/user-error';
+import { getAllProcessesRecursive } from '@/lib/data/folders';
 
 type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -16,7 +18,9 @@ export async function getMembershipAndManagerStatus(spaceId: string, userId: str
     where: { userId_environmentId: { userId, environmentId: spaceId } },
   });
 
-  if (!myMembership) return { membershipId: null, isManager: false };
+  if (!myMembership) {
+    return permissionDenied();
+  }
 
   const directReportsCount = await db.userOrganigram.count({
     where: { directManagerId: myMembership.id },
@@ -50,23 +54,6 @@ export async function getTeamMemberIds(
   return [];
 }
 
-async function getAllProcessesRecursive(
-  folderId: string,
-  ability: Ability,
-  collected: ListItem[] = [],
-): Promise<ListItem[]> {
-  const contents = await getFolderContents(folderId, ability);
-  for (const item of contents) {
-    if (item.type === 'process') {
-      collected.push(item);
-    } else if (item.type === 'folder') {
-      collected.push(item);
-      await getAllProcessesRecursive(item.id, ability, collected);
-    }
-  }
-  return collected;
-}
-
 async function buildFolderTree(
   folderId: string,
   folderName: string,
@@ -95,7 +82,7 @@ export async function getFolderTree(spaceId: string) {
 export async function getDashboardProcessStats(spaceId: string) {
   const { ability } = await getCurrentEnvironment(spaceId);
   const rootFolder = await getRootFolder(spaceId, ability);
-  const allItems = await getAllProcessesRecursive(rootFolder.id, ability);
+  const allItems = await getAllProcessesRecursive(spaceId, rootFolder.id, ability);
 
   const allProcesses = allItems.filter((item) => item.type === 'process') as ProcessMetadata[];
 

@@ -1,14 +1,42 @@
 import { Card, Space, Typography, Progress, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import styles from './dashboard-charts.module.scss';
+import { DASHBOARD_COLORS as COLORS } from './dashboard-colors';
 
 const { Text } = Typography;
 
-const COLORS = {
-  green: '#52c41a',
-  orange: '#fa8c16',
-  red: '#f5222d',
-};
+interface TimelineRowProps {
+  label: string;
+  total: number;
+  running: number;
+  totalRunningTracked: number;
+  color: string;
+}
+
+const TimelineRow: React.FC<TimelineRowProps> = ({
+  label,
+  total,
+  running,
+  totalRunningTracked,
+  color,
+}) => (
+  <div>
+    <div className={styles.timelineRow}>
+      <Text>{label}</Text>
+      <Text strong>Total Processes: {total}</Text>
+    </div>
+    <Progress
+      percent={totalRunningTracked > 0 ? (running / totalRunningTracked) * 100 : 0}
+      strokeColor={color}
+      showInfo={true}
+      format={(percent) => (
+        <span className={styles.timelineProgressInfo}>
+          {percent?.toFixed(0)}% (Running or Paused: {running})
+        </span>
+      )}
+    />
+  </div>
+);
 
 interface TimelinePerformanceCardProps {
   onSchedule: number;
@@ -50,58 +78,27 @@ const TimelinePerformanceCard: React.FC<TimelinePerformanceCardProps> = ({
       variant="borderless"
     >
       <Space orientation="vertical" style={{ width: '100%' }} size="large">
-        <div>
-          <div className={styles.timelineRow}>
-            <Text>On Schedule</Text>
-            <Text strong>Total Processes: {onSchedule}</Text>
-          </div>
-          <Progress
-            percent={totalRunningTracked > 0 ? (onScheduleRunning / totalRunningTracked) * 100 : 0}
-            strokeColor={COLORS.green}
-            showInfo={true}
-            format={(percent) => (
-              <span className={styles.timelineProgressInfo}>
-                {percent?.toFixed(0)}% (Running or Paused: {onScheduleRunning})
-              </span>
-            )}
-          />
-        </div>
-        <div>
-          <div className={styles.timelineRow}>
-            <Text>Close to Exceed (10%)</Text>
-            <Text strong>Total Processes: {closeToExceed}</Text>
-          </div>
-          <Progress
-            percent={
-              totalRunningTracked > 0 ? (closeToExceedRunning / totalRunningTracked) * 100 : 0
-            }
-            strokeColor={COLORS.orange}
-            showInfo={true}
-            format={(percent) => (
-              <span className={styles.timelineProgressInfo}>
-                {percent?.toFixed(0)}% (Running or Paused: {closeToExceedRunning})
-              </span>
-            )}
-          />
-        </div>
-        <div>
-          <div className={styles.timelineRow}>
-            <Text>Exceeded Time</Text>
-            <Text strong>Total Processes: {exceededTime}</Text>
-          </div>
-          <Progress
-            percent={
-              totalRunningTracked > 0 ? (exceededTimeRunning / totalRunningTracked) * 100 : 0
-            }
-            strokeColor={COLORS.red}
-            showInfo={true}
-            format={(percent) => (
-              <span className={styles.timelineProgressInfo}>
-                {percent?.toFixed(0)}% (Running or Paused: {exceededTimeRunning})
-              </span>
-            )}
-          />
-        </div>
+        <TimelineRow
+          label="On Schedule"
+          total={onSchedule}
+          running={onScheduleRunning}
+          totalRunningTracked={totalRunningTracked}
+          color={COLORS.green}
+        />
+        <TimelineRow
+          label="Close to Exceed (10%)"
+          total={closeToExceed}
+          running={closeToExceedRunning}
+          totalRunningTracked={totalRunningTracked}
+          color={COLORS.orange}
+        />
+        <TimelineRow
+          label="Exceeded Time"
+          total={exceededTime}
+          running={exceededTimeRunning}
+          totalRunningTracked={totalRunningTracked}
+          color={COLORS.red}
+        />
       </Space>
     </Card>
   );

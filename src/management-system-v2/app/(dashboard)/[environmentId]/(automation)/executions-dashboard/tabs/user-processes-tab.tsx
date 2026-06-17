@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Col, Row, Typography, Statistic } from 'antd';
+import {Col, Row, Typography } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUser } from 'react-icons/hi';
 import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
@@ -14,20 +14,24 @@ import ProcessActivityChart from '@/components/dashboard-charts/process-activity
 import TaskOverviewChart from '@/components/dashboard-charts/task-overview-bar-chart';
 import styles from '../dashboard-tabs.module.scss';
 import TaskSummaryCard from '@/components/dashboard-charts/task-summary-card';
+import { DASHBOARD_COLORS as COLORS } from '@/components/dashboard-charts/dashboard-colors';
+import type { calculateUserStats } from '../dashboard-utils';
 
 const { Title } = Typography;
 
-const COLORS = {
-  blue: '#1677ff',
-  green: '#52c41a',
-  orange: '#fa8c16',
-  red: '#f5222d',
-};
+
+type UserStats = ReturnType<typeof calculateUserStats>;
+
+interface DistributionDataPoint {
+  name: string;
+  value: number;
+  fill: string;
+}
 
 interface UserProcessesTabProps {
-  userStats: any;
-  instanceDistributionData: any[];
-  weeklyTrendData: any[];
+  userStats: UserStats;
+  instanceDistributionData: DistributionDataPoint[];
+  weeklyTrendData: UserStats['weeklyData'];
 }
 
 const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
@@ -96,7 +100,6 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             value={userStats.avgOpenTime}
             icon={<ClockCircleOutlined />}
             color={COLORS.blue}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -106,7 +109,6 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             value={userStats.avgCompletedTime}
             icon={<CheckCircleOutlined />}
             color={COLORS.green}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -116,7 +118,6 @@ const UserProcessesTab: React.FC<UserProcessesTabProps> = ({
             value={userStats.longestRunning}
             icon={<HourglassOutlined />}
             color={COLORS.red}
-            suffix="hrs"
             precision={1}
           />
         </Col>

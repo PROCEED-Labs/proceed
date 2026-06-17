@@ -11,14 +11,9 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import styles from './dashboard-charts.module.scss';
+import { DASHBOARD_COLORS as COLORS } from './dashboard-colors';
 
 const { Text } = Typography;
-
-const COLORS = {
-  blue: '#1677ff',
-  orange: '#fa8c16',
-  red: '#f5222d',
-};
 
 interface BudgetOverviewChartProps {
   title?: string;
@@ -43,7 +38,9 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
               <Text type="secondary" className={styles.budgetLabel}>
                 Planned
               </Text>
-              <div className={styles.budgetValuePlanned}>${plannedBudget.toLocaleString()}</div>
+              <div className={`${styles.budgetValue} ${styles.budgetValuePlanned}`}>
+                ${plannedBudget.toLocaleString()}
+              </div>{' '}
             </div>
           </Col>
           <Col span={8}>
@@ -52,7 +49,7 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
                 Spent
               </Text>
               <div
-                className={`${styles.budgetValueSpent} ${isOverBudget ? styles.budgetValueSpentOver : styles.budgetValueSpentNormal}`}
+                className={`${styles.budgetValue} ${isOverBudget ? styles.budgetValueSpentOver : styles.budgetValueSpentNormal}`}
               >
                 ${spentBudget.toLocaleString()}
               </div>
@@ -64,7 +61,7 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
                 {isOverBudget ? 'Over Budget' : 'Remaining'}
               </Text>
               <div
-                className={`${styles.budgetValueRemaining} ${isOverBudget ? styles.budgetValueRemainingOver : styles.budgetValueRemainingNormal}`}
+                className={`${styles.budgetValue} ${isOverBudget ? styles.budgetValueRemainingOver : styles.budgetValueRemainingNormal}`}
               >
                 {isOverBudget ? '+' : ''}${Math.abs(remaining).toLocaleString()}
               </div>

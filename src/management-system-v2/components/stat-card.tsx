@@ -7,7 +7,6 @@ interface StatCardProps {
   value: number;
   icon: React.ReactNode;
   color?: string;
-  suffix?: string;
   prefix?: string;
   precision?: number;
 }
@@ -17,7 +16,6 @@ const StatCard: React.FC<StatCardProps> = ({
   value,
   icon,
   color = '#1677ff',
-  suffix,
   prefix,
   precision = 0,
 }) => (
@@ -33,7 +31,7 @@ const StatCard: React.FC<StatCardProps> = ({
           <span style={{ color, fontSize: '20px', marginRight: '8px' }}>{icon}</span>
         )
       }
-      suffix={suffix}
+      suffix={'hrs'}
       styles={{
         content: {
           fontSize: '24px',

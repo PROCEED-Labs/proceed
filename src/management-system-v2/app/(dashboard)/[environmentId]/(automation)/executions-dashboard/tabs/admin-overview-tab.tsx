@@ -16,20 +16,22 @@ import BudgetOverviewChart from '@/components/dashboard-charts/budget-overview-c
 import ProcessActivityChart from '@/components/dashboard-charts/process-activity-chart';
 import { FolderTreeNode } from '../dashboard-view';
 import styles from '../dashboard-tabs.module.scss';
+import { DASHBOARD_COLORS as COLORS } from '@/components/dashboard-charts/dashboard-colors';
+import type { calculateManagerStats } from '../dashboard-utils';
 
 const { Title, Text } = Typography;
 
-const COLORS = {
-  purple: '#722ed1',
-  blue: '#1677ff',
-  green: '#52c41a',
-  orange: '#fa8c16',
-  red: '#f5222d',
-};
+type AdminStats = ReturnType<typeof calculateManagerStats> & { engines: number };
+
+interface DistributionDataPoint {
+  name: string;
+  value: number;
+  fill: string;
+}
 
 interface AdminOverviewTabProps {
-  adminStats: any;
-  instanceDistributionData: any[];
+  adminStats: AdminStats;
+  instanceDistributionData: DistributionDataPoint[];
   monthlyData: { month: string; completed: number; failed: number }[];
   folderTree: FolderTreeNode | null;
   selectedFolderId: string | null;
@@ -157,7 +159,6 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             value={adminStats.avgOpenTime}
             icon={<ClockCircleOutlined />}
             color={COLORS.blue}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -167,7 +168,6 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             value={adminStats.avgCompletedTime}
             icon={<CheckCircleOutlined />}
             color={COLORS.green}
-            suffix="hrs"
             precision={1}
           />
         </Col>
@@ -177,7 +177,6 @@ const AdminOverviewTab: React.FC<AdminOverviewTabProps> = ({
             value={adminStats.longestRunning}
             icon={<HourglassOutlined />}
             color={COLORS.red}
-            suffix="hrs"
             precision={1}
           />
         </Col>

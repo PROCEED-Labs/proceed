@@ -14,17 +14,14 @@
   font-size: 12px;
 }
 
-.budgetValuePlanned {
+.budgetValue {
   font-size: 24px;
   font-weight: 600;
+}
+
+.budgetValuePlanned {
   color: #1677ff;
 }
-
-.budgetValueSpent {
-  font-size: 24px;
-  font-weight: 600;
-}
-
 .budgetValueSpentOver {
   color: #f5222d;
 }
@@ -32,12 +29,6 @@
 .budgetValueSpentNormal {
   color: #fa8c16;
 }
-
-.budgetValueRemaining {
-  font-size: 24px;
-  font-weight: 600;
-}
-
 .budgetValueRemainingOver {
   color: #f5222d;
 }

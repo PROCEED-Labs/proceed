@@ -10,15 +10,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { DASHBOARD_COLORS as COLORS } from './dashboard-colors';
 
-const COLORS = {
-  green: '#52c41a',
-  red: '#f5222d',
-};
+interface ProcessActivityDataPoint {
+  [key: string]: string | number;
+}
 
 interface ProcessActivityChartProps {
   title: string;
-  data: any[];
+  data: ProcessActivityDataPoint[];
   dataKeys?: {
     x: string;
     line1: { key: string; name: string; color?: string };

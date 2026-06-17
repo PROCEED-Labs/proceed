@@ -1,5 +1,4 @@
 import type { ExtendedInstance } from '@/lib/data/instance';
-export type { ExtendedInstance };
 
 // helpers
 
@@ -101,7 +100,7 @@ export function filterInstancesByDateRange(
   if (!startDate || !endDate) return instances;
 
   return instances.filter((instance) => {
-    const startTime = instance.state?.globalStartTime;
+    const startTime = instance.state.globalStartTime;
     if (!startTime) return true;
     const instanceDate = new Date(startTime);
     return instanceDate >= startDate && instanceDate <= endDate;
@@ -133,9 +132,7 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
 
   instances.forEach((instance) => {
     // Status
-    const isStoppedManually = instance.state?.instanceState?.some(
-      (s) => s === 'STOPPED' || s === 'TERMINATED',
-    );
+    const isStoppedManually = instance.state.instanceState?.some((s) => s === 'STOPPED');
     if (instance.paused) {
       pausedInstances++;
     } else if (instance.executionStatus === 'Running') {
@@ -149,12 +146,12 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
     }
 
     // Timing
-    const timing = instance.state?.timing;
+    const timing = instance.state.timing;
     if (timing) {
-      const actualDuration = timing.actual?.duration;
-      const plannedDuration = timing.plan?.duration;
+      const actualDuration = timing.actual.duration;
+      const plannedDuration = timing.plan.duration;
 
-      if (actualDuration != null) {
+      if (actualDuration !== undefined) {
         if (instance.executionStatus === 'Running' || instance.paused) {
           totalOpenTimeMs += actualDuration;
           openTimeCount++;
@@ -166,7 +163,7 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
 
         const isRunning = instance.executionStatus === 'Running' || instance.paused;
 
-        if (plannedDuration != null && plannedDuration > 0) {
+        if (!!plannedDuration) {
           const ratio = actualDuration / plannedDuration;
 
           // count for all instances
@@ -189,10 +186,10 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
     }
 
     // Budget
-    if (instance.state?.executionCosts?.length) {
+    if (instance.state.executionCosts?.length) {
       spentBudget += sumCosts(instance.state.executionCosts);
     }
-    if (instance.state?.plannedCosts?.length) {
+    if (instance.state.plannedCosts?.length) {
       plannedBudget += sumCosts(instance.state.plannedCosts);
     }
   });
@@ -223,28 +220,7 @@ export function calculateInstanceStats(instances: ExtendedInstance[]): InstanceS
 
 // Empty Stats
 export function getEmptyStats(): InstanceStats {
-  return {
-    deployments: 0,
-    totalInstances: 0,
-    runningInstances: 0,
-    pausedInstances: 0,
-    failedInstances: 0,
-    completedInstances: 0,
-    stoppedInstances: 0,
-    avgOpenTimeMs: 0,
-    avgCompletedTimeMs: 0,
-    longestRunningMs: 0,
-    onSchedule: 0,
-    exceededTime: 0,
-    closeToExceed: 0,
-    onScheduleRunning: 0,
-    closeToExceedRunning: 0,
-    exceededTimeRunning: 0,
-    spentBudget: 0,
-    plannedBudget: 0,
-    monthlyData: [],
-    weeklyData: [],
-  };
+  return calculateInstanceStats([]);
 }
 
 // User Stats

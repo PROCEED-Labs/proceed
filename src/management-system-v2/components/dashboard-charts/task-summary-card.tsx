@@ -7,94 +7,112 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import styles from './dashboard-charts.module.scss';
+import type { calculateUserStats } from '../../app/(dashboard)/[environmentId]/(automation)/executions-dashboard/dashboard-utils';
+import { DASHBOARD_COLORS as COLORS } from './dashboard-colors';
 
 const { Text } = Typography;
 
-const COLORS = {
-  blue: '#1677ff',
-  red: '#f5222d',
-  purple: '#722ed1',
-};
+type UserStats = ReturnType<typeof calculateUserStats>;
 
 interface TaskSummaryCardProps {
-  userStats: any;
+  userStats: UserStats;
 }
 
+interface TaskSummaryColumnProps {
+  icon: React.ReactNode;
+  label: string;
+  tooltip: string;
+  openCount: number;
+  completedCount?: number;
+  openColor?: 'warning' | 'error';
+  span: number;
+}
+
+const TaskSummaryColumn: React.FC<TaskSummaryColumnProps> = ({
+  icon,
+  label,
+  tooltip,
+  openCount,
+  completedCount,
+  openColor = 'warning',
+  span,
+}) => (
+  <Col xs={24} sm={24} md={span}>
+    <div className={styles.taskSummarySection}>
+      {icon}
+      <Text strong>{label}</Text>
+      <Tooltip title={tooltip}>
+        <QuestionCircleOutlined className={styles.taskSummaryHelpIcon} />
+      </Tooltip>
+    </div>
+    <div className={styles.taskSummaryTags}>
+      <Tag icon={<ClockCircleOutlined />} color={openColor} className={styles.taskSummaryTag}>
+        Open: {openCount}
+      </Tag>
+      {completedCount !== undefined && (
+        <Tag icon={<CheckOutlined />} color="success" className={styles.taskSummaryTag}>
+          Completed: {completedCount}
+        </Tag>
+      )}
+    </div>
+  </Col>
+);
+
+const VerticalDivider = () => (
+  <Col xs={0} sm={0} md={1} style={{ display: 'flex', justifyContent: 'center' }}>
+    <Divider orientation="vertical" className={styles.taskSummaryDivider} />
+  </Col>
+);
+
 const TaskSummaryCard: React.FC<TaskSummaryCardProps> = ({ userStats }) => {
+  const directSpan = !userStats.isOrganization ? 24 : userStats.isAdmin ? 8 : 11;
+
   return (
     <Card title="Task Summary" variant="borderless" styles={{ body: { padding: '36px 32px' } }}>
       <Row gutter={[32, 32]} align="middle">
         {/* Directly Assigned */}
-        <Col xs={24} sm={24} md={!userStats.isOrganization ? 24 : userStats.isAdmin ? 8 : 11}>
-          <div className={styles.taskSummarySection}>
-            <UserOutlined style={{ color: COLORS.blue }} className={styles.taskSummaryIcon} />
-            <Text strong>Directly Assigned</Text>
-            <Tooltip title="Tasks where you are explicitly listed as a potential owner">
-              <QuestionCircleOutlined className={styles.taskSummaryHelpIcon} />
-            </Tooltip>
-          </div>
-          <div className={styles.taskSummaryTags}>
-            <Tag icon={<ClockCircleOutlined />} color="warning" className={styles.taskSummaryTag}>
-              Open: {userStats.yourOpenTasks ?? 0}
-            </Tag>
-            <Tag icon={<CheckOutlined />} color="success" className={styles.taskSummaryTag}>
-              Completed: {userStats.yourCompletedTasks ?? 0}
-            </Tag>
-          </div>
-        </Col>
+        <TaskSummaryColumn
+          icon={<UserOutlined style={{ color: COLORS.blue }} className={styles.taskSummaryIcon} />}
+          label="Directly Assigned"
+          tooltip="Tasks where you are explicitly listed as a potential owner"
+          openCount={userStats.yourOpenTasks ?? 0}
+          completedCount={userStats.yourCompletedTasks ?? 0}
+          span={directSpan}
+        />
 
         {/* Via Role/Group for rganization only */}
         {userStats.isOrganization && (
           <>
-            <Col xs={0} sm={0} md={1} style={{ display: 'flex', justifyContent: 'center' }}>
-              <Divider orientation="vertical" className={styles.taskSummaryDivider} />
-            </Col>
-            <Col xs={24} sm={24} md={userStats.isAdmin ? 8 : 11}>
-              <div className={styles.taskSummarySection}>
+            <VerticalDivider />
+            <TaskSummaryColumn
+              icon={
                 <TeamOutlined style={{ color: COLORS.purple }} className={styles.taskSummaryIcon} />
-                <Text strong>Via Role / Group</Text>
-                <Tooltip title="Tasks assigned to a role you belong to, not directly to you">
-                  <QuestionCircleOutlined className={styles.taskSummaryHelpIcon} />
-                </Tooltip>
-              </div>
-              <div className={styles.taskSummaryTags}>
-                <Tag
-                  icon={<ClockCircleOutlined />}
-                  color="warning"
-                  className={styles.taskSummaryTag}
-                >
-                  Open: {userStats.groupOpenTasks ?? 0}
-                </Tag>
-                <Tag icon={<CheckOutlined />} color="success" className={styles.taskSummaryTag}>
-                  Completed: {userStats.groupCompletedTasks ?? 0}
-                </Tag>
-              </div>
-            </Col>
+              }
+              label="Via Role / Group"
+              tooltip="Tasks assigned to a role you belong to, not directly to you"
+              openCount={userStats.groupOpenTasks ?? 0}
+              completedCount={userStats.groupCompletedTasks ?? 0}
+              span={userStats.isAdmin ? 8 : 11}
+            />
           </>
         )}
         {/* Unassigned for admin only */}
         {userStats.isAdmin && (
           <>
-            <Col xs={0} sm={0} md={1} style={{ display: 'flex', justifyContent: 'center' }}>
-              <Divider orientation="vertical" className={styles.taskSummaryDivider} />
-            </Col>
-            <Col xs={24} sm={24} md={6}>
-              <div className={styles.taskSummarySection}>
+            <VerticalDivider />
+            <TaskSummaryColumn
+              icon={
                 <QuestionCircleOutlined
                   style={{ color: COLORS.red }}
                   className={styles.taskSummaryIcon}
                 />
-                <Text strong>Unassigned</Text>
-                <Tooltip title="Tasks with no specific user or role assigned — admin view only">
-                  <QuestionCircleOutlined className={styles.taskSummaryHelpIcon} />
-                </Tooltip>
-              </div>
-              <div className={styles.taskSummaryTags}>
-                <Tag icon={<ClockCircleOutlined />} color="error" className={styles.taskSummaryTag}>
-                  Open: {userStats.unassignedTasks ?? 0}
-                </Tag>
-              </div>
-            </Col>
+              }
+              label="Unassigned"
+              tooltip="Tasks with no specific user or role assigned — admin view only"
+              openCount={userStats.unassignedTasks ?? 0}
+              openColor="error"
+              span={6}
+            />
           </>
         )}
       </Row>

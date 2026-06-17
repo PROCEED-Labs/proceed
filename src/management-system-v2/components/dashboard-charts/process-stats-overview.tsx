@@ -4,6 +4,37 @@ import styles from './dashboard-charts.module.scss';
 
 const { Text } = Typography;
 
+interface ProcessStatPairProps {
+  topLabel: string;
+  topValue: number;
+  bottomLabel: string;
+  bottomValue: number;
+  topColorClass?: string;
+  bottomColorClass?: string;
+}
+
+const ProcessStatPair: React.FC<ProcessStatPairProps> = ({
+  topLabel,
+  topValue,
+  bottomLabel,
+  bottomValue,
+  topColorClass,
+  bottomColorClass,
+}) => (
+  <Col flex="1 1 320px" className={styles.statsCol}>
+    <Card variant="borderless" className={styles.statsCardFull}>
+      <div className={styles.statsBlockMargin}>
+        <Text type="secondary">{topLabel}</Text>
+        <div className={`${styles.statsValue} ${topColorClass ?? ''}`}>{topValue}</div>
+      </div>
+      <div>
+        <Text type="secondary">{bottomLabel}</Text>
+        <div className={`${styles.statsValue} ${bottomColorClass ?? ''}`}>{bottomValue}</div>
+      </div>
+    </Card>
+  </Col>
+);
+
 interface ProcessStatsCardsProps {
   accessibleProcesses: number;
   executableProcesses: number;
@@ -23,51 +54,26 @@ const ProcessStatsCards: React.FC<ProcessStatsCardsProps> = ({
 }) => {
   return (
     <Row gutter={[16, 16]} className={styles.statsRow}>
-      <Col flex="1 1 320px" className={styles.statsCol}>
-        <Card variant="borderless" className={styles.statsCardFull}>
-          <div className={styles.statsBlockMargin}>
-            <Text type="secondary">Accessible Processes</Text>
-            <div className={styles.statsValue}>{accessibleProcesses}</div>
-          </div>
-
-          <div>
-            <Text type="secondary">Executable Processes</Text>
-            <div className={styles.statsValue}>{executableProcesses}</div>
-          </div>
-        </Card>
-      </Col>
-
-      <Col flex="1 1 320px" className={styles.statsCol}>
-        <Card variant="borderless" className={styles.statsCardFull}>
-          <div className={styles.statsBlockMargin}>
-            <Text type="secondary">Running Processes</Text>
-            <div className={`${styles.statsValue} ${styles.statsValueGreen}`}>
-              {runningProcesses}
-            </div>
-          </div>
-
-          <div>
-            <Text type="secondary">Paused Processes</Text>
-            <div className={`${styles.statsValue} ${styles.statsValueOrange}`}>
-              {pausedProcesses}
-            </div>
-          </div>
-        </Card>
-      </Col>
-
-      <Col flex="1 1 320px" className={styles.statsCol}>
-        <Card variant="borderless" className={styles.statsCardFull}>
-          <div className={styles.statsBlockMargin}>
-            <Text type="secondary">Completed Processes</Text>
-            <div className={styles.statsValue}>{completedProcesses}</div>
-          </div>
-
-          <div>
-            <Text type="secondary">Total Processes</Text>
-            <div className={styles.statsValue}>{startedProcesses}</div>
-          </div>
-        </Card>
-      </Col>
+      <ProcessStatPair
+        topLabel="Accessible Processes"
+        topValue={accessibleProcesses}
+        bottomLabel="Executable Processes"
+        bottomValue={executableProcesses}
+      />
+      <ProcessStatPair
+        topLabel="Running Processes"
+        topValue={runningProcesses}
+        topColorClass={styles.statsValueGreen}
+        bottomLabel="Paused Processes"
+        bottomValue={pausedProcesses}
+        bottomColorClass={styles.statsValueOrange}
+      />
+      <ProcessStatPair
+        topLabel="Completed Processes"
+        topValue={completedProcesses}
+        bottomLabel="Total Processes"
+        bottomValue={startedProcesses}
+      />
     </Row>
   );
 };

@@ -13,7 +13,7 @@ import {
 import { getSpaceUsers } from './db/iam/users';
 import { truthyFilter } from '../typescript-utils';
 import { getEnvironmentById } from './db/iam/environments';
-import { EngineWithConnections } from '../engines/types';
+import { Engine } from '../engines/types';
 
 export async function getUserTasks(spaceId: string, ability?: Ability) {
   const space = await getEnvironmentById(spaceId, ability);
@@ -52,7 +52,7 @@ export async function getUserTasks(spaceId: string, ability?: Ability) {
           },
         },
       },
-    })) as (UserTask & { engine: EngineWithConnections | null })[];
+    })) as (UserTask & { engine: Engine | null })[];
 
     const users = await getSpaceUsers(spaceId, space.isOrganization);
 
@@ -99,7 +99,7 @@ export async function getUserTaskById(userTaskId: string) {
       },
     });
 
-    return userTask as UserTask & { engine: EngineWithConnections | null };
+    return userTask as UserTask & { engine: Engine | null };
   } catch (err) {
     return userError('Error getting user task');
   }

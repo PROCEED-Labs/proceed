@@ -162,15 +162,10 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       }
     }
 
-    const variableUpdate = await setTasklistEntryVariableValues(
-      environmentId,
-      id,
-      mappedVariables,
-      ability,
-    );
+    const variableUpdate = await setTasklistEntryVariableValues(id, mappedVariables);
     if (isUserErrorResponse(variableUpdate)) return `Error: ${variableUpdate.error.message}`;
 
-    const result = await completeTasklistEntry(environmentId, id, mappedVariables, ability);
+    const result = await completeTasklistEntry(id, mappedVariables);
 
     if (isUserErrorResponse(result)) return `Error: ${result.error.message} `;
 

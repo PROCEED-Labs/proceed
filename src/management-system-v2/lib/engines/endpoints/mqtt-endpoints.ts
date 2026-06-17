@@ -166,10 +166,13 @@ export async function mqttRequest(
 
   // await for response or timeout
   setTimeout(() => rej(new Error('MQTT request timed out (10s)')), mqttTimeout);
-  const response = await receivedAnswer;
-
-  // cleanup
-  mqttClient.removeListener('message', handler);
-
-  return response;
+  try {
+    const response = await receivedAnswer;
+    return { result: response };
+  } catch (error) {
+    return { error: error as Error };
+  } finally {
+    // cleanup
+    mqttClient.removeListener('message', handler);
+  }
 }

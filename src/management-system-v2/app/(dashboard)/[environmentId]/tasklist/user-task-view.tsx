@@ -145,10 +145,10 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           await wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await completeTasklistEntry(space.spaceId, task.id, variables);
+              return await completeTasklistEntry(task.id, variables);
             },
           });
         }}
@@ -156,10 +156,10 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           await wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await setTasklistMilestoneValues(space.spaceId, task.id, newValues);
+              return await setTasklistMilestoneValues(task.id, newValues);
             },
             onSuccess: () => {},
           });
@@ -168,10 +168,10 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
           wrapServerCall({
             fn: async () => {
               if (!task?.actualOwner.some((owner) => owner.id === userId)) {
-                const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
+                const updatedOwners = await addOwnerToTaskListEntry(task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await setTasklistEntryVariableValues(space.spaceId, task.id, newValues);
+              return await setTasklistEntryVariableValues(task.id, newValues);
             },
             onSuccess: () => {},
           });

@@ -14,12 +14,17 @@ export type HttpEngine = {
   id: string;
   address: string;
 } & Discriminator;
-export type Engine = MqttEngine | HttpEngine;
-export type EngineWithConnections = {
+export type Engine = {
   id: string;
   name?: string | null;
   connections: { reachable: boolean; connection: EngineConnection }[];
 } & Discriminator;
 
 export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
-export type ProceedEngine = Extract<Engine, { spaceEngine?: undefined }>;
+
+export function isHttpConnection(connection: EngineConnection) {
+  return connection.address.startsWith('http');
+}
+export function isMqttConnection(connection: EngineConnection) {
+  return connection.address.startsWith('mqtt');
+}

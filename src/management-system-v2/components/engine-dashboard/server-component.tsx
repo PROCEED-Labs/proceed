@@ -43,12 +43,12 @@ export default async function EngineDashboard({
   try {
     const [configuration, machineData] = await Promise.all([
       engineRequest({
-        engine,
+        engine: { ...engine, connections: [{ reachable: true, connection }] },
         method: 'get',
         endpoint: '/configuration/',
       }),
       engineRequest({
-        engine,
+        engine: { ...engine, connections: [{ reachable: true, connection }] },
         method: 'get',
         endpoint: '/machine/',
       }),

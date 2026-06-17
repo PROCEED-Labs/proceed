@@ -6,6 +6,7 @@ import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
   UserError,
   getErrorMessage,
+  isUserError,
   isUserErrorResponse,
   permissionDenied,
   schemaValidationError,
@@ -64,29 +65,27 @@ export async function getEngineConnectionById(
   return connection;
 }
 
-function getUniqueEngines(engines: Engine[]) {
-  // some engines might occur multiple times
-  // (e.g. they are reachable through a saved HTTP engine and over a saved MQTT broker)
-  const uniqueEngines = engines.reduce(
-    (uniqueMap, engine) => {
-      if (!uniqueMap[engine.id]) {
-        uniqueMap[engine.id] = engine;
-      } else if (uniqueMap[engine.id].type === 'mqtt' && engine.type === 'http') {
-        // prefer http over mqtt since we can establish a more direct connection
-        uniqueMap[engine.id] = engine;
-      }
-      return uniqueMap;
+async function getAvailableEngines(environmentIds: (string | null)[], ability?: Ability) {
+  if (ability && !ability.can('view', 'Machine')) return [];
+
+  return await db.engine.findMany({
+    where: {
+      connections: {
+        some: {
+          reachable: true,
+          connection: {
+            AND: [{ removed: false }, { OR: environmentIds.map((id) => ({ environmentId: id })) }],
+          },
+        },
+      },
     },
-    {} as Record<string, Engine>,
-  );
-  return Object.values(uniqueEngines);
+    include: { connections: { select: { reachable: true, connection: true } } },
+  });
 }
 
 export async function getAvailableAdminEngines() {
   try {
-    const connections = await getEngineConnections(null, undefined, 'dont-check');
-    const engines = await resolveEngines(connections);
-    return getUniqueEngines(engines);
+    return getAvailableEngines([null]);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -96,10 +95,8 @@ export async function getAvailableAdminEngines() {
 /** Returns space engines that are currently online */
 export async function getAvailableSpaceEngines(spaceId: string, ability?: Ability) {
   try {
-    if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
-    const connections = await getEngineConnections(spaceId, ability);
-    const engines = await resolveEngines(connections);
-    return getUniqueEngines(engines) as SpaceEngine[];
+    const engines = await getAvailableEngines([spaceId], ability);
+    return engines.map((e) => ({ ...e, spaceEngine: true as const }));
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
@@ -114,30 +111,11 @@ export async function getAllAvailableEngines(
   try {
     if (!ability && !skipAbilityCheck) ({ ability } = await getCurrentEnvironment(spaceId));
 
-    let engines: Engine[] = [];
-    const [proceedEngines, spaceEngines] = await Promise.allSettled([
-      getEngineConnections(null, undefined, 'dont-check').then(resolveEngines),
-      getEngineConnections(spaceId, ability).then(resolveEngines),
-    ]);
-
-    if (proceedEngines.status === 'fulfilled') engines = proceedEngines.value;
-    if (spaceEngines.status === 'fulfilled') engines = engines.concat(spaceEngines.value);
-
-    return getUniqueEngines(engines);
+    return getAvailableEngines([spaceId, null]);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);
   }
-}
-
-export async function getEngineIfAvailable(
-  environmentId: string,
-  engineId: string,
-  ability?: Ability,
-) {
-  const engines = await getAvailableSpaceEngines(environmentId, ability);
-  if (isUserErrorResponse(engines)) return engines;
-  return engines.find((e) => e.id === engineId);
 }
 
 export async function addEngineConnection(
@@ -303,7 +281,8 @@ export async function updateEngineConnection(
     }
   } catch (e) {
     console.error(`Failed to update an engine connection: ${e}`);
-    return userError('Error updating engine connection.');
+    if (isUserError(e)) return userError(e.message, e.type);
+    return userError('Error updating engine connection');
   }
 }
 
@@ -317,12 +296,12 @@ export async function deleteEngineConnection(
   const user = await getCurrentUser();
 
   // engines without an environmentId are PROCEED engines
-  if (skipAbilityCheck && environmentId === null && !user.systemAdmin) {
+  if (!skipAbilityCheck && environmentId === null && !user.systemAdmin) {
     return permissionDenied();
   }
 
   const connection = await dbMutator.engineConnection.findUnique({
-    where: { id: engineId, environmentId },
+    where: { id: engineId, environmentId, removed: false },
   });
   if (!connection) return userError('Engine not found');
 
@@ -339,7 +318,7 @@ export async function deleteEngineConnection(
   }
 
   try {
-    const res = await db.engineConnection.update({
+    const res = await dbMutator.engineConnection.update({
       where: {
         environmentId: environmentId,
         id: engineId,

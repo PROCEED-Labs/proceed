@@ -326,7 +326,6 @@ const DashboardView: React.FC<DashboardProps> = ({
   }, [
     engines,
     deploymentData,
-    filteredInstances,
     userInstances,
     managerInstances,
     adminInstances,

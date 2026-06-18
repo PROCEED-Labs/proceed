@@ -38,9 +38,9 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
               <Text type="secondary" className={styles.budgetLabel}>
                 Planned
               </Text>
-              <div className={`${styles.budgetValue} ${styles.budgetValuePlanned}`}>
+              <div className={`${styles.statsValue} ${styles.budgetValuePlanned}`}>
                 ${plannedBudget.toLocaleString()}
-              </div>{' '}
+              </div>
             </div>
           </Col>
           <Col span={8}>
@@ -49,7 +49,7 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
                 Spent
               </Text>
               <div
-                className={`${styles.budgetValue} ${isOverBudget ? styles.budgetValueSpentOver : styles.budgetValueSpentNormal}`}
+                className={`${styles.statsValue} ${isOverBudget ? styles.budgetValueSpentOver : styles.budgetValueSpentNormal}`}
               >
                 ${spentBudget.toLocaleString()}
               </div>
@@ -61,7 +61,7 @@ const BudgetOverviewChart: React.FC<BudgetOverviewChartProps> = ({
                 {isOverBudget ? 'Over Budget' : 'Remaining'}
               </Text>
               <div
-                className={`${styles.budgetValue} ${isOverBudget ? styles.budgetValueRemainingOver : styles.budgetValueRemainingNormal}`}
+                className={`${styles.statsValue} ${isOverBudget ? styles.budgetValueRemainingOver : styles.budgetValueRemainingNormal}`}
               >
                 {isOverBudget ? '+' : ''}${Math.abs(remaining).toLocaleString()}
               </div>

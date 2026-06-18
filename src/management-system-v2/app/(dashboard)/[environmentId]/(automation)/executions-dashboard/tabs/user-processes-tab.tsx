@@ -3,7 +3,7 @@
 import { Col, Row, Typography } from 'antd';
 import { ClockCircleOutlined, CheckCircleOutlined, HourglassOutlined } from '@ant-design/icons';
 import { HiUser } from 'react-icons/hi';
-import { MdPlayArrow, MdCheckCircle, MdAddTask } from 'react-icons/md';
+import { MdAddTask } from 'react-icons/md';
 import GaugeChart from '@/components/dashboard-charts/gauge-chart';
 import RadialDistributionChart from '@/components/dashboard-charts/radial-distribution-chart';
 import TimelinePerformanceCard from '@/components/dashboard-charts/timeline-performance-card';

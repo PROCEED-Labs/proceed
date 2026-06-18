@@ -8,7 +8,6 @@ import { getCurrentEnvironment } from '@/components/auth';
 // import.
 import '@/lib/data/processes';
 import { getUsersFavourites } from '@/lib/data/users';
-import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
@@ -18,9 +17,7 @@ import { spaceURL } from '@/lib/utils';
 import { getFolderById, getRootFolder, getFolderContents } from '@/lib/data/db/folders';
 import ProcessAnalyticsCards from './analytics';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import Ability from '@/lib/ability/abilityHelper';
 import { getAllProcessesRecursive } from '@/lib/data/folders';
-export type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
 
 const ProcessesPage = async (props: {
   params: Promise<{ environmentId: string; folderId?: string; mode: string }>;

@@ -337,12 +337,10 @@ model EmailVerificationToken {
   passwordHash String?
 }
 
-// Short lived codes used to connect an MCP session of a specific user with proceed to generate a JWT that can then be used for
-// authentication on further MCP requests
 model McpPairingCode {
-  codeHash      String   @id
+  code          String   @id
   expires       DateTime
-  user          User     @relation(name: "pairingCode", fields: [userId], references: [id])
+  user          User     @relation(name: "pairingCode", fields: [userId], references: [id], onDelete: Cascade)
   userId        String
   space         Space    @relation(fields: [environmentId], references: [id], onDelete: Cascade)
   environmentId String

@@ -449,7 +449,7 @@ class Messaging extends System {
             }
           }
 
-          this._logger.info(
+          this._logger.debug(
             `Request received via Messaging System (REST-API Mapping). ID: ${request.id} Request: ${request.method} ${path}`,
           );
 
@@ -485,8 +485,8 @@ class Messaging extends System {
             bodyIsBuffer: isBuffer,
             body: sendResponse,
           });
-          this._logger.info(
-            `Response sent    via Messaging System (REST-API Mapping). ID: ${request.id} Response: ${statusCode}`,
+          this._logger.debug(
+            `Response sent via Messaging System (REST-API Mapping). ID: ${request.id} Response: ${statusCode}`,
           );
         }
       } catch (err) {

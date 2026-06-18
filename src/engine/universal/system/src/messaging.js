@@ -449,7 +449,7 @@ class Messaging extends System {
             }
           }
 
-          this._logger.trace(
+          this._logger.debug(
             `Request received via Messaging System (REST-API Mapping). ID: ${request.id} Request: ${request.method} ${path}`,
           );
 
@@ -485,7 +485,7 @@ class Messaging extends System {
             bodyIsBuffer: isBuffer,
             body: sendResponse,
           });
-          this._logger.trace(
+          this._logger.debug(
             `Response sent via Messaging System (REST-API Mapping). ID: ${request.id} Response: ${statusCode}`,
           );
         }

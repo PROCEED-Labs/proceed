@@ -1,6 +1,6 @@
 'use server';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { FolderUserInput, FolderUserInputSchema } from './folder-schema';
+import { Folder, FolderUserInput, FolderUserInputSchema } from './folder-schema';
 import {
   UserError,
   UserErrorType,
@@ -25,13 +25,36 @@ import {
   moveProcess,
   getFolderChildren,
 } from '@/lib/data/db/folders';
-import { Process } from './process-schema';
+import { Process, ProcessMetadata } from './process-schema';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import { canDeleteProcess, deleteProcesses } from './processes';
 import { truthyFilter } from '../typescript-utils';
 import { ReactNode } from 'react';
 
 export type FolderChildren = { id: string; type: 'folder' } | { id: string; type: Process['type'] };
+
+export type RecursiveFolderItem = ProcessMetadata | (Folder & { type: 'folder' });
+
+/** Recursively collects all processes and folders inside a given folder, including nested ones */
+export async function getAllProcessesRecursive(
+  spaceId: string,
+  folderId: string,
+  ability?: Ability,
+  collected: RecursiveFolderItem[] = [],
+): Promise<RecursiveFolderItem[]> {
+  const contents = await getFolderContents(spaceId, folderId, ability);
+  if (isUserErrorResponse(contents)) return collected;
+
+  for (const item of contents) {
+    if (item.type === 'process') {
+      collected.push(item);
+    } else if (item.type === 'folder') {
+      collected.push(item);
+      await getAllProcessesRecursive(spaceId, item.id, ability, collected);
+    }
+  }
+  return collected;
+}
 
 export async function createFolder(folderInput: FolderUserInput) {
   try {

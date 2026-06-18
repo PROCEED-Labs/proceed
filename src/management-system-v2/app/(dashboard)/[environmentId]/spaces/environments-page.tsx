@@ -2,8 +2,8 @@
 
 import Bar from '@/components/bar';
 import { OrganizationEnvironment } from '@/lib/data/environment-schema';
-import { App, Button, Space } from 'antd';
-import { FC, use } from 'react';
+import { App, Button, Form, Input, Modal, Space } from 'antd';
+import { FC, use, useState } from 'react';
 import useFuzySearch, { ReplaceKeysWithHighlighted } from '@/lib/useFuzySearch';
 import ElementList from '@/components/item-list-view';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import ConfirmationButton from '@/components/confirmation-button';
 import { leaveOrganization } from '@/lib/data/environments';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
-import { SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined, CopyOutlined } from '@ant-design/icons';
 import { getPairingCode } from '@/lib/data/mcp-authorization';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { EnvVarsContext } from '@/components/env-vars-context';
@@ -39,6 +39,8 @@ const EnvironmentsPage: FC<{
     transformData: (results) => results.map((result) => result.item),
   });
 
+  const [spaceToConnect, setSpaceToConnect] = useState('');
+
   const env = use(EnvVarsContext);
 
   const handleCreateAccessCode = async (environmentId: string) => {
@@ -52,6 +54,9 @@ const EnvironmentsPage: FC<{
     navigator.clipboard.writeText(code);
     app.message.success('Copied the code to your clipboard');
   };
+
+  let baseUrl = new URL(window.location.href);
+  baseUrl.pathname = 'mcp';
 
   return (
     <>
@@ -80,9 +85,7 @@ const EnvironmentsPage: FC<{
                   <Button>Enter</Button>
                 </Link>
                 {env.PROCEED_PUBLIC_MCP_ACTIVE && (
-                  <Button onClick={() => handleCreateAccessCode(environment.id)}>
-                    Connect Chatbot
-                  </Button>
+                  <Button onClick={() => setSpaceToConnect(environment.id)}>Connect Chatbot</Button>
                 )}
                 {environment.isOrganization && (
                   <ConfirmationButton
@@ -119,6 +122,45 @@ const EnvironmentsPage: FC<{
           rowKey: 'id',
         }}
       />
+
+      {env.PROCEED_PUBLIC_MCP_ACTIVE && (
+        <Modal
+          open={!!spaceToConnect}
+          title="Connect Chatbot"
+          onCancel={() => setSpaceToConnect('')}
+          onOk={() => setSpaceToConnect('')}
+        >
+          <div style={{ marginTop: '16px' }}>
+            <Form.Item
+              style={{ marginBottom: '16px' }}
+              label="Connection Address"
+              layout="vertical"
+            >
+              <div style={{ display: 'flex' }}>
+                <Input value={baseUrl.toString()} disabled />
+                <Button
+                  type="text"
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    navigator.clipboard.writeText(baseUrl.toString());
+                    app.message.success('Copied the address to your clipboard');
+                  }}
+                />
+              </div>
+            </Form.Item>
+            <Form.Item label="Connection Code" layout="vertical">
+              <div style={{ display: 'flex' }}>
+                <Input value={'This is not the actual code'} type="password" disabled />
+                <Button
+                  type="text"
+                  icon={<CopyOutlined />}
+                  onClick={() => handleCreateAccessCode(spaceToConnect)}
+                />
+              </div>
+            </Form.Item>
+          </div>
+        </Modal>
+      )}
     </>
   );
 };

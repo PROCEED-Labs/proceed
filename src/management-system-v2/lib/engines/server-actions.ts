@@ -75,51 +75,51 @@ async function refetchFn() {
 
           return [
             !!notReachableAnymore.length &&
-            tx.engineConnection.update({
-              where: { id: c.id },
-              data: {
-                engines: {
-                  update: notReachableAnymore.map((engineId) => ({
-                    where: { engineId_connectionId: { engineId, connectionId: c.id } },
-                    data: { reachable: false },
-                  })),
+              tx.engineConnection.update({
+                where: { id: c.id },
+                data: {
+                  engines: {
+                    update: notReachableAnymore.map((engineId) => ({
+                      where: { engineId_connectionId: { engineId, connectionId: c.id } },
+                      data: { reachable: false },
+                    })),
+                  },
                 },
-              },
-            }),
+              }),
             !!(becameReachable.length || updated.length) &&
-            tx.engineConnection.update({
-              where: { id: c.id },
-              data: {
-                engines: {
-                  upsert: [...becameReachable, ...updated].map(
-                    ({ id, name, data, configuration, logs }) => ({
-                      where: { engineId_connectionId: { engineId: id, connectionId: c.id } },
-                      update: {
-                        reachable: true,
-                        lastContact: currentDate,
-                        engine: {
-                          update: {
-                            data,
-                            configuration,
-                            logs,
+              tx.engineConnection.update({
+                where: { id: c.id },
+                data: {
+                  engines: {
+                    upsert: [...becameReachable, ...updated].map(
+                      ({ id, name, data, configuration, logs }) => ({
+                        where: { engineId_connectionId: { engineId: id, connectionId: c.id } },
+                        update: {
+                          reachable: true,
+                          lastContact: currentDate,
+                          engine: {
+                            update: {
+                              data,
+                              configuration,
+                              logs,
+                            },
                           },
                         },
-                      },
-                      create: {
-                        reachable: true,
-                        lastContact: currentDate,
-                        engine: {
-                          connectOrCreate: {
-                            where: { id: id },
-                            create: { id: id, name: name, data, configuration, logs },
+                        create: {
+                          reachable: true,
+                          lastContact: currentDate,
+                          engine: {
+                            connectOrCreate: {
+                              where: { id: id },
+                              create: { id: id, name: name, data, configuration, logs },
+                            },
                           },
                         },
-                      },
-                    }),
-                  ),
+                      }),
+                    ),
+                  },
                 },
-              },
-            }),
+              }),
           ];
         }),
       ]);

@@ -10,8 +10,6 @@ import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
 import { permissionDenied } from '@/lib/user-error';
 import { getAllProcessesRecursive } from '@/lib/data/folders';
 
-type ListItem = ProcessMetadata | (Folder & { type: 'folder' });
-
 // Returns the user's membership id and whether they have direct reports to determine is user a manager
 export async function getMembershipAndManagerStatus(spaceId: string, userId: string) {
   const myMembership = await db.membership.findUnique({

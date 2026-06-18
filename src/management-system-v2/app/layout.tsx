@@ -29,7 +29,7 @@ const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
       <body className={classNames(inter.variable, myFont.variable)}>
         <EngineRefetchBoundary
           enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
-          interval={5}
+          interval={publicEnv.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL}
         >
           <DeploymentRefetchBoundary
             enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}

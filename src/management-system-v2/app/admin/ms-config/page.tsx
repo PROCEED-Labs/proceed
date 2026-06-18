@@ -89,6 +89,12 @@ async function ConfigPage() {
         },
         {
           type: 'number',
+          name: 'PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL',
+          key: 'PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL',
+          value: msConfig.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL,
+        },
+        {
+          type: 'number',
           name: 'PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL',
           key: 'PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL',
           value: msConfig.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL,

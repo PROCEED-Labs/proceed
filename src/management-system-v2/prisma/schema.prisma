@@ -274,6 +274,9 @@ model RoleMember {
 model Engine {
   id            String @id
   name          String?
+  data          Json
+  configuration Json
+  logs          Json
 
   connections   ConnectionEngineReachability[]
 

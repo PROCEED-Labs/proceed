@@ -364,6 +364,7 @@ const Management = {
         tokenId: token.tokenId,
         state: tokenState,
         currentFlowElementId: token.currentFlowElementId,
+        currentFlowElementStartTime: token.currentFlowElementStartTime,
         deciderStorageRounds: token.deciderStorageRounds,
         deciderStorageTime: token.deciderStorageTime,
         machineHops: token.machineHops,

@@ -18,6 +18,8 @@ import { EngineConnection, Prisma, SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';
 import { toCaslResource } from '../ability/caslAbility';
+import { asyncMap } from '../helpers/javascriptHelpers';
+import { engineRequest } from '../engines/endpoints';
 
 export async function getEngineConnections(
   environmentId: string | null,
@@ -166,6 +168,26 @@ export async function addEngineConnection(
       removed: false,
     };
 
+    const engineData = await asyncMap(reachableEngines, async (engine) => {
+      const data = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/machine/',
+      });
+      const configuration = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/configuration/',
+      });
+      const logs = await engineRequest({
+        engine,
+        method: 'get',
+        endpoint: '/logging/standard',
+      });
+
+      return { engine, data, configuration, logs };
+    });
+
     const currentDate = new Date();
 
     if (existingConnection) {
@@ -175,7 +197,7 @@ export async function addEngineConnection(
         data: {
           ...connection,
           engines: {
-            upsert: reachableEngines.map((engine) => ({
+            upsert: engineData.map(({ engine, data, configuration, logs }) => ({
               where: {
                 engineId_connectionId: { engineId: engine.id, connectionId: existingConnection.id },
               },
@@ -186,7 +208,7 @@ export async function addEngineConnection(
                 engine: {
                   connectOrCreate: {
                     where: { id: engine.id },
-                    create: { id: engine.id, name: engine.name },
+                    create: { id: engine.id, name: engine.name, data, configuration, logs },
                   },
                 },
               },
@@ -199,13 +221,13 @@ export async function addEngineConnection(
         data: {
           ...connection,
           engines: {
-            create: reachableEngines.map((engine) => ({
+            create: engineData.map(({ engine, data, configuration, logs }) => ({
               reachable: true,
               lastContact: currentDate,
               engine: {
                 connectOrCreate: {
                   where: { id: engine.id },
-                  create: { id: engine.id, name: engine.name },
+                  create: { id: engine.id, name: engine.name, data, configuration, logs },
                 },
               },
             })),

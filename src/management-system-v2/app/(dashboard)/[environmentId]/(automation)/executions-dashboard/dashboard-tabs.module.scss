@@ -1,0 +1,83 @@
+.folderSelector {
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.folderIcon {
+  font-size: 18px;
+  color: #1677ff;
+}
+
+.sectionTitle {
+  margin-bottom: 16px;
+}
+
+.sectionTitleNoTop {
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+.sectionTitleTopGap {
+  margin-bottom: 16px;
+  margin-top: 32px;
+}
+
+.iconMarginRight {
+  margin-right: 8px;
+}
+
+.statsRowWrap {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.rowMarginBottom {
+  margin-bottom: 24px;
+}
+
+.statColMinWidth {
+  min-width: 220px;
+}
+
+.treeSelectWidth {
+  width: 250px;
+}
+
+.tabLabel {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.tabIconMargin {
+  margin-right: 6px;
+  font-size: 18px;
+}
+
+.tabBar {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.tabExtraContent {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.rangeSelectWidth {
+  width: 150px;
+}
+
+.statisticPrefixOrange {
+  color: #fa8c16;
+  font-size: 24px;
+}
+
+.statisticPrefixGreen {
+  color: #52c41a;
+  font-size: 24px;
+}

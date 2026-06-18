@@ -5,6 +5,7 @@ import db from '@/lib/data/db';
 import { getSharedRefetch } from '../shared-refetch';
 import { resolveEngines } from './engine-connections-helpers';
 import { asyncMap } from '../helpers/javascriptHelpers';
+import { getMSConfig } from '../ms-config/ms-config';
 import { engineRequest } from './endpoints';
 
 async function refetchFn() {
@@ -131,5 +132,12 @@ async function refetchFn() {
 export const refetchEngines = getSharedRefetch({
   resource: 'Engines',
   refetchFn,
-  getTimeoutLength: async () => 5000,
+  getTimeoutLength: async () => {
+    const config = await getMSConfig();
+
+    if (!config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return 0;
+
+    // the user sets the interval in seconds so we have to convert to milliseconds
+    return config.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL * 1000;
+  },
 });

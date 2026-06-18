@@ -72,6 +72,19 @@ export const msConfigSchema = {
         message:
           'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE',
       }),
+    PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL: z.coerce
+      .number()
+      .default(5)
+      .refine(
+        () =>
+          // we need to check the env value instead of "val" because our default value is not falsy
+          !process.env.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL ||
+          boolParser(process.env.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE),
+        {
+          message:
+            'PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE needs to be set to true to use PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL',
+        },
+      ),
     PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL: z.coerce
       .number()
       .default(5)

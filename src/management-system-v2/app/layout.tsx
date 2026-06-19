@@ -9,7 +9,7 @@ import App from '@/components/app';
 import classNames from 'classnames';
 import { getPublicMSConfig } from '@/lib/ms-config/ms-config';
 import DeploymentRefetchBoundary from './deployment-refetch-boundary';
-import EngineRefetchBoundary from './transfer-processes/engine-refetch-boundary';
+import EngineRefetchBoundary from './engine-refetch-boundary';
 
 const inter = Inter({ subsets: ['latin'], variable: '--inter' });
 

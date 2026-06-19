@@ -4,32 +4,27 @@ import { Button, Skeleton } from 'antd';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { LeftOutlined } from '@ant-design/icons';
-import { type Engine } from '@/lib/engines/types';
-import { getEngineConnectionById } from '@/lib/data/engines';
+import { getEngineById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 import SpaceLink from '@/components/space-link';
-
-export type TableEngine = Engine & { id: string };
+import { isUserErrorResponse } from '@/lib/user-error';
 
 export default async function EnginesPage(props: {
-  params: Promise<{ connectionId: string; environmentId: string }>;
-  searchParams: Promise<{ engineId: string }>;
+  params: Promise<{ engineId: string; environmentId: string }>;
 }) {
-  const searchParams = await props.searchParams;
   const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
 
-  const connectionId = decodeURIComponent(params.connectionId);
-  const engineId = decodeURIComponent(searchParams.engineId || '');
+  const engineId = decodeURIComponent(params.engineId || '');
 
-  const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
-  const connection = await getEngineConnectionById(
-    connectionId,
-    activeEnvironment.spaceId,
-    ability,
-  );
+  const { activeEnvironment } = await getCurrentEnvironment(params.environmentId);
+  const engine = await getEngineById(activeEnvironment.spaceId, engineId);
+
+  if (isUserErrorResponse(engine)) {
+    return notFound();
+  }
 
   return (
     <Suspense
@@ -40,8 +35,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        connection={connection}
-        engineId={engineId}
+        engine={engine || undefined}
         backButton={
           <SpaceLink href="/engines">
             <Button icon={<LeftOutlined />} type="text">

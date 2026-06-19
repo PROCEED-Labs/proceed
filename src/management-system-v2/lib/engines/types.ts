@@ -1,4 +1,4 @@
-import { EngineConnection } from '@prisma/client';
+import { EngineConnection, Engine as DBEngine } from '@prisma/client';
 
 type Discriminator = { spaceEngine?: undefined } | { spaceEngine: true };
 
@@ -13,6 +13,10 @@ export type Engine = {
   name?: string | null;
   connections: { reachable: boolean; connection: EngineConnection }[];
 } & Discriminator;
+
+export type Connection = EngineConnection & {
+  engines: { reachable: boolean; engine: DBEngine }[];
+};
 
 export type SpaceEngine = Extract<Engine, { spaceEngine: true }>;
 

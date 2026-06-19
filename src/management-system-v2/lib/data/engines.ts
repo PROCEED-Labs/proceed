@@ -13,11 +13,11 @@ import {
   userError,
 } from '../user-error';
 import { resolveEngines } from '../engines/engine-connections-helpers';
-import { Engine, SpaceEngine } from '../engines/types';
 import { EngineConnection, Prisma, SystemAdmin } from '@prisma/client';
 
 import db from '@/lib/data/db';
 import { toCaslResource } from '../ability/caslAbility';
+import { Connection, Engine } from '../engines/types';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import { engineRequest } from '../engines/endpoints';
 
@@ -30,41 +30,43 @@ export async function getEngineConnections(
   if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
     throw new UnauthorizedError();
 
-  const connections = await db.engineConnection.findMany({
+  let connections = await db.engineConnection.findMany({
     where: { environmentId: environmentId, removed: false },
-  });
-
-  return ability ? ability.filter('view', 'Machine', connections) : connections;
-}
-
-export async function getEngineConnectionById(
-  connectionId: string,
-  environmentId: string | null,
-  ability?: Ability,
-  systemAdmin?: SystemAdmin | 'dont-check',
-) {
-  // engines without an environmentId are PROCEED engines
-  if (environmentId === null && systemAdmin !== 'dont-check' && !systemAdmin)
-    throw new UnauthorizedError();
-
-  const connection = await db.engineConnection.findUnique({
-    where: {
-      environmentId: environmentId,
-      id: connectionId,
-      removed: false,
+    include: {
+      engines: {
+        include: { engine: true },
+      },
     },
   });
 
-  if (!connection) return undefined;
+  connections = ability ? ability.filter('view', 'Machine', connections) : connections;
 
-  if (
-    ability &&
-    !ability.can('view', toCaslResource('Machine', connection), { environmentId: environmentId! })
-  ) {
-    throw new UnauthorizedError();
+  return connections satisfies Connection[];
+}
+
+export async function getEngineById(environmentId: string | null | undefined, engineId: string) {
+  let environmentFilter;
+  if (environmentId) {
+    const { systemAdmin } = await getCurrentUser();
+    if (environmentId === null && !systemAdmin) return permissionDenied();
+
+    if (environmentId) {
+      const { ability } = await getCurrentEnvironment(environmentId);
+      if (!ability.can('view', 'Machine')) return permissionDenied();
+    }
+    environmentFilter = { some: { connection: { environmentId } } };
+  } else {
+    environmentFilter = undefined;
   }
 
-  return connection;
+  const engine = await db.engine.findUnique({
+    where: { id: engineId, connections: environmentFilter },
+    include: { connections: { include: { connection: true } } },
+  });
+
+  if (!engine) return engine;
+
+  return engine satisfies Engine;
 }
 
 async function getAvailableEngines(environmentIds: (string | null)[], ability?: Ability) {

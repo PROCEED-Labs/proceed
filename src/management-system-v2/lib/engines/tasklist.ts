@@ -19,7 +19,7 @@ export type TaskListEntry = {
   performers: { user?: string[]; roles: string[] };
   progress: 0;
   startTime: number;
-  endTime: number;
+  endTime: number | null;
 };
 
 export async function getTaskListFromMachine(machine: Engine) {
@@ -49,42 +49,6 @@ export async function activateUserTask(
     },
     body: { active: true },
   });
-}
-
-export async function getUserTaskFileFromMachine(
-  engine: Engine,
-  definitionId: string,
-  fileName: string,
-) {
-  const html = await engineRequest({
-    method: 'get',
-    endpoint: '/process/:definitionId/user-tasks/:fileName',
-    engine,
-    pathParams: {
-      definitionId,
-      fileName,
-    },
-  });
-
-  return html as string;
-}
-
-export async function getStartFormFromMachine(
-  definitionId: string,
-  versionId: string,
-  engine: Engine,
-) {
-  let html = await engineRequest({
-    method: 'get',
-    endpoint: '/process/:definitionId/versions/:version/start-form',
-    engine,
-    pathParams: {
-      definitionId,
-      version: versionId,
-    },
-  });
-
-  return html as string;
 }
 
 export async function setTasklistEntryVariableValuesOnMachine(

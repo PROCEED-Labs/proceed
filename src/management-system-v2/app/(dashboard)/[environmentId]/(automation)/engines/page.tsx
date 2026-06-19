@@ -1,19 +1,19 @@
 import Content from '@/components/content';
 import { Skeleton, Spin } from 'antd';
 import { notFound } from 'next/navigation';
-import SavedEnginesList, { EngineStatus } from '@/components/saved-engines-list';
-import { getDbEngines } from '@/lib/data/engines';
+import EngineConnectionsList, { ConnectionStatus } from '@/components/engine-connections-list';
+import { getEngineConnections } from '@/lib/data/engines';
 import { getCurrentEnvironment } from '@/components/auth';
 import { Suspense } from 'react';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
-import { savedEnginesToEngines } from '@/lib/engines/saved-engines-helpers';
-import { Engine as DBEngine } from '@prisma/client';
+import { resolveEngines } from '@/lib/engines/engine-connections-helpers';
+import { type EngineConnection } from '@prisma/client';
 import { spaceURL } from '@/lib/utils';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
 
-const getEngineStatus = async (engine: DBEngine) => {
-  const engines = await savedEnginesToEngines([engine]);
+const getConnectionStatus = async (connection: EngineConnection) => {
+  const engines = await resolveEngines([connection]);
 
   if (engines.length === 0) {
     return { online: false } as const;
@@ -39,22 +39,22 @@ const EnginesPage = async ({ environmentId }: { environmentId: string }) => {
     return notFound();
   }
 
-  const engines = await getDbEngines(activeEnvironment.spaceId, ability);
+  const connections = await getEngineConnections(activeEnvironment.spaceId, ability);
 
-  const enginesWithStatus = engines.map((engine) => {
+  const connectionsWithStatus = connections.map((connection) => {
     return {
-      ...engine,
+      ...connection,
       status: (
         <Suspense fallback={<Spin spinning />}>
-          <EngineStatus engineId={engine.id} status={getEngineStatus(engine)} />
+          <ConnectionStatus connectionId={connection.id} status={getConnectionStatus(connection)} />
         </Suspense>
       ),
     };
   });
 
   return (
-    <SavedEnginesList
-      savedEngines={enginesWithStatus}
+    <EngineConnectionsList
+      connections={connectionsWithStatus}
       engineDashboardLinkPrefix={spaceURL(activeEnvironment, '/engines')}
     />
   );

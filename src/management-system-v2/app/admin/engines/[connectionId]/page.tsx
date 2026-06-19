@@ -6,14 +6,14 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
 import { type Engine } from '@/lib/engines/types';
-import { getDbEngineById } from '@/lib/data/engines';
+import { getEngineConnectionById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
 
 export type TableEngine = Engine & { id: string };
 
 export default async function EnginesPage(props: {
-  params: Promise<{ dbEngineId: string }>;
+  params: Promise<{ connectionId: string }>;
   searchParams: Promise<{ engineId: string }>;
 }) {
   const searchParams = await props.searchParams;
@@ -24,9 +24,9 @@ export default async function EnginesPage(props: {
   const user = await getCurrentUser();
   if (!user.systemAdmin) redirect('/');
 
-  const dbEngineId = decodeURIComponent(params.dbEngineId);
+  const connectionId = decodeURIComponent(params.connectionId);
   const engineId = decodeURIComponent(searchParams.engineId || '');
-  const dbEngine = await getDbEngineById(dbEngineId, null, undefined, 'dont-check');
+  const connection = await getEngineConnectionById(connectionId, null, undefined, 'dont-check');
 
   return (
     <Suspense
@@ -37,7 +37,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        dbEngine={dbEngine}
+        connection={connection}
         engineId={engineId}
         backButton={
           <Link href="/admin/engines">

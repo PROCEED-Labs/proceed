@@ -9,8 +9,12 @@ import {
   useEffect,
   SetStateAction,
 } from 'react';
-import EnginesModal from './engines-modal';
-import { updateDbEngine, addDbEngines, deleteDbEngine } from '@/lib/data/engines';
+import ConnectionsModal from './engines-modal';
+import {
+  updateEngineConnection,
+  addEngineConnection,
+  deleteEngineConnection,
+} from '@/lib/data/engines';
 import { useEnvironment } from '@/components/auth-can';
 import { wrapServerCall } from '@/lib/wrap-server-call';
 import { useRouter } from 'next/navigation';
@@ -19,28 +23,28 @@ import { App, Badge, Button, Grid, Spin, TableColumnsType, TableProps } from 'an
 
 import ElementList from '@/components/item-list-view';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Engine as DBEngine } from '@prisma/client';
+import { type EngineConnection } from '@prisma/client';
 import { Engine } from '@/lib/engines/types';
 import { useUserPreferences } from '@/lib/user-preferences';
 import Link from 'next/link';
 
-type DBEngineStatus = { online: false } | { online: true; engines: Engine[] };
-type InputEngine = DBEngine & { status: ReactNode };
+type ConnectionStatus = { online: false } | { online: true; engines: Engine[] };
+type InputConnection = EngineConnection & { status: ReactNode };
 
-// The status for each engine is streamed in after the page loads, I can't add the status promises
-// to the savedEngines prop, because that would trigger a suspense boundary for the hole table.
+// The status for each connection is streamed in after the page loads, I can't add the status promises
+// to the connections prop, because that would trigger a suspense boundary for the whole table.
 // The solution is to use smaller components that after being streamed in, will write the status to
 // the context
-type EnginesStatusContextType = Dispatch<SetStateAction<{ [id: string]: DBEngineStatus }>>;
-const EngineStatusContext = createContext<EnginesStatusContextType | undefined>(undefined);
+type ConnectionStatusContextType = Dispatch<SetStateAction<{ [id: string]: ConnectionStatus }>>;
+const ConnectionStatusContext = createContext<ConnectionStatusContextType | undefined>(undefined);
 
-const SavedEnginesList = ({
-  savedEngines,
+const EngineConnectionsList = ({
+  connections,
   tableProps,
   engineDashboardLinkPrefix,
 }: {
-  savedEngines: InputEngine[];
-  tableProps?: TableProps<InputEngine>;
+  connections: InputConnection[];
+  tableProps?: TableProps<InputConnection>;
   engineDashboardLinkPrefix: string;
 }) => {
   const router = useRouter();
@@ -58,12 +62,14 @@ const SavedEnginesList = ({
     { id: string; name: string | null; address: string } | undefined
   >();
 
-  const [enginesStatus, setEnginesStatus] = useState<{ [id: string]: DBEngineStatus }>({});
+  const [connectionsStatus, setConnectionsStatus] = useState<{ [id: string]: ConnectionStatus }>(
+    {},
+  );
 
-  async function deleteEngine(id: string) {
+  async function deleteConnection(id: string) {
     setLoading(true);
     await wrapServerCall({
-      fn: () => deleteDbEngine(id, spaceId),
+      fn: () => deleteEngineConnection(id, spaceId),
       onSuccess: () => {
         app.message.success({ content: 'Engine deleted' });
         router.refresh();
@@ -77,8 +83,8 @@ const SavedEnginesList = ({
     setLoading(true);
     await wrapServerCall({
       fn: (): Promise<any> => {
-        if (editData) return updateDbEngine(editData.id, data, spaceId);
-        else return addDbEngines([data], spaceId);
+        if (editData) return updateEngineConnection(editData.id, data, spaceId);
+        else return addEngineConnection(data, spaceId);
       },
       onSuccess: () => {
         app.message.success({ content: editData ? 'Engine updated' : 'Engine added' });
@@ -89,7 +95,7 @@ const SavedEnginesList = ({
     setLoading(false);
   }
 
-  const columns: TableColumnsType<InputEngine> = [
+  const columns: TableColumnsType<InputConnection> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -121,7 +127,7 @@ const SavedEnginesList = ({
       title: 'Engines',
       key: 'engines',
       render: (_, record) => {
-        const status = enginesStatus[record.id];
+        const status = connectionsStatus[record.id];
 
         if (!status) {
           return <Spin spinning />;
@@ -156,17 +162,17 @@ const SavedEnginesList = ({
         </Button>
       </div>
 
-      <EngineStatusContext.Provider value={setEnginesStatus}>
+      <ConnectionStatusContext.Provider value={setConnectionsStatus}>
         <ElementList
           tableProps={{
             pagination: { pageSize: 10, placement: ['bottomCenter'] },
             expandable: {
               rowExpandable: (record) => {
-                const status = enginesStatus[record.id];
+                const status = connectionsStatus[record.id];
                 return status && record.address.startsWith('mqtt') && status.online;
               },
               expandedRowRender: (record) => {
-                const status = enginesStatus[record.id]!;
+                const status = connectionsStatus[record.id]!;
                 if (!status.online) return;
 
                 return status.engines.map((engine) => (
@@ -181,7 +187,7 @@ const SavedEnginesList = ({
             },
             ...tableProps,
           }}
-          data={savedEngines}
+          data={connections}
           columns={filteredColumns}
           selectableColumns={{
             setColumnTitles: (fn) => {
@@ -217,7 +223,7 @@ const SavedEnginesList = ({
                         title: 'Delete Engine',
                         content: 'This action cannot be undone.',
                         okText: 'Delete',
-                        onOk: () => deleteEngine(record.id),
+                        onOk: () => deleteConnection(record.id),
                       })
                     }
                   >
@@ -228,9 +234,9 @@ const SavedEnginesList = ({
             },
           }}
         />
-      </EngineStatusContext.Provider>
+      </ConnectionStatusContext.Provider>
 
-      <EnginesModal
+      <ConnectionsModal
         title={editData ? 'Edit Engine' : 'Add Engine'}
         open={modalIsOpen}
         close={async (data) => {
@@ -245,24 +251,24 @@ const SavedEnginesList = ({
   );
 };
 
-export function EngineStatus({
-  engineId,
+export function ConnectionStatus({
+  connectionId,
   status: _status,
 }: {
-  engineId: string;
-  status: Promise<DBEngineStatus>;
+  connectionId: string;
+  status: Promise<ConnectionStatus>;
 }) {
   const status = use(_status);
-  const setStatus = use(EngineStatusContext);
+  const setStatus = use(ConnectionStatusContext);
 
   useEffect(() => {
     if (!setStatus) {
-      throw new Error('EngineStatus must be used within SavedEnginesList');
+      throw new Error('EngineStatus must be used within EngineConnectionsList');
     }
-    setStatus((prev) => ({ ...prev, [engineId]: status }));
-  }, [status, setStatus, engineId]);
+    setStatus((prev) => ({ ...prev, [connectionId]: status }));
+  }, [status, setStatus, connectionId]);
 
   return <Badge style={{ marginLeft: '0.25rem' }} status={status.online ? 'success' : 'error'} />;
 }
 
-export default SavedEnginesList;
+export default EngineConnectionsList;

@@ -27,10 +27,33 @@ import {
 import {
   getPlanDelays,
   getTimeInfo,
+  isActive,
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+
+export async function getDBInstance(spaceId: string, instanceId: string, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
+
+  if (!ability.can('view', 'Execution'))
+    return userError('Invalid Permissions', UserErrorType.PermissionError);
+
+  const instanceInfo = await db.processInstance.findUnique({
+    where: { id: instanceId },
+    include: {
+      deployment: { select: { versionId: true } },
+    },
+  });
+
+  if (!instanceInfo) return null;
+
+  return {
+    ...instanceInfo,
+    state: instanceInfo.state as InstanceInfo,
+    versionId: instanceInfo.deployment.versionId,
+  };
+}
 
 const getVersionBpmnObject = cache(
   async (spaceId: string, definitionId: string, versionId: string, ability?: Ability) => {
@@ -196,9 +219,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   }
 
   let executionStatus: 'Running' | 'Ended' | 'Failed' = 'Ended';
-  const activeStates = ['PAUSED', 'RUNNING', 'READY', 'DEPLOYMENT-WAITING', 'WAITING'];
   const { instanceState } = state;
-  if (instanceState.some((state) => activeStates.includes(state))) {
+  if (isActive(state)) {
     executionStatus = 'Running';
   }
   const failStates = [

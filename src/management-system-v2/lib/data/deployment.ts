@@ -4,6 +4,7 @@ import db from '@/lib/data/db';
 import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { SuccessType, UserErrorType, userError } from '../user-error';
+import Ability from '../ability/abilityHelper';
 
 export async function getDeployedProcesses(environmentId: string) {
   const { ability } = await getCurrentEnvironment(environmentId);
@@ -19,6 +20,7 @@ export async function getDeployedProcesses(environmentId: string) {
       // currently deployed
       AND: [
         { environmentId },
+        { NOT: { folderId: null } },
         {
           versions: {
             some: { deployments: { some: deploymentIsNotDeleted } },
@@ -46,14 +48,32 @@ export async function getDeployedProcesses(environmentId: string) {
   return ability.filter('view', 'Process', deployedProcesses);
 }
 
-export async function getProcessDeployments(spaceId: string, processId: string) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function getProcessDeployments(
+  spaceId: string,
+  processId: string,
+  ability?: Ability,
+  showArchivedProcesses = false,
+) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
   const deployments = await db.processDeployment.findMany({
-    where: { AND: [{ version: { processId } }, { removeTime: null }, { toRemove: false }] },
+    where: {
+      AND: [
+        {
+          version: {
+            AND: [
+              { processId },
+              ...(!showArchivedProcesses ? [{ NOT: { process: { folderId: null } } }] : []),
+            ],
+          },
+        },
+        { removeTime: null },
+        { toRemove: false },
+      ],
+    },
     include: {
       version: { select: { id: true, processId: true, name: true } },
       instances: { select: { id: true } },

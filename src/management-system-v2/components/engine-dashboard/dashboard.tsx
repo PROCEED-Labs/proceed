@@ -3,9 +3,11 @@ import ConfigurationTable from './configuration-table';
 import EngineOverview from './engine-overview';
 
 export default function EngineDashboard({
+  online,
   configuration,
   machineData,
 }: {
+  online: boolean;
   configuration: any;
   machineData: any;
 }) {
@@ -16,7 +18,7 @@ export default function EngineDashboard({
         {
           key: 'overview',
           label: 'Overview',
-          children: <EngineOverview engine={machineData} />,
+          children: <EngineOverview online={online} engine={machineData} />,
         },
         {
           key: 'configuration',

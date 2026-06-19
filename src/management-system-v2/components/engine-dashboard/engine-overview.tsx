@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, Progress, Tag, Typography } from 'antd';
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import styles from './engine-overview.module.scss';
 
 type Engine = {
@@ -90,7 +90,7 @@ function roundNumber(num: number, decimals: number = 2) {
   return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
-export default function EngineOverview({ engine }: { engine: Engine }) {
+export default function EngineOverview({ online, engine }: { online: boolean; engine: Engine }) {
   return (
     <div className={styles.dashboard}>
       <Card className={styles.basicInfo}>
@@ -133,8 +133,8 @@ export default function EngineOverview({ engine }: { engine: Engine }) {
             {
               title: 'Online',
               content: (
-                <Tag color={engine.online ? 'success' : 'error'} style={{ width: 'fit-content' }}>
-                  {engine.online ? 'online' : 'offline'}
+                <Tag color={online ? 'success' : 'error'} style={{ width: 'fit-content' }}>
+                  {online ? 'online' : 'offline'}
                 </Tag>
               ),
             },

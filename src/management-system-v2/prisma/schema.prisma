@@ -89,7 +89,7 @@ model Process {
   processIds                String[]
   type                      String
   // if the folder is null the process has been removed from the space but is kept in storage for reference in audit trails
-  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   folderId                  String?
   sharedAs                  String
   shareTimestamp            BigInt

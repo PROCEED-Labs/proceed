@@ -1,0 +1,4 @@
+src/competence-matcher/dist/
+src/competence-matcher/src/db/dbs/
+src/competence-matcher/src/models/
+src/competence-matcher/.env

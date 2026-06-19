@@ -1,7 +1,4 @@
-import db from '@/lib/data/db';
-import { getEnvironmentById } from '@/lib/data/db/iam/environments';
 import { isMember } from '@/lib/data/db/iam/memberships';
-import { env } from '@/lib/ms-config/env-vars';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest, props: { params: Promise<{ spaceId: string }> }) {
@@ -32,5 +29,3 @@ export async function GET(request: NextRequest, props: { params: Promise<{ space
     status: 200,
   });
 }
-
-export const dynamic = 'force-dynamic';

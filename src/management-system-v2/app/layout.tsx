@@ -3,7 +3,7 @@ import '@/public/antd.min.css';
 import './globals.css';
 import { Inter } from 'next/font/google';
 import localFont from 'next/font/local';
-import { FC, PropsWithChildren } from 'react';
+import { FC, PropsWithChildren, Suspense } from 'react';
 import App from '@/components/app';
 
 import classNames from 'classnames';
@@ -22,22 +22,32 @@ export const metadata = {
 
 type RootLayoutProps = PropsWithChildren;
 
-const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
+const Layout: FC<RootLayoutProps> = async ({ children }) => {
   const publicEnv = await getPublicMSConfig();
   return (
+    <EngineRefetchBoundary
+      enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
+      interval={publicEnv.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL}
+    >
+      <DeploymentRefetchBoundary
+        enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
+        interval={publicEnv.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL}
+      >
+        <App env={publicEnv}>{children}</App>;
+      </DeploymentRefetchBoundary>
+    </EngineRefetchBoundary>
+  );
+};
+
+const RootLayout: FC<RootLayoutProps> = async ({ children }) => {
+  return (
     <html lang="en">
+      {/* Opting out of static rendering for all routes; */}
+      {/* TODO: undo this */}
       <body className={classNames(inter.variable, myFont.variable)}>
-        <EngineRefetchBoundary
-          enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
-          interval={publicEnv.PROCEED_PUBLIC_ENGINE_POLLING_INTERVAL}
-        >
-          <DeploymentRefetchBoundary
-            enabled={publicEnv.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE}
-            interval={publicEnv.PROCEED_PUBLIC_DEPLOYMENT_REFETCHING_INTERVAL}
-          >
-            <App env={publicEnv}>{children}</App>
-          </DeploymentRefetchBoundary>
-        </EngineRefetchBoundary>
+        <Suspense fallback={null}>
+          <Layout>{children}</Layout>
+        </Suspense>
       </body>
     </html>
   );

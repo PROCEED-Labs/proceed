@@ -8,6 +8,7 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/': ['../../node_modules/.prisma/**/*', '../../node_modules/@prisma/**/*'],
   },
+  cacheComponents: true,
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',

@@ -48,5 +48,3 @@ export default async function EnginesPage(props: {
     </Suspense>
   );
 }
-
-export const dynamic = 'force-dynamic';

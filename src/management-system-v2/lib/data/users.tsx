@@ -11,7 +11,7 @@ import {
   deleteUser as _deleteUser,
   updateUser as _updateUser,
   setUserPassword as _setUserPassword,
-  getUserById,
+  getUserById as _getUserById,
 } from '@/lib/data/db/iam/users';
 import { revalidatePath } from 'next/cache';
 import { getEnvironmentById } from './db/iam/environments';
@@ -37,7 +37,7 @@ export async function deleteUser() {
       message = (
         <>
           <p>
-            You're part of organizations where you are the only admin, in order to delete your
+            You&aposre part of organizations where you are the only admin, in order to delete your
             accounts you first have to either add another admin or delete these organizations.
           </p>
           <p>The affected organizations are:</p>
@@ -69,7 +69,7 @@ export async function deleteUser() {
 export async function updateUser(newUserDataInput: AuthenticatedUserData) {
   try {
     const { userId } = await getCurrentUser();
-    const user = await getUserById(userId);
+    const user = await _getUserById(userId);
 
     if (user?.isGuest) {
       return userError('Guest users cannot be updated');
@@ -91,7 +91,7 @@ export async function updateUser(newUserDataInput: AuthenticatedUserData) {
 export async function getUsersFavourites(): Promise<String[]> {
   const { userId } = await getCurrentUser();
 
-  const user = await getUserById(userId);
+  const user = await _getUserById(userId);
 
   if (user?.isGuest) {
     return []; // Guest users have no favourites
@@ -102,7 +102,7 @@ export async function getUsersFavourites(): Promise<String[]> {
 export async function setUserPassword(newPassword: string) {
   try {
     const { userId } = await getCurrentUser();
-    const user = await getUserById(userId);
+    const user = await _getUserById(userId);
 
     if (!user) {
       return userError('Invalid session, please sign in again');
@@ -220,4 +220,8 @@ export async function setUserTemporaryPassword(
     const message = getErrorMessage(e);
     return userError(message);
   }
+}
+
+export async function getUserById(id: string) {
+  return await _getUserById(id);
 }

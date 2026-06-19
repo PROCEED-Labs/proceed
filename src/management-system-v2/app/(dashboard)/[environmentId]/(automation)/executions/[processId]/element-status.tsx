@@ -27,6 +27,9 @@ import { EntryText } from './entry-text';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import { getProcessVersion } from '@/lib/data/processes';
 import dynamic from 'next/dynamic';
+import { getUserById } from '@/lib/data/users';
+import { asyncMap } from '@/lib/helpers/javascriptHelpers';
+import { User } from '@/lib/data/user-schema';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 type PreviousVersion =
@@ -145,6 +148,7 @@ export function ElementStatus({
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
+  const [responsibleParty, setResponsibleParty] = useState<User[]>([]);
   const statusEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -159,9 +163,23 @@ export function ElementStatus({
       const defInfos = await getDefinitionsInfos(bpmnObj);
       const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
       const previous = await getProcessVersion(processId, defVersionInfos.versionBasedOn);
+      // maybe to be used in the future
+      // const responsible = getElementsByTagName(bpmnObj, 'proceed:ResponsibleParty');
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(version.bpmn, 'text/xml');
+      const responsibleIds = JSON.parse(
+        xmlDoc.getElementsByTagName('proceed:responsibleParty')[0].childNodes[1].childNodes[1]
+          .textContent || '',
+      );
+      const responsible = await asyncMap(
+        responsibleIds.user,
+        async (resId: string) => await getUserById(resId),
+      );
+
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
       setPreviousVersion(previous);
+      setResponsibleParty(responsible);
     }
     getBpmnObject();
   }, [processId, version]);
@@ -201,8 +219,9 @@ export function ElementStatus({
     ]);
     statusEntries.push([
       <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
-      // TODO:
-      <EntryValueText key="instance-processmanager-val">TODO</EntryValueText>,
+      <EntryValueText key="instance-processmanager-val">
+        {responsibleParty.map((e) => (!e.isGuest ? e.firstName + ' ' + e.lastName : ''))}
+      </EntryValueText>,
     ]);
     if (techDetails)
       statusEntries.push([

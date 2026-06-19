@@ -382,7 +382,7 @@ export function ElementDetails({
       detailsEntries.push([
         <TechEntryKey key="instance-engine-key">Engine</TechEntryKey>,
         // TODO:
-        <EntryValueText key="instance-engine-val">TODO</EntryValueText>,
+        <EntryValueText key="instance-engine-val"></EntryValueText>,
       ]);
       detailsEntries.push([
         <TechEntryKey key="instance-engineid-key">Engine ID</TechEntryKey>,

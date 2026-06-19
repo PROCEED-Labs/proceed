@@ -224,7 +224,13 @@ export function ElementOverview({
         BUDGET
       </EntryText>,
     ]);
-    // TODO:
+
+    const costsPlanned = metaData.costsPlanned
+      ? generateNumberString(metaData.costsPlanned.value, {
+          style: 'currency',
+          currency: metaData.costsPlanned.unit,
+        }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
+      : undefined;
     overviewEntries.push([
       <Space
         key="instance-budget"
@@ -244,14 +250,7 @@ export function ElementOverview({
             Planned
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>
-              {metaData.costsPlanned
-                ? generateNumberString(metaData.costsPlanned.value, {
-                    style: 'currency',
-                    currency: metaData.costsPlanned.unit,
-                  }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
-                : undefined}
-            </EntryText>
+            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -259,9 +258,9 @@ export function ElementOverview({
           <Col span={12} className={styles.ListTitle}>
             Calculated
           </Col>
-
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>TODO</EntryText>
+            {/* TODO: */}
+            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
           </Col>
         </Row>
         <Divider style={{ margin: 0 }} />
@@ -270,7 +269,8 @@ export function ElementOverview({
             Actual
           </Col>
           <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontWeight: 1000 }}>TODO</EntryText>
+            {/* TODO: */}
+            <EntryText style={{ fontWeight: 1000 }}>{costsPlanned}</EntryText>
             <Typography.Text
               style={{
                 fontWeight: 1000,

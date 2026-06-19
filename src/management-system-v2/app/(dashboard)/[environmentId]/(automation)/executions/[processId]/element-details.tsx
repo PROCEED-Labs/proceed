@@ -22,7 +22,7 @@ import { DataGrid } from './instance-info-panel';
 import { generateDurationString } from '@/lib/utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
-import styles from './element-status.module.scss';
+import styles from './element-details.module.scss';
 import { EntryText } from './entry-text';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import { getProcessVersion } from '@/lib/data/processes';
@@ -128,7 +128,7 @@ const TechDetailsSwitch = ({
   );
 };
 
-export function ElementStatus({
+export function ElementDetails({
   processId,
   element,
   version,
@@ -149,7 +149,7 @@ export function ElementStatus({
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
   const [responsibleParty, setResponsibleParty] = useState<User[]>([]);
-  const statusEntries: ReactNode[][] = [];
+  const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
   const metaData = getMetaDataFromElement(element.businessObject);
@@ -185,7 +185,7 @@ export function ElementStatus({
   }, [processId, version]);
 
   // TECH DETAILS SWITCH
-  statusEntries.push([
+  detailsEntries.push([
     <TechDetailsSwitch
       key="instance-techdetails-switch"
       techDetails={techDetails}
@@ -195,42 +195,42 @@ export function ElementStatus({
   // INSTANCE DATA
   if (isRootElement) {
     // GENERAL
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
         GENERAL
       </EntryKeyText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-name-key">Name</EntryKeyText>,
       <EntryValueText key="instance-name-value">{definitionsInfos?.name}</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-shortname-key">Short Name</EntryKeyText>,
       <EntryValueText key="instance-shortname-val">
         {definitionsInfos?.userDefinedId}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-documentation-key">Documentation</EntryKeyText>,
 
       <div key="instance-documentation-val">
         <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
       <EntryValueText key="instance-processmanager-val">
         {responsibleParty.map((e) => (!e.isGuest ? e.firstName + ' ' + e.lastName : ''))}
       </EntryValueText>,
     ]);
     if (techDetails)
-      statusEntries.push([
+      detailsEntries.push([
         <TechEntryKey key="instance-id-key">ID</TechEntryKey>,
         <EntryValueText key="instance-id-val">{processId}</EntryValueText>,
       ]);
 
     // VERSION DATA
-    statusEntries.push([
+    detailsEntries.push([
       <Space
         key="instance-heading-version"
         orientation="vertical"
@@ -240,30 +240,30 @@ export function ElementStatus({
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
       </Space>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-versionname-key">Version Name</EntryKeyText>,
       <EntryValueText key="instance-versionname-val">
         {definitionsVersionInfos?.name}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-versiondesc-key">What changed</EntryKeyText>,
       <EntryValueText key="instance-versiondesc-val">
         {definitionsVersionInfos?.description}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-createdon-key">Created on</EntryKeyText>,
       <EntryValueText key="instance-createdon-val">
         {definitionsVersionInfos?.versionCreatedOn}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-basedon-key">Based on</EntryKeyText>,
       <EntryValueText key="instance-basedon-val">{previousVersion?.name}</EntryValueText>,
     ]);
     if (techDetails)
-      statusEntries.push([
+      detailsEntries.push([
         <TechEntryKey key="instance-basedonid-key">Based on ID</TechEntryKey>,
         <EntryValueText key="instance-basedonid-val">
           {definitionsVersionInfos?.versionBasedOn}
@@ -271,7 +271,7 @@ export function ElementStatus({
       ]);
 
     // INITIATOR
-    statusEntries.push([
+    detailsEntries.push([
       <Space
         key="instance-initiator"
         orientation="vertical"
@@ -282,7 +282,7 @@ export function ElementStatus({
       </Space>,
     ]);
     const initiator = instance?.processInitiator;
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
       <EntryValueText key="instance-startedby-val">
         {typeof initiator === 'object' ? initiator.fullName : initiator}
@@ -290,23 +290,23 @@ export function ElementStatus({
     ]);
     if (typeof initiator === 'object') {
       if (techDetails)
-        statusEntries.push([
+        detailsEntries.push([
           <TechEntryKey key="instance-startusername-key">Username</TechEntryKey>,
           <EntryValueText key="instance-startusername-val">{initiator.username}</EntryValueText>,
         ]);
       if (techDetails)
-        statusEntries.push([
+        detailsEntries.push([
           <TechEntryKey key="instance-startuserid-key">User ID</TechEntryKey>,
           <EntryValueText key="instance-startuserid-val">{initiator.id}</EntryValueText>,
         ]);
-      statusEntries.push([
+      detailsEntries.push([
         <EntryKeyText key="instance-startuser-space-key">Workspace</EntryKeyText>,
         <EntryValueText key="instance-startuser-space-val">
           {instance?.spaceOfProcessInitiator?.name}
         </EntryValueText>,
       ]);
       if (techDetails)
-        statusEntries.push([
+        detailsEntries.push([
           <TechEntryKey key="instance-startuser-spaceid-key">Workspace ID</TechEntryKey>,
           <EntryValueText key="instance-startuser-spaceid-val">
             {instance?.spaceOfProcessInitiator?.id}
@@ -326,7 +326,7 @@ export function ElementStatus({
       instance,
     });
 
-    statusEntries.push([
+    detailsEntries.push([
       <Space
         key="instance-heading-timing"
         orientation="vertical"
@@ -337,29 +337,29 @@ export function ElementStatus({
       </Space>,
     ]);
     if (techDetails)
-      statusEntries.push([
+      detailsEntries.push([
         <TechEntryKey key="instance-runid-key">Run ID</TechEntryKey>,
         <EntryValueText key="instance-runid-val">{instance?.processInstanceId}</EntryValueText>,
       ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-plannedduration-key">Planned duration</EntryKeyText>,
       <EntryValueText key="instance-plannedduration-val">
         {generateDurationString(plannedDuration)}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-starttime-key">Start Time</EntryKeyText>,
       <EntryValueText key="instance-starttime-val">
         {start && new Date(start).toISOString()}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>,
       <EntryValueText key="instance-endtime-val">
         {end && new Date(end).toISOString()}
       </EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="instance-duration-key">Time so far</EntryKeyText>,
       <EntryValueText key="instance-duration-val">
         {generateDurationString(duration)}
@@ -369,7 +369,7 @@ export function ElementStatus({
     // ENGINE
 
     if (techDetails) {
-      statusEntries.push([
+      detailsEntries.push([
         <Space
           key="instance-heading-engine"
           orientation="vertical"
@@ -379,12 +379,12 @@ export function ElementStatus({
           <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
         </Space>,
       ]);
-      statusEntries.push([
+      detailsEntries.push([
         <TechEntryKey key="instance-engine-key">Engine</TechEntryKey>,
         // TODO:
         <EntryValueText key="instance-engine-val">TODO</EntryValueText>,
       ]);
-      statusEntries.push([
+      detailsEntries.push([
         <TechEntryKey key="instance-engineid-key">Engine ID</TechEntryKey>,
         <EntryValueText key="instance-engineid-val">
           {instance?.engines.map((e: any) => e.id)}
@@ -393,15 +393,15 @@ export function ElementStatus({
     }
     // EVENT DATA
   } else {
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-stepid-key">{'Step ID (or "Event ID"?)'}</EntryKeyText>,
       <EntryValueText key="event-stepid-val">Activity_0309v8x</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-stepname-key">Step Name</EntryKeyText>,
       <EntryValueText key="event-stepname-val">Check vacation application</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-docu-key">Documentation</EntryKeyText>,
       <div
         key="event-docu-val"
@@ -416,23 +416,23 @@ export function ElementStatus({
       </div>,
     ]);
 
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-steptype-key">Step Type</EntryKeyText>,
       <EntryValueText key="event-steptype-val">User Task</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-prevstepid-key">Previous Step ID</EntryKeyText>,
       <EntryValueText key="event-prevstepid-val">Check vacation application</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Actual Performer</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">Sandra Sample</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-actualperformername-key">Actual Performer Username</EntryKeyText>,
       <EntryValueText key="event-actualperformername-val">sansam</EntryValueText>,
     ]);
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="event-actualperformername-key">Actual Performer ID</EntryKeyText>,
       <EntryValueText key="event-actualperformername-val">
         29880751-c190-4f58-b5cb-438754e9f02d
@@ -457,7 +457,7 @@ export function ElementStatus({
 
   // Is External
   if (!isRootElement) {
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="external-key">External:</EntryKeyText>,
       <Checkbox
         key="external-val"
@@ -496,7 +496,7 @@ export function ElementStatus({
       if (statusType === 'success') progressStatus = 'success';
       else if (statusType === 'error') progressStatus = 'exception';
 
-      statusEntries.push([
+      detailsEntries.push([
         <EntryKeyText key="progres-key">Progress</EntryKeyText>,
         <Progress key="progress-val" percent={progress.value} status={progressStatus} />,
       ]);
@@ -515,7 +515,7 @@ export function ElementStatus({
       priority = metaData['defaultPriority'];
     }
 
-    statusEntries.push([
+    detailsEntries.push([
       <EntryKeyText key="prio">Priority</EntryKeyText>,
       <EntryValueText key="hkj">{priority}</EntryValueText>,
     ]);
@@ -523,8 +523,8 @@ export function ElementStatus({
 
   return (
     <>
-      {/* <DisplayTable data={statusEntries} /> */}
-      <DataGrid data={statusEntries} />
+      {/* <DisplayTable data={detailsEntries} /> */}
+      <DataGrid data={detailsEntries} />
     </>
   );
 }

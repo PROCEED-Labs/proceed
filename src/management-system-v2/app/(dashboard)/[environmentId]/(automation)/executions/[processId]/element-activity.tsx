@@ -18,7 +18,7 @@ import { getMetaDataFromElement } from '@proceed/bpmn-helper';
 import { DisplayTable } from './instance-info-panel';
 import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
-import styles from './element-timing.module.scss';
+import styles from './element-activity.module.scss';
 import { InstanceSelector } from './instance-selector';
 import { EntryText } from './entry-text';
 import { ElementLike } from 'diagram-js/lib/model/Types';
@@ -39,7 +39,7 @@ const ClockSymbol = () => (
   <ClockCircleFilled style={{ fontSize: '1.1rem', verticalAlign: 'middle' }} />
 );
 
-export function ElementTiming({
+export function ElementActivity({
   processId,
   element,
   instance,
@@ -49,7 +49,7 @@ export function ElementTiming({
   instance?: ExtendedInstanceInfo;
 }) {
   if (!instance) return <InstanceSelector />;
-  const timingEntries: ReactNode[][] = [];
+  const activityEntries: ReactNode[][] = [];
 
   const activityLog: [string, 'INFO' | 'WARN', string][] = [
     ['09:14:02', 'INFO', 'Process started by m.chen'],
@@ -80,7 +80,7 @@ export function ElementTiming({
           <col />
         </colgroup>
         <tbody>
-          {timingEntries.map((row, idx_row) => (
+          {activityEntries.map((row, idx_row) => (
             <tr key={idx_row}>
               {row.map((cell, idx_cell) => (
                 <td
@@ -101,7 +101,7 @@ export function ElementTiming({
         style={{ border: 'solid 1px #ddd', borderRadius: 12, marginBlock: 15 }}
       >
         {activityLog.map((row, idx_row) => (
-          <Row key={"activity" + idx_row} className={styles.GridCell}>
+          <Row key={'activity' + idx_row} className={styles.GridCell}>
             <Col flex="70px" style={{ display: 'flex', justifyContent: 'center' }}>
               {row[0]}
             </Col>

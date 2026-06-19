@@ -3,9 +3,9 @@ import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
 import { Button, Col, Drawer, Grid, Modal, Row, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { ElementStatus } from './element-status';
+import { ElementDetails } from './element-details';
 import InstanceVariables from './instance-variables';
-import { ElementTiming } from './element-timing';
+import { ElementActivity } from './element-activity';
 import { ElementOverview } from './element-overview';
 import { StatusTag } from './status-tag';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
@@ -133,7 +133,7 @@ export default function InstanceInfoPanel({
           key: 'Details',
           label: 'Details',
           children: (
-            <ElementStatus
+            <ElementDetails
               processId={processId}
               element={element}
               version={version}
@@ -161,7 +161,7 @@ export default function InstanceInfoPanel({
         {
           key: 'Activity',
           label: 'Activity',
-          children: <ElementTiming processId={processId} element={element} instance={instance} />,
+          children: <ElementActivity processId={processId} element={element} instance={instance} />,
         },
       ]}
     />

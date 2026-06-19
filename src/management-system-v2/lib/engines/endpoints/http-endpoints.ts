@@ -29,25 +29,25 @@ export async function httpRequest(
     if (contentType.includes('text')) reason = await response.text();
     if (reason) errorMessage += ` Reason: ${reason}`;
 
-    throw new Error(errorMessage);
+    return { error: new Error(errorMessage) };
   }
 
   if (response.headers.get('content-type')?.includes('application/json')) {
-    return response.json();
+    return { result: await response.json() };
   } else if (
     contentType.includes('application/javascript') ||
     contentType.includes('application/xml') ||
     contentType.includes('text')
   ) {
-    return await response.text();
+    return { result: await response.text() };
   } else if (
     contentType.includes('application/pdf') ||
     contentType.includes('image/') ||
     contentType.includes('audio/') ||
     contentType.includes('video/')
   ) {
-    return await response.blob();
+    return { result: await response.blob() };
   }
 
-  return response;
+  return { result: response };
 }

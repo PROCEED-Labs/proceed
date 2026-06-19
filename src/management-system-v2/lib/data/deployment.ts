@@ -77,6 +77,16 @@ export async function getProcessDeployments(
     include: {
       version: { select: { id: true, processId: true, name: true } },
       instances: { select: { id: true } },
+      engine: {
+        include: {
+          connections: {
+            where: { reachable: true },
+            include: {
+              connection: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -91,8 +101,8 @@ export type StoredDeployment = SuccessType<
   Awaited<ReturnType<typeof getProcessDeployments>>
 >[number];
 
-export async function addDeployment(spaceId: string, input: DeploymentInput) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+export async function addDeployment(spaceId: string, input: DeploymentInput, ability?: Ability) {
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('create', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
@@ -108,8 +118,9 @@ export async function updateDeployment(
   spaceId: string,
   deploymentId: string,
   input: Partial<DeploymentInput>,
+  ability?: Ability,
 ) {
-  const { ability } = await getCurrentEnvironment(spaceId);
+  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
   if (!ability.can('update', 'Execution')) {
     return userError('Invalid Permissions', UserErrorType.PermissionError);

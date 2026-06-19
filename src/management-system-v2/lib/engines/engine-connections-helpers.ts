@@ -1,5 +1,5 @@
 import { type EngineConnection } from '@prisma/client';
-import { Engine, HttpEngine, MqttEngine } from './types';
+import { Engine, isHttpConnection, isMqttConnection } from './types';
 import {
   collectEnginesStatus,
   getClient,
@@ -17,12 +17,16 @@ const mqttTimeout = 2000;
  * -----------------------------------------------------------------------------------------------*/
 
 // TODO: find a better more standardized way to do this
-async function getMqttEngines(connection: EngineConnection): Promise<MqttEngine[]> {
+async function getMqttEngines(connection: EngineConnection): Promise<Engine[]> {
   const client = await getClient(connection.address, !connection.environmentId);
 
   if (!connection.environmentId) {
     const collectedEngines = await getCollectedProceedMqttEngines(connection.address, mqttTimeout);
-    if (collectedEngines) return collectedEngines;
+    if (collectedEngines)
+      return collectedEngines.map((e) => ({
+        id: e.id,
+        connections: [{ connection, reachable: true }],
+      }));
   }
 
   const engineMap = new Map();
@@ -40,9 +44,8 @@ async function getMqttEngines(connection: EngineConnection): Promise<MqttEngine[
     .filter((v) => v.running)
     .map((e) => ({
       id: e.id,
-      type: 'mqtt' as const,
+      connections: [{ connection, reachable: true }],
       spaceEngine: true as const,
-      brokerAddress: connection.address,
     }));
 
   const extendedEngineData = await asyncMap(reachableEngines, async (e) => {
@@ -66,19 +69,22 @@ async function getMqttEngines(connection: EngineConnection): Promise<MqttEngine[
   return extendedEngineData;
 }
 
-async function getHttpEngine(connection: EngineConnection): Promise<[HttpEngine]> {
-  const { id, name } = await httpRequest(
+async function getHttpEngine(connection: EngineConnection): Promise<[Engine]> {
+  const response = await httpRequest(
     connection.address,
     endpointBuilder('get', '/machine/:properties', { pathParams: { properties: 'id,name' } }),
     'GET',
   );
 
+  if (response.error) throw response.error;
+
+  const { id, name } = response.result;
+
   return [
     {
-      type: 'http',
       id,
       name,
-      address: connection.address,
+      connections: [{ reachable: true, connection }],
       spaceEngine: true,
     },
   ];
@@ -87,14 +93,25 @@ async function getHttpEngine(connection: EngineConnection): Promise<[HttpEngine]
 export async function resolveEngines(connections: EngineConnection[]): Promise<Engine[]> {
   const enginesRequests = [];
   for (const connection of connections) {
-    if (connection.address.startsWith('http')) enginesRequests.push(getHttpEngine(connection));
-    else if (connection.address.startsWith('mqtt'))
-      enginesRequests.push(getMqttEngines(connection));
+    if (isHttpConnection(connection)) enginesRequests.push(getHttpEngine(connection));
+    else if (isMqttConnection(connection)) enginesRequests.push(getMqttEngines(connection));
   }
 
   const engines = [];
   for (const request of await Promise.allSettled(enginesRequests))
     if (request.status === 'fulfilled') engines.push(...request.value);
 
-  return engines;
+  const uniqueEngines: Record<string, Engine> = {};
+
+  for (const engine of engines) {
+    const existingEngine = uniqueEngines[engine.id];
+    if (existingEngine) {
+      // TODO: this assumes that every connection in "connections" was unique
+      existingEngine.connections.push(...engine.connections);
+    } else {
+      uniqueEngines[engine.id] = engine;
+    }
+  }
+
+  return Object.values(uniqueEngines);
 }

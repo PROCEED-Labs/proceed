@@ -16,7 +16,6 @@ import { Role } from './role-schema';
 import { getRoles } from './db/iam/roles';
 import { truthyFilter } from '../typescript-utils';
 
-import { getAllAvailableEngines } from './engines';
 import { getProcessBPMN } from './processes';
 import {
   getElementById,
@@ -31,7 +30,11 @@ import {
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
-type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+type StoredInstance = Omit<ProcessInstance, 'state'> & {
+  state: InstanceInfo;
+  versionId: string;
+  engines: { id: string; name: string | null; connections: { reachable: boolean }[] }[];
+};
 
 export async function getDBInstance(spaceId: string, instanceId: string, ability?: Ability) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
@@ -43,6 +46,13 @@ export async function getDBInstance(spaceId: string, instanceId: string, ability
     where: { id: instanceId },
     include: {
       deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true, connection: true } },
+        },
+      },
     },
   });
 
@@ -85,9 +95,6 @@ const getKnownRoles = cache(async (spaceId: string) => {
 async function extendInstance(spaceId: string, instance: StoredInstance, ability?: Ability) {
   const knownUsers = await getKnownUsers(spaceId);
   const knownRoles = await getKnownRoles(spaceId);
-
-  const reachableEngines = await getAllAvailableEngines(spaceId, ability);
-  if (isUserErrorResponse(reachableEngines)) return reachableEngines;
 
   const mapUser = (userId: string) => {
     const user = knownUsers[userId];
@@ -237,12 +244,13 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   return {
     ...instance,
     initiator,
-    engines: instance.engineIds.map((id) => ({
+    engines: instance.engines.map(({ id, name, connections }) => ({
       id,
-      online: reachableEngines.some((e) => e.id === id),
+      name,
+      online: connections.some(({ reachable }) => reachable),
     })),
     executionStatus,
-    offline: instance.engineIds.some((id) => !reachableEngines.some((e) => e.id === id)),
+    offline: instance.engines.some(({ connections }) => connections.every((c) => !c.reachable)),
     pausing: instanceState.some((state) => state === 'PAUSING'),
     paused: instanceState.some((state) => state === 'PAUSED'),
     state: {
@@ -281,7 +289,16 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
 
   const instanceInfo = await db.processInstance.findUnique({
     where: { id: instanceId },
-    include: { deployment: { select: { versionId: true } } },
+    include: {
+      deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true } },
+        },
+      },
+    },
   });
 
   if (!instanceInfo) return null;
@@ -311,7 +328,16 @@ export async function getInstances(spaceId: string, ability: Ability) {
         ],
       },
     },
-    include: { deployment: { select: { versionId: true } } },
+    include: {
+      deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true } },
+        },
+      },
+    },
   });
 
   const extendedInstances = await asyncMap(instances, async (i) =>
@@ -347,7 +373,14 @@ export async function addInstance(
 
   const data = InstanceInputSchema.parse(instance);
 
-  return await db.processInstance.create({ data });
+  return await db.processInstance.create({
+    data: {
+      ...data,
+      engines: {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
+  });
 }
 
 export async function updateInstance(
@@ -367,6 +400,11 @@ export async function updateInstance(
 
   return await db.processInstance.update({
     where: { id: instanceId },
-    data,
+    data: {
+      ...data,
+      engines: data.engines && {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
   });
 }

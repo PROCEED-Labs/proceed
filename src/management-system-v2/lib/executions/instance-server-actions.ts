@@ -2,7 +2,13 @@
 
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, getErrorMessage, isUserErrorResponse, userError } from '@/lib/user-error';
+import {
+  UserErrorType,
+  getErrorMessage,
+  isUserErrorResponse,
+  permissionDenied,
+  userError,
+} from '@/lib/user-error';
 
 import {
   deployProcess as _deployProcess,
@@ -111,6 +117,12 @@ export async function updateVariables(
   variables: Record<string, any>,
 ) {
   try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('update', 'Execution')) {
+      return permissionDenied();
+    }
+
     const instance = await getDBInstance(spaceId, instanceId);
     if (isUserErrorResponse(instance)) return instance;
     if (!instance) {
@@ -144,6 +156,12 @@ export async function getFile(
   instanceId: string,
   fileName: string,
 ) {
+  const { ability } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('view', 'Execution')) {
+    return permissionDenied();
+  }
+
   const instance = await getDBInstance(spaceId, instanceId);
   if (isUserErrorResponse(instance)) return instance;
   if (!instance) {

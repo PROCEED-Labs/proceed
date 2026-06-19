@@ -144,6 +144,12 @@ export async function deployProcess(
 
 export async function removeDeployment(definitionId: string, spaceId: string) {
   try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('manage', 'Execution')) {
+      return permissionDenied();
+    }
+
     const deployments = await getProcessDeployments(spaceId, definitionId, undefined, true);
     if (isUserErrorResponse(deployments)) return deployments;
 
@@ -177,6 +183,12 @@ export async function changeDeploymentActivation(
   value: boolean,
 ) {
   try {
+    const { ability } = await getCurrentEnvironment(spaceId);
+
+    if (!ability.can('manage', 'Execution')) {
+      return permissionDenied();
+    }
+
     let deployments = await getProcessDeployments(spaceId, definitionId);
     if (isUserErrorResponse(deployments)) return deployments;
 

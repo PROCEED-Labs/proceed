@@ -19,7 +19,7 @@ import {
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { DataGrid } from './instance-info-panel';
-import { generateDurationString } from '@/lib/utils';
+import { generateDateString, generateDurationString } from '@/lib/utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import styles from './element-details.module.scss';
@@ -350,13 +350,13 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="instance-starttime-key">Start Time</EntryKeyText>,
       <EntryValueText key="instance-starttime-val">
-        {start && new Date(start).toISOString()}
+        {start && generateDateString(start, true)}
       </EntryValueText>,
     ]);
     detailsEntries.push([
       <EntryKeyText key="instance-endtime-key">End Time</EntryKeyText>,
       <EntryValueText key="instance-endtime-val">
-        {end && new Date(end).toISOString()}
+        {end && generateDateString(end, true)}
       </EntryValueText>,
     ]);
     detailsEntries.push([

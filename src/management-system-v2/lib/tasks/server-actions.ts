@@ -75,7 +75,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -153,7 +153,7 @@ export async function addOwnerToTaskListEntry(userTaskId: string, owner: string)
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -223,7 +223,7 @@ export async function setTasklistMilestoneValues(
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 
@@ -300,7 +300,7 @@ export async function submitFile(spaceId: string, userTaskId: string, formData: 
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
-    if (!storedUserTask || 'error' in storedUserTask) {
+    if (!storedUserTask || isUserErrorResponse(storedUserTask)) {
       throw new Error('Failed to get stored user task data.');
     }
 

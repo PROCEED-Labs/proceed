@@ -47,5 +47,3 @@ export default async function EnginesPage(props: { params: Promise<{ engineId: s
     </Suspense>
   );
 }
-
-export const dynamic = 'force-dynamic';

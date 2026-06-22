@@ -8,7 +8,7 @@ import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
-import { asyncMap, pick } from '../helpers/javascriptHelpers';
+import { pick } from '../helpers/javascriptHelpers';
 import { cache } from 'react';
 import { getSpaceUsers } from './db/iam/users';
 import { getEnvironmentById } from './db/iam/environments';
@@ -29,6 +29,7 @@ import {
   isActive,
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 type StoredInstance = Omit<ProcessInstance, 'state'> & {
   state: InstanceInfo;
@@ -287,19 +288,27 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const instanceInfo = await db.processInstance.findUnique({
-    where: { id: instanceId },
-    include: {
-      deployment: { select: { versionId: true } },
-      engines: {
-        select: {
-          id: true,
-          name: true,
-          connections: { select: { reachable: true } },
+  async function getFromDBOrCache(instanceId: string) {
+    'use cache';
+    cacheLife({ revalidate: 10, expire: 15 });
+    cacheTag(`instance/${instanceId}`);
+
+    return await db.processInstance.findUnique({
+      where: { id: instanceId },
+      include: {
+        deployment: { select: { versionId: true } },
+        engines: {
+          select: {
+            id: true,
+            name: true,
+            connections: { select: { reachable: true } },
+          },
         },
       },
-    },
-  });
+    });
+  }
+
+  const instanceInfo = await getFromDBOrCache(instanceId);
 
   if (!instanceInfo) return null;
 
@@ -318,45 +327,30 @@ export async function getInstances(spaceId: string, ability: Ability) {
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const instances = await db.processInstance.findMany({
-    where: {
-      deployment: {
-        AND: [
-          { version: { process: { environmentId: spaceId } } },
-          { removeTime: null },
-          { toRemove: false },
-        ],
-      },
-    },
-    include: {
-      deployment: { select: { versionId: true } },
-      engines: {
-        select: {
-          id: true,
-          name: true,
-          connections: { select: { reachable: true } },
+  async function getFromDBOrCache(spaceId: string) {
+    'use cache';
+    cacheLife({ revalidate: 10, expire: 15 });
+    cacheTag(`space/${spaceId}/instances`);
+
+    return await db.processInstance.findMany({
+      where: {
+        deployment: {
+          AND: [
+            { version: { process: { environmentId: spaceId } } },
+            { removeTime: null },
+            { toRemove: false },
+          ],
         },
       },
-    },
-  });
-
-  const extendedInstances = await asyncMap(instances, async (i) =>
-    extendInstance(
-      spaceId,
-      {
-        ...i,
-        state: i.state as InstanceInfo,
-        versionId: i.deployment.versionId,
+      select: {
+        id: true,
       },
-      ability,
-    ),
-  );
+    });
+  }
 
-  const engineResWithError = extendedInstances.find(isUserErrorResponse);
+  const instances = await getFromDBOrCache(spaceId);
 
-  if (!!engineResWithError) return engineResWithError;
-
-  return extendedInstances as ExtendedInstance[];
+  return instances.map(({ id }) => id);
 }
 
 export async function addInstance(
@@ -373,7 +367,7 @@ export async function addInstance(
 
   const data = InstanceInputSchema.parse(instance);
 
-  return await db.processInstance.create({
+  const res = await db.processInstance.create({
     data: {
       ...data,
       engines: {
@@ -381,6 +375,11 @@ export async function addInstance(
       },
     },
   });
+
+  revalidateTag(`space/${spaceId}/instances`, 'max');
+  revalidateTag(`deployments/process/${instance.state.processId}`, 'max');
+
+  return res;
 }
 
 export async function updateInstance(
@@ -398,7 +397,7 @@ export async function updateInstance(
 
   const data = InstanceInputSchema.partial().strict().parse(input);
 
-  return await db.processInstance.update({
+  const res = await db.processInstance.update({
     where: { id: instanceId },
     data: {
       ...data,
@@ -407,4 +406,8 @@ export async function updateInstance(
       },
     },
   });
+
+  revalidateTag(`instance/${instanceId}`, 'max');
+
+  return res;
 }

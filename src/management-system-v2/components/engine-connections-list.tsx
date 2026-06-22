@@ -82,7 +82,7 @@ const EngineConnectionsList = ({
       render: (_, record) => {
         const text = record.name;
 
-        if (isHttpConnection(record)) {
+        if (isHttpConnection(record) && record.engines.length) {
           return (
             <Link
               href={`${engineDashboardLinkPrefix}/${record.engines[0].engine.id}`}

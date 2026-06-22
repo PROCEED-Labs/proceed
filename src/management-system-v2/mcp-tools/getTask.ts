@@ -4,6 +4,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import { z } from 'zod';
 import { getTasklistEntryHTML } from '@/lib/tasks/server-actions';
 import { getUserTaskById } from '@/lib/data/user-tasks';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
@@ -43,6 +44,7 @@ export default async function getTask({ userCode, id }: InferSchema<typeof schem
     if (!accessible)
       return 'Error: The user cannot access tasks in this space. This might be due to a space wide setting or due to the user not having the permission to view tasks.';
 
+    await refetchDeployments();
     const task = await getUserTaskById(id);
     if (isUserErrorResponse(task)) return `Error: ${task.error.message}`;
     if (!task) return 'Error: Task not found';

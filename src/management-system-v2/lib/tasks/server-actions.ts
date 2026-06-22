@@ -34,6 +34,7 @@ import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { saveInstanceArtifact } from '../data/file-manager-facade';
 import { getDBInstance } from '@/lib/data/instance';
 import Ability from '../ability/abilityHelper';
+import { revalidateTag } from 'next/cache';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -101,7 +102,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
         }
       }
 
-      if (activated) await updateUserTask(userTaskId, { state: 'ACTIVE' });
+      if (activated) await updateUserTask(spaceId, userTaskId, { state: 'ACTIVE' });
     }
 
     variableChanges = { ...initialVariables, ...(variableChanges || {}) };
@@ -149,7 +150,7 @@ export async function getTasklistEntryHTML(spaceId: string, userTaskId: string, 
   }
 }
 
-export async function addOwnerToTaskListEntry(userTaskId: string, owner: string) {
+export async function addOwnerToTaskListEntry(spaceId: string, userTaskId: string, owner: string) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -160,7 +161,7 @@ export async function addOwnerToTaskListEntry(userTaskId: string, owner: string)
     let { actualOwner } = storedUserTask;
 
     if (!actualOwner.includes(owner)) {
-      await updateUserTask(userTaskId, {
+      await updateUserTask(spaceId, userTaskId, {
         actualOwner: [...actualOwner, owner],
       });
 
@@ -185,6 +186,7 @@ export async function addOwnerToTaskListEntry(userTaskId: string, owner: string)
 }
 
 export async function setTasklistEntryVariableValues(
+  spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
 ) {
@@ -195,7 +197,7 @@ export async function setTasklistEntryVariableValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       variableChanges: { ...storedUserTask.variableChanges, ...variables },
     });
 
@@ -217,6 +219,7 @@ export async function setTasklistEntryVariableValues(
 }
 
 export async function setTasklistMilestoneValues(
+  spaceId: string,
   userTaskId: string,
   milestones: { [key: string]: any },
 ) {
@@ -227,7 +230,7 @@ export async function setTasklistMilestoneValues(
       throw new Error('Failed to get stored user task data.');
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       milestonesChanges: { ...storedUserTask.milestonesChanges, ...milestones },
     });
 
@@ -248,7 +251,11 @@ export async function setTasklistMilestoneValues(
   }
 }
 
-export async function completeTasklistEntry(userTaskId: string, variables: { [key: string]: any }) {
+export async function completeTasklistEntry(
+  spaceId: string,
+  userTaskId: string,
+  variables: { [key: string]: any },
+) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
 
@@ -285,7 +292,7 @@ export async function completeTasklistEntry(userTaskId: string, variables: { [ke
       await completeTasklistEntryOnMachine(engine, instanceId, taskId, variables);
     }
 
-    await updateUserTask(userTaskId, {
+    await updateUserTask(spaceId, userTaskId, {
       variableChanges: { ...variableChanges, ...variables },
       state: 'COMPLETED',
       endTime: !storedUserTask.instanceID ? new Date() : undefined,
@@ -467,7 +474,14 @@ export async function updateTaskInfo(
 
       return !deepEquals(potentiallyChanged, newInfo);
     })
-    .map(([id, data]) => [id, pick(data, changeableEntries)] as const);
+    .map(([id, data]) => {
+      const instance = knownInstances[data.instanceID]!;
+
+      return [
+        id,
+        { ...pick(data, changeableEntries), environmentId: instance.environmentId },
+      ] as const;
+    });
 
   await db.$transaction(async (tx) => {
     await tx.userTask.createMany({
@@ -479,6 +493,8 @@ export async function updateTaskInfo(
     });
 
     await asyncForEach(updatedUserTasks, async ([id, data]) => {
+      revalidateTag(`userTask/${id}`, 'max');
+      revalidateTag(`space/${data.environmentId}/tasks`, 'max');
       await tx.userTask.update({
         where: { id },
         data: {
@@ -487,5 +503,9 @@ export async function updateTaskInfo(
         },
       });
     });
+  });
+
+  addedUserTasks.forEach(({ environmentId }) => {
+    revalidateTag(`space/${environmentId}/tasks`, 'max');
   });
 }

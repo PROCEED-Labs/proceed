@@ -219,7 +219,7 @@ const FormList: React.FC<FormListProps> = ({ data }) => {
     const resolvedUserTasks = userTasks.filter(truthyFilter);
     if (userTasks.length === resolvedUserTasks.length) {
       message.success('Assigned the tasks to the selected users.');
-      await addUserTasks(resolvedUserTasks);
+      await addUserTasks(space.spaceId, resolvedUserTasks);
     } else {
       message.error('Encountered errors when trying to assign the tasks.');
     }

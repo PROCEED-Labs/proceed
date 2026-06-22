@@ -38,6 +38,7 @@ import { engineRequest } from '../engines/endpoints';
 import { getSharedRefetch } from '../shared-refetch';
 import Ability from '../ability/abilityHelper';
 import { EngineConnection } from '@prisma/client';
+import { revalidateTag } from 'next/cache';
 
 export async function deployProcess(
   definitionId: string,
@@ -112,6 +113,7 @@ export async function deployProcess(
 
     await addDeployment(
       spaceId,
+      definitionId,
       {
         versionId,
         deployerId: userId,
@@ -127,7 +129,7 @@ export async function deployProcess(
     await Promise.allSettled(
       alreadyDeployed.map(async (deployment) => {
         if (deployment.active && !deployedTo.some((e) => e.id === deployment.engineId)) {
-          await updateDeployment(spaceId, deployment.id, { active: false }, ability);
+          await updateDeployment(spaceId, definitionId, deployment.id, { active: false }, ability);
 
           const engine = allEngines.find((e) => e.id === deployment.engineId);
           if (engine) {
@@ -162,13 +164,19 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
           // engine => we don't need to call this for every version but only once per engine per
           // process
           await removeDeploymentFromMachines([engine], deployment.processId);
-          await updateDeployment(spaceId, deployment.id, { removeTime: new Date(), active: false });
+          await updateDeployment(spaceId, definitionId, deployment.id, {
+            removeTime: new Date(),
+            active: false,
+          });
           return;
         }
       } catch (err) {}
 
       // if removing the deployment is currently not possible mark it for automatic removal
-      await updateDeployment(spaceId, deployment.id, { toRemove: true, active: false });
+      await updateDeployment(spaceId, definitionId, deployment.id, {
+        toRemove: true,
+        active: false,
+      });
     });
   } catch (e) {
     const message = getErrorMessage(e);
@@ -213,7 +221,7 @@ export async function changeDeploymentActivation(
           try {
             // activate the process on a single machine so we do not spawn new instances on multiple machines at once
             await _changeDeploymentActivation(engine, definitionId, version, true);
-            await updateDeployment(spaceId, deployment.id, { active: true });
+            await updateDeployment(spaceId, definitionId, deployment.id, { active: true });
             activated = true;
             break;
           } catch (err) {}
@@ -229,7 +237,7 @@ export async function changeDeploymentActivation(
 
     const res = await asyncMap(deploymentsToChange, async (d) => {
       // mark the deployment as inactive locally
-      await updateDeployment(spaceId, d.id, { active: false });
+      await updateDeployment(spaceId, definitionId, d.id, { active: false });
 
       try {
         // if deactivating the deployment fails the refetch loop should deactivate it due to the
@@ -474,18 +482,23 @@ async function refetchFn() {
     await db.$transaction(async (tx) => {
       await Promise.all([
         ...removedOnEngine.map(async (deployment) => {
+          revalidateTag(`space/${deployment.version.process.environmentId}/deployments`, 'max');
+          revalidateTag(`deployments/process/${deployment.version.processId}`, 'max');
           await tx.processDeployment.update({
             where: { id: deployment.id },
             data: { removeTime: new Date(), toRemove: false, active: false },
           });
         }),
         ...instanceUpdates.map(async ({ id, state, logs }) => {
+          revalidateTag(`instance/${id}`, 'max');
           await tx.processInstance.update({
             where: { id },
             data: { state, logs },
           });
         }),
-        ...newInstances.map((i) =>
+        ...newInstances.map((i) => {
+          revalidateTag(`space/${i.environmentId}/instances`, 'max');
+          revalidateTag(`deployments/process/${i.state.processId}`, 'max');
           tx.processInstance.create({
             data: {
               ...pick(i, ['id', 'deploymentId', 'initiatorId', 'state', 'logs']),
@@ -493,8 +506,8 @@ async function refetchFn() {
                 connect: i.engineIds.map((id) => ({ id })),
               },
             },
-          }),
-        ),
+          });
+        }),
       ]);
     });
 

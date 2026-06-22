@@ -7,6 +7,7 @@ import { resolveEngines } from './engine-connections-helpers';
 import { asyncMap } from '../helpers/javascriptHelpers';
 import { getMSConfig } from '../ms-config/ms-config';
 import { engineRequest } from './endpoints';
+import { revalidateTag } from 'next/cache';
 
 async function refetchFn() {
   try {
@@ -123,6 +124,22 @@ async function refetchFn() {
           ];
         }),
       ]);
+    });
+
+    connections.forEach((c, index) => {
+      const { notReachableAnymore, becameReachable, updated } = changes[index];
+
+      if (notReachableAnymore.length || becameReachable.length) {
+        if (c.environmentId) {
+          revalidateTag(`space/${c.environmentId}/connections`, 'max');
+        } else if (c.environmentId === null) {
+          revalidateTag(`ms/connections`, 'max');
+        }
+      }
+
+      notReachableAnymore.forEach((engineId) => revalidateTag(`engine/${engineId}`, 'max'));
+      becameReachable.forEach(({ id: engineId }) => revalidateTag(`engine/${engineId}`, 'max'));
+      updated.forEach(({ id: engineId }) => revalidateTag(`engine/${engineId}`, 'max'));
     });
   } catch (err) {
     console.error('Error fetching engines: ', err);

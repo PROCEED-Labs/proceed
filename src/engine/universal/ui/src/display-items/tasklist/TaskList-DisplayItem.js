@@ -73,8 +73,8 @@ class TaskListTab extends DisplayItem {
 
     let initiatorInfo;
     const expectedInitiatorInfo = [
-      'processInitiator',
-      'spaceIdOfProcessInitiator',
+      'processInstanceInitiator',
+      'processInstanceInitiatorSpaceId',
       'managementSystemLocation',
     ];
 
@@ -97,8 +97,8 @@ class TaskListTab extends DisplayItem {
       const instanceInformation = engine.getInstanceInformation(instanceId);
       if (expectedInitiatorInfo.every((info) => info in instanceInformation)) {
         initiatorInfo = {
-          processInitiator: instanceInformation.processInitiator,
-          spaceIdOfProcessInitiator: instanceInformation.spaceIdOfProcessInitiator,
+          processInstanceInitiator: instanceInformation.processInstanceInitiator,
+          processInstanceInitiatorSpaceId: instanceInformation.processInstanceInitiatorSpaceId,
           managementSystemLocation: instanceInformation.managementSystemLocation,
         };
       }
@@ -167,10 +167,10 @@ class TaskListTab extends DisplayItem {
       const globalDataVariables = await getGlobalVariables(html, async (varPath) => {
         if (!initiatorInfo) throw new Error('Unable to get data for global variables.');
 
-        let path = `/api/spaces/${initiatorInfo.spaceIdOfProcessInitiator}/data`;
+        let path = `/api/spaces/${initiatorInfo.processInstanceInitiatorSpaceId}/data`;
 
         if (varPath.startsWith('@process-initiator')) {
-          path += `/user/${initiatorInfo.processInitiator}`;
+          path += `/user/${initiatorInfo.processInstanceInitiator}`;
           varPath = varPath.split('.').slice(1).join('.');
         } else if (varPath.startsWith('@organization')) {
           path += '/organization';

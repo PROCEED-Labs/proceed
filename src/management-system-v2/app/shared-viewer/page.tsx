@@ -298,7 +298,7 @@ const SharedViewer = async (props: PageProps) => {
   const ownerName = await resolveUserDisplayName(processData?.creatorId);
 
   let processInitiatorName = 'Unknown';
-  const initiator = instanceData?.processInitiator;
+  const initiator = instanceData?.processInstanceInitiator;
   if (initiator) {
     if (typeof initiator === 'string') {
       processInitiatorName = initiator;

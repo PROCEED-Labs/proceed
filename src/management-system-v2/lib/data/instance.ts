@@ -138,8 +138,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   }
 
   let initiatorSpace: undefined | { id: string; name: string; isOrganization: boolean } = undefined;
-  if (state.spaceIdOfProcessInitiator) {
-    const space = await getSpaceInfo(state.spaceIdOfProcessInitiator);
+  if (state.processInstanceInitiatorSpaceId) {
+    const space = await getSpaceInfo(state.processInstanceInitiatorSpaceId);
     if (space) {
       if (space.isOrganization) {
         initiatorSpace = pick(space, ['id', 'name', 'isOrganization']);
@@ -270,8 +270,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
         performers: mapPerformers(entry.performers),
         timing: getTimings(entry, undefined),
       })),
-      processInitiator: initiator,
-      spaceOfProcessInitiator: initiatorSpace,
+      processInstanceInitiator: initiator,
+      spaceOfProcessInstanceInitiator: initiatorSpace,
       executionCosts,
       plannedCosts: plannedCosts.length ? plannedCosts : undefined,
       timing: getTimings(),

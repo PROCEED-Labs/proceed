@@ -132,8 +132,8 @@ class ScriptExecutor extends System {
             );
 
             const initiatorInfo = [
-              'processInitiator',
-              'spaceIdOfProcessInitiator',
+              'processInstanceInitiator',
+              'processInstanceInitiatorSpaceId',
               'managementSystemLocation',
             ];
 
@@ -156,7 +156,7 @@ class ScriptExecutor extends System {
                * @param {string} dataPath the path to the nested data entry
                */
               function createRequest(accessFn, dataPath) {
-                let path = `/api/spaces/${instanceInformation.spaceIdOfProcessInitiator}/data`;
+                let path = `/api/spaces/${instanceInformation.processInstanceInitiatorSpaceId}/data`;
 
                 if (accessFn.includes('GlobalOrg')) {
                   // setGlobalOrg and getGlobalOrg already define what data to access so any other
@@ -179,7 +179,7 @@ class ScriptExecutor extends System {
                       `Invalid meta parameter (${dataPath.split('.')[0]}) in call to ${accessFn}.`,
                     );
                   }
-                  path += `/user/${instanceInformation.processInitiator}`;
+                  path += `/user/${instanceInformation.processInstanceInitiator}`;
                 }
 
                 return `${path}/${dataPath}`;

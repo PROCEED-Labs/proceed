@@ -85,7 +85,11 @@ export default async function getExecutionInfo({
     // insertions of process element names alongside process element ids
     const mappedInstance = {
       // this information is not needed by/already known to the LLM
-      ...omit(instance, ['managementSystemLocation', 'spaceIdOfProcessInitiator', 'userTasks']),
+      ...omit(instance, [
+        'managementSystemLocation',
+        'processInstanceInitiatorSpaceId',
+        'userTasks',
+      ]),
       tokens: instance.tokens.map((t) => ({
         ...omit(t, ['actualOwner', 'performers', 'costsRealSetByOwner']),
         actualPerformers: t.actualOwner,

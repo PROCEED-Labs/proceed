@@ -333,8 +333,8 @@ export type InstanceInfo = {
   processVersion: string;
   userTasks: any[];
   managementSystemLocation?: string;
-  processInitiator?: string;
-  spaceIdOfProcessInitiator?: string;
+  processInstanceInitiator?: string;
+  processInstanceInitiatorSpaceId?: string;
 };
 export type DeployedProcessInfo = {
   definitionId: string;

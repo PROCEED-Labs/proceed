@@ -85,8 +85,8 @@ export async function startInstance(
 
     if (engine.connections.some((c) => c.reachable)) {
       const result = await startInstanceOnMachine(definitionId, versionId, engine, variables, {
-        processInitiator: userId,
-        spaceIdOfProcessInitiator: spaceId,
+        processInstanceInitiator: userId,
+        processInstanceInitiatorSpaceId: spaceId,
       });
 
       if (isUserErrorResponse(result)) continue;
@@ -352,7 +352,7 @@ export async function exportInstanceCSV(
     }
   }
 
-  const initiatorSpace = instance.state.spaceOfProcessInitiator;
+  const initiatorSpace = instance.state.spaceOfProcessInstanceInitiator;
 
   return {
     ...instance.state,
@@ -459,7 +459,7 @@ export async function exportInstanceData(
     processId: 'ProcessId',
     processVersion: 'ProcessVersionId',
     processInstanceId: 'ProcessInstanceId',
-    spaceIdOfProcessInitiator: 'ProcessInstanceInitiatorSpaceId',
+    processInstanceInitiatorSpaceId: 'ProcessInstanceInitiatorSpaceId',
     globalStartTime: 'InstanceStartTime',
     flowElementId: 'ProcessStepId',
     executionState: 'ProcessStepStatus',

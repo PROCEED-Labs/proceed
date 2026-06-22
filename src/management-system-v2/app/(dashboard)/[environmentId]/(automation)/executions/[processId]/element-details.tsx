@@ -15,6 +15,7 @@ import { getTiming, statusToType } from './instance-helpers';
 import {
   getDefinitionsInfos,
   getDefinitionsVersionInformation,
+  getElementById,
   getMetaDataFromElement,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
@@ -149,6 +150,8 @@ export function ElementDetails({
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
   const [responsibleParty, setResponsibleParty] = useState<User[]>([]);
+  const [potentialOwners, setPotentialOwners] = useState<User[]>([]);
+  const [elementBPMNData, setElementBPMNData] = useState<any>();
   const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -157,6 +160,7 @@ export function ElementDetails({
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   useEffect(() => {
+    console.log('USE EFFECT');
     // using version because it contains the parent object containing some more metadata
     async function getBpmnObject() {
       const bpmnObj = await toBpmnObject(version.bpmn);
@@ -176,13 +180,47 @@ export function ElementDetails({
         async (resId: string) => await getUserById(resId),
       );
 
+      if (element && element.type !== 'bpmn:Process') {
+        const elementData = getElementById(bpmnObj, element.id);
+
+        const elementAny = elementData as any;
+        const potentialOwnerIds =
+          elementAny && elementAny.resources
+            ? JSON.parse(
+                elementAny.resources.find((e: any) => e.$type === 'bpmn:PotentialOwner')
+                  .resourceAssignmentExpression.expression.body || '',
+              )
+            : { user: [] };
+        const potentialOwners = await asyncMap(
+          potentialOwnerIds.user,
+          async (resId: string) => await getUserById(resId),
+        );
+        setPotentialOwners(potentialOwners);
+        setElementBPMNData(elementData);
+      } else {
+        setElementBPMNData(undefined);
+        setPotentialOwners([]);
+      }
+
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
       setPreviousVersion(previous);
       setResponsibleParty(responsible);
     }
     getBpmnObject();
-  }, [processId, version]);
+  }, [processId, version, element]);
+
+  // console.log(element, instance, version);
+  console.log(instance);
+  // console.log(element);
+  // console.log(elementBPMNData);
+  // console.log(potentialOwners);
+  // console.log(
+  //   JSON.parse(
+  //     elementBPMNData?.resources.find((e) => e.$type === 'bpmn:PotentialOwner')
+  //       .resourceAssignmentExpression.expression.body || '',
+  //   ),
+  // );
 
   // TECH DETAILS SWITCH
   detailsEntries.push([
@@ -393,114 +431,161 @@ export function ElementDetails({
     }
     // EVENT DATA
   } else {
+    const eventLog = instance?.log.find((e) => e.flowElementId === element.id);
+    // GENERAL
     detailsEntries.push([
-      <EntryKeyText key="event-stepid-key">{'Step ID (or "Event ID"?)'}</EntryKeyText>,
-      <EntryValueText key="event-stepid-val">Activity_0309v8x</EntryValueText>,
+      <EntryKeyText key="event-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
+        GENERAL
+      </EntryKeyText>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="event-stepname-key">Step Name</EntryKeyText>,
-      <EntryValueText key="event-stepname-val">Check vacation application</EntryValueText>,
+      <EntryKeyText key="event-stepname-key">Name</EntryKeyText>,
+      <EntryValueText key="event-stepname-val">{elementBPMNData?.name}</EntryValueText>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="event-docu-key">Documentation</EntryKeyText>,
-      <div
-        key="event-docu-val"
-        style={{
-          padding: 10,
-          backgroundColor: '#66666605',
-          border: '1px solid #0001',
-          borderRadius: 10,
-        }}
-      >
+      <EntryKeyText key="event-steptype-key">Type</EntryKeyText>,
+      <EntryValueText key="event-steptype-val">{element.type.split(':')[1]}</EntryValueText>,
+    ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-docu-key">Description</EntryKeyText>,
+      <div key="event-docu-val">
         <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-prevstepid-key">Comes after</EntryKeyText>,
+      <EntryValueText key="event-prevstepid-val">TODO</EntryValueText>,
+    ]);
+    if (techDetails) {
+      detailsEntries.push([
+        <TechEntryKey key="event-stepid-key">{'Step ID'}</TechEntryKey>,
+        <EntryValueText key="event-stepid-val">{element.id}</EntryValueText>,
+      ]);
+      detailsEntries.push([
+        <TechEntryKey key="event-prevstepid-key">{'Previous step ID'}</TechEntryKey>,
+        <EntryValueText key="event-prevstepid-val">{}</EntryValueText>,
+      ]);
+    }
 
+    // PEOPLE
     detailsEntries.push([
-      <EntryKeyText key="event-steptype-key">Step Type</EntryKeyText>,
-      <EntryValueText key="event-steptype-val">User Task</EntryValueText>,
+      <Space
+        key="event-heading-people"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>PEOPLE</EntryKeyText>
+      </Space>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="event-prevstepid-key">Previous Step ID</EntryKeyText>,
-      <EntryValueText key="event-prevstepid-val">Check vacation application</EntryValueText>,
-    ]);
-    detailsEntries.push([
-      <EntryKeyText key="event-actualperformer-key">Actual Performer</EntryKeyText>,
-      <EntryValueText key="event-actualperformer-val">Sandra Sample</EntryValueText>,
-    ]);
-    detailsEntries.push([
-      <EntryKeyText key="event-actualperformername-key">Actual Performer Username</EntryKeyText>,
-      <EntryValueText key="event-actualperformername-val">sansam</EntryValueText>,
-    ]);
-    detailsEntries.push([
-      <EntryKeyText key="event-actualperformername-key">Actual Performer ID</EntryKeyText>,
-      <EntryValueText key="event-actualperformername-val">
-        29880751-c190-4f58-b5cb-438754e9f02d
+      <EntryKeyText key="event-actualperformer-key">Assignet to</EntryKeyText>,
+      <EntryValueText key="event-actualperformer-val">
+        {potentialOwners.length == 0 ? undefined : (
+          <Space>
+            {potentialOwners.map((e) =>
+              !e.isGuest ? (
+                <Tag key={e.id + 'assigned'}>
+                  {e.firstName} {e.lastName}
+                </Tag>
+              ) : undefined,
+            )}
+          </Space>
+        )}
       </EntryValueText>,
     ]);
-  }
 
-  // Element status
-  let status = undefined;
-  if (isRootElement && instance) {
-    status = instance.instanceState[0];
-  } else if (element && instance) {
-    const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
-    if (elementInfo) {
-      status = elementInfo.executionState;
-    } else {
-      const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
-      status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
+    detailsEntries.push([
+      <EntryKeyText key="event-actualperformer-key">Done Bye</EntryKeyText>,
+      <EntryValueText key="event-actualperformer-val">
+        {eventLog?.actualOwner?.map((e) => <Tag key={e.id + 'doneby'}>{e.fullName}</Tag>)}
+      </EntryValueText>,
+    ]);
+
+    if (techDetails) {
+      detailsEntries.push([
+        <TechEntryKey key="event-actualperformername-key">Username</TechEntryKey>,
+        <EntryValueText key="event-actualperformername-val">
+          {eventLog?.actualOwner?.map((e) => e.username).toString()}
+        </EntryValueText>,
+      ]);
+      detailsEntries.push([
+        <TechEntryKey key="event-actualperformername-key">User ID</TechEntryKey>,
+        <EntryValueText key="event-actualperformername-val">
+          {eventLog?.actualOwner?.map((e) => e.id).toString()}
+        </EntryValueText>,
+      ]);
     }
+
+    // TIMING
+    const {
+      actual: { start, end, duration },
+      plan: { duration: plannedDuration },
+    } = getTiming({
+      isRootElement,
+      metaData,
+      token,
+      logInfo,
+      instance,
+    });
+    detailsEntries.push([
+      <Space
+        key="event-heading-timing"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
+      </Space>,
+    ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-plannedduration-key">Planned duration</EntryKeyText>,
+      <EntryValueText key="event-plannedduration-val">
+        {plannedDuration && generateDurationString(plannedDuration)}
+      </EntryValueText>,
+    ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-starttime-key">Start time</EntryKeyText>,
+      <EntryValueText key="event-starttime-val">
+        {start && generateDateString(start, true)}
+      </EntryValueText>,
+    ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-endtime-key">End time</EntryKeyText>,
+      <EntryValueText key="event-endtime-val">
+        {end && generateDateString(end, true)}
+      </EntryValueText>,
+    ]);
+    detailsEntries.push([
+      <EntryKeyText key="event-duration-key">Time so far</EntryKeyText>,
+      <EntryValueText key="event-duration-val">
+        {duration && generateDurationString(duration)}
+      </EntryValueText>,
+    ]);
+
+    // OTHER
+    detailsEntries.push([
+      <Space
+        key="event-heading-other"
+        orientation="vertical"
+        style={{ width: '100%', padding: 0, margin: 0 }}
+      >
+        <Divider style={{ padding: 0, margin: 0 }} />
+        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>OTHER</EntryKeyText>
+      </Space>,
+    ]);
   }
-  const statusType = status && statusToType(status);
 
   // Is External
   if (!isRootElement) {
     detailsEntries.push([
-      <EntryKeyText key="external-key">External:</EntryKeyText>,
+      <EntryKeyText key="external-key">Runs outside this system</EntryKeyText>,
       <Checkbox
         key="external-val"
         disabled
         value={element.businessObject && element.businessObject.external}
       />,
     ]);
-  }
-
-  // Progress
-  // TODO: editable progress
-  // see src/management-system/src/frontend/components/deployments/activityInfo/ProgressSetter.vue
-  if (instance && !isRootElement) {
-    let progress:
-      | { value: number; manual: boolean; milestoneCalculatedProgress?: number }
-      | undefined = undefined;
-    if (token && token.currentFlowNodeProgress) {
-      let milestoneCalculatedProgress = 0;
-      if (token.milestones && Object.keys(token.milestones).length > 0) {
-        const milestoneProgressValues = Object.values(token.milestones);
-        milestoneCalculatedProgress =
-          milestoneProgressValues.reduce((acc, milestoneVal) => acc + milestoneVal) /
-          milestoneProgressValues.length;
-      }
-
-      progress = {
-        ...token.currentFlowNodeProgress,
-        milestoneCalculatedProgress,
-      };
-    } else if (logInfo?.progress) {
-      progress = logInfo.progress;
-    }
-
-    if (progress) {
-      let progressStatus: ProgressProps['status'] = 'normal';
-      if (statusType === 'success') progressStatus = 'success';
-      else if (statusType === 'error') progressStatus = 'exception';
-
-      detailsEntries.push([
-        <EntryKeyText key="progres-key">Progress</EntryKeyText>,
-        <Progress key="progress-val" percent={progress.value} status={progressStatus} />,
-      ]);
-    }
   }
 
   // User task
@@ -517,7 +602,9 @@ export function ElementDetails({
 
     detailsEntries.push([
       <EntryKeyText key="prio">Priority</EntryKeyText>,
-      <EntryValueText key="hkj">{priority}</EntryValueText>,
+      <EntryValueText key="hkj">
+        <Tag color={'blue'}>{priority}</Tag>
+      </EntryValueText>,
     ]);
   }
 

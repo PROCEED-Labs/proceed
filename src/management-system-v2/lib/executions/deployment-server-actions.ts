@@ -376,88 +376,92 @@ async function refetchFn() {
     // fetch deployment data from the engines
     const engineDeployments = Object.fromEntries(
       await asyncMap(reachableWithDeployments, async (e) => {
-        const res = await fetchDeployments([e]);
+        try {
+          const res = await fetchDeployments(e);
 
-        const deployedProcesses = Object.fromEntries(
-          res.map((p) => [
-            p.definitionId,
-            {
-              versions: Object.fromEntries(p.versions.map((v) => [v.versionId, v])),
-            },
-          ]),
-        );
+          const deployedProcesses = Object.fromEntries(
+            res.map((p) => [
+              p.definitionId,
+              {
+                versions: Object.fromEntries(p.versions.map((v) => [v.versionId, v])),
+              },
+            ]),
+          );
 
-        await asyncForEach(res, async (p) => {
-          await asyncForEach(p.versions, async (v) => {
-            try {
-              const deployment = deployments[`${e.id}|${p.definitionId}|${v.versionId}`];
-              if (!deployment) return;
+          await asyncForEach(res, async (p) => {
+            await asyncForEach(p.versions, async (v) => {
+              try {
+                const deployment = deployments[`${e.id}|${p.definitionId}|${v.versionId}`];
+                if (!deployment) return;
 
-              if (v.active !== deployment.active) {
-                // mismatch of the active state on the engine and the locally stored active
-                // state => change the state on the engine
-                await _changeDeploymentActivation(
-                  e,
-                  p.definitionId,
-                  v.versionId,
-                  deployment.active,
+                if (v.active !== deployment.active) {
+                  // mismatch of the active state on the engine and the locally stored active
+                  // state => change the state on the engine
+                  await _changeDeploymentActivation(
+                    e,
+                    p.definitionId,
+                    v.versionId,
+                    deployment.active,
+                  );
+                }
+              } catch (err) {
+                console.error(
+                  `Failed to update the active state for the deployment of process (id: ${p.definitionId}) version (id: ${v.versionId}) on engine (id: ${e.id}).`,
                 );
               }
-            } catch (err) {
-              console.error(
-                `Failed to update the active state for the deployment of process (id: ${p.definitionId}) version (id: ${v.versionId}) on engine (id: ${e.id}).`,
-              );
-            }
-          });
-        });
-
-        // TODO: when we want to handle instances that move to other engines automatically, we
-        // will have to change this logic since it assumes that all available data of the instance
-        // can be found on the engine it was started on
-        await asyncForEach(res, async (p) => {
-          await asyncForEach(p.instances, async (i) => {
-            const deployment = deployments[`${e.id}|${i.processId}|${i.processVersion}`];
-            if (!deployment) return;
-            const existingInstance = storedInstances[i.processInstanceId];
-
-            const logs = await engineRequest({
-              engine: e,
-              method: 'get',
-              endpoint: '/logging/process/:definitionId/instance/:instanceId',
-              pathParams: { definitionId: p.definitionId, instanceId: i.processInstanceId },
             });
-
-            if (!existingInstance) {
-              newInstances.push({
-                id: i.processInstanceId,
-                processId: p.definitionId,
-                environmentId: deployment.version.process.environmentId,
-                versionId: i.processVersion,
-                deploymentId: deployment.id,
-                initiatorId: null,
-                engineIds: [e.id],
-                state: i,
-                logs,
-              });
-            } else if (
-              !deepEquals(i, existingInstance.state) ||
-              !deepEquals(logs, existingInstance.logs)
-            ) {
-              instanceUpdates.push({
-                id: i.processInstanceId,
-                processId: p.definitionId,
-                environmentId: deployment.version.process.environmentId,
-                versionId: deployment.version.id,
-                state: i,
-                logs,
-              });
-            } else {
-              unchangedInstances.push(existingInstance);
-            }
           });
-        });
 
-        return [e.id, deployedProcesses];
+          // TODO: when we want to handle instances that move to other engines automatically, we
+          // will have to change this logic since it assumes that all available data of the instance
+          // can be found on the engine it was started on
+          await asyncForEach(res, async (p) => {
+            await asyncForEach(p.instances, async (i) => {
+              const deployment = deployments[`${e.id}|${i.processId}|${i.processVersion}`];
+              if (!deployment) return;
+              const existingInstance = storedInstances[i.processInstanceId];
+
+              const logs = await engineRequest({
+                engine: e,
+                method: 'get',
+                endpoint: '/logging/process/:definitionId/instance/:instanceId',
+                pathParams: { definitionId: p.definitionId, instanceId: i.processInstanceId },
+              });
+
+              if (!existingInstance) {
+                newInstances.push({
+                  id: i.processInstanceId,
+                  processId: p.definitionId,
+                  environmentId: deployment.version.process.environmentId,
+                  versionId: i.processVersion,
+                  deploymentId: deployment.id,
+                  initiatorId: null,
+                  engineIds: [e.id],
+                  state: i,
+                  logs,
+                });
+              } else if (
+                !deepEquals(i, existingInstance.state) ||
+                !deepEquals(logs, existingInstance.logs)
+              ) {
+                instanceUpdates.push({
+                  id: i.processInstanceId,
+                  processId: p.definitionId,
+                  environmentId: deployment.version.process.environmentId,
+                  versionId: deployment.version.id,
+                  state: i,
+                  logs,
+                });
+              } else {
+                unchangedInstances.push(existingInstance);
+              }
+            });
+          });
+
+          return [e.id, deployedProcesses];
+        } catch (err) {
+          return [e.id, false];
+        }
       }),
     );
 

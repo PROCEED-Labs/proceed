@@ -91,6 +91,13 @@ const DeploymentsView = ({
           queryClient.removeQueries({
             queryKey: ['processDeployments', space.spaceId, process.id],
           });
+
+          if (isUserErrorResponse(res) && res.error.message === 'No fitting engine found.') {
+            return userError(
+              'No process execution could be started because there is no Process Engine available.',
+            );
+          }
+
           return res;
         },
         onSuccess: () => {

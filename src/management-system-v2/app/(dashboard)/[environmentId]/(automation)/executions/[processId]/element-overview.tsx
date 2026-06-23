@@ -1,9 +1,20 @@
 import { ReactNode, useEffect, useState } from 'react';
-import { Col, Divider, Image, Menu, message, Row, Space, Typography } from 'antd';
+import {
+  Col,
+  Divider,
+  Image,
+  Menu,
+  message,
+  Progress,
+  ProgressProps,
+  Row,
+  Space,
+  Typography,
+} from 'antd';
 import { InstanceSelector } from './instance-selector';
 import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
-import { getPlanDelays, getTimeInfo, getTiming } from './instance-helpers';
+import { getPlanDelays, getTimeInfo, getTiming, statusToType } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
 import { EntryText } from './entry-text';
@@ -103,8 +114,8 @@ export function ElementOverview({
           src={fileUrl || fallbackImage}
           fallback={fallbackImage}
           alt="Image"
-          width={'75%'}
-          height={'7.5rem'}
+          width={'100%'}
+          height={'10rem'}
           style={{
             borderRadius: '6px',
             border: '1px solid #d9d9d9',
@@ -288,6 +299,195 @@ export function ElementOverview({
       </Space>,
     ]);
   } else {
+    // Name and Shortname
+    overviewEntries.push([
+      <div key="instance-names" style={{ margin: 0, padding: 0 }}>
+        <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>
+          TODO - here userTask
+        </EntryText>
+        <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
+          TODO - This is a user task
+        </Typography.Title>
+      </div>,
+    ]);
+
+    // description
+    overviewEntries.push([
+      <div key="instance-description" style={{ fontSize: '.95em', color: '#777' }}>
+        <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
+      </div>,
+    ]);
+
+    // Element status
+    let status = undefined;
+    if (isRootElement && instance) {
+      status = instance.instanceState[0];
+    } else if (element && instance) {
+      const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
+      if (elementInfo) {
+        status = elementInfo.executionState;
+      } else {
+        const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
+        status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
+      }
+    }
+
+    const statusType = status && statusToType(status);
+    // Progress
+    // TODO: editable progress
+    // see src/management-system/src/frontend/components/deployments/activityInfo/ProgressSetter.vue
+    if (instance && !isRootElement) {
+      let progress:
+        | { value: number; manual: boolean; milestoneCalculatedProgress?: number }
+        | undefined = undefined;
+      if (token && token.currentFlowNodeProgress) {
+        let milestoneCalculatedProgress = 0;
+        if (token.milestones && Object.keys(token.milestones).length > 0) {
+          const milestoneProgressValues = Object.values(token.milestones);
+          milestoneCalculatedProgress =
+            milestoneProgressValues.reduce((acc, milestoneVal) => acc + milestoneVal) /
+            milestoneProgressValues.length;
+        }
+
+        progress = {
+          ...token.currentFlowNodeProgress,
+          milestoneCalculatedProgress,
+        };
+      } else if (logInfo?.progress) {
+        progress = logInfo.progress;
+      }
+
+      if (progress) {
+        let progressStatus: ProgressProps['status'] = 'normal';
+        if (statusType === 'success') progressStatus = 'success';
+        else if (statusType === 'error') progressStatus = 'exception';
+
+        overviewEntries.push([
+          <Progress key="progress-val" percent={progress.value} status={progressStatus} />,
+        ]);
+      }
+    }
+    // time info
+    const {
+      actual: { start: startDate, duration },
+      plan: { duration: plannedDuration },
+    } = getTiming({
+      isRootElement,
+      metaData,
+      token,
+      logInfo,
+      instance,
+    });
+    // Timing
+    overviewEntries.push([
+      <div
+        style={{
+          border: '1.5px solid #ddd',
+          borderRadius: 12,
+          overflow: 'hidden',
+        }}
+        key="instance-timing"
+      >
+        <div className={styles.GridContainer}>
+          <div className={styles.GridCell}>
+            <EntryText>Started</EntryText>
+            <br />
+            <EntryText>{generateDateString(startDate, true)}</EntryText>
+          </div>
+
+          <div className={styles.GridCell}>
+            <EntryText>Running for</EntryText>
+            <br />
+            <EntryText>{generateDurationString(duration)}</EntryText>
+          </div>
+
+          <div className={styles.GridCell}>
+            <EntryText>Planned</EntryText>
+            <br />
+            <EntryText>{generateDurationString(plannedDuration)}</EntryText>
+          </div>
+
+          <div className={styles.GridCell}>
+            <EntryText>Started by</EntryText>
+            <br />
+            <EntryText>{typeof initiator === 'object' ? initiator.fullName : initiator}</EntryText>
+          </div>
+        </div>
+      </div>,
+    ]);
+
+    // Budget
+    overviewEntries.push([
+      <EntryText
+        key="instance-budgettitle"
+        style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}
+      >
+        BUDGET
+      </EntryText>,
+    ]);
+
+    const costsPlanned = metaData.costsPlanned
+      ? generateNumberString(metaData.costsPlanned.value, {
+          style: 'currency',
+          currency: metaData.costsPlanned.unit,
+        }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
+      : undefined;
+    overviewEntries.push([
+      <Space
+        key="instance-budget"
+        orientation="vertical"
+        style={{
+          width: '100%',
+          padding: 12,
+          border: 'solid',
+          borderRadius: 12,
+          borderWidth: 1.5,
+          borderColor: '#ddd',
+          backgroundColor: '#eee',
+        }}
+      >
+        <Row style={{ margin: 0 }}>
+          <Col span={12} className={styles.ListTitle}>
+            Planned
+          </Col>
+          <Col span={12} className={styles.ListValue}>
+            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
+          </Col>
+        </Row>
+        <Divider style={{ margin: 0 }} />
+        <Row style={{ margin: 0 }}>
+          <Col span={12} className={styles.ListTitle}>
+            Calculated
+          </Col>
+          <Col span={12} className={styles.ListValue}>
+            {/* TODO: */}
+            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
+          </Col>
+        </Row>
+        <Divider style={{ margin: 0 }} />
+        <Row style={{ margin: 0 }}>
+          <Col span={12} className={styles.ListTitle}>
+            Actual
+          </Col>
+          <Col span={12} className={styles.ListValue}>
+            {/* TODO: */}
+            <EntryText style={{ fontWeight: 1000 }}>{costsPlanned}</EntryText>
+            <Typography.Text
+              style={{
+                fontWeight: 1000,
+                color: 'rgb(62, 147, 222)',
+                marginLeft: 10,
+                fontSize: '.8em',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              Override
+            </Typography.Text>
+          </Col>
+        </Row>
+      </Space>,
+    ]);
   }
 
   return <DataGrid data={overviewEntries} />;

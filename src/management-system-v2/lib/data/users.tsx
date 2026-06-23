@@ -122,10 +122,10 @@ export async function setUserPassword(newPassword: string) {
 
 // To avoid this endpoint from being abused there's not much we can do, but we do the following:
 // - Enforce the user to be an admin of an org
-// - Search query has to be at least 4 characters long
+// - Search query has to be at least 2 characters long after trimming
 // - We only return 10 users
 export async function queryUsers(organizationId: string, searchQuery: string) {
-  if (searchQuery.length < 4) {
+  if (searchQuery.trim().length < 2) {
     return userError('Unauthorized', UserErrorType.PermissionError);
   }
 

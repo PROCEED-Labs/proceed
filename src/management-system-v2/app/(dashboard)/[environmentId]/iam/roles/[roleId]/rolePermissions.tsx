@@ -191,6 +191,7 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
 
       message.open({ content: 'Role updated', type: 'success' });
       router.refresh();
+      router.push(`/${environment.spaceId}/iam/roles`);
     } catch (e) {
       if (e instanceof Error && e.cause === UserErrorType.PermissionError)
         message.open({ content: 'Permission denied', type: 'error' });
@@ -229,7 +230,14 @@ const RolePermissions: FC<{ role: Role }> = ({ role }) => {
         justify="end"
         gap={5}
       >
-        <Button onClick={() => form.resetFields()}>Cancel</Button>
+        <Button
+          onClick={() => {
+            form.resetFields();
+            router.push(`/${environment.spaceId}/iam/roles`);
+          }}
+        >
+          Cancel
+        </Button>
         <Button type="primary" htmlType="submit" loading={loading}>
           Save
         </Button>

@@ -8,3 +8,20 @@
   color: #888;
   cursor: pointer;
 }
+
+.emptyContainer {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.emptyIcon {
+  font-size: 42px;
+  color: rgba(90, 90, 90, 0.25);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.emptyText {
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 14px;
+}

@@ -15,9 +15,9 @@ import {
   Select,
 } from 'antd';
 
-import { GoOrganization } from 'react-icons/go';
+import { VscOrganization } from 'react-icons/vsc';
 import { MdLogin } from 'react-icons/md';
-import { BsFillPersonPlusFill } from 'react-icons/bs';
+import { CgUserAdd } from 'react-icons/cg';
 import { MdEmail } from 'react-icons/md';
 import { FaCircleArrowUp } from 'react-icons/fa6';
 
@@ -70,12 +70,63 @@ const Button = (props: ButtonProps) => (
 const CredentialsSignIn = ({
   provider,
   callbackUrl,
+  isSignup = false,
 }: {
   provider: Extract<ExtractedProvider, { type: 'credentials' }>;
   callbackUrl?: string | (() => Promise<string>);
+  isSignup?: boolean;
 }) => {
+  const [form] = Form.useForm();
+
+  const getRules = (key: string) => {
+    if (key === 'firstName')
+      return [
+        { required: true, message: 'First name is required.' },
+        {
+          validator: (_: any, value: string) =>
+            !value || (value.trim().length >= 2 && !/\d/.test(value))
+              ? Promise.resolve()
+              : Promise.reject('Min. 2 characters, no numbers allowed.'),
+        },
+      ];
+    if (key === 'lastName')
+      return [
+        { required: true, message: 'Last name is required.' },
+        {
+          validator: (_: any, value: string) =>
+            !value || (value.trim().length >= 2 && !/\d/.test(value))
+              ? Promise.resolve()
+              : Promise.reject('Min. 2 characters, no numbers allowed.'),
+        },
+      ];
+    if (key === 'username')
+      return isSignup
+        ? [
+            { required: true, message: 'Username is required.' },
+            {
+              validator: (_: any, value: string) =>
+                !value || /^[a-zA-Z0-9_]{2,}$/.test(value.trim())
+                  ? Promise.resolve()
+                  : Promise.reject('Min. 2 characters, letters, numbers and underscores only.'),
+            },
+          ]
+        : [{ required: true, message: 'Username is required.' }];
+    if (key === 'password')
+      return [
+        { required: true, message: 'Password is required.' },
+        ...(isSignup ? [{ min: 8, message: 'Password must be at least 8 characters.' }] : []),
+      ];
+    if (key === 'email')
+      return [
+        { required: true, message: 'E-mail address is required.' },
+        { type: 'email' as const, message: 'Please enter a valid e-mail address.' },
+      ];
+    return [{ required: true, message: 'This field is required.' }];
+  };
+
   return (
     <Form
+      form={form}
       onFinish={async (values) => {
         try {
           let url;
@@ -93,7 +144,13 @@ const CredentialsSignIn = ({
       layout="vertical"
     >
       {Object.keys(provider.credentials).map((key) => (
-        <Form.Item name={key} key={key} style={{ marginBottom: '.5rem' }}>
+        <Form.Item
+          name={key}
+          key={key}
+          style={{ marginBottom: '.5rem' }}
+          rules={getRules(key)}
+          validateTrigger={['onBlur', 'onChange']}
+        >
           <Input
             placeholder={provider.credentials[key].label}
             type={provider.credentials[key].type as string}
@@ -216,18 +273,22 @@ export function SigninOptions({
 
   if (passwordSignupProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
     tabs.push({
-      icon: <BsFillPersonPlusFill size={26} />,
+      icon: <CgUserAdd size={26} />,
       label: 'Register as New User',
       key: 'signup-password',
       children: (
-        <CredentialsSignIn provider={passwordSignupProvider as any} callbackUrl={callbackUrl} />
+        <CredentialsSignIn
+          provider={passwordSignupProvider as any}
+          callbackUrl={callbackUrl}
+          isSignup={true}
+        />
       ),
     });
   }
 
   if (createOrgOption && !env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     tabs.push({
-      icon: <GoOrganization size={26} />,
+      icon: <VscOrganization size={26} />,
       label: 'Create Organization',
       key: 'create-organization',
       href: '/create-organization',

@@ -105,7 +105,7 @@ const AddUsersModal: FC<{
 
   const { data, isLoading: usersSearchLoading } = useQuery({
     queryFn: async () => {
-      if (debouncedSearch.length < 4) {
+      if (debouncedSearch.length < 2) {
         return [];
       } else {
         const response = await queryUsers(spaceId, debouncedSearch);

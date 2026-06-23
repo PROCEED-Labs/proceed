@@ -158,7 +158,6 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     if (isUserErrorResponse(deployments)) return deployments;
 
     const instanceIds = deployments.flatMap((d) => d.instances);
-    console.log(instanceIds);
 
     const instances = await db.processInstance.findMany({
       where: { id: { in: instanceIds } },

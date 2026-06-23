@@ -434,7 +434,7 @@ export function ElementDetails({
       <EntryValueText key="event-prevstepid-val">
         {element.businessObject.incoming &&
           element.businessObject.incoming.map((e: any) => (
-            <Tag color={'blue'} key={'previousStep' + e.sourceRef.id}>
+            <Tag color={'geekblue'} key={'previousStep' + e.sourceRef.id}>
               {e.sourceRef.id}
             </Tag>
           ))}
@@ -463,7 +463,7 @@ export function ElementDetails({
       </Space>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="event-actualperformer-key">Assignet to</EntryKeyText>,
+      <EntryKeyText key="event-actualperformer-key">Assigned to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
         {logInfo?.performers?.user?.length == 0 ? undefined : (
           <Space>
@@ -591,7 +591,7 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="prio">Priority</EntryKeyText>,
       <EntryValueText key="hkj">
-        <Tag color={'blue'}>{priority}</Tag>
+        <Tag color={'geekblue'}>{priority}</Tag>
       </EntryValueText>,
     ]);
   }

@@ -150,8 +150,6 @@ export function ElementDetails({
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
   const [responsibleParty, setResponsibleParty] = useState<User[]>([]);
-  const [potentialOwners, setPotentialOwners] = useState<User[]>([]);
-  const [elementBPMNData, setElementBPMNData] = useState<any>();
   const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -160,7 +158,6 @@ export function ElementDetails({
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
 
   useEffect(() => {
-    console.log('USE EFFECT');
     // using version because it contains the parent object containing some more metadata
     async function getBpmnObject() {
       const bpmnObj = await toBpmnObject(version.bpmn);
@@ -180,28 +177,6 @@ export function ElementDetails({
         async (resId: string) => await getUserById(resId),
       );
 
-      if (element && element.type !== 'bpmn:Process') {
-        const elementData = getElementById(bpmnObj, element.id);
-
-        const elementAny = elementData as any;
-        const potentialOwnerIds =
-          elementAny && elementAny.resources
-            ? JSON.parse(
-                elementAny.resources.find((e: any) => e.$type === 'bpmn:PotentialOwner')
-                  .resourceAssignmentExpression.expression.body || '',
-              )
-            : { user: [] };
-        const potentialOwners = await asyncMap(
-          potentialOwnerIds.user,
-          async (resId: string) => await getUserById(resId),
-        );
-        setPotentialOwners(potentialOwners);
-        setElementBPMNData(elementData);
-      } else {
-        setElementBPMNData(undefined);
-        setPotentialOwners([]);
-      }
-
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
       setPreviousVersion(previous);
@@ -211,16 +186,10 @@ export function ElementDetails({
   }, [processId, version, element]);
 
   // console.log(element, instance, version);
-  console.log(instance);
+  // console.log(instance);
   // console.log(element);
-  // console.log(elementBPMNData);
+  // console.log(logInfo);
   // console.log(potentialOwners);
-  // console.log(
-  //   JSON.parse(
-  //     elementBPMNData?.resources.find((e) => e.$type === 'bpmn:PotentialOwner')
-  //       .resourceAssignmentExpression.expression.body || '',
-  //   ),
-  // );
 
   // TECH DETAILS SWITCH
   detailsEntries.push([
@@ -431,7 +400,6 @@ export function ElementDetails({
     }
     // EVENT DATA
   } else {
-    const eventLog = instance?.log.find((e) => e.flowElementId === element.id);
     // GENERAL
     detailsEntries.push([
       <EntryKeyText key="event-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
@@ -440,7 +408,7 @@ export function ElementDetails({
     ]);
     detailsEntries.push([
       <EntryKeyText key="event-stepname-key">Name</EntryKeyText>,
-      <EntryValueText key="event-stepname-val">{elementBPMNData?.name}</EntryValueText>,
+      <EntryValueText key="event-stepname-val">{element.businessObject?.name}</EntryValueText>,
     ]);
     detailsEntries.push([
       <EntryKeyText key="event-steptype-key">Type</EntryKeyText>,
@@ -481,14 +449,10 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Assignet to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {potentialOwners.length == 0 ? undefined : (
+        {logInfo?.performers?.user?.length == 0 ? undefined : (
           <Space>
-            {potentialOwners.map((e) =>
-              !e.isGuest ? (
-                <Tag key={e.id + 'assigned'}>
-                  {e.firstName} {e.lastName}
-                </Tag>
-              ) : undefined,
+            {logInfo?.performers?.user?.map((e) =>
+              !e.isGuest ? <Tag key={e.id + 'assigned'}>{e.fullName}</Tag> : undefined,
             )}
           </Space>
         )}
@@ -498,7 +462,7 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Done Bye</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {eventLog?.actualOwner?.map((e) => <Tag key={e.id + 'doneby'}>{e.fullName}</Tag>)}
+        {logInfo?.actualOwner?.map((e) => <Tag key={e.id + 'doneby'}>{e.fullName}</Tag>)}
       </EntryValueText>,
     ]);
 
@@ -506,13 +470,13 @@ export function ElementDetails({
       detailsEntries.push([
         <TechEntryKey key="event-actualperformername-key">Username</TechEntryKey>,
         <EntryValueText key="event-actualperformername-val">
-          {eventLog?.actualOwner?.map((e) => e.username).toString()}
+          {logInfo?.actualOwner?.map((e) => e.username).toString()}
         </EntryValueText>,
       ]);
       detailsEntries.push([
         <TechEntryKey key="event-actualperformername-key">User ID</TechEntryKey>,
         <EntryValueText key="event-actualperformername-val">
-          {eventLog?.actualOwner?.map((e) => e.id).toString()}
+          {logInfo?.actualOwner?.map((e) => e.id).toString()}
         </EntryValueText>,
       ]);
     }

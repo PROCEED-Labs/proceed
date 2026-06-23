@@ -46,6 +46,7 @@ import {
   checkIfProcessExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
+  getProcessLatestVersion,
 } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
@@ -724,6 +725,18 @@ export const setVersionAsLatest = async (processId: string, versionId: string, s
   if (error) return error;
 
   await selectAsLatestVersion(processId, versionId);
+};
+
+export const getLatestVersion = async (spaceId: string, processId: string) => {
+  try {
+    const error = await checkValidity(processId, 'view', spaceId);
+
+    if (error) return error;
+
+    return await getProcessLatestVersion(processId);
+  } catch (err) {
+    return internalError();
+  }
 };
 
 export const getFavouritesProcessIds = async () => {

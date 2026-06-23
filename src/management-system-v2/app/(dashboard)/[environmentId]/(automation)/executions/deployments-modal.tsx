@@ -30,6 +30,8 @@ import { getAvailableSpaceEngines } from '@/lib/data/engines';
 import { SpaceEngine, isHttpConnection, isMqttConnection } from '@/lib/engines/types';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
+import { asyncFilter } from '@/lib/helpers/javascriptHelpers';
+import { getLatestVersion } from '@/lib/data/processes';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -236,7 +238,14 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder children');
     }
 
-    folderContents = folderContents.filter((c) => c.type === 'folder' || c.versions.length);
+    folderContents = await asyncFilter(folderContents, async (c) => {
+      if (c.type === 'folder') return true;
+
+      const latestVersion = await getLatestVersion(environment.spaceId, c.id);
+      if (isUserErrorResponse(latestVersion)) return false;
+      console.log(latestVersion);
+      return latestVersion.executable;
+    });
 
     if (folder.parentId) {
       setProcesses([

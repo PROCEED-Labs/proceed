@@ -34,10 +34,7 @@ export async function getUserTasks(spaceId: string, ability?: Ability) {
             {
               instance: {
                 deployment: {
-                  AND: [
-                    { version: { process: { environmentId } } },
-                    { removeTime: null, toRemove: false },
-                  ],
+                  AND: [{ version: { process: { environmentId } } }, { removeTime: null }],
                 },
               },
             },

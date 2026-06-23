@@ -187,7 +187,8 @@ export function ElementDetails({
 
   // console.log(element, instance, version);
   // console.log(instance);
-  // console.log(element);
+  // console.log(version);
+  console.log(element.businessObject);
   // console.log(logInfo);
   // console.log(potentialOwners);
 
@@ -227,7 +228,15 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
       <EntryValueText key="instance-processmanager-val">
-        {responsibleParty.map((e) => (!e.isGuest ? e.firstName + ' ' + e.lastName : ''))}
+        <Space>
+          {responsibleParty.map((e) =>
+            !e.isGuest ? (
+              <Tag key={'instance-processmanager-val' + e.id} color={'purple'}>
+                {e.firstName + ' ' + e.lastName}
+              </Tag>
+            ) : undefined,
+          )}
+        </Space>
       </EntryValueText>,
     ]);
     if (techDetails)
@@ -292,7 +301,7 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
       <EntryValueText key="instance-startedby-val">
-        {typeof initiator === 'object' ? initiator.fullName : initiator}
+        <Tag color={'purple'}>{typeof initiator === 'object' ? initiator.fullName : initiator}</Tag>
       </EntryValueText>,
     ]);
     if (typeof initiator === 'object') {
@@ -422,7 +431,14 @@ export function ElementDetails({
     ]);
     detailsEntries.push([
       <EntryKeyText key="event-prevstepid-key">Comes after</EntryKeyText>,
-      <EntryValueText key="event-prevstepid-val">TODO</EntryValueText>,
+      <EntryValueText key="event-prevstepid-val">
+        {element.businessObject.incoming &&
+          element.businessObject.incoming.map((e: any) => (
+            <Tag color={'blue'} key={'previousStep' + e.sourceRef.id}>
+              {e.sourceRef.id}
+            </Tag>
+          ))}
+      </EntryValueText>,
     ]);
     if (techDetails) {
       detailsEntries.push([
@@ -452,7 +468,11 @@ export function ElementDetails({
         {logInfo?.performers?.user?.length == 0 ? undefined : (
           <Space>
             {logInfo?.performers?.user?.map((e) =>
-              !e.isGuest ? <Tag key={e.id + 'assigned'}>{e.fullName}</Tag> : undefined,
+              !e.isGuest ? (
+                <Tag color={'purple'} key={e.id + 'assigned'}>
+                  {e.fullName}
+                </Tag>
+              ) : undefined,
             )}
           </Space>
         )}
@@ -462,7 +482,11 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Done Bye</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {logInfo?.actualOwner?.map((e) => <Tag key={e.id + 'doneby'}>{e.fullName}</Tag>)}
+        {logInfo?.actualOwner?.map((e) => (
+          <Tag color={'purple'} key={e.id + 'doneby'}>
+            {e.fullName}
+          </Tag>
+        ))}
       </EntryValueText>,
     ]);
 

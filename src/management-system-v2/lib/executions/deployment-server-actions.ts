@@ -39,6 +39,8 @@ import { getSharedRefetch } from '../shared-refetch';
 import Ability from '../ability/abilityHelper';
 import { EngineConnection } from '@prisma/client';
 import { revalidateTag } from 'next/cache';
+import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
+import { getDBInstance } from '../data/instance';
 
 export async function deployProcess(
   definitionId: string,
@@ -154,6 +156,19 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
 
     const deployments = await getProcessDeployments(spaceId, definitionId, undefined, true);
     if (isUserErrorResponse(deployments)) return deployments;
+
+    const instanceIds = deployments.flatMap((d) => d.instances);
+
+    const instances = await db.processInstance.findMany({
+      where: { id: { in: instanceIds } },
+      select: { state: true },
+    });
+
+    if (instances.some(({ state }) => isActive(state as InstanceInfo))) {
+      return userError(
+        'This process has active executions. Please stop all active executions or wait for them to be completed before removing the process from the engines.',
+      );
+    }
 
     await asyncForEach(deployments, async (deployment) => {
       try {

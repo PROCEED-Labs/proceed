@@ -185,13 +185,6 @@ export function ElementDetails({
     getBpmnObject();
   }, [processId, version, element]);
 
-  // console.log(element, instance, version);
-  // console.log(instance);
-  // console.log(version);
-  console.log(element.businessObject);
-  // console.log(logInfo);
-  // console.log(potentialOwners);
-
   // TECH DETAILS SWITCH
   detailsEntries.push([
     <TechDetailsSwitch
@@ -426,28 +419,47 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-docu-key">Description</EntryKeyText>,
       <div key="event-docu-val">
-        <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
+        {element.businessObject?.documentation?.[0].text ? (
+          <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
+        ) : (
+          <EntryText />
+        )}
       </div>,
     ]);
     detailsEntries.push([
       <EntryKeyText key="event-prevstepid-key">Comes after</EntryKeyText>,
       <EntryValueText key="event-prevstepid-val">
-        {element.businessObject.incoming &&
-          element.businessObject.incoming.map((e: any) => (
-            <Tag color={'geekblue'} key={'previousStep' + e.sourceRef.id}>
-              {e.sourceRef.id}
-            </Tag>
-          ))}
+        {element.businessObject.incoming && (
+          <Space>
+            {element.businessObject.incoming.map((e: any) => (
+              <Tag color={'geekblue'} key={'previousStep' + e.sourceRef.$type}>
+                {e.sourceRef.$type.split(':')[1]}
+              </Tag>
+            ))}
+          </Space>
+        )}
       </EntryValueText>,
     ]);
     if (techDetails) {
       detailsEntries.push([
         <TechEntryKey key="event-stepid-key">{'Step ID'}</TechEntryKey>,
-        <EntryValueText key="event-stepid-val">{element.id}</EntryValueText>,
+        <EntryValueText key="event-stepid-val">
+          <Tag color={'geekblue'}>{element.id}</Tag>
+        </EntryValueText>,
       ]);
       detailsEntries.push([
         <TechEntryKey key="event-prevstepid-key">{'Previous step ID'}</TechEntryKey>,
-        <EntryValueText key="event-prevstepid-val">{}</EntryValueText>,
+        <EntryValueText key="event-prevstepid-val">
+          {element.businessObject.incoming && (
+            <Space>
+              {element.businessObject.incoming.map((e: any) => (
+                <Tag color={'geekblue'} key={'previousStep' + e.sourceRef.id}>
+                  {e.sourceRef.id}
+                </Tag>
+              ))}
+            </Space>
+          )}
+        </EntryValueText>,
       ]);
     }
 
@@ -465,7 +477,7 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Assigned to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {logInfo?.performers?.user?.length == 0 ? undefined : (
+        {!!logInfo?.performers?.user?.length && (
           <Space>
             {logInfo?.performers?.user?.map((e) =>
               !e.isGuest ? (

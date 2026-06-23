@@ -158,20 +158,14 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
     if (isUserErrorResponse(deployments)) return deployments;
 
     const instanceIds = deployments.flatMap((d) => d.instances);
+    console.log(instanceIds);
 
-    const instances = await asyncMap(instanceIds, async (id) => {
-      const instance = await getDBInstance(spaceId, id, ability);
-      if (isUserErrorResponse(instance)) return instance;
-
-      return instance!.state;
+    const instances = await db.processInstance.findMany({
+      where: { id: { in: instanceIds } },
+      select: { state: true },
     });
 
-    const instanceErrors = instances.filter(isUserErrorResponse);
-    if (instanceErrors.length) {
-      return userError('Unable to check if all executions of this process have finished.');
-    }
-
-    if ((instances as InstanceInfo[]).some(isActive)) {
+    if (instances.some(({ state }) => isActive(state as InstanceInfo))) {
       return userError(
         'This process has active executions. Please stop all active executions or wait for them to be completed before removing the process from the engines.',
       );

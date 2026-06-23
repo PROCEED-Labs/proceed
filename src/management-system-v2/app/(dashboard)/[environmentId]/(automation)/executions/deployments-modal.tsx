@@ -20,7 +20,7 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 import ProcessIconView from './deployment-selection-icon-view';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
@@ -201,8 +201,21 @@ const DeploymentsModal = ({
       ...initialProcesses,
     ];
 
-  const [processes, setProcesses] = useState(initialProcesses);
+  const [processes, setProcesses] = useState<InputItem[]>([]);
   const [folder, setFolder] = useState(initialFolder);
+
+  useEffect(() => {
+    async function init() {
+      const deployable = await asyncFilter(initialProcesses, async (c) => {
+        const latestVersion = await getLatestVersion(environment.spaceId, c.id);
+        if (isUserErrorResponse(latestVersion)) return false;
+        return latestVersion.executable;
+      });
+      setProcesses(deployable);
+    }
+
+    init();
+  }, []);
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -243,7 +256,6 @@ const DeploymentsModal = ({
 
       const latestVersion = await getLatestVersion(environment.spaceId, c.id);
       if (isUserErrorResponse(latestVersion)) return false;
-      console.log(latestVersion);
       return latestVersion.executable;
     });
 

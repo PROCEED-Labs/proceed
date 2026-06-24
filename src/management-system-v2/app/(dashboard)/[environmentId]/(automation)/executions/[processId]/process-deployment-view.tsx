@@ -83,7 +83,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
   // get information where the process is deployed and which instances exist
   const { data: deployments, refetch: refetchDeployments } = useQuery({
     queryFn: async () => {
-      const deployments = await getProcessDeployments(spaceId, processId);
+      const deployments = await getProcessDeployments(spaceId, processId, undefined, true, true);
       if (isUserErrorResponse(deployments)) return null;
       return deployments;
     },
@@ -315,11 +315,20 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                             },
                           ]
                         : []),
-                      ...deployments.map(({ version }) => ({
-                        label: version.name,
-                        key: `${version.id}`,
-                        disabled: false,
-                      })),
+                      ...deployments
+                        .map(({ version }) => ({
+                          label: version.name,
+                          key: `${version.id}`,
+                          disabled: false,
+                        }))
+                        .filter((el, index, arr) => {
+                          // make the entries unique so every version is only displayed once
+                          for (let i = 0; i < index; ++i) {
+                            if (arr[i].key === el.key) return false;
+                          }
+
+                          return true;
+                        }),
                     ],
                     selectable: true,
                     onSelect: ({ key }) => {

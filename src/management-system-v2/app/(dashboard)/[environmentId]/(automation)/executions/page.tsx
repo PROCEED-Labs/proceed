@@ -6,7 +6,13 @@ import { getUsersFavourites } from '@/lib/data/users';
 import { getDeployedProcesses } from '@/lib/data/deployment';
 import { isUserErrorResponse } from '@/lib/user-error';
 
-async function Executions({ environmentId }: { environmentId: string }) {
+async function Executions({
+  environmentId,
+  withArchived,
+}: {
+  environmentId: string;
+  withArchived: boolean;
+}) {
   const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   // TODO: check ability
@@ -21,7 +27,7 @@ async function Executions({ environmentId }: { environmentId: string }) {
       return [folder, folderContents];
     })(),
     (async () => {
-      return getDeployedProcesses(activeEnvironment.spaceId);
+      return getDeployedProcesses(activeEnvironment.spaceId, withArchived);
     })(),
   ]);
 
@@ -33,7 +39,11 @@ async function Executions({ environmentId }: { environmentId: string }) {
     return {
       id: p.id,
       name: p.name,
-      versions: p.versions.map((v) => ({ id: v.id, name: v.name })),
+      versions: p.versions.map((v) => ({
+        id: v.id,
+        name: v.name,
+        deployed: v.deployments.some((d) => !d.removeTime),
+      })),
       instances: p.versions.flatMap((v) =>
         v.deployments.flatMap((d) => d.instances.map((i) => i.id)),
       ),
@@ -52,11 +62,16 @@ async function Executions({ environmentId }: { environmentId: string }) {
 
 export default async function ExecutionsPage(props: {
   params: Promise<{ environmentId: string }>;
+  searchParams: Promise<{ archived: string }>;
 }) {
   const params = await props.params;
+  const searchParams = await props.searchParams;
   return (
     <Content title="Executions">
-      <Executions environmentId={params.environmentId} />
+      <Executions
+        environmentId={params.environmentId}
+        withArchived={searchParams.archived == 'true'}
+      />
     </Content>
   );
 }

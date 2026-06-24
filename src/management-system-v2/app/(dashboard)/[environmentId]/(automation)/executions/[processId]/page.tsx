@@ -7,7 +7,7 @@ import { isUserErrorResponse } from '@/lib/user-error';
 import { getProcessDeployments } from '@/lib/data/deployment';
 
 async function Deployment({ processId, spaceId }: { processId: string; spaceId: string }) {
-  const deployments = await getProcessDeployments(spaceId, processId);
+  const deployments = await getProcessDeployments(spaceId, processId, undefined, true, true);
 
   if (isUserErrorResponse(deployments)) {
     return (

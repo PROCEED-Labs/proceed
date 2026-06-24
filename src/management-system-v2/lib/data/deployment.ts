@@ -17,7 +17,7 @@ export async function getDeployedProcesses(environmentId: string) {
     'use cache';
     cacheLife({ revalidate: 10, expire: 15 });
     cacheTag(`space/${environmentId}/deployments`);
-    const deploymentIsNotDeleted = { AND: [{ removeTime: null }, { toRemove: false }] };
+    const deploymentIsNotDeleted = { removeTime: null };
 
     return await db.process.findMany({
       where: {
@@ -81,7 +81,6 @@ export async function getProcessDeployments(
             },
           },
           { removeTime: null },
-          { toRemove: false },
         ],
       },
       include: {

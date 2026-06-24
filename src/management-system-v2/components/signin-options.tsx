@@ -17,7 +17,7 @@ import {
 
 import { VscOrganization } from 'react-icons/vsc';
 import { MdLogin } from 'react-icons/md';
-import { CgUserAdd } from 'react-icons/cg';
+import { AiOutlineUserAdd } from 'react-icons/ai';
 import { MdEmail } from 'react-icons/md';
 import { FaCircleArrowUp } from 'react-icons/fa6';
 
@@ -273,7 +273,7 @@ export function SigninOptions({
 
   if (passwordSignupProvider && env.PROCEED_PUBLIC_IAM_PERSONAL_SPACES_ACTIVE) {
     tabs.push({
-      icon: <CgUserAdd size={26} />,
+      icon: <AiOutlineUserAdd size={26} />,
       label: 'Register as New User',
       key: 'signup-password',
       children: (

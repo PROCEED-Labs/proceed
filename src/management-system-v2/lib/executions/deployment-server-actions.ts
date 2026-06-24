@@ -40,7 +40,6 @@ import Ability from '../ability/abilityHelper';
 import { EngineConnection } from '@prisma/client';
 import { revalidateTag } from 'next/cache';
 import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
-import { getDBInstance } from '../data/instance';
 
 export async function deployProcess(
   definitionId: string,
@@ -146,12 +145,14 @@ export async function deployProcess(
   }
 }
 
-export async function removeDeployment(definitionId: string, spaceId: string) {
+export async function removeDeployment(definitionId: string, spaceId: string, force = false) {
   try {
-    const { ability } = await getCurrentEnvironment(spaceId);
+    if (!force) {
+      const { ability } = await getCurrentEnvironment(spaceId);
 
-    if (!ability.can('manage', 'Execution')) {
-      return permissionDenied();
+      if (!ability.can('manage', 'Execution')) {
+        return permissionDenied();
+      }
     }
 
     const deployments = await getProcessDeployments(spaceId, definitionId, undefined, true);
@@ -161,10 +162,11 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
 
     const instances = await db.processInstance.findMany({
       where: { id: { in: instanceIds } },
-      select: { state: true },
+      select: { state: true, engines: { select: { id: true } } },
     });
 
-    if (instances.some(({ state }) => isActive(state as InstanceInfo))) {
+    const activeInstances = instances.filter(({ state }) => isActive(state as InstanceInfo));
+    if (!force && activeInstances.length) {
       return userError(
         'This process has active executions. Please stop all active executions or wait for them to be completed before removing the process from the engines.',
       );
@@ -174,7 +176,10 @@ export async function removeDeployment(definitionId: string, spaceId: string) {
       try {
         const { engine } = deployment;
 
-        if (engine.connections.some((c) => c.reachable)) {
+        const activeInstancesOnThisEngine = activeInstances.filter(({ engines }) =>
+          engines.some(({ id }) => deployment.engineId === id),
+        );
+        if (!activeInstancesOnThisEngine.length && engine.connections.some((c) => c.reachable)) {
           // TODO: we might have deployments of multiple versions of the same process to the same
           // engine => we don't need to call this for every version but only once per engine per
           // process
@@ -485,11 +490,20 @@ async function refetchFn() {
       if (!engineDeployments[d.engine.id]) return false;
 
       if (d.toRemove) {
-        // remove the deployment from the engine if it is marked for automatic removal
-        try {
-          await removeDeploymentFromMachines([d.engine], d.version.processId);
-          return true;
-        } catch (err) {}
+        const activeInstances = d.instances.filter((i) => isActive(i.state as InstanceInfo));
+        if (!activeInstances.length) {
+          // remove the deployment from the engine if it is marked for automatic removal and there are
+          // no active instances left
+          try {
+            await removeDeploymentFromMachines([d.engine], d.version.processId);
+            return true;
+          } catch (err) {}
+        } else if (d.active) {
+          // deactivate the deployment to prevent new instances from being started automatically
+          try {
+            await _changeDeploymentActivation(d.engine, d.version.processId, d.version.id, false);
+          } catch (err) {}
+        }
         return false;
       } else {
         // check if deployment information has been unexpectedly lost on the engine

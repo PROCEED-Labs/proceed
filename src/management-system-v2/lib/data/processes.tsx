@@ -79,6 +79,7 @@ import { asyncMap } from '../helpers/javascriptHelpers';
 import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import { InstanceInfo } from '../engines/deployment';
 import { getMSConfig } from '../ms-config/ms-config';
+import { removeDeployment } from '../executions/deployment-server-actions';
 
 // Import necessary functions from processModule
 
@@ -695,10 +696,9 @@ export const createVersion = async (
   const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
-
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
-    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionCreatedOn) : undefined;
+    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionBasedOn) : undefined;
 
   if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
     return versionBasedOn;
@@ -714,6 +714,20 @@ export const createVersion = async (
   );
 
   await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
+
+  if (basedOnBPMN) {
+    const config = await getMSConfig();
+    if (config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+      const basedOnBpmnObj = await toBpmnObject(basedOnBPMN);
+      const prevProcesses = getElementsByTagName(basedOnBpmnObj, 'bpmn:Process');
+      const wasExecutable = !!prevProcesses.length && prevProcesses[0].isExecutable;
+      const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
+      const isExecutable = !!processes.length && processes[0].isExecutable;
+      if (wasExecutable && !isExecutable) {
+        await removeDeployment(processId, spaceId, true);
+      }
+    }
+  }
 
   return versionId;
 };

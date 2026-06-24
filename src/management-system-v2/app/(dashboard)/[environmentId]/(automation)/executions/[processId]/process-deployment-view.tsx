@@ -26,7 +26,7 @@ import { ColorOptions, colorOptions } from './instance-coloring';
 import { RemoveReadOnly, truthyFilter } from '@/lib/typescript-utils';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 import { wrapServerCall } from '@/lib/wrap-server-call';
-import { getLatestDeployment, getVersionInstances, getYoungestInstance } from './instance-helpers';
+import { getLatestVersion, getVersionInstances, getYoungestInstance } from './instance-helpers';
 
 import useColors from './use-colors';
 import useTokens from './use-tokens';
@@ -53,8 +53,8 @@ import { useQuery } from '@tanstack/react-query';
 import { getProcessDeployments } from '@/lib/data/deployment';
 import { isSuccessResponse, isUserErrorResponse, userError } from '@/lib/user-error';
 import { getInstance } from '@/lib/data/instance';
-import { asyncMap, pick } from '@/lib/helpers/javascriptHelpers';
-import { getProcessBPMN } from '@/lib/data/processes';
+import { asyncFilter, asyncMap, pick } from '@/lib/helpers/javascriptHelpers';
+import { getVersions } from '@/lib/data/processes';
 import { enableInstanceCSVExport } from 'FeatureFlags';
 import jsonToCsvExport from 'json-to-csv-export';
 
@@ -79,6 +79,29 @@ export default function ProcessDeploymentView({ processId }: { processId: string
 
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
+
+  const { data: versions } = useQuery({
+    queryFn: async () => {
+      let versions = await getVersions(spaceId, processId);
+      if (isUserErrorResponse(versions)) return [];
+
+      // filter out all versions that are not executable
+      versions = await asyncFilter(versions, async (version) => {
+        const bpmnObj = await toBpmnObject(version.bpmn);
+        const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
+        if (!processes.length) return false;
+        return processes[0].isExecutable;
+      });
+
+      versions.sort((a, b) => {
+        return b.createdOn.getTime() - a.createdOn.getTime();
+      });
+
+      return versions;
+    },
+    queryKey: ['processVersions', spaceId, processId],
+    refetchInterval: 1000,
+  });
 
   // get information where the process is deployed and which instances exist
   const { data: deployments, refetch: refetchDeployments } = useQuery({
@@ -130,8 +153,8 @@ export default function ProcessDeploymentView({ processId }: { processId: string
   const { selectedVersion, versionInstances, currentVersion } = useMemo(() => {
     let selectedVersion, versionInstances, currentVersion;
 
-    if (deployments?.length) {
-      selectedVersion = deployments.find((d) => d.versionId === selectedVersionId)?.version;
+    if (versions?.length) {
+      selectedVersion = versions.find((v) => v.id === selectedVersionId);
 
       // sort instances newest first
       const rawInstances = getVersionInstances(knownInstances, selectedVersionId);
@@ -143,13 +166,13 @@ export default function ProcessDeploymentView({ processId }: { processId: string
         ? versionInstances.find((i) => i.processInstanceId === selectedInstanceId)
         : undefined;
 
-      let currentVersionId = getLatestDeployment(deployments)!.versionId;
+      let currentVersionId = getLatestVersion(versions)!.id;
       if (selectedInstance) {
         currentVersionId = selectedInstance.processVersion;
       } else if (selectedVersionId) {
         currentVersionId = selectedVersionId;
       }
-      currentVersion = deployments.find((d) => d.versionId === currentVersionId)!.version;
+      currentVersion = versions.find((v) => v.id === currentVersionId);
     }
 
     return {
@@ -157,7 +180,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
       versionInstances,
       currentVersion,
     };
-  }, [deployments, knownInstances, selectedVersionId, selectedInstanceId]);
+  }, [versions, knownInstances, selectedVersionId, selectedInstanceId]);
 
   const { data: currentInstance, refetch: refetchCurrentInstance } = useQuery({
     queryKey: ['processDeployments', spaceId, processId, 'instance', selectedInstanceId],
@@ -179,9 +202,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
 
   const { data: selectedBpmn } = useQuery({
     queryFn: async () => {
-      const bpmn = await getProcessBPMN(processId, spaceId, currentVersion?.id);
-      if (isUserErrorResponse(bpmn)) return undefined;
-      return { bpmn };
+      return { bpmn: currentVersion?.bpmn || '' };
     },
     queryKey: ['space', spaceId, 'process', processId, 'version', currentVersion?.id || '', 'bpmn'],
   });
@@ -315,20 +336,11 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                             },
                           ]
                         : []),
-                      ...deployments
-                        .map(({ version }) => ({
-                          label: version.name,
-                          key: `${version.id}`,
-                          disabled: false,
-                        }))
-                        .filter((el, index, arr) => {
-                          // make the entries unique so every version is only displayed once
-                          for (let i = 0; i < index; ++i) {
-                            if (arr[i].key === el.key) return false;
-                          }
-
-                          return true;
-                        }),
+                      ...(versions?.map((v) => ({
+                        key: v.id,
+                        label: v.name,
+                        disabled: false,
+                      })) || []),
                     ],
                     selectable: true,
                     onSelect: ({ key }) => {
@@ -379,14 +391,14 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       setStartingInstance(true);
                       await wrapServerCall({
                         fn: async () => {
-                          const latestDeployment = getLatestDeployment(deployments);
-                          if (!latestDeployment) {
+                          const latestVersion = getLatestVersion(versions || []);
+                          if (!latestVersion) {
                             return userError(
                               'The current process does not seem to be deployed anymore.',
                             );
                           }
 
-                          const { versionId } = latestDeployment;
+                          const { id: versionId } = latestVersion;
 
                           let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
@@ -460,7 +472,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                     onClick={async () => {
                       setTogglingActivation(true);
                       const nextState = !isProcessActivated;
-                      const versionId = getLatestDeployment(deployments)!.versionId;
+                      const versionId = getLatestVersion(versions || [])!.id;
                       await wrapServerCall({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
@@ -650,10 +662,12 @@ export default function ProcessDeploymentView({ processId }: { processId: string
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
               fn: async () => {
-                const deployment = getLatestDeployment(deployments);
+                const version = getLatestVersion(versions || []);
 
-                if (!deployment) {
-                  return userError('The current process does not seem to be deployed.');
+                if (!version) {
+                  return userError(
+                    'The current process does not seem to have versions to execute.',
+                  );
                 }
 
                 const mappedVariables: Record<string, { value: any }> = {};
@@ -663,12 +677,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                   ([key, value]) => (mappedVariables[key] = { value }),
                 );
 
-                return startInstance(
-                  spaceId,
-                  deployment.processId,
-                  deployment.version.id,
-                  mappedVariables,
-                );
+                return startInstance(spaceId, version.processId, version.id, mappedVariables);
               },
               onSuccess: async (instanceId) => {
                 await refetchDeployments();

@@ -58,10 +58,6 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
   const setFullScreen = useModelerStateStore((state) => state.setFullScreen);
   const setIsExecutable = useModelerStateStore((state) => state.setIsExecutable);
 
-  useEffect(() => {
-    setIsExecutable(process.executable || false);
-  }, [process]);
-
   const { isListView, processContextPath } = useProcessView();
 
   /// Derived State
@@ -289,7 +285,14 @@ const Modeler = ({ versionName, process, folder, inEditing, ...divProps }: Model
         );
       }
     }
-  }, [messageApi, subprocessId]);
+
+    if (modeler.current) {
+      const processes = modeler.current
+        .getAllElements()
+        .filter((el) => el.businessObject.$type === 'bpmn:Process');
+      if (processes.length) setIsExecutable(processes[0].businessObject.isExecutable || false);
+    }
+  }, [messageApi, subprocessId, setIsExecutable]);
 
   const onShapeRemove = useCallback<Required<BPMNCanvasProps>['onShapeRemove']>((element) => {
     if (!element.businessObject) return;

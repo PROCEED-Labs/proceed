@@ -149,7 +149,7 @@ const DashboardLayout = async (
     key: 'start',
     label: <Link href={spaceURL(activeEnvironment, `/start`)}>Start</Link>,
     icon: <ProductOutlined />,
-    selectedRegex: '/start($|/)',
+    selectedRegex: '/start($|/|\\?)',
   });
 
   const automationSettings = await getSpaceSettingsValues(
@@ -170,7 +170,7 @@ const DashboardLayout = async (
       msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_TASK_EDITOR_ACTIVE &&
       automationSettings.task_editor?.active !== false
     ) {
-      childRegex = '/tasks($|/)';
+      childRegex = '/tasks($|/|\\?)';
       children.push({
         key: 'task-editor',
         label: <Link href={spaceURL(activeEnvironment, `/tasks`)}>Task Editor</Link>,
@@ -203,7 +203,7 @@ const DashboardLayout = async (
           />
         </Link>
       ),
-      selectedRegex: '/tasklist($|/)',
+      selectedRegex: '/tasklist($|/|\\?)',
       openRegex: childRegex,
       children: children.length ? children : undefined,
     });
@@ -216,13 +216,13 @@ const DashboardLayout = async (
     );
 
     if (documentationSettings.active !== false) {
-      const processRegex = '/processes($|/)';
+      const processRegex = '/processes($|/|\\?)';
       let children: ExtendedMenuItems = [
         documentationSettings.list?.active !== false && {
           key: 'processes-list',
           label: <Link href={spaceURL(activeEnvironment, `/processes/list`)}>Process List</Link>,
           icon: <CopyOutlined />,
-          selectedRegex: '/processes/list($|/)',
+          selectedRegex: '/processes/list($|/|\\?)',
         },
         documentationSettings.editor?.active !== false &&
           ability.can('manage', 'Process') && {
@@ -231,7 +231,7 @@ const DashboardLayout = async (
               <Link href={spaceURL(activeEnvironment, `/processes/editor`)}>Process Editor</Link>
             ),
             icon: <EditOutlined />,
-            selectedRegex: '/processes/editor($|/)',
+            selectedRegex: '/processes/editor($|/|\\?)',
           },
       ].filter(truthyFilter);
 
@@ -257,7 +257,7 @@ const DashboardLayout = async (
         ability.can('view', 'Execution') &&
         automationSettings.dashboard?.active !== false
       ) {
-        const dashboardRegex = '/executions-dashboard($|/)';
+        const dashboardRegex = '/executions-dashboard($|/|\\?)';
         childRegex = !childRegex ? dashboardRegex : `(${childRegex})|(${dashboardRegex})`;
         children.push({
           key: 'dashboard',
@@ -267,7 +267,7 @@ const DashboardLayout = async (
         });
       }
       if (ability.can('view', 'Execution') && automationSettings.executions?.active !== false) {
-        const executionsRegex = '/executions($|/)';
+        const executionsRegex = '/executions($|/|\\?)';
         childRegex = !childRegex ? executionsRegex : `(${childRegex})|(${executionsRegex})`;
         children.push({
           key: 'executions',
@@ -277,7 +277,7 @@ const DashboardLayout = async (
         });
       }
       if (ability.can('view', 'Machine') && automationSettings.machines?.active !== false) {
-        const machinesRegex = '/engines($|/)';
+        const machinesRegex = '/engines($|/|\\?)';
         childRegex = !childRegex ? machinesRegex : `(${childRegex})|(${machinesRegex})`;
         children.push({
           key: 'machines',
@@ -313,7 +313,7 @@ const DashboardLayout = async (
           <ToolOutlined />
         </Link>
       ),
-      selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/)`,
+      selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/|\\?)`,
     });
   }
 
@@ -329,7 +329,7 @@ const DashboardLayout = async (
 
     let childRegex = '';
     if (can('update', 'Environment') || can('delete', 'Environment')) {
-      const settingsRegex = '/settings($|/)';
+      const settingsRegex = '/settings($|/|\\?)';
       childRegex = !childRegex ? settingsRegex : `(${childRegex})|(${settingsRegex})`;
       children.push({
         key: 'organization-settings',
@@ -343,7 +343,7 @@ const DashboardLayout = async (
       activeEnvironment.isOrganization &&
       (can('update', 'Environment') || can('delete', 'Environment'))
     ) {
-      const managementRegex = '/management($|/)';
+      const managementRegex = '/management($|/|\\?)';
       childRegex = !childRegex ? managementRegex : `(${childRegex})|(${managementRegex})`;
       children.push({
         key: 'organization-management',
@@ -354,7 +354,7 @@ const DashboardLayout = async (
     }
 
     // Data view under Organization
-    const dataRegex = `/machine-config/${activeEnvironment.spaceId}($|/)`;
+    const dataRegex = `/machine-config/${activeEnvironment.spaceId}($|/|\\?)`;
     childRegex = !childRegex ? dataRegex : `(${childRegex})|(${dataRegex})`;
     children.push({
       key: 'organization-data',
@@ -368,7 +368,7 @@ const DashboardLayout = async (
     });
 
     if (can('manage', 'User')) {
-      const userRegex = '/iam/users($|/)';
+      const userRegex = '/iam/users($|/|\\?)';
       childRegex = !childRegex ? userRegex : `(${childRegex})|(${userRegex})`;
       children.push({
         key: 'users',
@@ -379,7 +379,7 @@ const DashboardLayout = async (
     }
 
     if (can('admin', 'All')) {
-      const rolesRegex = '/iam/roles($|/)';
+      const rolesRegex = '/iam/roles($|/|\\?)';
       childRegex = !childRegex ? rolesRegex : `(${childRegex})|(${rolesRegex})`;
       children.push({
         key: 'roles',
@@ -400,8 +400,8 @@ const DashboardLayout = async (
   }
 
   if (msConfig.PROCEED_PUBLIC_IAM_ACTIVE) {
-    const profileRegex = '/profile($|/)';
-    const spacesRegex = '/spaces($|/)';
+    const profileRegex = '/profile($|/|\\?)';
+    const spacesRegex = '/spaces($|/|\\?)';
     // Only match if the url contains the source=personal query parameter
     const personalDataRegex = `/machine-config/${userId}\\?source=personal($|&)`;
     const regex = `(${profileRegex})|(${spacesRegex})|(${personalDataRegex})`;
@@ -449,7 +449,7 @@ const DashboardLayout = async (
   }
 
   if (!activeEnvironment.isOrganization) {
-    const settingsRegex = '/settings($|/)';
+    const settingsRegex = '/settings($|/|\\?)';
     // Match only the base path without query parameters, or with query params that don't include source=personal
     const personalHomeDataRegex = `/machine-config/${activeEnvironment.spaceId}(?!\\?source=personal)($|\\?)`;
     const regex = `(${settingsRegex})|(${personalHomeDataRegex})`;

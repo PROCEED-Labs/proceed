@@ -202,16 +202,20 @@ const DeploymentsModal = ({
     ];
 
   const [processes, setProcesses] = useState<InputItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [folder, setFolder] = useState(initialFolder);
 
   useEffect(() => {
     async function init() {
       const deployable = await asyncFilter(initialProcesses, async (c) => {
+        if (c.type === 'folder') return true;
+
         const latestVersion = await getLatestVersion(environment.spaceId, c.id);
         if (isUserErrorResponse(latestVersion)) return false;
         return latestVersion.executable;
       });
       setProcesses(deployable);
+      setLoading(false);
     }
 
     init();
@@ -241,6 +245,7 @@ const DeploymentsModal = ({
   });
 
   const openFolder = async (id: string) => {
+    setLoading(true);
     const folder = await getFolder(environment.spaceId, id);
     if ('error' in folder) {
       throw new Error('Failed to fetch folder');
@@ -277,6 +282,7 @@ const DeploymentsModal = ({
       setProcesses(folderContents);
     }
     setFolder(folder);
+    setLoading(false);
   };
 
   const dropdownItems: MenuProps['items'] = [
@@ -389,6 +395,7 @@ const DeploymentsModal = ({
             <div style={{ width: 'min-content' }}>
               <ProcessDeploymentList
                 data={filteredData}
+                loading={loading}
                 folder={folder}
                 openFolder={(id) => {
                   openFolder(id);

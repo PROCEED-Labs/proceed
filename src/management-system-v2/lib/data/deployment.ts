@@ -135,12 +135,14 @@ export async function addDeployment(
 
   const data = DeploymentInputSchema.parse(input);
 
-  await db.processDeployment.createMany({
+  const res = await db.processDeployment.createManyAndReturn({
     data: data.engineIds.map((engineId) => ({ ...data, engineIds: undefined, engineId })),
   });
 
   revalidateTag(`space/${spaceId}/deployments`, 'max');
   revalidateTag(`deployments/process/${processId}`, 'max');
+
+  return res;
 }
 
 export async function updateDeployment(

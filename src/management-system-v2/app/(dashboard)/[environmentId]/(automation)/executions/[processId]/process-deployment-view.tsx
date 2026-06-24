@@ -391,14 +391,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                       setStartingInstance(true);
                       await wrapServerCall({
                         fn: async () => {
-                          const latestVersion = getLatestVersion(versions || []);
-                          if (!latestVersion) {
-                            return userError(
-                              'The current process does not seem to be deployed anymore.',
-                            );
-                          }
-
-                          const { id: versionId } = latestVersion;
+                          const { id: versionId } = currentVersion!;
 
                           let startForm = await getProcessStartForm(spaceId, processId, versionId);
 
@@ -472,7 +465,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                     onClick={async () => {
                       setTogglingActivation(true);
                       const nextState = !isProcessActivated;
-                      const versionId = getLatestVersion(versions || [])!.id;
+                      const versionId = currentVersion!.id;
                       await wrapServerCall({
                         fn: () =>
                           changeDeploymentActivation(processId, spaceId, versionId, nextState),
@@ -662,9 +655,7 @@ export default function ProcessDeploymentView({ processId }: { processId: string
             // start the instance with the initial variable values from the start form
             await wrapServerCall({
               fn: async () => {
-                const version = getLatestVersion(versions || []);
-
-                if (!version) {
+                if (!currentVersion) {
                   return userError(
                     'The current process does not seem to have versions to execute.',
                   );
@@ -677,7 +668,12 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                   ([key, value]) => (mappedVariables[key] = { value }),
                 );
 
-                return startInstance(spaceId, version.processId, version.id, mappedVariables);
+                return startInstance(
+                  spaceId,
+                  currentVersion.processId,
+                  currentVersion.id,
+                  mappedVariables,
+                );
               },
               onSuccess: async (instanceId) => {
                 await refetchDeployments();

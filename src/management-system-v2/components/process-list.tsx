@@ -561,6 +561,7 @@ type ProcessDeploymentListProps = PropsWithChildren<{
   openFolder: (id: string) => void;
   deploymentButtons: (additionalProps: { process: ProcessListProcess }) => ReactElement;
   isReadOnly: boolean;
+  loading?: boolean;
 }>;
 
 const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
@@ -569,6 +570,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
   openFolder,
   deploymentButtons,
   isReadOnly,
+  loading = false,
 }) => {
   const breakpoint = Grid.useBreakpoint();
 
@@ -576,6 +578,7 @@ const ProcessDeploymentList: FC<ProcessDeploymentListProps> = ({
     <BaseProcessList
       data={data}
       folder={folder}
+      tableProps={{ loading }}
       columnCustomRenderer={{
         ['Favorites']: (id) => {
           return id !== folder.parentId ? (

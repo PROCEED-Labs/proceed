@@ -361,7 +361,7 @@ export async function saveSpaceLogo(
 
   if (!status) {
     await deleteFile(filePath);
-    throw new Error('Failed to save organization logo');
+    throw new Error('Failed to save space logo');
   }
 
   await db.space.update({

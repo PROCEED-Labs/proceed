@@ -172,7 +172,7 @@ export async function deleteEnvironment(environmentId: string, ability?: Ability
 
   if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE && environment.isOrganization) {
     throw new Error(
-      'Organizations cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
+      'Spaces cannot be deleted when PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is true',
     );
   }
 
@@ -206,7 +206,7 @@ export async function updateOrganization(
   )
     throw new UnauthorizedError();
 
-  if (!environment.isOrganization) throw new Error('Environment is not an organization');
+  if (!environment.isOrganization) throw new Error('Environment is not an space');
 
   const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
   const newEnvironmentData: Environment = { ...environment, ...update } as Environment;

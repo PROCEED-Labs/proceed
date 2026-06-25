@@ -47,7 +47,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
           if ('error' in result) throw result.error.message;
 
           message.open({
-            content: 'Organization updated',
+            content: 'Space updated',
             type: 'success',
           });
           router.refresh();
@@ -88,7 +88,7 @@ const Wrapper: React.FC<WrapperProps> = ({ group }) => {
           inputElement = (
             <Space orientation="vertical" id={id}>
               <Alert
-                title="All processes inside this organization will be lost. This action cannot be undone."
+                title="All processes inside this space will be lost. This action cannot be undone."
                 type="error"
                 showIcon
               />

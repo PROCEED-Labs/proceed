@@ -20,7 +20,7 @@ async function deleteUsers(userIds: string[]) {
     }
   } catch (e) {
     if (e instanceof UserHasToDeleteOrganizationsError)
-      return userError("User is admin of organizations that don't have other admins.");
+      return userError("User is admin of spacess that don't have other admins.");
     return userError('Something went wrong on our side');
   }
 }

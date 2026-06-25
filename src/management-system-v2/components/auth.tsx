@@ -110,7 +110,7 @@ export const getCurrentEnvironment = cache(
 
       if (userOrgs.length === 0) {
         if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
-          throw new UserUIError('You are not part of an organization.');
+          throw new UserUIError('You are not part of a space.');
         } else {
           return redirect(`/create-organization`);
         }

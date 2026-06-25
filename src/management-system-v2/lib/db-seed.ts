@@ -100,7 +100,7 @@ function verifySeed(seed: DBSeed) {
   if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     if (seed?.organizations.length !== 1) {
       console.error(
-        'When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active you have to define exactly one organization in the seed file.',
+        'When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active you have to define exactly one space in the seed file.',
       );
       process.exit(1);
     }
@@ -145,7 +145,7 @@ function verifySeed(seed: DBSeed) {
 
     for (const admin of organization.admins) {
       if (!memberUsernames.has(admin))
-        throw new Error(`Admin ${admin} is not a member of the organization ${organization.name}`);
+        throw new Error(`Admin ${admin} is not a member of the space ${organization.name}`);
     }
 
     if (organization.roles) {
@@ -153,7 +153,7 @@ function verifySeed(seed: DBSeed) {
         for (const member of role.members) {
           if (!memberUsernames.has(member))
             throw new Error(
-              `Role ${role.name}: ${member} is not a member of the organization ${organization.name}`,
+              `Role ${role.name}: ${member} is not a member of the space ${organization.name}`,
             );
         }
       }

@@ -68,11 +68,11 @@ export default function UserTable({
       )}
       columns={[
         {
-          title: 'Organizations',
+          title: 'Spaces',
           dataIndex: 'orgs',
           render: (orgs: number, user) => (
             <Tooltip
-              title={`This user is a member of ${orgs} organization${orgs === 1 ? '' : 's'}`}
+              title={`This user is a member of ${orgs} space${orgs === 1 ? '' : 's'}`}
             >
               <Link href={`/admin/spaces/${user.id}`}>
                 <GoOrganization /> {orgs}

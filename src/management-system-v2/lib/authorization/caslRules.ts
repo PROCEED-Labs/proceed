@@ -39,7 +39,7 @@ function rulesForAuthenticatedUsers(userId: string): AbilityRule[] {
           id: { $eq: userId },
         },
       },
-      reason: 'Users can leave organizations',
+      reason: 'Users can leave spaces',
     },
   ];
 }

@@ -2,7 +2,7 @@ import { PropsWithChildren } from 'react';
 import { getCurrentEnvironment, getCurrentUser, getSystemAdminRules } from '@/components/auth';
 import { SetAbility } from '@/lib/abilityStore';
 import Layout, { ExtendedMenuItems } from './layout-client';
-import { getUserOrganizationEnvironments } from '@/lib/data/db/iam/memberships';
+import { getUserOrganizationEnvironments, isMember } from '@/lib/data/db/iam/memberships';
 import { MenuProps } from 'antd';
 
 import {
@@ -49,6 +49,7 @@ import { env } from '@/lib/ms-config/env-vars';
 import { getUserPassword } from '@/lib/data/db/iam/users';
 import ActiveTasksBadge from '@/components/active-tasks-badge';
 import { syncOrganizationUsers } from '@/lib/data/db/machine-config';
+import { redirect } from 'next/navigation';
 
 const DashboardLayout = async (
   props: PropsWithChildren<{ params: Promise<{ environmentId: string }> }>,
@@ -58,6 +59,14 @@ const DashboardLayout = async (
   const { children } = props;
 
   const { session, userId, systemAdmin, user } = await getCurrentUser();
+
+  let spaceId = decodeURIComponent(params.environmentId);
+  if (spaceId === 'my') spaceId = userId;
+  const isMemberInSpace = await isMember(spaceId, userId);
+
+  if (!isMemberInSpace) {
+    return redirect('/start');
+  }
 
   const { activeEnvironment, ability } = await getCurrentEnvironment(params.environmentId);
   const can = ability.can.bind(ability);

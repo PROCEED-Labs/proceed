@@ -9,6 +9,7 @@ import { ElementActivity } from './element-activity';
 import { ElementOverview } from './element-overview';
 import { StatusTag } from './status-tag';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
+import { InstanceSelector } from './instance-selector';
 
 export function DisplayTable({ data }: { data: ReactNode[][] }) {
   // TODO: make this responsive
@@ -183,8 +184,14 @@ export default function InstanceInfoPanel({
       ref={resizableElementRef}
     >
       <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
-        <StatusTag processId={processId} element={element} instance={instance} />
-        {tabs}
+        {instance ? (
+          <>
+            <StatusTag processId={processId} element={element} instance={instance} />
+            {tabs}
+          </>
+        ) : (
+          <InstanceSelector />
+        )}
       </CollapsibleCard>
     </ResizableElement>
   ) : (

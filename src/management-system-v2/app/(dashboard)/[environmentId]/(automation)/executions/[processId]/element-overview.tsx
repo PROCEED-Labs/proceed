@@ -11,7 +11,6 @@ import {
   Space,
   Typography,
 } from 'antd';
-import { InstanceSelector } from './instance-selector';
 import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
 import { getPlanDelays, getTimeInfo, getTiming, statusToType } from './instance-helpers';
@@ -87,8 +86,6 @@ export function ElementOverview({
     downloadFile();
     getBpmnObject();
   }, [processId, version, element, download]);
-
-  if (!instance) return <InstanceSelector />;
 
   const overviewEntries: ReactNode[][] = [];
   const metaData = getMetaDataFromElement(element.businessObject);

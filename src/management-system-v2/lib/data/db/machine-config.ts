@@ -4929,7 +4929,7 @@ export async function syncSpaceConfigs() {
       {
         ...defaultOrganizationConfigurationTemplate(
           newSpace.id,
-          newSpace.name || 'Organizational Config',
+          newSpace.name || 'Spatial Config',
         ),
       },
       newSpace.id,

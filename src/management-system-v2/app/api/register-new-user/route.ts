@@ -6,7 +6,7 @@ import {
 import db from '@/lib/data/db';
 import { addUser, setUserPassword } from '@/lib/data/db/iam/users';
 import { getTokenHash, notExpired } from '@/lib/email-verification-tokens/utils';
-import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 // TODO: maybe add PRETTIER error handling
 
@@ -65,12 +65,13 @@ export const GET = async (req: Request) => {
 
     // NOTE: if the id of the email provider is changed, it also has to be changed in the
     // signinUrl
-    const nextAuthEmailRedirect = new URL('/api/auth/callback/email', env.NEXTAUTH_URL!);
+    const config = await getMSConfig();
+    const nextAuthEmailRedirect = new URL('/api/auth/callback/email', config.NEXTAUTH_URL!);
     nextAuthEmailRedirect.searchParams.set('token', token);
     nextAuthEmailRedirect.searchParams.set('email', identifier);
     nextAuthEmailRedirect.searchParams.set(
       'callbackUrl',
-      searchParams.get('callbackUrl') ?? env.NEXTAUTH_URL!,
+      searchParams.get('callbackUrl') ?? config.NEXTAUTH_URL!,
     );
 
     redirectUrl = nextAuthEmailRedirect.toString();

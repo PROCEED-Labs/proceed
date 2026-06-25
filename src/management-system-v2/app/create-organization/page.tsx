@@ -6,7 +6,6 @@ import { addEnvironment } from '@/lib/data/db/iam/environments';
 import { getErrorMessage, userError } from '@/lib/user-error';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { notFound } from 'next/navigation';
-import { env } from '@/lib/ms-config/env-vars';
 
 async function createInactiveEnvironment(data: UserOrganizationEnvironmentInput) {
   'use server';
@@ -26,9 +25,10 @@ export type createInactiveEnvironment = typeof createInactiveEnvironment;
 const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
+  const config = await getMSConfig();
   if (
-    !env.PROCEED_PUBLIC_IAM_ACTIVE ||
-    (await getMSConfig()).PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE
+    !config.PROCEED_PUBLIC_IAM_ACTIVE ||
+    config.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE
   ) {
     return notFound();
   }

@@ -4927,10 +4927,7 @@ export async function syncSpaceConfigs() {
   for (const newSpace of spacesToAdd) {
     const ret = await addParentConfig(
       {
-        ...defaultOrganizationConfigurationTemplate(
-          newSpace.id,
-          newSpace.name || 'Spatial Config',
-        ),
+        ...defaultOrganizationConfigurationTemplate(newSpace.id, newSpace.name || 'Spatial Config'),
       },
       newSpace.id,
     );

@@ -26,10 +26,8 @@ export type createInactiveEnvironment = typeof createInactiveEnvironment;
 const unallowedProviders = ['guest-signin', 'development-users'];
 
 const Page = async () => {
-  if (
-    !env.PROCEED_PUBLIC_IAM_ACTIVE ||
-    (await getMSConfig()).PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE
-  ) {
+  const config = await getMSConfig();
+  if (!env.PROCEED_PUBLIC_IAM_ACTIVE || config.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     return notFound();
   }
 

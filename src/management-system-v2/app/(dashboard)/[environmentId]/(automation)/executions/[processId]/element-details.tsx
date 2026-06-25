@@ -1,21 +1,9 @@
 import { ReactNode, useEffect, useState } from 'react';
-import {
-  Alert,
-  Checkbox,
-  Collapse,
-  Divider,
-  Progress,
-  ProgressProps,
-  Space,
-  Switch,
-  Tag,
-  Typography,
-} from 'antd';
-import { getTiming, statusToType } from './instance-helpers';
+import { Checkbox, Divider, Space, Switch, Tag, Typography } from 'antd';
+import { getTiming } from './instance-helpers';
 import {
   getDefinitionsInfos,
   getDefinitionsVersionInformation,
-  getElementById,
   getMetaDataFromElement,
   toBpmnObject,
 } from '@proceed/bpmn-helper';

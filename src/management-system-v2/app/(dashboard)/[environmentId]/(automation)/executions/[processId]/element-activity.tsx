@@ -1,26 +1,7 @@
 import { ReactNode } from 'react';
-import {
-  Alert,
-  Button,
-  Checkbox,
-  Col,
-  Image,
-  Progress,
-  ProgressProps,
-  Row,
-  Space,
-  Tag,
-  Typography,
-} from 'antd';
+import { Col, Row, Tag, Typography } from 'antd';
 import { ClockCircleFilled } from '@ant-design/icons';
-import { getPlanDelays, getTimeInfo, statusToType } from './instance-helpers';
-import { getMetaDataFromElement } from '@proceed/bpmn-helper';
-import { DisplayTable } from './instance-info-panel';
-import endpointBuilder from '@/lib/engines/endpoints/endpoint-builder';
-import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-activity.module.scss';
-import { InstanceSelector } from './instance-selector';
-import { EntryText } from './entry-text';
 import { ElementLike } from 'diagram-js/lib/model/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
@@ -48,7 +29,6 @@ export function ElementActivity({
   element?: ElementLike;
   instance?: ExtendedInstanceInfo;
 }) {
-  if (!instance) return <InstanceSelector />;
   const activityEntries: ReactNode[][] = [];
 
   const activityLog: [string, 'INFO' | 'WARN', string][] = [

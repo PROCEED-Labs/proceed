@@ -3,7 +3,6 @@ import {
   Col,
   Divider,
   Image,
-  Menu,
   message,
   Progress,
   ProgressProps,
@@ -12,8 +11,7 @@ import {
   Typography,
 } from 'antd';
 import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
-import ImageSelectionSection from '../../../processes/[mode]/[processId]/image-selection-section';
-import { getPlanDelays, getTimeInfo, getTiming, statusToType } from './instance-helpers';
+import { getTiming, statusToType } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
 import { EntryText } from './entry-text';

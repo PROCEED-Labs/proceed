@@ -13,8 +13,8 @@ import {
 } from '@/lib/data/db/machine-config';
 import ParentConfigList from './parent-config-list';
 import { Config } from '@/lib/data/machine-config-schema';
-import { env } from '@/lib/ms-config/env-vars';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 export type ListItem = Config;
 
 const MachineConfigPage = async ({
@@ -22,12 +22,13 @@ const MachineConfigPage = async ({
 }: {
   params: Promise<{ environmentId: string; folderId?: string }>;
 }) => {
-  const { environmentId } = await params;
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
-
-  if (!env.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE) {
+  const config = await getMSConfig();
+  if (!config.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE) {
     return notFound();
   }
+
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
 

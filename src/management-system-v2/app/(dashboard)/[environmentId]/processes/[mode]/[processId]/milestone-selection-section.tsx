@@ -239,17 +239,23 @@ const MilestoneSelection: React.FC<MilestoneSelectionProperties> = ({
                 key: 'edit',
                 render: (_, record) => (
                   <Space size="small">
-                    <EditOutlined
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      disabled={readOnly}
                       onClick={() => {
                         openMilestoneModal(record);
                       }}
-                      disabled={readOnly}
                     />
-                    <DeleteOutlined
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<DeleteOutlined />}
+                      disabled={readOnly}
                       onClick={() => {
                         removeMilestone(record.id);
                       }}
-                      disabled={readOnly}
                     />
                   </Space>
                 ),

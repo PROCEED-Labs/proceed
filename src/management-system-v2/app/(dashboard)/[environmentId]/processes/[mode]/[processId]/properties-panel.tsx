@@ -581,39 +581,31 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
 
   const resizableElementRef = useRef<ResizableElementRefType>(null);
   return breakpoint.xl ? (
-    <ResizableElement
-      initialWidth={400}
-      minWidth={300}
-      maxWidth={'30vw'}
-      style={{
-        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
-        height: 'calc(100vh - 150px)',
-      }}
-      ref={resizableElementRef}
-    >
-      <CollapsibleCard
-        className={styles.PropertiesPanelCollapsibleCard}
-        show={showInfo}
-        onCollapse={() => {
-          //  set width of parent component (resizable element) to 40 which is the desired with of the collapsed card
-          if (resizableElementRef.current) {
-            if (showInfo) {
-              resizableElementRef.current({ width: 40, minWidth: 40, maxWidth: 40 });
-            } else {
-              resizableElementRef.current({ width: 400, minWidth: 300, maxWidth: '30vw' });
-            }
-          }
-          setShowInfo(!showInfo);
+    <div className={readOnly ? styles.ReadOnly : undefined}>
+      <ResizableElement
+        initialWidth={400}
+        minWidth={300}
+        maxWidth={'30vw'}
+        style={{
+          // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
+          height: 'calc(100vh - 150px)',
         }}
-        title="Properties"
-        collapsedWidth="40px"
+        ref={resizableElementRef}
       >
-        <PropertiesPanelContent
-          selectedElement={selectedElement}
-          readOnly={readOnly}
-        ></PropertiesPanelContent>
-      </CollapsibleCard>
-    </ResizableElement>
+        <CollapsibleCard
+          className={styles.PropertiesPanelCollapsibleCard}
+          show={showInfo}
+          onCollapse={close}
+          title="Properties"
+          collapsedWidth="40px"
+        >
+          <PropertiesPanelContent
+            selectedElement={selectedElement}
+            readOnly={readOnly}
+          ></PropertiesPanelContent>
+        </CollapsibleCard>
+      </ResizableElement>
+    </div>
   ) : (
     <Modal
       open={isOpen}
@@ -634,10 +626,12 @@ const PropertiesPanel: React.FC<PropertiesPanelProperties> = ({
         </div>
       }
     >
-      <PropertiesPanelContent
-        selectedElement={selectedElement}
-        readOnly={readOnly}
-      ></PropertiesPanelContent>
+      <div className={readOnly ? styles.ReadOnly : undefined}>
+        <PropertiesPanelContent
+          selectedElement={selectedElement}
+          readOnly={readOnly}
+        ></PropertiesPanelContent>
+      </div>
     </Modal>
   );
 };

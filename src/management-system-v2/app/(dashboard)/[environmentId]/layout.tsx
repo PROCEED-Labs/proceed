@@ -7,7 +7,6 @@ import { MenuProps } from 'antd';
 
 import {
   PartitionOutlined,
-  TeamOutlined,
   UserOutlined,
   BarChartOutlined,
   EditOutlined,
@@ -22,10 +21,13 @@ import {
   AppstoreOutlined,
   ProductOutlined,
   FormOutlined,
-  ToolOutlined,
   DatabaseOutlined,
+  ApiOutlined,
+  BookOutlined,
+  IdcardOutlined,
+  ContactsOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons';
-import { TbUser, TbUserEdit } from 'react-icons/tb';
 
 import Link from 'next/link';
 import { getEnvironmentById, getSpaceLogo } from '@/lib/data/db/iam/environments';
@@ -38,7 +40,6 @@ import { getSpaceSettingsValues } from '@/lib/data/db/space-settings';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import GuestWarningButton from '@/components/guest-warning-button';
 import SpaceLink from '@/components/space-link';
-import { GoOrganization } from 'react-icons/go';
 import { LinkOutlined } from '@ant-design/icons';
 import { CustomLinkStateProvider } from '@/lib/custom-links/client-state';
 import { CustomLink } from '@/lib/custom-links/state';
@@ -310,7 +311,7 @@ const DashboardLayout = async (
       ),
       icon: (
         <Link href={spaceURL(activeEnvironment, `/machine-config`)}>
-          <ToolOutlined />
+          <ApiOutlined />
         </Link>
       ),
       selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/)`,
@@ -348,7 +349,7 @@ const DashboardLayout = async (
       children.push({
         key: 'organization-management',
         label: <Link href={spaceURL(activeEnvironment, `/management`)}>Management</Link>,
-        icon: <GoOrganization />,
+        icon: <BookOutlined />,
         selectedRegex: managementRegex,
       });
     }
@@ -384,7 +385,7 @@ const DashboardLayout = async (
       children.push({
         key: 'roles',
         label: <Link href={spaceURL(activeEnvironment, `/iam/roles`)}>Roles</Link>,
-        icon: <TeamOutlined />,
+        icon: <ContactsOutlined />,
         selectedRegex: rolesRegex,
       });
     }
@@ -392,7 +393,7 @@ const DashboardLayout = async (
     layoutMenuItems.push({
       key: 'iam-group',
       label: 'Organization',
-      icon: <HomeOutlined />,
+      icon: <ApartmentOutlined />,
       selectedRegex: childRegex,
       openRegex: childRegex,
       children,
@@ -408,7 +409,7 @@ const DashboardLayout = async (
     layoutMenuItems.push({
       key: 'iam-personal',
       label: 'Personal',
-      icon: <TbUser />,
+      icon: <UserOutlined />,
       selectedRegex: regex,
       openRegex: regex,
       children: [
@@ -419,7 +420,7 @@ const DashboardLayout = async (
           ) : (
             <SpaceLink href="/profile">My Profile</SpaceLink>
           ),
-          icon: <TbUserEdit />,
+          icon: <IdcardOutlined />,
           selectedRegex: profileRegex,
         },
         {

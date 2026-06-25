@@ -37,6 +37,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
       fn: () => updateRole(environment.spaceId, role.id, values),
       onSuccess: () => {
         router.refresh();
+        router.push(`/${environment.spaceId}/iam/roles`);
         app.message.open({ type: 'success', content: 'Role updated' });
       },
       app,
@@ -105,7 +106,14 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
       </Form.Item>
 
       <Flex justify="end" gap={5}>
-        <Button onClick={() => form.resetFields()}>Cancel</Button>
+        <Button
+          onClick={() => {
+            form.resetFields();
+            router.push(`/${environment.spaceId}/iam/roles`);
+          }}
+        >
+          Cancel
+        </Button>
         <Form.Item>
           <FormSubmitButton submitText="Save" isValidData={(values) => !!parseInput(values)} />
         </Form.Item>

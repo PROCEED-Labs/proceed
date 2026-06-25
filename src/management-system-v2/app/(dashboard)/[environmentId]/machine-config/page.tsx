@@ -22,12 +22,12 @@ const MachineConfigPage = async ({
 }: {
   params: Promise<{ environmentId: string; folderId?: string }>;
 }) => {
+  const { environmentId } = await params;
+  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
+
   if (!env.PROCEED_PUBLIC_CONFIG_SERVER_ACTIVE) {
     return notFound();
   }
-  const { environmentId } = await params;
-
-  const { ability, activeEnvironment } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', 'MachineConfig')) return <UnauthorizedFallback />;
 

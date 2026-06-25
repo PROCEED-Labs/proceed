@@ -392,7 +392,7 @@ const DashboardLayout = async (
 
     layoutMenuItems.push({
       key: 'iam-group',
-      label: 'Organization',
+      label: 'Space',
       icon: <ApartmentOutlined />,
       selectedRegex: childRegex,
       openRegex: childRegex,

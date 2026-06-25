@@ -220,8 +220,8 @@ const CreateOrganizationPage = ({
                     Easy process modeling
                   </Typography.Title>
                   <Typography.Paragraph style={{ textAlign: 'center' }}>
-                    Spaces allow you to manage your processes and collaborate with your team
-                    in one place.
+                    Spaces allow you to manage your processes and collaborate with your team in one
+                    place.
                   </Typography.Paragraph>
                 </div>
               </div>

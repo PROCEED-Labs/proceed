@@ -75,10 +75,7 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)
-      return userError(
-        "You're not allowed to delete this space",
-        UserErrorType.PermissionError,
-      );
+      return userError("You're not allowed to delete this space", UserErrorType.PermissionError);
 
     console.error(e);
     return userError('Error deleting environment');
@@ -94,8 +91,7 @@ export async function updateOrganization(
 
     return _updateOrganization(environmentId, data, ability);
   } catch (e) {
-    if (e instanceof UnauthorizedError)
-      return userError("You're not allowed to update this space");
+    if (e instanceof UnauthorizedError) return userError("You're not allowed to update this space");
 
     return userError('Error updating space');
   }

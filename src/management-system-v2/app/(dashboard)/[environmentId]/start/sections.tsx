@@ -221,7 +221,7 @@ export const UserSection: React.FC<{ tiles: ReactNode[] }> = ({ tiles }) => {
 export const UserSpaceSection: React.FC<{ tiles: ReactNode[] }> = ({ tiles }) => {
   return (
     <Section
-      title="Home"
+      title="Space"
       description={
         <p>
           Adjust the visual settings of your space <br></br>

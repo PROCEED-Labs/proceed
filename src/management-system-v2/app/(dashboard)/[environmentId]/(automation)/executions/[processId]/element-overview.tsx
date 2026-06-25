@@ -10,7 +10,12 @@ import {
   Space,
   Typography,
 } from 'antd';
-import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
+import {
+  getDefinitionsInfos,
+  getDefinitionsVersionInformation,
+  getMetaDataFromElement,
+  toBpmnObject,
+} from '@proceed/bpmn-helper';
 import { getTiming, statusToType } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overwiew.module.scss';
@@ -37,6 +42,7 @@ export function ElementOverview({
   instance?: ExtendedInstanceInfo;
 }) {
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
+
   const [fileUrl, setFileUrl] = useState<string | undefined>();
   const { download } = useFileManager({
     entityType: EntityType.PROCESS,
@@ -171,137 +177,15 @@ export function ElementOverview({
         <TextViewer initialValue={element.businessObject?.documentation?.[0]?.text} />
       </div>,
     ]);
-
-    // time info
-    const {
-      actual: { start: startDate, duration },
-      plan: { duration: plannedDuration },
-    } = getTiming({
-      isRootElement,
-      metaData,
-      token,
-      logInfo,
-      instance,
-    });
-    // Timing
-    overviewEntries.push([
-      <div
-        style={{
-          border: '1.5px solid #ddd',
-          borderRadius: 12,
-          overflow: 'hidden',
-        }}
-        key="instance-timing"
-      >
-        <div className={styles.GridContainer}>
-          <div className={styles.GridCell}>
-            <EntryText>Started</EntryText>
-            <br />
-            <EntryText>{generateDateString(startDate, true)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Running for</EntryText>
-            <br />
-            <EntryText>{generateDurationString(duration)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Planned</EntryText>
-            <br />
-            <EntryText>{generateDurationString(plannedDuration)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Started by</EntryText>
-            <br />
-            <EntryText>{typeof initiator === 'object' ? initiator.fullName : initiator}</EntryText>
-          </div>
-        </div>
-      </div>,
-    ]);
-
-    // Budget
-    overviewEntries.push([
-      <EntryText
-        key="instance-budgettitle"
-        style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}
-      >
-        BUDGET
-      </EntryText>,
-    ]);
-
-    const costsPlanned = metaData.costsPlanned
-      ? generateNumberString(metaData.costsPlanned.value, {
-          style: 'currency',
-          currency: metaData.costsPlanned.unit,
-        }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
-      : undefined;
-    overviewEntries.push([
-      <Space
-        key="instance-budget"
-        orientation="vertical"
-        style={{
-          width: '100%',
-          padding: 12,
-          border: 'solid',
-          borderRadius: 12,
-          borderWidth: 1.5,
-          borderColor: '#ddd',
-          backgroundColor: '#eee',
-        }}
-      >
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Planned
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
-          </Col>
-        </Row>
-        <Divider style={{ margin: 0 }} />
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Calculated
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            {/* TODO: */}
-            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
-          </Col>
-        </Row>
-        <Divider style={{ margin: 0 }} />
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Actual
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            {/* TODO: */}
-            <EntryText style={{ fontWeight: 1000 }}>{costsPlanned}</EntryText>
-            <Typography.Text
-              style={{
-                fontWeight: 1000,
-                color: 'rgb(62, 147, 222)',
-                marginLeft: 10,
-                fontSize: '.8em',
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              Override
-            </Typography.Text>
-          </Col>
-        </Row>
-      </Space>,
-    ]);
   } else {
     // Name and Shortname
     overviewEntries.push([
       <div key="instance-names" style={{ margin: 0, padding: 0 }}>
         <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>
-          TODO - here userTask
+          {definitionsInfos?.name}
         </EntryText>
         <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
-          TODO - This is a user task
+          {definitionsInfos?.userDefinedId}
         </Typography.Title>
       </div>,
     ]);
@@ -362,112 +246,104 @@ export function ElementOverview({
         ]);
       }
     }
-    // time info
-    const {
-      actual: { start: startDate, duration },
-      plan: { duration: plannedDuration },
-    } = getTiming({
-      isRootElement,
-      metaData,
-      token,
-      logInfo,
-      instance,
-    });
-    // Timing
-    overviewEntries.push([
-      <div
-        style={{
-          border: '1.5px solid #ddd',
-          borderRadius: 12,
-          overflow: 'hidden',
-        }}
-        key="instance-timing"
-      >
-        <div className={styles.GridContainer}>
-          <div className={styles.GridCell}>
-            <EntryText>Started</EntryText>
-            <br />
-            <EntryText>{generateDateString(startDate, true)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Running for</EntryText>
-            <br />
-            <EntryText>{generateDurationString(duration)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Planned</EntryText>
-            <br />
-            <EntryText>{generateDurationString(plannedDuration)}</EntryText>
-          </div>
-
-          <div className={styles.GridCell}>
-            <EntryText>Started by</EntryText>
-            <br />
-            <EntryText>{typeof initiator === 'object' ? initiator.fullName : initiator}</EntryText>
-          </div>
+  }
+  // time info
+  const {
+    actual: { start: startDate, duration },
+    plan: { duration: plannedDuration },
+  } = getTiming({
+    isRootElement,
+    metaData,
+    token,
+    logInfo,
+    instance,
+  });
+  // Timing
+  overviewEntries.push([
+    <div
+      style={{
+        border: '1.5px solid #ddd',
+        borderRadius: 12,
+        overflow: 'hidden',
+      }}
+      key="instance-timing"
+    >
+      <div className={styles.GridContainer}>
+        <div className={styles.GridCell}>
+          <EntryText>Started</EntryText>
+          <br />
+          <EntryText>{generateDateString(startDate, true)}</EntryText>
         </div>
-      </div>,
-    ]);
 
-    // Budget
-    overviewEntries.push([
-      <EntryText
-        key="instance-budgettitle"
-        style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}
-      >
-        BUDGET
-      </EntryText>,
-    ]);
+        <div className={styles.GridCell}>
+          <EntryText>Running for</EntryText>
+          <br />
+          <EntryText>{generateDurationString(duration)}</EntryText>
+        </div>
 
-    const costsPlanned = metaData.costsPlanned
-      ? generateNumberString(metaData.costsPlanned.value, {
-          style: 'currency',
-          currency: metaData.costsPlanned.unit,
-        }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
-      : undefined;
-    overviewEntries.push([
-      <Space
-        key="instance-budget"
-        orientation="vertical"
-        style={{
-          width: '100%',
-          padding: 12,
-          border: 'solid',
-          borderRadius: 12,
-          borderWidth: 1.5,
-          borderColor: '#ddd',
-          backgroundColor: '#eee',
-        }}
-      >
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Planned
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
-          </Col>
-        </Row>
-        <Divider style={{ margin: 0 }} />
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Calculated
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            {/* TODO: */}
-            <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
-          </Col>
-        </Row>
-        <Divider style={{ margin: 0 }} />
-        <Row style={{ margin: 0 }}>
-          <Col span={12} className={styles.ListTitle}>
-            Actual
-          </Col>
-          <Col span={12} className={styles.ListValue}>
-            {/* TODO: */}
-            <EntryText style={{ fontWeight: 1000 }}>{costsPlanned}</EntryText>
-            <Typography.Text
+        <div className={styles.GridCell}>
+          <EntryText>Planned</EntryText>
+          <br />
+          <EntryText>{generateDurationString(plannedDuration)}</EntryText>
+        </div>
+
+        <div className={styles.GridCell}>
+          <EntryText>Started by</EntryText>
+          <br />
+          <EntryText>{typeof initiator === 'object' ? initiator.fullName : initiator}</EntryText>
+        </div>
+      </div>
+    </div>,
+  ]);
+
+  // Budget
+  overviewEntries.push([
+    <EntryText
+      key="instance-budgettitle"
+      style={{ fontWeight: '600', fontSize: '.9em', color: 'gray' }}
+    >
+      BUDGET
+    </EntryText>,
+  ]);
+
+  const costsPlanned = metaData.costsPlanned
+    ? generateNumberString(metaData.costsPlanned.value, {
+        style: 'currency',
+        currency: metaData.costsPlanned.unit,
+      }) || metaData.costsPlanned.value + ' ' + metaData.costsPlanned.unit
+    : undefined;
+  overviewEntries.push([
+    <Space
+      key="instance-budget"
+      orientation="vertical"
+      style={{
+        width: '100%',
+        padding: 12,
+        border: 'solid',
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: '#ddd',
+        backgroundColor: '#eee',
+      }}
+    >
+      <Row style={{ margin: 0 }}>
+        <Col span={12} className={styles.ListTitle}>
+          Planned
+        </Col>
+        <Col span={12} className={styles.ListValue}>
+          <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
+        </Col>
+      </Row>
+      {/* TODO add calculated */}
+      <Divider style={{ margin: 0 }} />
+      <Row style={{ margin: 0 }}>
+        <Col span={12} className={styles.ListTitle}>
+          Actual
+        </Col>
+        <Col span={12} className={styles.ListValue}>
+          {/* TODO: add override */}
+          <EntryText style={{ fontWeight: 1000 }}>{costsPlanned}</EntryText>
+          {/* <Typography.Text
               style={{
                 fontWeight: 1000,
                 color: 'rgb(62, 147, 222)',
@@ -478,12 +354,22 @@ export function ElementOverview({
               }}
             >
               Override
-            </Typography.Text>
-          </Col>
-        </Row>
-      </Space>,
-    ]);
-  }
+            </Typography.Text> */}
+        </Col>
+      </Row>
+    </Space>,
+  ]);
+  // ELEMENTS FOR CALCULATED VALUE
+  // <Divider style={{ margin: 0 }} />
+  // <Row style={{ margin: 0 }}>
+  //   <Col span={12} className={styles.ListTitle}>
+  //     Calculated
+  //   </Col>
+  //   <Col span={12} className={styles.ListValue}>
+  //     {/* TODO: */}
+  //     <EntryText style={{ fontSize: '.9em' }}>{costsPlanned}</EntryText>
+  //   </Col>
+  // </Row>
 
   return <DataGrid data={overviewEntries} />;
 }

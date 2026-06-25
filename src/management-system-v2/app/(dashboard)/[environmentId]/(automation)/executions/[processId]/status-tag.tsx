@@ -23,14 +23,16 @@ export const StatusTag = ({
   // Element status
   const isRootElement = element && element.type === 'bpmn:Process';
   let status = undefined;
-  if (isRootElement &&instance) {
-    status =instance.instanceState[0];
-  } else if (element &&instance) {
-    const elementInfo =instance.log.find((l) => l.flowElementId ==element.id);
+  if (isRootElement && instance) {
+    status = instance.instanceState.reduce((overallState, state) => {
+      return ['ENDED', 'STOPPED'].includes(overallState) ? state : overallState;
+    });
+  } else if (element && instance) {
+    const elementInfo = instance.log.find((l) => l.flowElementId == element.id);
     if (elementInfo) {
       status = elementInfo.executionState;
     } else {
-      const tokenInfo =instance.tokens.find((l) => l.currentFlowElementId ==element.id);
+      const tokenInfo = instance.tokens.find((l) => l.currentFlowElementId == element.id);
       status = tokenInfo ? tokenInfo.currentFlowNodeState : 'WAITING';
     }
   }

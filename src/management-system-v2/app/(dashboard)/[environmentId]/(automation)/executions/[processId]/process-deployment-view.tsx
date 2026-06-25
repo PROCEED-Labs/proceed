@@ -274,13 +274,18 @@ export default function ProcessDeploymentView({ processId }: { processId: string
             <ToolbarGroup>
               <Select
                 value={currentInstance?.processInstanceId}
+                loading={!!selectedInstanceId && !currentInstance}
                 variant="borderless"
                 onSelect={(value) => setSelectedInstanceId(value)}
                 options={versionInstances?.map((instance, idx) => ({
                   value: instance.processInstanceId,
                   label: `${idx + 1}. Instance: ${new Date(instance.globalStartTime).toLocaleString()}`,
                 }))}
-                placeholder="Select an instance"
+                placeholder={
+                  !!selectedInstanceId && !currentInstance
+                    ? 'Fetching Instance Data'
+                    : 'Select an instance'
+                }
               />
 
               {currentInstance?.offline && (
@@ -408,16 +413,14 @@ export default function ProcessDeploymentView({ processId }: { processId: string
 
                             setStartForm(startForm);
                           } else {
-                            return startInstance(spaceId, processId, versionId);
+                            return startInstance(spaceId, processId, versionId, undefined, true);
                           }
                         },
                         onSuccess: async (instanceId) => {
                           if (instanceId) {
                             await refetchDeployments();
-                            setTimeout(async () => {
-                              await refetchInstances();
-                              setSelectedInstanceId(instanceId);
-                            }, 1000);
+                            await refetchInstances();
+                            setSelectedInstanceId(instanceId);
                           }
                         },
                       });
@@ -659,10 +662,12 @@ export default function ProcessDeploymentView({ processId }: { processId: string
                   deployment.processId,
                   deployment.version.id,
                   mappedVariables,
+                  true,
                 );
               },
               onSuccess: async (instanceId) => {
                 await refetchDeployments();
+                await refetchInstances();
                 setSelectedInstanceId(instanceId);
                 setStartForm('');
               },

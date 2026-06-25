@@ -353,35 +353,6 @@ export async function getInstances(spaceId: string, ability: Ability) {
   return instances.map(({ id }) => id);
 }
 
-export async function addInstance(
-  spaceId: string,
-  instance: InstanceInput,
-  skipAbilityCheck = false,
-) {
-  if (!skipAbilityCheck) {
-    const { ability } = await getCurrentEnvironment(spaceId);
-
-    if (!ability.can('create', 'Execution'))
-      return userError('Invalid Permissions', UserErrorType.PermissionError);
-  }
-
-  const data = InstanceInputSchema.parse(instance);
-
-  const res = await db.processInstance.create({
-    data: {
-      ...data,
-      engines: {
-        connect: data.engines.map((id) => ({ id })),
-      },
-    },
-  });
-
-  revalidateTag(`space/${spaceId}/instances`, 'max');
-  revalidateTag(`deployments/process/${instance.state.processId}`, 'max');
-
-  return res;
-}
-
 export async function updateInstance(
   spaceId: string,
   instanceId: string,

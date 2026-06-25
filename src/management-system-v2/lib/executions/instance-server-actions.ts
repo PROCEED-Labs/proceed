@@ -1,5 +1,7 @@
 'use server';
 
+import db from '@/lib/data/db';
+
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
@@ -25,7 +27,7 @@ import {
 } from '@/lib/engines/instances';
 import { Engine } from '../engines/types';
 import { getProcessDeployments } from '../data/deployment';
-import { addInstance, getDBInstance, getInstance, updateInstance } from '@/lib/data/instance';
+import { getDBInstance, getInstance, updateInstance } from '@/lib/data/instance';
 import { getProcessBPMN, getProcessHtmlFormHTML } from '@/lib/data/processes';
 import {
   getDefinitionsInfos,
@@ -37,6 +39,7 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { getProcessVersion } from '../data/db/process';
 import Ability from '../ability/abilityHelper';
+import { revalidateTag, updateTag } from 'next/cache';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -60,6 +63,9 @@ export async function startInstance(
   definitionId: string,
   versionId: string,
   variables: { [key: string]: any } = {},
+  // defines if the request was made in the context of a browser session
+  // this allows us to use "updateTag" to instantly invalidate the cached instance data
+  isBrowserRequest = false,
   ability?: Ability,
   userId?: string,
 ) {
@@ -91,17 +97,26 @@ export async function startInstance(
 
       if (isUserErrorResponse(result)) continue;
 
-      await addInstance(
-        spaceId,
-        {
+      await db.processInstance.create({
+        data: {
           id: result.processInstanceId,
           deploymentId: deployment.id,
-          engines: [engine.id],
           initiatorId: userId,
           state: result,
+          logs: [],
+          engines: {
+            connect: { id: engine.id },
+          },
         },
-        true,
-      );
+      });
+
+      if (isBrowserRequest) {
+        updateTag(`space/${spaceId}/instances`);
+        updateTag(`deployments/process/${definitionId}`);
+      } else {
+        revalidateTag(`space/${spaceId}/instances`, 'max');
+        revalidateTag(`deployments/process/${definitionId}`, 'max');
+      }
 
       return result.processInstanceId;
     }

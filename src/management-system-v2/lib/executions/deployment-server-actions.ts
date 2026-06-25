@@ -31,14 +31,14 @@ import {
   InstanceInfo,
 } from '../engines/deployment';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { addDeployment, getProcessDeployments, updateDeployment } from '../data/deployment';
+import { getProcessDeployments } from '../data/deployment';
 import { getMSConfig } from '../ms-config/ms-config';
 import { updateTaskInfo } from '../tasks/server-actions';
 import { engineRequest } from '../engines/endpoints';
 import { getSharedRefetch } from '../shared-refetch';
 import Ability from '../ability/abilityHelper';
 import { EngineConnection } from '@prisma/client';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, updateTag } from 'next/cache';
 import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 
 export async function deployProcess(
@@ -47,6 +47,9 @@ export async function deployProcess(
   spaceId: string,
   method: 'static' | 'dynamic' = 'dynamic',
   _forceEngine?: SpaceEngine | 'PROCEED',
+  // defines if the request was made in the context of a browser session
+  // this allows us to use "updateTag" to instantly invalidate the cached deployment data
+  isBrowserRequest = false,
   ability?: Ability,
   userId?: string,
 ) {
@@ -112,25 +115,41 @@ export async function deployProcess(
       ability,
     );
 
-    await addDeployment(
-      spaceId,
-      definitionId,
-      {
+    await db.processDeployment.createMany({
+      data: deployedTo.map((engine) => ({
         versionId,
-        deployerId: userId,
+        deployerId: userId!,
         deployTime: new Date(),
-        engineIds: deployedTo.map((engine) => engine.id),
+        engineId: engine.id,
         active: true,
-      },
-      ability,
-    );
+      })),
+    });
+
+    if (isBrowserRequest) {
+      updateTag(`space/${spaceId}/deployments`);
+      updateTag(`deployments/process/${definitionId}`);
+    } else {
+      revalidateTag(`space/${spaceId}/deployments`, 'max');
+      revalidateTag(`deployments/process/${definitionId}`, 'max');
+    }
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
     await Promise.allSettled(
       alreadyDeployed.map(async (deployment) => {
         if (deployment.active && !deployedTo.some((e) => e.id === deployment.engineId)) {
-          await updateDeployment(spaceId, definitionId, deployment.id, { active: false }, ability);
+          await db.processDeployment.update({
+            where: { id: deployment.id },
+            data: { active: false },
+          });
+
+          if (isBrowserRequest) {
+            updateTag(`space/${spaceId}/deployments`);
+            updateTag(`deployments/process/${definitionId}`);
+          } else {
+            revalidateTag(`space/${spaceId}/deployments`, 'max');
+            revalidateTag(`deployments/process/${definitionId}`, 'max');
+          }
 
           const engine = allEngines.find((e) => e.id === deployment.engineId);
           if (engine) {
@@ -184,19 +203,32 @@ export async function removeDeployment(definitionId: string, spaceId: string, fo
           // engine => we don't need to call this for every version but only once per engine per
           // process
           await removeDeploymentFromMachines([engine], deployment.processId);
-          await updateDeployment(spaceId, definitionId, deployment.id, {
-            removeTime: new Date(),
-            active: false,
+          await db.processDeployment.update({
+            where: { id: deployment.id },
+            data: {
+              removeTime: new Date(),
+              active: false,
+            },
           });
+
+          updateTag(`space/${spaceId}/deployments`);
+          updateTag(`deployments/process/${definitionId}`);
+
           return;
         }
       } catch (err) {}
 
       // if removing the deployment is currently not possible mark it for automatic removal
-      await updateDeployment(spaceId, definitionId, deployment.id, {
-        toRemove: true,
-        active: false,
+      await db.processDeployment.update({
+        where: { id: deployment.id },
+        data: {
+          toRemove: true,
+          active: false,
+        },
       });
+
+      updateTag(`space/${spaceId}/deployments`);
+      updateTag(`deployments/process/${definitionId}`);
     });
   } catch (e) {
     const message = getErrorMessage(e);
@@ -241,7 +273,16 @@ export async function changeDeploymentActivation(
           try {
             // activate the process on a single machine so we do not spawn new instances on multiple machines at once
             await _changeDeploymentActivation(engine, definitionId, version, true);
-            await updateDeployment(spaceId, definitionId, deployment.id, { active: true });
+            await db.processDeployment.update({
+              where: { id: deployment.id },
+              data: {
+                active: false,
+              },
+            });
+
+            updateTag(`space/${spaceId}/deployments`);
+            updateTag(`deployments/process/${definitionId}`);
+
             activated = true;
             break;
           } catch (err) {}
@@ -257,7 +298,15 @@ export async function changeDeploymentActivation(
 
     const res = await asyncMap(deploymentsToChange, async (d) => {
       // mark the deployment as inactive locally
-      await updateDeployment(spaceId, definitionId, d.id, { active: false });
+      await db.processDeployment.update({
+        where: { id: d.id },
+        data: {
+          active: false,
+        },
+      });
+
+      updateTag(`space/${spaceId}/deployments`);
+      updateTag(`deployments/process/${definitionId}`);
 
       try {
         // if deactivating the deployment fails the refetch loop should deactivate it due to the

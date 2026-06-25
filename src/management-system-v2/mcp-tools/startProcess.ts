@@ -76,6 +76,7 @@ export default async function startProcess({
       environmentId,
       'dynamic',
       undefined,
+      false,
       ability,
       userId,
     );

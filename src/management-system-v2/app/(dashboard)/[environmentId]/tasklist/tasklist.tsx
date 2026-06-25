@@ -57,7 +57,7 @@ const Tasklist: React.FC<TasklistProps> = ({ userId, pollingInterval }) => {
 
   const space = useEnvironment();
 
-  const { userTasks } = useUserTasks(space, pollingInterval, {
+  const { userTasks, refetch } = useUserTasks(space, pollingInterval, {
     hideNonOwnableTasks: true,
     hideUnassignedTasks: false,
   });
@@ -291,7 +291,7 @@ const Tasklist: React.FC<TasklistProps> = ({ userId, pollingInterval }) => {
         )}
       </div>
       {(selectedUserTaskID ?? breakpoint.xl) && (
-        <UserTaskView userId={userId} task={selectedUserTask} />
+        <UserTaskView userId={userId} task={selectedUserTask} refetch={refetch} />
       )}
     </div>
   );

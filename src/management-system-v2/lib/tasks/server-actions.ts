@@ -34,7 +34,7 @@ import { getProcessBPMN, getProcessHtmlFormHTML } from '../data/processes';
 import { saveInstanceArtifact } from '../data/file-manager-facade';
 import { getDBInstance } from '@/lib/data/instance';
 import Ability from '../ability/abilityHelper';
-import { revalidateTag } from 'next/cache';
+import { revalidateTag, updateTag } from 'next/cache';
 
 export async function getGlobalVariablesForHTML(
   spaceId: string,
@@ -255,6 +255,9 @@ export async function completeTasklistEntry(
   spaceId: string,
   userTaskId: string,
   variables: { [key: string]: any },
+  // defines if the request was made in the context of a browser session
+  // this allows us to use "updateTag" to instantly invalidate the cached instance data
+  isBrowserRequest = false,
 ) {
   try {
     const storedUserTask = await getUserTaskById(userTaskId);
@@ -292,11 +295,24 @@ export async function completeTasklistEntry(
       await completeTasklistEntryOnMachine(engine, instanceId, taskId, variables);
     }
 
-    await updateUserTask(spaceId, userTaskId, {
-      variableChanges: { ...variableChanges, ...variables },
-      state: 'COMPLETED',
-      endTime: !storedUserTask.instanceID ? new Date() : undefined,
+    await db.userTask.update({
+      where: {
+        id: userTaskId,
+      },
+      data: {
+        variableChanges: { ...variableChanges, ...variables },
+        state: 'COMPLETED',
+        endTime: !storedUserTask.instanceID ? new Date() : undefined,
+      },
     });
+
+    if (isBrowserRequest) {
+      updateTag(`userTask/${userTaskId}`);
+      updateTag(`space/${spaceId}/tasks`);
+    } else {
+      revalidateTag(`userTask/${userTaskId}`, 'max');
+      revalidateTag(`space/${spaceId}/tasks`, 'max');
+    }
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

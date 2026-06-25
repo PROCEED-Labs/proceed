@@ -74,12 +74,15 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
                 post: async (path: string, body: { [key: string]: any }) => {
                   if (path === '/tasklist/api/userTask') {
                     setIsSubmitting(true);
-                    await onSubmit?.(body);
-                    // in case of the start form the modal takes a moment to close
-                    // this delay ensures that the overlay is not removed before the modal has
-                    // closed
-                    await new Promise((res) => setTimeout(res, 1000));
-                    setIsSubmitting(false);
+                    try {
+                      await onSubmit?.(body);
+                      // in case of the start form the modal takes a moment to close
+                      // this delay ensures that the overlay is not removed before the modal has
+                      // closed
+                      await new Promise((res) => setTimeout(res, 1000));
+                    } finally {
+                      setIsSubmitting(false);
+                    }
                   }
                 },
                 put: async (path: string, body: { [key: string]: any }) => {
@@ -89,8 +92,12 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
                 submit: async (path: string, body: File) => {
                   if (path === '/tasklist/api/variable-file') {
                     setIsSubmitting(true);
-                    const res = await onFileSubmit?.(body);
-                    setIsSubmitting(false);
+                    let res;
+                    try {
+                      res = await onFileSubmit?.(body);
+                    } finally {
+                      setIsSubmitting(false);
+                    }
                     return res;
                   }
                 },

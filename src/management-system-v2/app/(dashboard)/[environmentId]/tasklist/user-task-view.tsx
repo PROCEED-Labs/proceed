@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import cn from 'classnames';
@@ -11,7 +11,7 @@ import { useEnvironment } from '@/components/auth-can';
 
 import styles from './user-task-view.module.scss';
 
-import { App, Skeleton } from 'antd';
+import { App, Skeleton, Spin } from 'antd';
 import { ExtendedTaskListEntry } from '@/lib/user-task-schema';
 import {
   addOwnerToTaskListEntry,
@@ -41,11 +41,14 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
   onFileSubmit,
   onSubmit,
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   return (
     <div
       className={cn(styles.TaskView, {
         [styles.Completed]: isCompleted,
         [styles.Paused]: isPaused,
+        [styles.Submitting]: isSubmitting,
       })}
     >
       {html && (
@@ -59,7 +62,7 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
 
               // block the user from interacting with paused or completed user tasks while allowing scrolling of
               // the form itself
-              if (isCompleted || isPaused) {
+              if (isSubmitting || isCompleted || isPaused) {
                 Array.from(iframe.contentWindow.document.body.getElementsByTagName('form')).forEach(
                   (form) => {
                     form.style.pointerEvents = 'none';
@@ -69,7 +72,15 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
 
               (iframe.contentWindow as any).PROCEED_DATA = {
                 post: async (path: string, body: { [key: string]: any }) => {
-                  if (path === '/tasklist/api/userTask') await onSubmit?.(body);
+                  if (path === '/tasklist/api/userTask') {
+                    setIsSubmitting(true);
+                    await onSubmit?.(body);
+                    // in case of the start form the modal takes a moment to close
+                    // this delay ensures that the overlay is not removed before the modal has
+                    // closed
+                    await new Promise((res) => setTimeout(res, 1000));
+                    setIsSubmitting(false);
+                  }
                 },
                 put: async (path: string, body: { [key: string]: any }) => {
                   if (path === '/tasklist/api/milestone') await onMilestoneUpdate?.(body);
@@ -77,16 +88,25 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
                 },
                 submit: async (path: string, body: File) => {
                   if (path === '/tasklist/api/variable-file') {
-                    return await onFileSubmit?.(body);
+                    setIsSubmitting(true);
+                    const res = await onFileSubmit?.(body);
+                    setIsSubmitting(false);
+                    return res;
                   }
                 },
               };
             }}
           />
-          {(isCompleted || isPaused) && (
+          {(isSubmitting || isCompleted || isPaused) && (
             <div className={styles.overlay}>
-              {isCompleted && <h1>This task is completed!</h1>}
-              {isPaused && <h1>This task is paused!</h1>}
+              {isSubmitting && (
+                <>
+                  <h1>Submitting</h1>
+                  <Spin size="large" />
+                </>
+              )}
+              {!isSubmitting && isCompleted && <h1>This task is completed!</h1>}
+              {!isSubmitting && isPaused && <h1>This task is paused!</h1>}
             </div>
           )}
         </>

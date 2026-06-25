@@ -108,6 +108,7 @@ const ProcessesPage = async (props: {
             allProcesses={allProcessesRecursive}
             isRootFolder={isRootFolder}
             spaceId={activeEnvironment.spaceId}
+            isListView={isListView}
           />
           {/* Processes List */}
           <div style={{ flex: 1, overflow: 'auto', width: '100%', minHeight: 0 }}>

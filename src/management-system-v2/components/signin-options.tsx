@@ -83,34 +83,36 @@ const CredentialsSignIn = ({
       return [
         { required: true, message: 'First name is required.' },
         {
-          validator: (_: any, value: string) =>
-            !value || (value.trim().length >= 2 && !/\d/.test(value))
-              ? Promise.resolve()
-              : Promise.reject('Min. 2 characters, no numbers allowed.'),
+          validator: async (_: any, value: string) => {
+            if (value && !(value.trim().length >= 2 && !/\d/.test(value)))
+              throw new Error('Min. 2 characters, no numbers allowed.');
+          },
         },
       ];
     if (key === 'lastName')
       return [
         { required: true, message: 'Last name is required.' },
         {
-          validator: (_: any, value: string) =>
-            !value || (value.trim().length >= 2 && !/\d/.test(value))
-              ? Promise.resolve()
-              : Promise.reject('Min. 2 characters, no numbers allowed.'),
+          validator: async (_: any, value: string) => {
+            if (value && !(value.trim().length >= 2 && !/\d/.test(value)))
+              throw new Error('Min. 2 characters, no numbers allowed.');
+          },
         },
       ];
     if (key === 'username')
-      return isSignup
-        ? [
-            { required: true, message: 'Username is required.' },
-            {
-              validator: (_: any, value: string) =>
-                !value || /^[a-zA-Z0-9_]{2,}$/.test(value.trim())
-                  ? Promise.resolve()
-                  : Promise.reject('Min. 2 characters, letters, numbers and underscores only.'),
-            },
-          ]
-        : [{ required: true, message: 'Username is required.' }];
+      return [
+        { required: true, message: 'Username is required.' },
+        ...(isSignup
+          ? [
+              {
+                validator: async (_: any, value: string) => {
+                  if (value && !/^[a-zA-Z0-9_]{2,}$/.test(value.trim()))
+                    throw new Error('Min. 2 characters, letters, numbers and underscores only.');
+                },
+              },
+            ]
+          : []),
+      ];
     if (key === 'password')
       return [
         { required: true, message: 'Password is required.' },

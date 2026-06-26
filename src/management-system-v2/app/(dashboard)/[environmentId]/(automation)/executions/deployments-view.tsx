@@ -1,6 +1,6 @@
 'use client';
 
-import { App, Button, Checkbox, Tooltip, Typography } from 'antd';
+import { App, Button, Checkbox, Space, Spin, Tooltip, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useCallback, useEffect, useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
@@ -53,6 +53,7 @@ const DeploymentsView = ({
     transformData: (matches) => matches.map((match) => match.item),
   });
 
+  const [togglingShowArchived, startTogglingShowArchived] = useTransition();
   const query = useSearchParams();
   // Get a new searchParams string by merging the current
   // searchParams with a provided key/value pair
@@ -145,7 +146,8 @@ const DeploymentsView = ({
     setInitialLoading(false);
   }, []);
 
-  const loading = initialLoading || checkingProcessVersion || removingDeployment;
+  const loading =
+    initialLoading || checkingProcessVersion || removingDeployment || togglingShowArchived;
 
   const tableProps: { loading: boolean; pagination?: false } = { loading };
 
@@ -171,21 +173,28 @@ const DeploymentsView = ({
           Deploy Process
         </Button>
 
-        <Checkbox
-          checked={query.get('archived') == 'true'}
-          onChange={(el) =>
-            router.push(
-              pathname + '?' + createQueryString('archived', el.target.checked ? 'true' : ''),
-            )
-          }
-        >
+        <Space>
+          {togglingShowArchived ? (
+            <Spin size="small" />
+          ) : (
+            <Checkbox
+              checked={query.get('archived') == 'true'}
+              onChange={(el) =>
+                startTogglingShowArchived(() => {
+                  router.push(
+                    pathname + '?' + createQueryString('archived', el.target.checked ? 'true' : ''),
+                  );
+                })
+              }
+            />
+          )}
           <Typography.Text>
             Show Past Executions{' '}
             <Tooltip title="This option displays all processes that have already been executed in the past, even if a process has already been deleted from the Management System.">
               <QuestionCircleOutlined />
             </Tooltip>
           </Typography.Text>
-        </Checkbox>
+        </Space>
       </div>
 
       <Bar

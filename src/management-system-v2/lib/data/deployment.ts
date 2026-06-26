@@ -40,9 +40,11 @@ export async function getDeployedProcesses(environmentId: string, withArchived =
 
   deployedProcesses = deployedProcesses
     .filter((p) => {
-      if (withArchived) return true;
+      if (withArchived) {
+        return p.versions.some((v) => !!v.deployments.length);
+      }
 
-      return p.versions.some((v) => v.deployments.some((d) => !d.removeTime));
+      return p.versions.some((v) => v.deployments.filter((d) => !d.removeTime).length);
     })
     .map((p) => {
       return {

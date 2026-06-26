@@ -11,7 +11,7 @@ import processListStyles from '@/components/process-icon-list.module.scss';
 type InputItem = {
   id: string;
   name: string;
-  versions: { id: string; name: string }[];
+  versions: { id: string; name: string; deployed: boolean }[];
   instances: string[];
 };
 export type DeployedProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name'>;
@@ -95,9 +95,13 @@ const DeploymentsList = ({
       dataIndex: 'id',
       key: 'Meta Data Button',
       title: '',
-      render: () => {
+      render: (_, record) => {
         return (
-          <Button style={{ float: 'right' }} type="text">
+          <Button
+            style={{ float: 'right' }}
+            type="text"
+            disabled={record.versions.every((v) => !v.deployed)}
+          >
             <DeleteOutlined color="red" />
           </Button>
         );
@@ -138,6 +142,7 @@ const DeploymentsList = ({
                   style={{ float: 'right' }}
                   type="text"
                   onClick={() => removeDeployment(record.id)}
+                  disabled={record.versions.every((v) => !v.deployed)}
                 >
                   <DeleteOutlined color="red" />
                 </Button>

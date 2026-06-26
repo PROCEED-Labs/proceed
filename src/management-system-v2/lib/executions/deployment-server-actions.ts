@@ -112,7 +112,7 @@ export async function deployProcess(
       ability,
     );
 
-    await addDeployment(
+    const newDeployments = await addDeployment(
       spaceId,
       definitionId,
       {
@@ -124,6 +124,8 @@ export async function deployProcess(
       },
       ability,
     );
+
+    if (isUserErrorResponse(newDeployments)) return newDeployments;
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
@@ -139,6 +141,11 @@ export async function deployProcess(
         }
       }),
     );
+
+    return newDeployments.map((d) => ({
+      ...d,
+      engine: deployedTo.find((e) => e.id === d.engineId)!,
+    }));
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

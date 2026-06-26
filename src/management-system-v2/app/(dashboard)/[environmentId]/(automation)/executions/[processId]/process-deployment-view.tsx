@@ -80,6 +80,8 @@ export default function ProcessDeploymentView({ processId }: { processId: string
   const canvasRef = useRef<BPMNCanvasRef>(null);
   const [infoPanelOpen, setInfoPanelOpen] = useState(false);
 
+  const isExecutableVersionMap = useRef<Record<string, boolean>>({});
+
   const { data: versions } = useQuery({
     queryFn: async () => {
       let versions = await getVersions(spaceId, processId);
@@ -87,9 +89,14 @@ export default function ProcessDeploymentView({ processId }: { processId: string
 
       // filter out all versions that are not executable
       versions = await asyncFilter(versions, async (version) => {
+        if (version.id in isExecutableVersionMap.current) {
+          return isExecutableVersionMap.current[version.id];
+        }
+
         const bpmnObj = await toBpmnObject(version.bpmn);
         const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
         if (!processes.length) return false;
+        isExecutableVersionMap.current[version.id] = processes[0].isExecutable;
         return processes[0].isExecutable;
       });
 

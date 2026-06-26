@@ -135,28 +135,28 @@ const ProcessAnalyticsCards = ({
 
     const processesInFolderCount = processesInFolder.length;
 
-    const releasedInFolder = processesInFolder.filter(
+    // In list view, only use released processes for analytics
+    const processesForAnalytics = isListView
+      ? processesInFolder.filter((p) => p.versions && p.versions.length > 0)
+      : processesInFolder;
+
+    const releasedInFolder = processesForAnalytics.filter(
       (p) => p.versions && p.versions.length > 0,
     ).length;
 
     const draftsInFolder = isListView ? 0 : processesInFolderCount - releasedInFolder;
 
-    // for list view, only count from released processes
-    const executableInFolder = processesInFolder
-      .filter((p) => (isListView ? p.versions && p.versions.length > 0 : true))
-      .filter((p) => p.executable).length;
+    const executableInFolder = processesForAnalytics.filter((p) => p.executable).length;
 
-    // for list view
-    const sharedInFolder = processesInFolder
-      .filter((p) => (isListView ? p.versions && p.versions.length > 0 : true))
-      .filter((p) => p.shareTimestamp && p.shareTimestamp > 0).length;
+    const sharedInFolder = processesForAnalytics.filter(
+      (p) => p.shareTimestamp && p.shareTimestamp > 0,
+    ).length;
 
-    // for list view
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentlyEditedInFolder = processesInFolder
-      .filter((p) => (isListView ? p.versions && p.versions.length > 0 : true))
-      .filter((p) => p.lastEditedOn && new Date(p.lastEditedOn) > sevenDaysAgo).length;
+    const recentlyEditedInFolder = processesForAnalytics.filter(
+      (p) => p.lastEditedOn && new Date(p.lastEditedOn) > sevenDaysAgo,
+    ).length;
 
     return {
       processesInFolder: processesInFolderCount,
@@ -169,7 +169,7 @@ const ProcessAnalyticsCards = ({
       totalFolders: allFoldersGlobal.length,
       foldersInCurrentLevel: foldersInCurrent.length,
     };
-  }, [unversionedCount, processesInFolder, allProcesses, folderContents]);
+  }, [unversionedCount, processesInFolder, allProcesses, folderContents, isListView]);
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 350;
@@ -226,9 +226,9 @@ const ProcessAnalyticsCards = ({
           successPercent={
             isListView
               ? undefined
-              : analytics.processesInFolder > 0
-                ? (analytics.releasedInFolder / analytics.processesInFolder) * 100
-                : 0
+              : (analytics.processesInFolder &&
+                  (analytics.releasedInFolder / analytics.processesInFolder) * 100) ||
+                0
           }
           legend={
             isListView

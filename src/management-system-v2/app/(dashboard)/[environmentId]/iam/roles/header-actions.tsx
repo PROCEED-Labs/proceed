@@ -75,7 +75,7 @@ const CreateRoleModal: FC<{
         <Form.Item
           label={
             <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              Organisation Role Type
+              Space Role Type
               <Tooltip
                 title={
                   <>
@@ -94,7 +94,7 @@ const CreateRoleModal: FC<{
           <Select
             mode="multiple"
             allowClear
-            placeholder="Select organisation role type (optional)"
+            placeholder="Select Space role type (optional)"
             options={[
               { label: 'Team', value: 'team' },
               { label: 'Back Office', value: 'back-office' },

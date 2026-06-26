@@ -142,7 +142,7 @@ export class UserHasToDeleteOrganizationsError extends Error {
   conflictingOrgs: string[];
 
   constructor(conflictingOrgs: string[], message?: string) {
-    super(message ?? 'User has to delete organizations before being deleted');
+    super(message ?? 'User has to delete Spaces before being deleted');
     this.name = 'UserHasToDeleteOrganizationsError';
     this.conflictingOrgs = conflictingOrgs;
   }

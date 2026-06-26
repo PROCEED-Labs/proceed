@@ -808,7 +808,7 @@ const AasConfigEditor: React.FC<MachineDataViewProps> = ({
 
     menu.push({
       key: 'org-data',
-      label: 'Add Organization Data',
+      label: 'Add Space Data',
     });
     menu.push({
       key: 'user-data',

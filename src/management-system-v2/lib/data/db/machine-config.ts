@@ -4724,7 +4724,7 @@ export async function addMemberParameter(member: Membership) {
       await addParameter(parentParameter.id, 'parameter', newUserParameter, member.environmentId);
     } else {
       return userError(
-        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for organizational config ${member.environmentId}.`,
+        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for Space config ${member.environmentId}.`,
       );
     }
   } else {
@@ -4839,11 +4839,11 @@ export async function syncOrganizationUsers(spaceId: string) {
       }
     } else {
       return userError(
-        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for organizational config ${spaceId}.`,
+        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for Space config ${spaceId}.`,
       );
     }
   } else {
-    return userError(`Config ${spaceId} is not of type 'organization'.`);
+    return userError(`Config ${spaceId} is not of type 'Space'.`);
   }
 }
 
@@ -4887,11 +4887,11 @@ export async function syncPersonalSpaceUser(spaceId: string) {
       }
     } else {
       return userError(
-        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for organizational config ${spaceId}.`,
+        `Parent Parameter at the path ['identity-and-access-management', 'user'] could not be found for Space config ${spaceId}.`,
       );
     }
   } else {
-    return userError(`Config ${spaceId} is not of type 'organization'.`);
+    return userError(`Config ${spaceId} is not of type 'Space'.`);
   }
 }
 
@@ -4902,7 +4902,7 @@ export async function syncPersonalSpaceUser(spaceId: string) {
  * @returns UserError if a configuration cannot be created.
  */
 export async function syncSpaceConfigs() {
-  console.info(`SYNCING: Organization Configs`);
+  console.info(`SYNCING: Space Configs`);
   const spaces = await db.space.findMany({
     // where: {
     //   isOrganization: true,
@@ -4927,10 +4927,7 @@ export async function syncSpaceConfigs() {
   for (const newSpace of spacesToAdd) {
     const ret = await addParentConfig(
       {
-        ...defaultOrganizationConfigurationTemplate(
-          newSpace.id,
-          newSpace.name || 'Organizational Config',
-        ),
+        ...defaultOrganizationConfigurationTemplate(newSpace.id, newSpace.name || 'Space Config'),
       },
       newSpace.id,
     );

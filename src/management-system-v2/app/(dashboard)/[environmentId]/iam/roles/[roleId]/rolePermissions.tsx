@@ -30,19 +30,19 @@ type PermissionCategory = {
 const basePermissionOptions: PermissionCategory[] = [
   {
     key: 'organization',
-    title: 'ORGANIZATION',
+    title: 'SPACE',
     resource: 'Environment',
     permissions: [
       {
         key: 'Update Organization Data',
-        title: 'Update Organization Data',
-        description: 'Allows a user to update the Organization information.',
+        title: 'Update Space Data',
+        description: 'Allows a user to update the Space information.',
         permission: 'update',
       },
       {
         key: 'Delete Organization',
-        title: 'Delete Organization',
-        description: 'Allows a user to delete the Organization.',
+        title: 'Delete Space',
+        description: 'Allows a user to delete the Space.',
         permission: 'delete',
       },
     ],
@@ -89,7 +89,7 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'Manage users',
         title: 'Manage Users',
-        description: 'Allows a user to add or remove users from the Organization.',
+        description: 'Allows a user to add or remove users from the Space.',
         permission: 'manage',
       },
     ],
@@ -152,13 +152,13 @@ const basePermissionOptions: PermissionCategory[] = [
       {
         key: 'View Settings',
         title: 'View Settings',
-        description: 'Allows a user to view the settings of the Organization.',
+        description: 'Allows a user to view the settings of the Space.',
         permission: 'view',
       },
       {
         key: 'Update Settings',
         title: 'Update Settings',
-        description: 'Allows a user to update the settings of the Organization.',
+        description: 'Allows a user to update the settings of the Space.',
         permission: 'update',
       },
     ],

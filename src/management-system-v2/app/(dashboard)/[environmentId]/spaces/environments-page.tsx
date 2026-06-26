@@ -116,7 +116,7 @@ const EnvironmentsPage: FC<{
                 {environment.isOrganization && (
                   <ConfirmationButton
                     title={`Leave ${environment.name.value}`}
-                    description="You are about to leave this Organization. This cannot be undone, except if someone within this Organization adds you again."
+                    description="You are about to leave this Space. This cannot be undone, except if someone within this Space adds you again."
                     onConfirm={async () => {
                       await wrapServerCall({
                         fn: () => leaveOrganization(id),

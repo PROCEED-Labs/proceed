@@ -37,10 +37,10 @@ export async function deleteUser() {
       message = (
         <>
           <p>
-            You're part of organizations where you are the only admin, in order to delete your
-            accounts you first have to either add another admin or delete these organizations.
+            You're part of Spaces where you are the only admin, in order to delete your accounts you
+            first have to either add another admin or delete these Spaces.
           </p>
-          <p>The affected organizations are:</p>
+          <p>The affected Spaces are:</p>
           <ul>
             {conflictingOrgsNames.map((name, idx) => (
               <li key={idx}>
@@ -54,7 +54,7 @@ export async function deleteUser() {
             ))}
           </ul>
           <p>
-            You can delete these organizations <Link href="/environments">here</Link>.
+            You can delete these Spaces <Link href="/environments">here</Link>.
           </p>
         </>
       );

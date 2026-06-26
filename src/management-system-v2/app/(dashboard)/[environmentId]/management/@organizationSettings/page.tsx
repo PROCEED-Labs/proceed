@@ -62,11 +62,11 @@ const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: str
   ) {
     children.push({
       key: 'deleteOrganization',
-      name: 'Delete Organization',
+      name: 'Delete Space',
       children: [
         {
           key: 'deleteOrganization',
-          name: 'Delete Organization',
+          name: 'Delete Space',
           value: null,
           type: 'custom',
         },
@@ -76,7 +76,7 @@ const GeneralSettingsPage = async (props: { params: Promise<{ environmentId: str
 
   const settings: SettingGroup = {
     key: 'organizationSettings',
-    name: 'Organization Settings',
+    name: 'Space Settings',
     children: children,
   };
 

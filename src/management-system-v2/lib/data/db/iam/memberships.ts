@@ -26,7 +26,7 @@ function isOrganization(environment: Environment, opts: { throwIfNotFound?: bool
 
   if (!environment.isOrganization)
     if (opts.throwIfNotFound)
-      throw new Error("Environment isn't  an organization, it can't have members");
+      throw new Error("Environment is a Personal Space, so it currently can't have members.");
     else return false;
 
   return true;

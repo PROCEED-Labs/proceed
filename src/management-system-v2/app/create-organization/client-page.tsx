@@ -46,7 +46,7 @@ const CreateOrganizationPage = ({
 
   const steps: StepsProps['items'] = [
     {
-      title: 'Organization Data',
+      title: 'Space Data',
       onClick: () => setCurrentStep(0),
       style: { cursor: 'pointer' },
       disabled: true,
@@ -82,7 +82,7 @@ const CreateOrganizationPage = ({
       }
     } catch (e) {
       messageApi.open({
-        content: 'An error occurred while creating the organization',
+        content: 'An error occurred while creating the Space',
         type: 'error',
       });
 
@@ -160,9 +160,9 @@ const CreateOrganizationPage = ({
               }}
               form={form}
             >
-              <Typography.Title level={3}>Create Organization</Typography.Title>
+              <Typography.Title level={3}>Create Space</Typography.Title>
               <Form.Item
-                label="Organization name"
+                label="Space name"
                 name="name"
                 {...antDesignInputProps(formErrors, 'name')}
               >
@@ -191,7 +191,7 @@ const CreateOrganizationPage = ({
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={submitting}>
-                  {needsToAuthenticate ? 'Create organization' : 'Next step'}
+                  {needsToAuthenticate ? 'Create Space' : 'Next step'}
                 </Button>
               </Form.Item>
             </Form>
@@ -220,8 +220,8 @@ const CreateOrganizationPage = ({
                     Easy process modeling
                   </Typography.Title>
                   <Typography.Paragraph style={{ textAlign: 'center' }}>
-                    Organizations allow you to manage your processes and collaborate with your team
-                    in one place.
+                    Spaces allow you to manage your processes and collaborate with your team in one
+                    place.
                   </Typography.Paragraph>
                 </div>
               </div>
@@ -237,7 +237,7 @@ const CreateOrganizationPage = ({
               }}
             >
               <Typography.Title level={4} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                You need to sign in to create an organization
+                You need to sign in to create a Space
               </Typography.Title>
 
               <SigninOptions

@@ -19,7 +19,7 @@ const DeleteOrganizationButton = () => {
       if (result?.error) throw result.error.message;
 
       message.open({
-        content: 'Organization deleted',
+        content: 'Space deleted',
         type: 'success',
       });
       router.push('/start');
@@ -32,8 +32,8 @@ const DeleteOrganizationButton = () => {
 
   return (
     <ConfirmationButton
-      title="Delete Organization"
-      description="The organization and all processes inside it will be deleted."
+      title="Delete Space"
+      description="The Space and all processes inside it will be deleted."
       onConfirm={deleteOrganization}
       buttonProps={{
         danger: true,
@@ -46,7 +46,7 @@ const DeleteOrganizationButton = () => {
         },
       }}
     >
-      Delete Organization
+      Delete Space
     </ConfirmationButton>
   );
 };

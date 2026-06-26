@@ -401,7 +401,7 @@ const DashboardLayout = async (
 
     layoutMenuItems.push({
       key: 'iam-group',
-      label: 'Organization',
+      label: 'Space',
       icon: <ApartmentOutlined />,
       selectedRegex: childRegex,
       openRegex: childRegex,
@@ -465,7 +465,7 @@ const DashboardLayout = async (
     const regex = `(${settingsRegex})|(${personalHomeDataRegex})`;
     layoutMenuItems.push({
       key: 'personal-space-home',
-      label: 'Home',
+      label: 'Space',
       icon: <HomeOutlined />,
       openRegex: regex,
       selectedRegex: regex,

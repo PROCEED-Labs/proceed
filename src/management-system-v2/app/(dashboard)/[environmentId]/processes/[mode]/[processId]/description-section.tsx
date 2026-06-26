@@ -91,7 +91,7 @@ const DescriptionSection: React.FC<{ selectedElement: any; readOnly?: boolean }>
             <div
               style={{
                 maxHeight: '40vh',
-                opacity: readOnly ? 0.25 : 1,
+                opacity: 1,
                 pointerEvents: readOnly ? 'none' : 'auto',
               }}
               role="textbox"

@@ -3,6 +3,7 @@
 import { asyncForEach, asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import {
+  UserError,
   UserErrorType,
   getErrorMessage,
   isUserErrorResponse,
@@ -37,6 +38,7 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { getInstanceFile, saveInstanceArtifact } from '../data/file-manager-facade';
 import { getProcessVersion } from '../data/db/process';
 import Ability from '../ability/abilityHelper';
+import { deployProcess } from './deployment-server-actions';
 
 export async function getProcessStartForm(
   spaceId: string,
@@ -68,7 +70,8 @@ export async function startInstance(
   if (!ability.can('create', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const deployments = await getProcessDeployments(spaceId, definitionId, ability);
+  let deployments: { id: string; versionId: string; engine: Engine }[] | { error: UserError } =
+    await getProcessDeployments(spaceId, definitionId, ability);
   if (isUserErrorResponse(deployments)) return deployments;
 
   if (!userId) ({ userId } = await getCurrentUser());
@@ -77,8 +80,23 @@ export async function startInstance(
     return d.versionId === versionId;
   });
 
-  // TODO: automatically deploy the version if possible
-  if (!versionDeployments.length) return userError('This process version is not deployed.');
+  if (!versionDeployments.length) {
+    const res = await deployProcess(
+      definitionId,
+      versionId,
+      spaceId,
+      'dynamic',
+      undefined,
+      ability,
+      userId,
+    );
+
+    if (isUserErrorResponse(res)) return res;
+
+    if (!res) return userError('Failed to start an instance');
+
+    deployments = res.map((d) => ({ ...d }));
+  }
 
   for (const deployment of deployments) {
     const { engine } = deployment;

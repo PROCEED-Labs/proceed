@@ -70,18 +70,6 @@ export default async function startProcess({
     // we don't need to check if the variables that are required at startup are set since the engine
     // will do that for us and return an error if they aren't
 
-    const deployment = await deployProcess(
-      processId,
-      process.version.id,
-      environmentId,
-      'dynamic',
-      undefined,
-      ability,
-      userId,
-    );
-
-    if (isUserErrorResponse(deployment)) return deployment.error.message;
-
     const instanceId = await startInstance(
       environmentId,
       processId,

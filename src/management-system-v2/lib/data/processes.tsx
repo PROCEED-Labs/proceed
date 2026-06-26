@@ -38,7 +38,7 @@ import {
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import { Process, ProcessMetadata } from './process-schema';
-import { revalidatePath } from 'next/cache';
+import { cacheLife, cacheTag, revalidatePath, updateTag } from 'next/cache';
 import { getUsersFavourites } from './users';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
@@ -80,6 +80,7 @@ import { asyncMap } from '../helpers/javascriptHelpers';
 import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import { InstanceInfo } from '../engines/deployment';
 import { getMSConfig } from '../ms-config/ms-config';
+import { retrieveFile } from './file-manager/file-manager';
 import { removeDeployment } from '../executions/deployment-server-actions';
 
 // Import necessary functions from processModule
@@ -628,6 +629,32 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
+export const getVersions = async (spaceId: string, processId: string) => {
+  const error = await checkValidity(processId, 'view', spaceId);
+
+  if (error) return error;
+
+  async function getFromDBOrCache(processId: string) {
+    'use cache';
+    cacheLife({ revalidate: 60, expire: 120 });
+    cacheTag(`/process/${processId}/versions`);
+    const versions = await db.version.findMany({
+      where: { processId },
+    });
+
+    return asyncMap(versions, async (version) => {
+      const bpmn = ((await retrieveFile(version.bpmnFilePath, false)) as Buffer).toString('utf8');
+
+      return {
+        ...version,
+        bpmn,
+      };
+    });
+  }
+
+  return await getFromDBOrCache(processId);
+};
+
 /**
  * Function that checks if a process' latest version is unchanged from the version it is based on
  *
@@ -715,6 +742,8 @@ export const createVersion = async (
   );
 
   await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
+
+  updateTag(`/process/${processId}/versions`);
 
   if (basedOnBPMN) {
     const config = await getMSConfig();

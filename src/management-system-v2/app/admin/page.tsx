@@ -37,7 +37,7 @@ export default async function AdminDashboard() {
           <Statistic title="Guest Accounts" value={guestCount} />
         </Card>
         <Card variant="borderless" style={cardStyle}>
-          <Statistic title="Spatials Spaces" value={orgSpaceCount} />
+          <Statistic title="Spaces" value={orgSpaceCount} />
         </Card>
       </Space>
     </Content>

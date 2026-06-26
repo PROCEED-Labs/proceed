@@ -42,13 +42,13 @@ export async function register() {
       });
       if (organizations.length !== 1) {
         console.error(
-          `When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE there can only be one space in the database. Found ${organizations.length}.`,
+          `When PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE there can only be one Space in the database. Found ${organizations.length}.`,
         );
         process.exit(1);
       }
       if (organizations[0].id !== seed!.organizations[0].id) {
         console.error(
-          "Consistency error: PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active and the only space in the database doesn't match the one in the seed file.",
+          "Consistency error: PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE is active and the only Sapce in the database doesn't match the one in the seed file.",
         );
         process.exit(1);
       }

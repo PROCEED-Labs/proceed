@@ -206,7 +206,7 @@ export async function updateOrganization(
   )
     throw new UnauthorizedError();
 
-  if (!environment.isOrganization) throw new Error('Environment is not an space');
+  if (!environment.isOrganization) throw new Error('Environment is not an Space');
 
   const update = UserOrganizationEnvironmentInputSchema.partial().parse(environmentInput);
   const newEnvironmentData: Environment = { ...environment, ...update } as Environment;

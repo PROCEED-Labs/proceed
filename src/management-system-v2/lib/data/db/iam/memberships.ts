@@ -25,7 +25,7 @@ function isOrganization(environment: Environment, opts: { throwIfNotFound?: bool
     else return false;
 
   if (!environment.isOrganization)
-    if (opts.throwIfNotFound) throw new Error("Environment isn't  an space, it can't have members");
+    if (opts.throwIfNotFound) throw new Error("Environment isn't Space, it can't have members");
     else return false;
 
   return true;

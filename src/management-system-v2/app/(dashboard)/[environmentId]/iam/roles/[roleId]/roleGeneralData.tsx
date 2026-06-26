@@ -48,9 +48,9 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
   if (role.note) {
     note = role.note;
   } else if (role.name === '@guest') {
-    note = 'This role applies to users that are not part of the space.';
+    note = 'This role applies to users that are not part of the Space.';
   } else if (role.name === '@everyone') {
-    note = 'This role applies to every user that is part of the space.';
+    note = 'This role applies to every user that is part of the Space.';
   }
 
   return (

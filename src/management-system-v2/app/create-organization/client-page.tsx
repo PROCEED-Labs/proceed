@@ -82,7 +82,7 @@ const CreateOrganizationPage = ({
       }
     } catch (e) {
       messageApi.open({
-        content: 'An error occurred while creating the space',
+        content: 'An error occurred while creating the Space',
         type: 'error',
       });
 
@@ -191,7 +191,7 @@ const CreateOrganizationPage = ({
               </Form.Item>
               <Form.Item>
                 <Button type="primary" htmlType="submit" loading={submitting}>
-                  {needsToAuthenticate ? 'Create space' : 'Next step'}
+                  {needsToAuthenticate ? 'Create Space' : 'Next step'}
                 </Button>
               </Form.Item>
             </Form>
@@ -237,7 +237,7 @@ const CreateOrganizationPage = ({
               }}
             >
               <Typography.Title level={4} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                You need to sign in to create an space
+                You need to sign in to create an Space
               </Typography.Title>
 
               <SigninOptions

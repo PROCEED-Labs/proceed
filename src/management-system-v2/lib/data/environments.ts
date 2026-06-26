@@ -69,13 +69,13 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       const environment = await getEnvironmentById(environmentId);
 
       if (!environment?.isOrganization)
-        return userError(`Environment ${environmentId} is not an space environment`);
+        return userError(`Environment ${environmentId} is not an Space environment`);
 
       deleteEnvironment(environmentId, ability);
     }
   } catch (e) {
     if (e instanceof UnauthorizedError)
-      return userError("You're not allowed to delete this space", UserErrorType.PermissionError);
+      return userError("You're not allowed to delete this Space", UserErrorType.PermissionError);
 
     console.error(e);
     return userError('Error deleting environment');
@@ -91,9 +91,9 @@ export async function updateOrganization(
 
     return _updateOrganization(environmentId, data, ability);
   } catch (e) {
-    if (e instanceof UnauthorizedError) return userError("You're not allowed to update this space");
+    if (e instanceof UnauthorizedError) return userError("You're not allowed to update this Space");
 
-    return userError('Error updating space');
+    return userError('Error updating Space');
   }
 }
 
@@ -120,7 +120,7 @@ export async function leaveOrganization(spaceId: string) {
     let message;
     if (e instanceof UserHasToDeleteOrganizationsError) {
       message =
-        "You're the only admin of this space, you have to either add a new admin or delete it.";
+        "You're the only admin of this Space, you have to either add a new admin or delete it.";
     } else {
       message = getErrorMessage(e);
     }

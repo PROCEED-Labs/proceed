@@ -14,7 +14,7 @@ export const schema = toAuthorizationSchema({});
 export const metadata = {
   name: 'get-organization-data',
   description:
-    'Gets data relevant to the space referenced in the access code. This includes space name, members and general space and member data.',
+    'Gets data relevant to the Space referenced in the access code. This includes Space name, members and general Space and member data.',
   annotations: {
     title: 'Get Space Data',
     readOnlyHint: true,

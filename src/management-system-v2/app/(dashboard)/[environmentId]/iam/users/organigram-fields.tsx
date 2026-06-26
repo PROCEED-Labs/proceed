@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import styles from './organigram-fields.module.scss';
 import { getSpaceMembers } from '@/lib/data/environment-memberships';
+import { InboxOutlined } from '@ant-design/icons';
 
 export function LabelWithTooltip({ label, tooltip }: { label: string; tooltip: string }) {
   return (
@@ -60,6 +61,14 @@ export function OrganigramFields({
           allowClear
           placeholder="Select team"
           options={(teamRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
+          notFoundContent={
+            <div className={styles.emptyContainer}>
+              <InboxOutlined className={styles.emptyIcon} />
+              <div className={styles.emptyText}>
+                To create a new team, add a new role with the corresponding property.
+              </div>
+            </div>
+          }
         />
       </Form.Item>
 
@@ -95,6 +104,14 @@ export function OrganigramFields({
           allowClear
           placeholder="Select back office"
           options={(backOfficeRoles ?? []).map((r) => ({ label: r.name, value: r.id }))}
+          notFoundContent={
+            <div className={styles.emptyContainer}>
+              <InboxOutlined className={styles.emptyIcon} />
+              <div className={styles.emptyText}>
+                To create a new back office, add a new role with the corresponding property.
+              </div>
+            </div>
+          }
         />
       </Form.Item>
     </>

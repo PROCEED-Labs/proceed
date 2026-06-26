@@ -115,7 +115,7 @@ export async function deployProcess(
       ability,
     );
 
-    await db.processDeployment.createMany({
+    const newDeployments = await db.processDeployment.createManyAndReturn({
       data: deployedTo.map((engine) => ({
         versionId,
         deployerId: userId!,
@@ -132,6 +132,8 @@ export async function deployProcess(
       revalidateTag(`space/${spaceId}/deployments`, 'max');
       revalidateTag(`deployments/process/${definitionId}`, 'max');
     }
+
+    if (isUserErrorResponse(newDeployments)) return newDeployments;
 
     // deactivate the process on all engines that have a deployment but which were not target of the
     // new deployment
@@ -158,6 +160,11 @@ export async function deployProcess(
         }
       }),
     );
+
+    return newDeployments.map((d) => ({
+      ...d,
+      engine: deployedTo.find((e) => e.id === d.engineId)!,
+    }));
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

@@ -308,6 +308,7 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
         onSuccess: () => {
           message.success('Updated folder permissions.');
           router.refresh();
+          router.push(`/${environment.spaceId}/iam/roles`);
         },
       });
     } catch (err) {
@@ -392,7 +393,10 @@ const FolderPermissions: FC<{ role: RoleWithChildren; folders: Folder[] }> = ({
             Modal.confirm({
               title: 'Undo Changes',
               content: 'Are you sure that you want to undo all unsaved changes?',
-              onOk: () => setGroups(groupFolders(role, options, folders)),
+              onOk: () => {
+                setGroups(groupFolders(role, options, folders));
+                router.push(`/${environment.spaceId}/iam/roles`);
+              },
             });
           }}
         >

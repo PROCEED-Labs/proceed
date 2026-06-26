@@ -6,7 +6,7 @@ import { SuccessType, UserErrorType, userError } from '../user-error';
 import Ability from '../ability/abilityHelper';
 import { cacheLife, cacheTag } from 'next/cache';
 
-export async function getDeployedProcesses(environmentId: string) {
+export async function getDeployedProcesses(environmentId: string, withArchived = false) {
   const { ability } = await getCurrentEnvironment(environmentId);
 
   if (!ability.can('view', 'Execution'))
@@ -16,32 +16,17 @@ export async function getDeployedProcesses(environmentId: string) {
     'use cache';
     cacheLife({ revalidate: 10, expire: 15 });
     cacheTag(`space/${environmentId}/deployments`);
-    const deploymentIsNotDeleted = { removeTime: null };
 
     return await db.process.findMany({
       where: {
-        // get all processes in the current environment that have at least one version that is
-        // currently deployed
-        AND: [
-          { environmentId },
-          { NOT: { folderId: null } },
-          {
-            versions: {
-              some: { deployments: { some: deploymentIsNotDeleted } },
-            },
-          },
-        ],
+        AND: [{ environmentId }],
       },
       select: {
         id: true,
         name: true,
         versions: {
-          // only include deployed versions in the output
-          where: { deployments: { some: deploymentIsNotDeleted } },
           include: {
             deployments: {
-              // only include deployments in the output that are still actively deployed
-              where: deploymentIsNotDeleted,
               include: { instances: { select: { id: true } } },
             },
           },
@@ -50,7 +35,29 @@ export async function getDeployedProcesses(environmentId: string) {
     });
   }
 
-  return ability.filter('view', 'Process', await getFromDBOrCache(environmentId));
+  let deployedProcesses = await getFromDBOrCache(environmentId);
+
+  deployedProcesses = deployedProcesses
+    .filter((p) => {
+      if (withArchived) {
+        return p.versions.some((v) => !!v.deployments.length);
+      }
+
+      return p.versions.some((v) => v.deployments.filter((d) => !d.removeTime).length);
+    })
+    .map((p) => {
+      return {
+        ...p,
+        versions: p.versions
+          .map((v) => ({
+            ...v,
+            deployments: withArchived ? v.deployments : v.deployments.filter((d) => !d.removeTime),
+          }))
+          .filter((v) => !!v.deployments.length),
+      };
+    });
+
+  return ability.filter('view', 'Process', deployedProcesses);
 }
 
 export async function getProcessDeployments(
@@ -58,6 +65,7 @@ export async function getProcessDeployments(
   processId: string,
   ability?: Ability,
   showArchivedProcesses = false,
+  showArchivedDeployments = false,
 ) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
 
@@ -69,21 +77,15 @@ export async function getProcessDeployments(
     cacheLife({ revalidate: 10, expire: 15 });
     cacheTag(`deployments/process/${processId}`);
     const deployments = await db.processDeployment.findMany({
-      where: {
-        AND: [
-          {
-            version: {
-              AND: [
-                { processId },
-                ...(!showArchivedProcesses ? [{ NOT: { process: { folderId: null } } }] : []),
-              ],
-            },
-          },
-          { removeTime: null },
-        ],
-      },
       include: {
-        version: { select: { id: true, processId: true, name: true } },
+        version: {
+          select: {
+            id: true,
+            processId: true,
+            name: true,
+            process: { select: { folderId: true } },
+          },
+        },
         instances: { select: { id: true } },
         engine: {
           include: {
@@ -105,7 +107,16 @@ export async function getProcessDeployments(
     }));
   }
 
-  return getFromDBOrCache(processId);
+  let deployments = await getFromDBOrCache(processId);
+
+  deployments = deployments.filter((d) => {
+    if (!showArchivedProcesses && d.version.process.folderId === null) return false;
+    if (!showArchivedDeployments && d.removeTime !== null) return false;
+
+    return true;
+  });
+
+  return deployments;
 }
 
 export type StoredDeployment = SuccessType<

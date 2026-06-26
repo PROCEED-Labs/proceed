@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { deployProcess } from '@/lib/executions/deployment-server-actions';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { startInstance } from '@/lib/executions/instance-server-actions';
@@ -69,19 +68,6 @@ export default async function startProcess({
 
     // we don't need to check if the variables that are required at startup are set since the engine
     // will do that for us and return an error if they aren't
-
-    const deployment = await deployProcess(
-      processId,
-      process.version.id,
-      environmentId,
-      'dynamic',
-      undefined,
-      false,
-      ability,
-      userId,
-    );
-
-    if (isUserErrorResponse(deployment)) return deployment.error.message;
 
     const instanceId = await startInstance(
       environmentId,

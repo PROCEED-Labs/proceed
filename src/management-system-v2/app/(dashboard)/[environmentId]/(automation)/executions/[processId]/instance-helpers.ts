@@ -1,6 +1,7 @@
 import { StoredDeployment } from '@/lib/data/deployment';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 import { InstanceInfo } from '@/lib/engines/deployment';
+import { Version } from '@prisma/client';
 import { convertISODurationToMiliseconds } from '@proceed/bpmn-helper/src/getters';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
 
@@ -179,15 +180,15 @@ export function getVersionInstances(instances: ExtendedInstanceInfo[], version?:
   return instances.filter((instance) => instance.processVersion === version);
 }
 
-export function getLatestDeployment(deployments: StoredDeployment[]) {
-  return deployments.reduce(
+export function getLatestVersion(versions: Version[]) {
+  return versions.reduce(
     (latest, curr) => {
-      if (!latest || latest.deployTime.getTime() > curr.deployTime.getTime()) {
+      if (!latest || latest.createdOn.getTime() < curr.createdOn.getTime()) {
         return curr;
       }
       return latest;
     },
-    undefined as undefined | StoredDeployment,
+    undefined as undefined | Version,
   );
 }
 

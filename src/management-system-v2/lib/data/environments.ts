@@ -69,7 +69,7 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
       const environment = await getEnvironmentById(environmentId);
 
       if (!environment?.isOrganization)
-        return userError(`Environment ${environmentId} is not a Space environment`);
+        return userError(`Environment ${environmentId} is a Personal Space`);
 
       deleteEnvironment(environmentId, ability);
     }

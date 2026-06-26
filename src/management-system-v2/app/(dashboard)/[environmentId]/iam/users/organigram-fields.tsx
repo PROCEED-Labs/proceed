@@ -52,7 +52,7 @@ export function OrganigramFields({
         label={
           <LabelWithTooltip
             label="Team / Department"
-            tooltip="Specify the user's Space team or department."
+            tooltip="Specify the user's team or department."
           />
         }
         name="teamRoleId"
@@ -74,10 +74,7 @@ export function OrganigramFields({
 
       <Form.Item
         label={
-          <LabelWithTooltip
-            label="Direct Manager"
-            tooltip="Specify the user's direct, Space manager."
-          />
+          <LabelWithTooltip label="Direct Manager" tooltip="Specify the user's direct manager." />
         }
         name="directManagerId"
       >
@@ -95,7 +92,7 @@ export function OrganigramFields({
         label={
           <LabelWithTooltip
             label="Back Office"
-            tooltip="Specify the user's Space back office. (The user will not become a member of that role.)"
+            tooltip="Specify the user's back office. (The user will not become a member of that role.)"
           />
         }
         name="backOfficeRoleId"

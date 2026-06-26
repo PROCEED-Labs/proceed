@@ -12,9 +12,9 @@ export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-organization-data',
+  name: 'get-space-data',
   description:
-    'Gets data relevant to the Space referenced in the access code. This includes Space name, members and general Space and member data.',
+    'This function retrieves data about the Space to which the access code has been granted access. A Space is a virtual unit used to manage business processes or data in a coordinated manner. It can represent a small team or an entire corporate organization. A Space has general properties such as a name, multiple business objects such as processes, and can include multiple members.',
   annotations: {
     title: 'Get Space Data',
     readOnlyHint: true,

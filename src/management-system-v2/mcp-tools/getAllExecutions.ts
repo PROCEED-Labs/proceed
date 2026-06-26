@@ -46,7 +46,7 @@ export default async function getExecutions({ userCode }: InferSchema<typeof sch
     if (isUserErrorResponse(instances)) return `Error: ${instances.error.message}.`;
 
     return {
-      content: [{ type: 'text', text: JSON.stringify([...instances.map((i) => i.id)]) }],
+      content: [{ type: 'text', text: JSON.stringify(instances) }],
     };
   } catch (err) {
     if (err instanceof Error) return err.message;

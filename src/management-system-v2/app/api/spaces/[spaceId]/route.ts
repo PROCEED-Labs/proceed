@@ -1,5 +1,5 @@
 import db from '@/lib/data/db';
-import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest, props: { params: Promise<{ spaceId: string }> }) {
@@ -7,7 +7,8 @@ export async function GET(request: NextRequest, props: { params: Promise<{ space
 
   const { spaceId } = params;
 
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
+  const config = await getMSConfig();
+  if (!config.PROCEED_PUBLIC_IAM_ACTIVE) {
     return NextResponse.json({
       id: 'proceed-default-no-iam-user',
       type: 'personal',
@@ -33,5 +34,3 @@ export async function GET(request: NextRequest, props: { params: Promise<{ space
     name: space.name,
   });
 }
-
-export const dynamic = 'force-dynamic';

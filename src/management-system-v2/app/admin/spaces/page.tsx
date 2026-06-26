@@ -74,5 +74,3 @@ export default async function SystemAdminDashboard(props: {
     </Content>
   );
 }
-
-export const dynamic = 'force-dynamic';

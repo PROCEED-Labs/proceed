@@ -5,18 +5,12 @@ import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import { LeftOutlined } from '@ant-design/icons';
-import { type Engine } from '@/lib/engines/types';
-import { getEngineConnectionById } from '@/lib/data/engines';
+import { getEngineById } from '@/lib/data/engines';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
 import EngineDashboard from '@/components/engine-dashboard/server-component';
+import { isUserErrorResponse } from '@/lib/user-error';
 
-export type TableEngine = Engine & { id: string };
-
-export default async function EnginesPage(props: {
-  params: Promise<{ connectionId: string }>;
-  searchParams: Promise<{ engineId: string }>;
-}) {
-  const searchParams = await props.searchParams;
+export default async function EnginesPage(props: { params: Promise<{ engineId: string }> }) {
   const params = await props.params;
   const msConfig = await getMSConfig();
   if (!msConfig.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) return notFound();
@@ -24,9 +18,12 @@ export default async function EnginesPage(props: {
   const user = await getCurrentUser();
   if (!user.systemAdmin) redirect('/');
 
-  const connectionId = decodeURIComponent(params.connectionId);
-  const engineId = decodeURIComponent(searchParams.engineId || '');
-  const connection = await getEngineConnectionById(connectionId, null, undefined, 'dont-check');
+  const engineId = decodeURIComponent(params.engineId || '');
+  const engine = await getEngineById(null, engineId);
+
+  if (isUserErrorResponse(engine)) {
+    return notFound();
+  }
 
   return (
     <Suspense
@@ -37,8 +34,7 @@ export default async function EnginesPage(props: {
       }
     >
       <EngineDashboard
-        connection={connection}
-        engineId={engineId}
+        engine={engine || undefined}
         backButton={
           <Link href="/admin/engines">
             <Button icon={<LeftOutlined />} type="text">
@@ -51,5 +47,3 @@ export default async function EnginesPage(props: {
     </Suspense>
   );
 }
-
-export const dynamic = 'force-dynamic';

@@ -20,7 +20,6 @@ import { getDefinitionsAndProcessIdForEveryCallActivity } from '@proceed/bpmn-he
 
 import { SettingsOption } from './settings-modal';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { env } from '@/lib/ms-config/env-vars';
 import { ColorOptions } from '../(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-coloring';
 import InstanceDocumentationPage from './instance-documentation-page';
 import { Metadata } from 'next';
@@ -30,6 +29,7 @@ import db from '@/lib/data/db';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getInstance } from '@/lib/data/instance';
 import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 interface PageProps {
   searchParams: Promise<{
@@ -152,7 +152,8 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   if (typeof token !== 'string') return {};
 
   try {
-    const key = env.SHARING_ENCRYPTION_SECRET;
+    const config = await getMSConfig();
+    const key = config.SHARING_ENCRYPTION_SECRET;
     const { processId, timestamp, embeddedMode } = jwt.verify(token, key!) as TokenPayload;
     const versionId = version as string | undefined;
     const versionLabel = versionId ?? 'Latest';
@@ -221,7 +222,8 @@ const SharedViewer = async (props: PageProps) => {
   let activeSpaceId = userId || '';
   let activeIsOrg = false;
 
-  const key = env.SHARING_ENCRYPTION_SECRET;
+  const config = await getMSConfig();
+  const key = config.SHARING_ENCRYPTION_SECRET;
   let processData: Process | undefined;
   let iframeMode;
   let defaultSettings = settings as SettingsOption;
@@ -298,7 +300,7 @@ const SharedViewer = async (props: PageProps) => {
   const ownerName = await resolveUserDisplayName(processData?.creatorId);
 
   let processInitiatorName = 'Unknown';
-  const initiator = instanceData?.processInitiator;
+  const initiator = instanceData?.processInstanceInitiator;
   if (initiator) {
     if (typeof initiator === 'string') {
       processInitiatorName = initiator;

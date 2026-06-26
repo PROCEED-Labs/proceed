@@ -38,7 +38,7 @@ import {
 // Antd uses barrel files, which next optimizes away. That requires us to import
 // antd components directly from their files in this server actions file.
 import { Process, ProcessMetadata } from './process-schema';
-import { revalidatePath } from 'next/cache';
+import { cacheLife, cacheTag, revalidatePath, updateTag } from 'next/cache';
 import { getUsersFavourites } from './users';
 import {
   checkIfProcessAlreadyExistsForAUserInASpaceByName,
@@ -46,6 +46,7 @@ import {
   checkIfProcessExists,
   copyProcessArtifactReferences,
   copyProcessFiles,
+  getProcessLatestVersion,
 } from './db/process';
 import { v4 } from 'uuid';
 import { toCustomUTCString } from '../helpers/timeHelper';
@@ -80,6 +81,8 @@ import { asyncMap } from '../helpers/javascriptHelpers';
 import { isActive } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import { InstanceInfo } from '../engines/deployment';
 import { getMSConfig } from '../ms-config/ms-config';
+import { retrieveFile } from './file-manager/file-manager';
+import { removeDeployment } from '../executions/deployment-server-actions';
 
 // Import necessary functions from processModule
 
@@ -627,6 +630,32 @@ export const copyProcesses = async (
   return copiedProcesses;
 };
 
+export const getVersions = async (spaceId: string, processId: string) => {
+  const error = await checkValidity(processId, 'view', spaceId);
+
+  if (error) return error;
+
+  async function getFromDBOrCache(processId: string) {
+    'use cache';
+    cacheLife({ revalidate: 60, expire: 120 });
+    cacheTag(`/process/${processId}/versions`);
+    const versions = await db.version.findMany({
+      where: { processId },
+    });
+
+    return asyncMap(versions, async (version) => {
+      const bpmn = ((await retrieveFile(version.bpmnFilePath, false)) as Buffer).toString('utf8');
+
+      return {
+        ...version,
+        bpmn,
+      };
+    });
+  }
+
+  return await getFromDBOrCache(processId);
+};
+
 /**
  * Function that checks if a process' latest version is unchanged from the version it is based on
  *
@@ -696,10 +725,9 @@ export const createVersion = async (
   const versionedScriptTaskFilenames = await versionScriptTasks(process, versionId, bpmnObj);
 
   const versionedBpmn = await toBpmnXml(bpmnObj);
-
   // if the new version has no changes to the version it is based on don't create a new version and return the previous version
   const basedOnBPMN =
-    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionCreatedOn) : undefined;
+    versionBasedOn !== undefined ? await getLocalVersionBpmn(process, versionBasedOn) : undefined;
 
   if (basedOnBPMN && (await areVersionsEqual(versionedBpmn, basedOnBPMN))) {
     return versionBasedOn;
@@ -716,6 +744,22 @@ export const createVersion = async (
 
   await updateProcessVersionBasedOn({ ...process, bpmn }, versionId);
 
+  updateTag(`/process/${processId}/versions`);
+
+  if (basedOnBPMN) {
+    const config = await getMSConfig();
+    if (config.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE) {
+      const basedOnBpmnObj = await toBpmnObject(basedOnBPMN);
+      const prevProcesses = getElementsByTagName(basedOnBpmnObj, 'bpmn:Process');
+      const wasExecutable = !!prevProcesses.length && prevProcesses[0].isExecutable;
+      const processes = getElementsByTagName(bpmnObj, 'bpmn:Process');
+      const isExecutable = !!processes.length && processes[0].isExecutable;
+      if (wasExecutable && !isExecutable) {
+        await removeDeployment(processId, spaceId, true);
+      }
+    }
+  }
+
   return versionId;
 };
 
@@ -725,6 +769,18 @@ export const setVersionAsLatest = async (processId: string, versionId: string, s
   if (error) return error;
 
   await selectAsLatestVersion(processId, versionId);
+};
+
+export const getLatestVersion = async (spaceId: string, processId: string) => {
+  try {
+    const error = await checkValidity(processId, 'view', spaceId);
+
+    if (error) return error;
+
+    return await getProcessLatestVersion(processId);
+  } catch (err) {
+    return internalError();
+  }
 };
 
 export const getFavouritesProcessIds = async () => {

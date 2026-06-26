@@ -8,7 +8,7 @@ import { UserErrorType, isUserErrorResponse, userError } from '../user-error';
 import { InstanceInfo } from '../engines/deployment';
 import Ability from '../ability/abilityHelper';
 import { ProcessInstance } from '@prisma/client';
-import { asyncMap, pick } from '../helpers/javascriptHelpers';
+import { pick } from '../helpers/javascriptHelpers';
 import { cache } from 'react';
 import { getSpaceUsers } from './db/iam/users';
 import { getEnvironmentById } from './db/iam/environments';
@@ -16,7 +16,6 @@ import { Role } from './role-schema';
 import { getRoles } from './db/iam/roles';
 import { truthyFilter } from '../typescript-utils';
 
-import { getAllAvailableEngines } from './engines';
 import { getProcessBPMN } from './processes';
 import {
   getElementById,
@@ -30,8 +29,13 @@ import {
   isActive,
 } from '@/app/(dashboard)/[environmentId]/(automation)/executions/[processId]/instance-helpers';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
-type StoredInstance = Omit<ProcessInstance, 'state'> & { state: InstanceInfo; versionId: string };
+type StoredInstance = Omit<ProcessInstance, 'state'> & {
+  state: InstanceInfo;
+  versionId: string;
+  engines: { id: string; name: string | null; connections: { reachable: boolean }[] }[];
+};
 
 export async function getDBInstance(spaceId: string, instanceId: string, ability?: Ability) {
   if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
@@ -43,6 +47,13 @@ export async function getDBInstance(spaceId: string, instanceId: string, ability
     where: { id: instanceId },
     include: {
       deployment: { select: { versionId: true } },
+      engines: {
+        select: {
+          id: true,
+          name: true,
+          connections: { select: { reachable: true, connection: true } },
+        },
+      },
     },
   });
 
@@ -86,9 +97,6 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   const knownUsers = await getKnownUsers(spaceId);
   const knownRoles = await getKnownRoles(spaceId);
 
-  const reachableEngines = await getAllAvailableEngines(spaceId, ability);
-  if (isUserErrorResponse(reachableEngines)) return reachableEngines;
-
   const mapUser = (userId: string) => {
     const user = knownUsers[userId];
     if (!user) return undefined;
@@ -130,8 +138,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   }
 
   let initiatorSpace: undefined | { id: string; name: string; isOrganization: boolean } = undefined;
-  if (state.spaceIdOfProcessInitiator) {
-    const space = await getSpaceInfo(state.spaceIdOfProcessInitiator);
+  if (state.processInstanceInitiatorSpaceId) {
+    const space = await getSpaceInfo(state.processInstanceInitiatorSpaceId);
     if (space) {
       if (space.isOrganization) {
         initiatorSpace = pick(space, ['id', 'name', 'isOrganization']);
@@ -237,12 +245,13 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
   return {
     ...instance,
     initiator,
-    engines: instance.engineIds.map((id) => ({
+    engines: instance.engines.map(({ id, name, connections }) => ({
       id,
-      online: reachableEngines.some((e) => e.id === id),
+      name,
+      online: connections.some(({ reachable }) => reachable),
     })),
     executionStatus,
-    offline: instance.engineIds.some((id) => !reachableEngines.some((e) => e.id === id)),
+    offline: instance.engines.some(({ connections }) => connections.every((c) => !c.reachable)),
     pausing: instanceState.some((state) => state === 'PAUSING'),
     paused: instanceState.some((state) => state === 'PAUSED'),
     state: {
@@ -261,8 +270,8 @@ async function extendInstance(spaceId: string, instance: StoredInstance, ability
         performers: mapPerformers(entry.performers),
         timing: getTimings(entry, undefined),
       })),
-      processInitiator: initiator,
-      spaceOfProcessInitiator: initiatorSpace,
+      processInstanceInitiator: initiator,
+      spaceOfProcessInstanceInitiator: initiatorSpace,
       executionCosts,
       plannedCosts: plannedCosts.length ? plannedCosts : undefined,
       timing: getTimings(),
@@ -279,10 +288,27 @@ export async function getInstance(spaceId: string, instanceId: string, ability?:
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const instanceInfo = await db.processInstance.findUnique({
-    where: { id: instanceId },
-    include: { deployment: { select: { versionId: true } } },
-  });
+  async function getFromDBOrCache(instanceId: string) {
+    'use cache';
+    cacheLife({ revalidate: 10, expire: 15 });
+    cacheTag(`instance/${instanceId}`);
+
+    return await db.processInstance.findUnique({
+      where: { id: instanceId },
+      include: {
+        deployment: { select: { versionId: true } },
+        engines: {
+          select: {
+            id: true,
+            name: true,
+            connections: { select: { reachable: true } },
+          },
+        },
+      },
+    });
+  }
+
+  const instanceInfo = await getFromDBOrCache(instanceId);
 
   if (!instanceInfo) return null;
 
@@ -301,36 +327,30 @@ export async function getInstances(spaceId: string, ability: Ability) {
   if (!ability.can('view', 'Execution'))
     return userError('Invalid Permissions', UserErrorType.PermissionError);
 
-  const instances = await db.processInstance.findMany({
-    where: {
-      deployment: {
-        AND: [
-          { version: { process: { environmentId: spaceId } } },
-          { removeTime: null },
-          { toRemove: false },
-        ],
+  async function getFromDBOrCache(spaceId: string) {
+    'use cache';
+    cacheLife({ revalidate: 10, expire: 15 });
+    cacheTag(`space/${spaceId}/instances`);
+
+    return await db.processInstance.findMany({
+      where: {
+        deployment: {
+          AND: [
+            { version: { process: { environmentId: spaceId } } },
+            { removeTime: null },
+            { toRemove: false },
+          ],
+        },
       },
-    },
-    include: { deployment: { select: { versionId: true } } },
-  });
-
-  const extendedInstances = await asyncMap(instances, async (i) =>
-    extendInstance(
-      spaceId,
-      {
-        ...i,
-        state: i.state as InstanceInfo,
-        versionId: i.deployment.versionId,
+      select: {
+        id: true,
       },
-      ability,
-    ),
-  );
+    });
+  }
 
-  const engineResWithError = extendedInstances.find(isUserErrorResponse);
+  const instances = await getFromDBOrCache(spaceId);
 
-  if (!!engineResWithError) return engineResWithError;
-
-  return extendedInstances as ExtendedInstance[];
+  return instances.map(({ id }) => id);
 }
 
 export async function addInstance(
@@ -347,7 +367,19 @@ export async function addInstance(
 
   const data = InstanceInputSchema.parse(instance);
 
-  return await db.processInstance.create({ data });
+  const res = await db.processInstance.create({
+    data: {
+      ...data,
+      engines: {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
+  });
+
+  revalidateTag(`space/${spaceId}/instances`, 'max');
+  revalidateTag(`deployments/process/${instance.state.processId}`, 'max');
+
+  return res;
 }
 
 export async function updateInstance(
@@ -365,8 +397,17 @@ export async function updateInstance(
 
   const data = InstanceInputSchema.partial().strict().parse(input);
 
-  return await db.processInstance.update({
+  const res = await db.processInstance.update({
     where: { id: instanceId },
-    data,
+    data: {
+      ...data,
+      engines: data.engines && {
+        connect: data.engines.map((id) => ({ id })),
+      },
+    },
   });
+
+  revalidateTag(`instance/${instanceId}`, 'max');
+
+  return res;
 }

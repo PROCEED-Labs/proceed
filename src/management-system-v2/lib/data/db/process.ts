@@ -37,6 +37,7 @@ import { getUsedImagesFromJson } from '@/components/html-form-editor/serialized-
 import { removeDeployment } from '@/lib/executions/deployment-server-actions';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getMSConfig } from '@/lib/ms-config/ms-config';
+import { revalidateTag } from 'next/cache';
 
 /**
  * Returns all processes in an environment
@@ -515,6 +516,8 @@ export async function removeProcess(spaceId: string, processDefinitionsId: strin
       where: { AND: [{ removeTime: null }, { version: { processId: processDefinitionsId } }] },
       include: { instances: { select: { state: true } } },
     });
+    revalidateTag(`space/${spaceId}/deployments`, 'max');
+    revalidateTag(`deployments/process/${processDefinitionsId}`, 'max');
 
     if (deployments.length) {
       const res = await removeDeployment(processDefinitionsId, spaceId);

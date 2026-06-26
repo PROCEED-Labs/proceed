@@ -3,8 +3,10 @@ import { getCurrentUser } from '@/components/auth';
 import { redirect } from 'next/navigation';
 import SignIn from './signin';
 import { generateGuestReferenceToken } from '@/lib/reference-guest-user-token';
-import { env } from '@/lib/ms-config/env-vars';
 import db from '@/lib/data/db';
+import { connection } from 'next/server';
+import { Suspense } from 'react';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 const dayInMS = 1000 * 60 * 60 * 24;
 
@@ -19,7 +21,18 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
     redirect(callbackUrl);
   }
 
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <Deferred />
+    </Suspense>
+  );
+};
+
+const Deferred: React.FC<{}> = async ({}) => {
   // NOTE: expiration should be the same as the expiration for sign in mails
+  await connection();
+  const { session } = await getCurrentUser();
+  const isGuest = session?.user.isGuest;
   const guestReferenceToken = isGuest
     ? generateGuestReferenceToken({ guestId: session.user.id }, new Date(Date.now() + dayInMS))
     : undefined;
@@ -47,7 +60,8 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
   else userType = isGuest ? ('guest' as const) : ('user' as const);
 
   let logoUrl;
-  if (env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
+  const config = await getMSConfig();
+  if (config.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     const org = await db.space.findFirst({
       where: {
         isOrganization: true,
@@ -73,5 +87,3 @@ const SignInPage = async (props: { searchParams: Promise<{ callbackUrl: string }
 };
 
 export default SignInPage;
-
-export const dynamic = 'force-dynamic';

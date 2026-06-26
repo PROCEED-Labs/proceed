@@ -20,16 +20,18 @@ import { ProcessMetadata } from '@/lib/data/process-schema';
 import { Folder } from '@/lib/data/folder-schema';
 import { useInitialiseFavourites } from '@/lib/useFavouriteProcesses';
 import ProcessIconView from './deployment-selection-icon-view';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useEnvironment } from '@/components/auth-can';
 import { getFolder, getFolderContents } from '@/lib/data/folders';
 import { ProcessDeploymentList } from '@/components/process-list';
 import { useQuery } from '@tanstack/react-query';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getAvailableSpaceEngines } from '@/lib/data/engines';
-import { SpaceEngine } from '@/lib/engines/types';
+import { SpaceEngine, isHttpConnection, isMqttConnection } from '@/lib/engines/types';
 import { MdOutlineComputer } from 'react-icons/md';
 import { LeftOutlined } from '@ant-design/icons';
+import { asyncFilter } from '@/lib/helpers/javascriptHelpers';
+import { getLatestVersion } from '@/lib/data/processes';
 
 type InputItem = ProcessMetadata | (Folder & { type: 'folder' });
 export type ProcessListProcess = ReplaceKeysWithHighlighted<InputItem, 'name' | 'description'>;
@@ -101,14 +103,26 @@ const EngineSelection = ({ onEngine }: { onEngine: (args?: SpaceEngine | 'PROCEE
       <>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <MdOutlineComputer />
-          {engine.type === 'http' ? engine.address : engine.id}
+          {engine.name || engine.id}
         </div>
 
         <Descriptions
           items={[
             {
-              label: 'type',
-              children: engine.type.toUpperCase(),
+              label: 'Connections',
+              children: Object.entries(
+                engine.connections.reduce(
+                  (acc, { connection }) => {
+                    if (isHttpConnection(connection)) acc.HTTP = true;
+                    else if (isMqttConnection(connection)) acc.MQTT = true;
+                    return acc;
+                  },
+                  { HTTP: false, MQTT: false },
+                ),
+              )
+                .filter(([, hasType]) => hasType)
+                .map(([type]) => type)
+                .join(', '),
               key: '0',
               style: { padding: 0 },
             },
@@ -187,8 +201,25 @@ const DeploymentsModal = ({
       ...initialProcesses,
     ];
 
-  const [processes, setProcesses] = useState(initialProcesses);
+  const [processes, setProcesses] = useState<InputItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [folder, setFolder] = useState(initialFolder);
+
+  useEffect(() => {
+    async function init() {
+      const deployable = await asyncFilter(initialProcesses, async (c) => {
+        if (c.type === 'folder') return true;
+
+        const latestVersion = await getLatestVersion(environment.spaceId, c.id);
+        if (isUserErrorResponse(latestVersion)) return false;
+        return latestVersion.executable;
+      });
+      setProcesses(deployable);
+      setLoading(false);
+    }
+
+    init();
+  }, []);
 
   const favs = favourites ?? [];
   useInitialiseFavourites(favs);
@@ -214,6 +245,7 @@ const DeploymentsModal = ({
   });
 
   const openFolder = async (id: string) => {
+    setLoading(true);
     const folder = await getFolder(environment.spaceId, id);
     if ('error' in folder) {
       throw new Error('Failed to fetch folder');
@@ -224,7 +256,13 @@ const DeploymentsModal = ({
       throw new Error('Failed to fetch folder children');
     }
 
-    folderContents = folderContents.filter((c) => c.type === 'folder' || c.versions.length);
+    folderContents = await asyncFilter(folderContents, async (c) => {
+      if (c.type === 'folder') return true;
+
+      const latestVersion = await getLatestVersion(environment.spaceId, c.id);
+      if (isUserErrorResponse(latestVersion)) return false;
+      return latestVersion.executable;
+    });
 
     if (folder.parentId) {
       setProcesses([
@@ -244,6 +282,7 @@ const DeploymentsModal = ({
       setProcesses(folderContents);
     }
     setFolder(folder);
+    setLoading(false);
   };
 
   const dropdownItems: MenuProps['items'] = [
@@ -356,6 +395,7 @@ const DeploymentsModal = ({
             <div style={{ width: 'min-content' }}>
               <ProcessDeploymentList
                 data={filteredData}
+                loading={loading}
                 folder={folder}
                 openFolder={(id) => {
                   openFolder(id);

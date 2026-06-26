@@ -23,7 +23,7 @@ module.exports = (path, management) => {
 
     if (extras) {
       if ('managementSystemLocation' in extras) {
-        const initiatorInfo = ['processInitiator', 'spaceIdOfProcessInitiator'];
+        const initiatorInfo = ['processInstanceInitiator', 'processInstanceInitiatorSpaceId'];
         // the ms provided information about where and by whom the instance is being created
         if (initiatorInfo.every((info) => info in extras)) {
           for (const address of extras.managementSystemLocation) {
@@ -34,7 +34,7 @@ module.exports = (path, management) => {
               const res = await network.sendRequest(
                 address,
                 undefined,
-                `/api/spaces/${extras.spaceIdOfProcessInitiator}/status?user-id=${extras.processInitiator}`,
+                `/api/spaces/${extras.processInstanceInitiatorSpaceId}/status?user-id=${extras.processInstanceInitiator}`,
               );
               if (res.response.statusCode === 200) {
                 extras.managementSystemLocation = address;

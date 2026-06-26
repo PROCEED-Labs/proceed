@@ -7,7 +7,7 @@ import UserTable from './user-table';
 import { UserErrorType, userError } from '@/lib/user-error';
 import Content from '@/components/content';
 import { UserHasToDeleteOrganizationsError } from '@/lib/data/db/iam/users';
-import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 async function deleteUsers(userIds: string[]) {
   'use server';
@@ -27,7 +27,8 @@ async function deleteUsers(userIds: string[]) {
 export type deleteUsers = typeof deleteUsers;
 
 export default async function UsersPage() {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
+  const msConfig = await getMSConfig();
+  if (!msConfig.PROCEED_PUBLIC_IAM_ACTIVE) return notFound();
 
   const user = await getCurrentUser();
   if (!user.session) redirect('/');
@@ -72,5 +73,3 @@ export default async function UsersPage() {
     </Content>
   );
 }
-
-export const dynamic = 'force-dynamic';

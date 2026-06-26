@@ -2,11 +2,9 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { deployProcess } from '@/lib/engines/deployment';
-import { startInstanceOnMachine } from '@/lib/engines/instances';
+import { deployProcess } from '@/lib/executions/deployment-server-actions';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
-import { getAllAvailableEngines } from '@/lib/data/engines';
 import { startInstance } from '@/lib/executions/instance-server-actions';
 
 // Define the schema for tool parameters
@@ -71,25 +69,6 @@ export default async function startProcess({
 
     // we don't need to check if the variables that are required at startup are set since the engine
     // will do that for us and return an error if they aren't
-
-    const engines = await getAllAvailableEngines(environmentId, ability);
-
-    if (isUserErrorResponse(engines)) return `Error: ${engines.error.message}`;
-
-    if (!engines.length) return 'Error: No fitting engine found';
-
-    const [engine] = engines;
-
-    const deployment = await deployProcess(
-      processId,
-      process.version.id,
-      environmentId,
-      'dynamic',
-      [engine],
-      ability,
-    );
-
-    if (isUserErrorResponse(deployment)) return deployment.error.message;
 
     const instanceId = await startInstance(
       environmentId,

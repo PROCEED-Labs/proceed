@@ -89,7 +89,7 @@ model Process {
   processIds                String[]
   type                      String
   // if the folder is null the process has been removed from the space but is kept in storage for reference in audit trails
-  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  folder                    Folder?                    @relation(fields: [folderId], references: [id], onDelete: SetNull)
   folderId                  String?
   sharedAs                  String
   shareTimestamp            BigInt
@@ -280,6 +280,10 @@ model Engine {
 
   connections   ConnectionEngineReachability[]
 
+  deployments   ProcessDeployment[]
+  instances     ProcessInstance[]
+  userTasks     UserTask[]
+
   @@map("engine")
 }
 
@@ -390,7 +394,8 @@ model UserTask {
   variableChanges   Json
   milestones        Json
   milestonesChanges Json
-  machineId         String
+  engineId          String?
+  engine            Engine?         @relation(fields: [engineId], references: [id])
   actualOwner       String[]
   potentialOwners   Json
 
@@ -500,9 +505,8 @@ model ProcessDeployment {
   // this can happen when the bpmn contains typed start events like timer start events
   active        Boolean    @default(false)
 
-  // This is not the "Engine" which we store here in the DB but the actual engine the process is deployed on
-  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
   engineId      String
+  engine        Engine         @relation(fields: [engineId], references: [id])
 
   instances     ProcessInstance[]
 
@@ -515,9 +519,7 @@ model ProcessInstance {
   deployment          ProcessDeployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   initiatorId         String?
   initiator           User?             @relation(fields: [initiatorId], references: [id], onDelete: SetNull)
-  // These are not the "Engines" which we store here in the DB but the actual engines the process is running on
-  // an "Engine" can represent multiple engines in case it is an "MQTT-Engine"
-  engineIds           String[]
+  engines             Engine[]
   state               Json
 
   userTasks           UserTask[]

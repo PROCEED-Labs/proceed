@@ -262,8 +262,8 @@ describe('Test for the function that sets up callbacks for the different lifecyc
             other: 123,
           });
           mockEngine._instanceIdExtraInfoMapping['newInstanceId'] = {
-            processInitiator: 'user-id',
-            spaceIdOfProcessInitiator: 'space-id',
+            processInstanceInitiator: 'user-id',
+            processInstanceInitiatorSpaceId: 'space-id',
             managementSystemLocation: 'some-address',
           };
           mockNewInstance.isEnded.mockReturnValue(false);
@@ -276,8 +276,8 @@ describe('Test for the function that sets up callbacks for the different lifecyc
             some: 'data',
             other: 123,
             extras: {
-              processInitiator: 'user-id',
-              spaceIdOfProcessInitiator: 'space-id',
+              processInstanceInitiator: 'user-id',
+              processInstanceInitiatorSpaceId: 'space-id',
               managementSystemLocation: 'some-address',
             },
             isCurrentlyExecutedInBpmnEngine: true,
@@ -302,8 +302,8 @@ describe('Test for the function that sets up callbacks for the different lifecyc
           mockNewInstance.isEnded.mockReturnValue(false);
 
           mockEngine._instanceIdExtraInfoMapping['newInstanceId'] = {
-            processInitiator: 'user-id',
-            spaceIdOfProcessInitiator: 'space-id',
+            processInstanceInitiator: 'user-id',
+            processInstanceInitiatorSpaceId: 'space-id',
             managementSystemLocation: 'some-address',
           };
           mockEngine.getInstance.mockReturnValue(mockNewInstance);
@@ -338,8 +338,8 @@ describe('Test for the function that sets up callbacks for the different lifecyc
             some: 'data',
             other: 789,
             extras: {
-              processInitiator: 'user-id',
-              spaceIdOfProcessInitiator: 'space-id',
+              processInstanceInitiator: 'user-id',
+              processInstanceInitiatorSpaceId: 'space-id',
               managementSystemLocation: 'some-address',
             },
             isCurrentlyExecutedInBpmnEngine: true,

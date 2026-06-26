@@ -1,7 +1,8 @@
 'use client';
 
-import { App, Button } from 'antd';
-import { useEffect, useState, useTransition } from 'react';
+import { App, Button, Checkbox, Space, Spin, Tooltip, Typography } from 'antd';
+import { QuestionCircleOutlined } from '@ant-design/icons';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import DeploymentsModal from './deployments-modal';
 import Bar from '@/components/bar';
 import useFuzySearch from '@/lib/useFuzySearch';
@@ -10,7 +11,7 @@ import { Folder } from '@/lib/data/folder-schema';
 import { Process, ProcessMetadata } from '@/lib/data/process-schema';
 import { useEnvironment } from '@/components/auth-can';
 import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   deployProcess as serverDeployProcess,
   removeDeployment as serverRemoveDeployment,
@@ -34,12 +35,13 @@ const DeploymentsView = ({
   deployedProcesses: {
     id: string;
     name: string;
-    versions: { id: string; name: string }[];
+    versions: { id: string; name: string; deployed: boolean }[];
     instances: string[];
   }[];
 }) => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const app = App.useApp();
+  const pathname = usePathname();
   const space = useEnvironment();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -50,6 +52,25 @@ const DeploymentsView = ({
     highlightedKeys: ['name'],
     transformData: (matches) => matches.map((match) => match.item),
   });
+
+  const [togglingShowArchived, startTogglingShowArchived] = useTransition();
+  const query = useSearchParams();
+  // Get a new searchParams string by merging the current
+  // searchParams with a provided key/value pair
+  // see: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams
+  const createQueryString = useCallback(
+    (name: string, value: string) => {
+      const params = new URLSearchParams(query.toString());
+      if (!value) {
+        params.delete(name);
+      } else {
+        params.set(name, value);
+      }
+
+      return params.toString();
+    },
+    [query],
+  );
 
   const [checkingProcessVersion, startCheckingProcessVersion] = useTransition();
   function deployProcess(
@@ -91,6 +112,13 @@ const DeploymentsView = ({
           queryClient.removeQueries({
             queryKey: ['processDeployments', space.spaceId, process.id],
           });
+
+          if (isUserErrorResponse(res) && res.error.message === 'No fitting engine found.') {
+            return userError(
+              'No process execution could be started because there is no Process Engine available.',
+            );
+          }
+
           return res;
         },
         onSuccess: () => {
@@ -118,7 +146,8 @@ const DeploymentsView = ({
     setInitialLoading(false);
   }, []);
 
-  const loading = initialLoading || checkingProcessVersion || removingDeployment;
+  const loading =
+    initialLoading || checkingProcessVersion || removingDeployment || togglingShowArchived;
 
   const tableProps: { loading: boolean; pagination?: false } = { loading };
 
@@ -126,7 +155,14 @@ const DeploymentsView = ({
 
   return (
     <div>
-      <div style={{ marginBottom: '0.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline',
+          marginBottom: '0.5rem',
+        }}
+      >
         <Button
           type="primary"
           onClick={() => {
@@ -136,6 +172,29 @@ const DeploymentsView = ({
         >
           Deploy Process
         </Button>
+
+        <Space>
+          {togglingShowArchived ? (
+            <Spin size="small" />
+          ) : (
+            <Checkbox
+              checked={query.get('archived') == 'true'}
+              onChange={(el) =>
+                startTogglingShowArchived(() => {
+                  router.push(
+                    pathname + '?' + createQueryString('archived', el.target.checked ? 'true' : ''),
+                  );
+                })
+              }
+            />
+          )}
+          <Typography.Text>
+            Show Past Executions{' '}
+            <Tooltip title="This option displays all processes that have already been executed in the past, even if a process has already been deleted from the Management System.">
+              <QuestionCircleOutlined />
+            </Tooltip>
+          </Typography.Text>
+        </Space>
       </div>
 
       <Bar

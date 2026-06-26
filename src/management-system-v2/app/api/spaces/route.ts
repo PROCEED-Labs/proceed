@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/data/db';
-import { env } from '@/lib/ms-config/env-vars';
+import { getMSConfig } from '@/lib/ms-config/ms-config';
 
 export async function GET(request: NextRequest) {
-  if (!env.PROCEED_PUBLIC_IAM_ACTIVE) {
+  const config = await getMSConfig();
+  if (!config.PROCEED_PUBLIC_IAM_ACTIVE) {
     return NextResponse.json([
       { id: 'proceed-default-no-iam-user', type: 'personal', name: 'Default User' },
     ]);
@@ -26,5 +27,3 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(spaces);
 }
-
-export const dynamic = 'force-dynamic';

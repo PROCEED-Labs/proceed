@@ -12,6 +12,7 @@ import { truthyFilter } from '@/lib/typescript-utils';
 import { getUserTaskById } from '@/lib/data/user-tasks';
 import { getDBInstance } from '@/lib/data/instance';
 import { getProcessBPMN } from '@/lib/data/processes';
+import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 const variableSchema = z
   .array(z.object({ name: z.string(), value: z.any() }))
@@ -66,6 +67,7 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       return 'Error: The given variables are not in the required format';
     }
 
+    await refetchDeployments();
     const task = await getUserTaskById(id);
     if (isUserErrorResponse(task)) return `Error: ${task.error.message}`;
     if (!task) return 'Error: Task not found';
@@ -162,15 +164,10 @@ export default async function submitTask({ userCode, id, variables }: InferSchem
       }
     }
 
-    const variableUpdate = await setTasklistEntryVariableValues(
-      environmentId,
-      id,
-      mappedVariables,
-      ability,
-    );
+    const variableUpdate = await setTasklistEntryVariableValues(environmentId, id, mappedVariables);
     if (isUserErrorResponse(variableUpdate)) return `Error: ${variableUpdate.error.message}`;
 
-    const result = await completeTasklistEntry(environmentId, id, mappedVariables, ability);
+    const result = await completeTasklistEntry(environmentId, id, mappedVariables);
 
     if (isUserErrorResponse(result)) return `Error: ${result.error.message} `;
 

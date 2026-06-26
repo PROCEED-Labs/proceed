@@ -16,7 +16,11 @@ export default async function AdminDashboard() {
   // NOTE: this should be replaced to a more efficient count query
   // when the data persistence layer is implemented
 
-  const [usersAmount, spacesAmount] = await Promise.all([db.user.count(), db.space.count()]);
+  const [guestCount, registeredCount, orgSpaceCount] = await Promise.all([
+    db.user.count({ where: { isGuest: true } }),
+    db.user.count({ where: { isGuest: false } }),
+    db.space.count({ where: { isOrganization: true } }),
+  ]);
 
   const cardStyle: CSSProperties = {
     width: '80%',
@@ -27,14 +31,15 @@ export default async function AdminDashboard() {
     <Content title="MS admin dashboard">
       <Space orientation="vertical" style={{ width: '100%' }}>
         <Card variant="borderless" style={cardStyle}>
-          <Statistic title="Users" value={usersAmount} />
+          <Statistic title="Registered Users" value={registeredCount} />
         </Card>
         <Card variant="borderless" style={cardStyle}>
-          <Statistic title="Spaces" value={spacesAmount} />
+          <Statistic title="Guest Accounts" value={guestCount} />
+        </Card>
+        <Card variant="borderless" style={cardStyle}>
+          <Statistic title="Organizational Spaces" value={orgSpaceCount} />
         </Card>
       </Space>
     </Content>
   );
 }
-
-export const dynamic = 'force-dynamic';

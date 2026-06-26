@@ -237,7 +237,7 @@ const CreateOrganizationPage = ({
               }}
             >
               <Typography.Title level={4} style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                You need to sign in to create an Space
+                You need to sign in to create a Space
               </Typography.Title>
 
               <SigninOptions

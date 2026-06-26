@@ -33,7 +33,7 @@ const DeleteOrganizationButton = () => {
   return (
     <ConfirmationButton
       title="Delete Space"
-      description="The space and all processes inside it will be deleted."
+      description="The Space and all processes inside it will be deleted."
       onConfirm={deleteOrganization}
       buttonProps={{
         danger: true,

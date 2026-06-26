@@ -4891,7 +4891,7 @@ export async function syncPersonalSpaceUser(spaceId: string) {
       );
     }
   } else {
-    return userError(`Config ${spaceId} is not of type 'space'.`);
+    return userError(`Config ${spaceId} is not of type 'Space'.`);
   }
 }
 

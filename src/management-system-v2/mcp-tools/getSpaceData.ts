@@ -24,7 +24,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getOrganizatoinData({ userCode }: InferSchema<typeof schema>) {
+export default async function getSpaceData({ userCode }: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
 

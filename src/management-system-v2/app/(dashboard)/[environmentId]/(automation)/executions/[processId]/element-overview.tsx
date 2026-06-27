@@ -18,7 +18,7 @@ import {
 } from '@proceed/bpmn-helper';
 import { getTiming, statusToType } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
-import styles from './element-overwiew.module.scss';
+import styles from './element-overview.module.scss';
 import { EntryText } from './entry-text';
 import { ElementLike } from 'diagram-js/lib/model/Types';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
@@ -39,7 +39,9 @@ export function ElementOverview({
   processId: string;
   element: ElementLike;
   version: { bpmn: string };
-  instance?: ExtendedInstanceInfo;
+  instance?: {
+    processInitiator: any;
+  } & ExtendedInstanceInfo;
 }) {
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
 
@@ -61,8 +63,6 @@ export function ElementOverview({
       setFileUrl(undefined);
       const metaData = getMetaDataFromElement(element.businessObject);
       const fileName = metaData.overviewImage;
-
-      console.log('Downloading image for fileName:', fileName);
 
       if (fileName === undefined) {
         return;
@@ -165,7 +165,10 @@ export function ElementOverview({
         <Typography.Title level={4} style={{ fontWeight: 'bold', margin: 0 }}>
           {definitionsInfos?.name}
         </Typography.Title>
-        <EntryText style={{ fontWeight: '600', color: '#aaa', margin: 0 }}>
+        <EntryText
+          style={{ fontWeight: '600', color: '#aaa', margin: 0 }}
+          missingTextOverride="no short name available"
+        >
           {definitionsInfos?.userDefinedId}
         </EntryText>
       </div>,

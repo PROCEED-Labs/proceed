@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useState } from 'react';
 import { Checkbox, Divider, Space, Switch, Tag, Typography } from 'antd';
 import { getTiming } from './instance-helpers';
 import {
@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 import { getUserById } from '@/lib/data/users';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { User } from '@/lib/data/user-schema';
+import cn from 'classnames';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 type PreviousVersion =
@@ -44,10 +45,10 @@ type VersionInfo = {
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
 const EntryKeyText = (props: EntryTextProps) => (
-  <EntryText className={styles.ElementText + ' ' + styles.ElementKeyText} {...props} />
+  <EntryText className={cn(styles.ElementText, styles.ElementKeyText)} {...props} />
 );
 const EntryValueText = (props: EntryTextProps) => {
-  return <EntryText className={styles.ElementText + ' ' + styles.ElementValueText} {...props} />;
+  return <EntryText className={cn(styles.ElementText, styles.ElementValueText)} {...props} />;
 };
 
 const TechEntryKey = (props: EntryTextProps) => (
@@ -78,15 +79,18 @@ const TechDetailsSwitch = ({
   setTechDetailsCb: (checked: boolean) => void;
 }) => {
   const textColor = techDetails ? '#3e93de' : '#aaa';
+  const baseStyle: CSSProperties = {
+    width: '100%',
+    justifyContent: 'space-between',
+    flexWrap: 'nowrap',
+    alignItems: 'start',
+    display: 'inline-flex',
+    gap: 10,
+  };
   return (
     <div
       style={{
-        width: '100%',
-        justifyContent: 'space-between',
-        flexWrap: 'nowrap',
-        alignItems: 'start',
-        display: 'inline-flex',
-        gap: 10,
+        ...baseStyle,
         padding: '10px 20px',
         backgroundColor: 'hsla(213, 100%, 58%, 0.06)',
         borderBottom: 'solid',
@@ -95,16 +99,7 @@ const TechDetailsSwitch = ({
       }}
     >
       <Switch onChange={(checked) => setTechDetailsCb(checked)} />
-      <Space
-        style={{
-          width: '100%',
-          justifyContent: 'space-between',
-          flexWrap: 'nowrap',
-          alignItems: 'start',
-          display: 'inline-flex',
-          gap: 10,
-        }}
-      >
+      <Space style={baseStyle}>
         <Typography.Text style={{ fontSize: '.9em', fontWeight: 'bold', color: textColor }}>
           Show technical details
         </Typography.Text>
@@ -131,6 +126,8 @@ export function ElementDetails({
       id: string;
       online: boolean;
     }[];
+    processInitiator: any;
+    spaceOfProcessInitiator: any;
   } & ExtendedInstanceInfo;
 }) {
   const [techDetails, setTechDetails] = useState(false);
@@ -207,7 +204,7 @@ export function ElementDetails({
       </div>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="instance-processmanager-key">Process Mangager</EntryKeyText>,
+      <EntryKeyText key="instance-processmanager-key">Process Managager</EntryKeyText>,
       <EntryValueText key="instance-processmanager-val">
         <Space>
           {responsibleParty.map((e) =>

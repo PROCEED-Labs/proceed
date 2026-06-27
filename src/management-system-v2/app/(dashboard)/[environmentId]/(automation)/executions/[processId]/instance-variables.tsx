@@ -52,9 +52,22 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
 
   const [form] = Form.useForm();
 
-  const { variables } = useInstanceVariables({ version, instance });
+  const { variables, variableDefinitions } = useInstanceVariables({ version, instance });
 
   const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
+  const [variableDefinitionsToEdit, setvariableDefinitionsToEdit] = useState<
+    | {
+        name: string;
+        dataType: 'string' | 'number' | 'boolean' | 'object' | 'date' | 'array' | 'file';
+        description?: string | undefined;
+        defaultValue?: string | undefined;
+        textFormat?: 'email' | 'url' | undefined;
+        requiredAtInstanceStartup?: boolean | undefined;
+        enum?: string | undefined;
+        const?: boolean | undefined;
+      }
+    | undefined
+  >(undefined);
 
   const columns: React.ComponentProps<typeof Table<Variable>>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
@@ -93,6 +106,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
             type="text"
             onClick={() => {
               setVariableToEdit(variable);
+              setvariableDefinitionsToEdit(
+                variableDefinitions.find((e) => e.name === variable?.name),
+              );
               switch (variable.type) {
                 case 'object':
                 case 'array':
@@ -136,6 +152,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
 
   const handleClose = () => {
     setVariableToEdit(undefined);
+    setvariableDefinitionsToEdit(undefined);
   };
 
   return (
@@ -285,7 +302,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Format</FormFieldTitle>
                 <br />
-                <EntryText missingTextOverride="— not set">{}</EntryText>
+                <EntryText missingTextOverride="— not set">
+                  {variableDefinitionsToEdit?.dataType}
+                </EntryText>
               </div>
             </Col>
           </Row>
@@ -294,14 +313,18 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Required at start</FormFieldTitle>
                 <br />
-                <EntryText missingTextOverride="— not set">Yes</EntryText>
+                <EntryText missingTextOverride="— not set">
+                  {variableDefinitionsToEdit?.requiredAtInstanceStartup ? 'Yes' : 'No'}
+                </EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Can be changed</FormFieldTitle>
                 <br />
-                <EntryText missingTextOverride="— not set">Yes</EntryText>
+                <EntryText missingTextOverride="— not set">
+                  {variableDefinitionsToEdit?.const ? 'No' : 'Yes'}
+                </EntryText>
               </div>
             </Col>
           </Row>
@@ -310,14 +333,16 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Default value</FormFieldTitle>
                 <br />
-                <EntryText missingTextOverride="— not set">{}</EntryText>
+                <EntryText missingTextOverride="— not set">
+                  {variableDefinitionsToEdit?.defaultValue}
+                </EntryText>
               </div>
             </Col>
             <Col span={12}>
               <div style={{ marginBlock: 10 }}>
                 <FormFieldTitle>Allowed values</FormFieldTitle>
                 <br />
-                <EntryText missingTextOverride="— not set">{}</EntryText>
+                <EntryText missingTextOverride="— not set">{variableToEdit?.allowed}</EntryText>
               </div>
             </Col>
           </Row>
@@ -329,14 +354,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
           <Row>
             <Col span={24}>
               <EntryText missingTextOverride="— not set">
-                Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod
-                tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero
-                eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea
-                takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet,
-                consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et
-                dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo
-                dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem
-                ipsum dolor sit amet.
+                {variableDefinitionsToEdit?.description}
               </EntryText>
             </Col>
           </Row>

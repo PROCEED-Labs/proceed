@@ -9,43 +9,6 @@ import { ElementActivity } from './element-activity';
 import { ElementOverview } from './element-overview';
 import { StatusTag } from './status-tag';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
-import { InstanceSelector } from './instance-selector';
-
-export function DisplayTable({ data }: { data: ReactNode[][] }) {
-  // TODO: make this responsive
-  return (
-    <table
-      style={{
-        borderSpacing: '0 .5rem',
-        borderCollapse: 'separate',
-        width: '100%',
-        tableLayout: 'fixed',
-      }}
-    >
-      <colgroup>
-        <col style={{ width: 150 }} />
-        <col />
-      </colgroup>
-      <tbody>
-        {data.map((row, idx_row) => (
-          <tr key={idx_row}>
-            {row.map((cell, idx_cell) => (
-              <td
-                key={`${idx_row}.${idx_cell}`}
-                style={{
-                  paddingRight: idx_cell < row.length - 1 ? '1rem' : '',
-                  backgroundColor: idx_row % 2 ? '#f8f8f8' : '#fff',
-                }}
-              >
-                {cell}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
 
 export function DataGrid({ data }: { data: ReactNode[][] }) {
   return (
@@ -103,6 +66,8 @@ export default function InstanceInfoPanel({
       id: string;
       online: boolean;
     }[];
+    processInitiator: any;
+    spaceOfProcessInitiator: any;
   } & ExtendedInstanceInfo;
   element?: ElementLike;
   refetch: () => void;
@@ -154,16 +119,16 @@ export default function InstanceInfoPanel({
             />
           ),
         },
-        {
-          key: 'Milestones',
-          label: 'Milestones',
-          children: 'How to proceed',
-        },
-        {
-          key: 'Activity',
-          label: 'Activity',
-          children: <ElementActivity processId={processId} element={element} instance={instance} />,
-        },
+        // {
+        //   key: 'Milestones',
+        //   label: 'Milestones',
+        //   children: 'How to proceed',
+        // },
+        // {
+        //   key: 'Activity',
+        //   label: 'Activity',
+        //   children: <ElementActivity processId={processId} element={element} instance={instance} />,
+        // },
       ]}
     />
   ) : null;
@@ -184,14 +149,8 @@ export default function InstanceInfoPanel({
       ref={resizableElementRef}
     >
       <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
-        {instance ? (
-          <>
-            <StatusTag processId={processId} element={element} instance={instance} />
-            {tabs}
-          </>
-        ) : (
-          <InstanceSelector />
-        )}
+        <StatusTag element={element} instance={instance} />
+        {tabs}
       </CollapsibleCard>
     </ResizableElement>
   ) : (

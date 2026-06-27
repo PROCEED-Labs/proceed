@@ -42,60 +42,31 @@ export function ElementActivity({
     ['09:35:23', 'INFO', "Step 'Manager Approval' started"],
   ];
 
-  const tagStatuus: Record<'INFO' | 'WARN', string> = {
+  const tagStatus: Record<'INFO' | 'WARN', string> = {
     INFO: 'processing',
     WARN: 'warning',
   };
 
   return (
-    <>
-      <table
-        style={{
-          borderSpacing: '0 .5rem',
-          borderCollapse: 'separate',
-        }}
-      >
-        <colgroup>
-          <col style={{ width: 150 }} />
-          <col />
-        </colgroup>
-        <tbody>
-          {activityEntries.map((row, idx_row) => (
-            <tr key={idx_row}>
-              {row.map((cell, idx_cell) => (
-                <td
-                  key={`${idx_row}.${idx_cell}`}
-                  style={{
-                    paddingRight: idx_cell < row.length - 1 ? '1rem' : '',
-                  }}
-                >
-                  {cell}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div
-        className={styles.GridContainer}
-        style={{ border: 'solid 1px #ddd', borderRadius: 12, marginBlock: 15 }}
-      >
-        {activityLog.map((row, idx_row) => (
-          <Row key={'activity' + idx_row} className={styles.GridCell}>
-            <Col flex="70px" style={{ display: 'flex', justifyContent: 'center' }}>
-              {row[0]}
-            </Col>
+    <div
+      className={styles.GridContainer}
+      style={{ border: 'solid 1px #ddd', borderRadius: 12, marginBlock: 15 }}
+    >
+      {activityLog.map((row, idx_row) => (
+        <Row key={'activity' + idx_row} className={styles.GridCell}>
+          <Col flex="70px" style={{ textAlign: 'center' }}>
+            {row[0]}
+          </Col>
 
-            <Col flex="70px" style={{ display: 'flex', justifyContent: 'center' }}>
-              <Tag color={tagStatuus[row[1]]}>{row[1]}</Tag>
-            </Col>
+          <Col flex="70px" style={{ textAlign: 'center' }}>
+            <Tag color={tagStatus[row[1]]}>{row[1]}</Tag>
+          </Col>
 
-            <Col flex="auto" style={{ padding: '0 10px' }}>
-              {row[2]}
-            </Col>
-          </Row>
-        ))}
-      </div>
-    </>
+          <Col flex="auto" style={{ padding: '0 10px' }}>
+            {row[2]}
+          </Col>
+        </Row>
+      ))}
+    </div>
   );
 }

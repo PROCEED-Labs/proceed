@@ -490,21 +490,34 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Assigned to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {performers ? (
-          !!performers?.length && (
+        {
+          // loading from log if possible to skip fetching data
+          logInfo ? (
             <Space>
-              {performers.map((e) =>
+              {logInfo?.performers?.user?.map((e) =>
                 !e.isGuest ? (
                   <Tag color={'purple'} key={e.id + 'assigned'}>
-                    {e.firstName + ' ' + e.lastName}
+                    {e.fullName}
                   </Tag>
                 ) : undefined,
               )}
             </Space>
+          ) : performers ? (
+            !!performers?.length && (
+              <Space>
+                {performers.map((e) =>
+                  !e.isGuest ? (
+                    <Tag color={'purple'} key={e.id + 'assigned'}>
+                      {e.firstName + ' ' + e.lastName}
+                    </Tag>
+                  ) : undefined,
+                )}
+              </Space>
+            )
+          ) : (
+            <LoadingOutlined />
           )
-        ) : (
-          <LoadingOutlined />
-        )}
+        }
       </EntryValueText>,
     ]);
 

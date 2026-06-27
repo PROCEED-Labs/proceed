@@ -1,10 +1,13 @@
 import { CSSProperties, ReactNode, useEffect, useState } from 'react';
 import { Checkbox, Divider, Space, Switch, Tag, Typography } from 'antd';
+import { LoadingOutlined } from '@ant-design/icons';
 import { getTiming } from './instance-helpers';
 import {
   getDefinitionsInfos,
   getDefinitionsVersionInformation,
+  getElementById,
   getMetaDataFromElement,
+  getPerformersFromElement,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { DataGrid } from './instance-info-panel';
@@ -19,6 +22,7 @@ import dynamic from 'next/dynamic';
 import { getUserById } from '@/lib/data/users';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { User } from '@/lib/data/user-schema';
+
 import cn from 'classnames';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
@@ -126,15 +130,14 @@ export function ElementDetails({
       id: string;
       online: boolean;
     }[];
-    processInitiator: any;
-    spaceOfProcessInitiator: any;
   } & ExtendedInstanceInfo;
 }) {
   const [techDetails, setTechDetails] = useState(false);
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
-  const [responsibleParty, setResponsibleParty] = useState<User[]>([]);
+  const [responsibleParty, setResponsibleParty] = useState<User[] | undefined>(undefined);
+  const [performers, setPerformers] = useState<User[] | undefined>(undefined);
   const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -145,27 +148,48 @@ export function ElementDetails({
   useEffect(() => {
     // using version because it contains the parent object containing some more metadata
     async function getBpmnObject() {
+      setPerformers(undefined);
+      setResponsibleParty(undefined);
       const bpmnObj = await toBpmnObject(version.bpmn);
       const defInfos = await getDefinitionsInfos(bpmnObj);
       const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
       const previous = await getProcessVersion(processId, defVersionInfos.versionBasedOn);
-      // maybe to be used in the future
-      // const responsible = getElementsByTagName(bpmnObj, 'proceed:ResponsibleParty');
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(version.bpmn, 'text/xml');
-      const responsibleIds = JSON.parse(
-        xmlDoc.getElementsByTagName('proceed:responsibleParty')[0].childNodes[1].childNodes[1]
-          .textContent || '',
-      );
-      const responsible = await asyncMap(
-        responsibleIds.user,
-        async (resId: string) => await getUserById(resId),
-      );
+
+      if (element) {
+        if (element.type === 'bpmn:Process') {
+          // maybe to be used in the future
+          // const responsible = getElementsByTagName(bpmnObj, 'proceed:ResponsibleParty');
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(version.bpmn, 'text/xml');
+          const processXML = xmlDoc.getElementById(element.id);
+          const responsibleIds = processXML
+            ? JSON.parse(
+                processXML.getElementsByTagName('proceed:responsibleParty')[0].childNodes[1]
+                  .childNodes[1].textContent || '',
+              )
+            : [];
+          const responsible = await asyncMap(
+            responsibleIds.user,
+            async (resId: string) => await getUserById(resId),
+          );
+          setResponsibleParty(responsible);
+        } else {
+          const elementPerformers: { user: string[] } = getPerformersFromElement(
+            getElementById(bpmnObj, element.id),
+          );
+          const performers = elementPerformers.user
+            ? await asyncMap(
+                elementPerformers.user,
+                async (perfId: string) => await getUserById(perfId),
+              )
+            : undefined;
+          setPerformers(performers);
+        }
+      }
 
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
       setPreviousVersion(previous);
-      setResponsibleParty(responsible);
     }
     getBpmnObject();
   }, [processId, version, element]);
@@ -207,12 +231,16 @@ export function ElementDetails({
       <EntryKeyText key="instance-processmanager-key">Process Managager</EntryKeyText>,
       <EntryValueText key="instance-processmanager-val">
         <Space>
-          {responsibleParty.map((e) =>
-            !e.isGuest ? (
-              <Tag key={'instance-processmanager-val' + e.id} color={'purple'}>
-                {e.firstName + ' ' + e.lastName}
-              </Tag>
-            ) : undefined,
+          {responsibleParty ? (
+            responsibleParty.map((e) =>
+              !e.isGuest ? (
+                <Tag key={'instance-processmanager-val' + e.id} color={'purple'}>
+                  {e.firstName + ' ' + e.lastName}
+                </Tag>
+              ) : undefined,
+            )
+          ) : (
+            <LoadingOutlined />
           )}
         </Space>
       </EntryValueText>,
@@ -275,7 +303,7 @@ export function ElementDetails({
         <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHO STARTED IT</EntryKeyText>
       </Space>,
     ]);
-    const initiator = instance?.processInitiator;
+    const initiator = instance?.processInstanceInitiator;
     detailsEntries.push([
       <EntryKeyText key="instance-startedby-key">Started by</EntryKeyText>,
       <EntryValueText key="instance-startedby-val">
@@ -296,14 +324,14 @@ export function ElementDetails({
       detailsEntries.push([
         <EntryKeyText key="instance-startuser-space-key">Workspace</EntryKeyText>,
         <EntryValueText key="instance-startuser-space-val">
-          {instance?.spaceOfProcessInitiator?.name}
+          {instance?.spaceOfProcessInstanceInitiator?.name}
         </EntryValueText>,
       ]);
       if (techDetails)
         detailsEntries.push([
           <TechEntryKey key="instance-startuser-spaceid-key">Workspace ID</TechEntryKey>,
           <EntryValueText key="instance-startuser-spaceid-val">
-            {instance?.spaceOfProcessInitiator?.id}
+            {instance?.spaceOfProcessInstanceInitiator?.id}
           </EntryValueText>,
         ]);
     }
@@ -462,16 +490,20 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Assigned to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {!!logInfo?.performers?.user?.length && (
-          <Space>
-            {logInfo?.performers?.user?.map((e) =>
-              !e.isGuest ? (
-                <Tag color={'purple'} key={e.id + 'assigned'}>
-                  {e.fullName}
-                </Tag>
-              ) : undefined,
-            )}
-          </Space>
+        {performers ? (
+          !!performers?.length && (
+            <Space>
+              {performers.map((e) =>
+                !e.isGuest ? (
+                  <Tag color={'purple'} key={e.id + 'assigned'}>
+                    {e.firstName + ' ' + e.lastName}
+                  </Tag>
+                ) : undefined,
+              )}
+            </Space>
+          )
+        ) : (
+          <LoadingOutlined />
         )}
       </EntryValueText>,
     ]);

@@ -39,9 +39,7 @@ export function ElementOverview({
   processId: string;
   element: ElementLike;
   version: { bpmn: string };
-  instance?: {
-    processInitiator: any;
-  } & ExtendedInstanceInfo;
+  instance?: ExtendedInstanceInfo;
 }) {
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
 
@@ -96,7 +94,7 @@ export function ElementOverview({
   const isRootElement = element && element.type === 'bpmn:Process';
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
-  const initiator = instance?.processInitiator;
+  const initiator = instance?.processInstanceInitiator;
 
   // Element image
   if (metaData.overviewImage) {

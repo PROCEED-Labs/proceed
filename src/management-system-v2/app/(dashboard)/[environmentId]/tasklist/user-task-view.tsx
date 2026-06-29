@@ -125,9 +125,10 @@ export const UserTaskForm: React.FC<UserTaskFormProps> = ({
 type TaskListUserTaskFormProps = {
   userId: string;
   task?: ExtendedTaskListEntry;
+  refetch?: () => {};
 };
 
-const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userId }) => {
+const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userId, refetch }) => {
   const space = useEnvironment();
 
   const { message } = App.useApp();
@@ -175,7 +176,9 @@ const TaskListUserTaskForm: React.FC<TaskListUserTaskFormProps> = ({ task, userI
                 const updatedOwners = await addOwnerToTaskListEntry(space.spaceId, task.id, userId);
                 if ('error' in updatedOwners) return updatedOwners;
               }
-              return await completeTasklistEntry(space.spaceId, task.id, variables);
+              const res = await completeTasklistEntry(space.spaceId, task.id, variables, true);
+              refetch?.();
+              return res;
             },
           });
         }}

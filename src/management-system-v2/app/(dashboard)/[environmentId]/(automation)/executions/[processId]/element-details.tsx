@@ -8,6 +8,7 @@ import {
   getElementById,
   getMetaDataFromElement,
   getPerformersFromElement,
+  getResponsiblePartyFromElement,
   toBpmnObject,
 } from '@proceed/bpmn-helper';
 import { DataGrid } from './instance-info-panel';
@@ -158,26 +159,16 @@ export function ElementDetails({
 
       if (element) {
         if (element.type === 'bpmn:Process') {
-          // maybe to be used in the future
-          // const responsible = getElementsByTagName(bpmnObj, 'proceed:ResponsibleParty');
-          const parser = new DOMParser();
-          const xmlDoc = parser.parseFromString(version.bpmn, 'text/xml');
-          const processXML = xmlDoc.getElementById(element.id);
-          const responsibleIds = processXML
-            ? JSON.parse(
-                processXML.getElementsByTagName('proceed:responsibleParty')[0].childNodes[1]
-                  .childNodes[1].textContent || '',
-              )
-            : [];
+          const responsibleIds = getResponsiblePartyFromElement(
+            getElementById(bpmnObj, element.id),
+          );
           const responsible = await asyncMap(
             responsibleIds.user,
             async (resId: string) => await getUserById(resId),
           );
           setResponsibleParty(responsible);
         } else {
-          const elementPerformers: { user: string[] } = getPerformersFromElement(
-            getElementById(bpmnObj, element.id),
-          );
+          const elementPerformers = getPerformersFromElement(getElementById(bpmnObj, element.id));
           const performers = elementPerformers.user
             ? await asyncMap(
                 elementPerformers.user,

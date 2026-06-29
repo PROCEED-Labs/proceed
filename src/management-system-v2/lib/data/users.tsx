@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, permissionDenied, userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
@@ -12,6 +12,7 @@ import {
   updateUser as _updateUser,
   setUserPassword as _setUserPassword,
   getUserById,
+  getSpaceUsers as _getSpaceUsers,
 } from '@/lib/data/db/iam/users';
 import { revalidatePath } from 'next/cache';
 import { getEnvironmentById } from './db/iam/environments';
@@ -19,6 +20,16 @@ import { hashPassword } from '../password-hashes';
 import { getAppliedRolesForUser } from '../authorization/organizationEnvironmentRolesHelper';
 import db from '@/lib/data/db/index';
 import { env } from '../ms-config/env-vars';
+
+export async function getSpaceUsers(spaceId: string) {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('view', 'User')) return permissionDenied();
+
+  const users = await _getSpaceUsers(spaceId, activeEnvironment.isOrganization);
+
+  return ability.filter('view', 'User', users);
+}
 
 export async function deleteUser() {
   const { userId } = await getCurrentUser();

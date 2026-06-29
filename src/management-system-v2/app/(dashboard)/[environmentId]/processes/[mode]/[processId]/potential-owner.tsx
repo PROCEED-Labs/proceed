@@ -1,6 +1,6 @@
 import React, { FC, useEffect, useState } from 'react';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { Divider, Space, Tooltip, Button, Cascader } from 'antd';
+import { Divider, Space, Tooltip, Button, Cascader, Tag, Select } from 'antd';
 import { UserOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { BPMNCanvasRef } from '@/components/bpmn-canvas';
 import type { CascaderProps, GetProp } from 'antd';
@@ -105,6 +105,23 @@ function updateResource(
   }
 }
 
+const customTagRender: React.ComponentProps<typeof Cascader>['tagRender'] = ({
+  label,
+  value,
+  ...rest
+}) => {
+  if (value === 'all-user') {
+    label = 'All Users';
+  } else if (value === 'all-roles') {
+    label = 'All Roles';
+  }
+  return (
+    <Tag style={{ marginRight: '5px', backgroundColor: 'rgb(0, 0, 0, 0.06)' }} {...rest}>
+      {label}
+    </Tag>
+  );
+};
+
 const filter = (inputValue: string, path: DefaultOptionType[]) =>
   path.some((option) => `${option?.value}`.toLowerCase().indexOf(inputValue.toLowerCase()) > -1);
 
@@ -165,6 +182,7 @@ export const PotentialOwner: FC<PotentialOwnerProps> = ({
               placeholder="Select User or Roles that can claim this task"
               style={{ width: '100%' }}
               multiple
+              tagRender={customTagRender}
               showSearch={{ filter }}
               // @ts-ignore
               onChange={setPotentialOwner}
@@ -243,6 +261,7 @@ export const ResponsibleParty: FC<ResponsibilityProps> = ({
             placeholder="Select User or Roles responsible"
             style={{ width: '100%' }}
             multiple
+            tagRender={customTagRender}
             showSearch={{ filter }}
             // @ts-ignore
             onChange={setResponsible}

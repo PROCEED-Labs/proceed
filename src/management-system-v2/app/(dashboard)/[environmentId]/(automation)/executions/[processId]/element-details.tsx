@@ -145,7 +145,6 @@ export function ElementDetails({
   const metaData = getMetaDataFromElement(element.businessObject);
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
-  const currentEventToken = instance?.tokens.find((e) => e.currentFlowElementId === element.id);
 
   useEffect(() => {
     // using version because it contains the parent object containing some more metadata
@@ -516,8 +515,8 @@ export function ElementDetails({
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Done Bye</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {currentEventToken && currentEventToken.actualOwner?.length
-          ? currentEventToken.actualOwner?.map((e) => (
+        {token && token.actualOwner?.length
+          ? token.actualOwner?.map((e) => (
               <Tag color={'purple'} key={e.id + 'doneby'}>
                 {e.fullName}
               </Tag>

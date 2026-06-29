@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { EditOutlined } from '@ant-design/icons';
 
@@ -55,19 +55,12 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
   const { variables, variableDefinitions } = useInstanceVariables({ version, instance });
 
   const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
-  const [variableDefinitionsToEdit, setvariableDefinitionsToEdit] = useState<
-    | {
-        name: string;
-        dataType: 'string' | 'number' | 'boolean' | 'object' | 'date' | 'array' | 'file';
-        description?: string | undefined;
-        defaultValue?: string | undefined;
-        textFormat?: 'email' | 'url' | undefined;
-        requiredAtInstanceStartup?: boolean | undefined;
-        enum?: string | undefined;
-        const?: boolean | undefined;
-      }
-    | undefined
-  >(undefined);
+
+  const variableToEditDefinitions = useMemo(() => {
+    if (!variableToEdit) return undefined;
+
+    return variableDefinitions.find((d) => d.name === variableToEdit.name);
+  }, [variableToEdit, variableDefinitions]);
 
   const columns: React.ComponentProps<typeof Table<Variable>>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
@@ -106,9 +99,6 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
             type="text"
             onClick={() => {
               setVariableToEdit(variable);
-              setvariableDefinitionsToEdit(
-                variableDefinitions.find((e) => e.name === variable?.name),
-              );
               switch (variable.type) {
                 case 'object':
                 case 'array':
@@ -152,7 +142,6 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
 
   const handleClose = () => {
     setVariableToEdit(undefined);
-    setvariableDefinitionsToEdit(undefined);
   };
 
   return (
@@ -166,7 +155,14 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
       />
       <Modal
         open={!!variableToEdit}
-        title={`Change value of ${variableToEdit?.name}`}
+        title={
+          <>
+            Change value of{' '}
+            <span style={{ fontWeight: 800, color: 'rgb(38, 145, 217)' }}>
+              {variableToEdit?.name}
+            </span>
+          </>
+        }
         onCancel={handleClose}
         destroyOnHidden
         okButtonProps={{ loading: submitting }}
@@ -303,9 +299,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
                 <FormFieldTitle>Format</FormFieldTitle>
                 <br />
                 <EntryText missingTextOverride="— not set">
-                  {variableDefinitionsToEdit?.dataType === 'string'
-                    ? variableDefinitionsToEdit?.textFormat
-                    : variableDefinitionsToEdit?.dataType}
+                  {variableToEditDefinitions?.dataType === 'string'
+                    ? variableToEditDefinitions?.textFormat
+                    : variableToEditDefinitions?.dataType}
                 </EntryText>
               </div>
             </Col>
@@ -316,7 +312,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
                 <FormFieldTitle>Required at start</FormFieldTitle>
                 <br />
                 <EntryText missingTextOverride="— not set">
-                  {variableDefinitionsToEdit?.requiredAtInstanceStartup ? 'Yes' : 'No'}
+                  {variableToEditDefinitions?.requiredAtInstanceStartup ? 'Yes' : 'No'}
                 </EntryText>
               </div>
             </Col>
@@ -325,7 +321,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
                 <FormFieldTitle>Can be changed</FormFieldTitle>
                 <br />
                 <EntryText missingTextOverride="— not set">
-                  {variableDefinitionsToEdit?.const ? 'No' : 'Yes'}
+                  {variableToEditDefinitions?.const ? 'No' : 'Yes'}
                 </EntryText>
               </div>
             </Col>
@@ -336,7 +332,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
                 <FormFieldTitle>Default value</FormFieldTitle>
                 <br />
                 <EntryText missingTextOverride="— not set">
-                  {variableDefinitionsToEdit?.defaultValue}
+                  {variableToEditDefinitions?.defaultValue}
                 </EntryText>
               </div>
             </Col>
@@ -356,7 +352,7 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
           <Row>
             <Col span={24}>
               <EntryText missingTextOverride="— not set">
-                {variableDefinitionsToEdit?.description}
+                {variableToEditDefinitions?.description}
               </EntryText>
             </Col>
           </Row>

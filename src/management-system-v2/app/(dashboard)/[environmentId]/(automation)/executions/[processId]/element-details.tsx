@@ -193,18 +193,19 @@ export function ElementDetails({
       const bpmnObj = await toBpmnObject(version.bpmn);
       const defInfos = await getDefinitionsInfos(bpmnObj);
       const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
-      const previous = defVersionInfos.versionBasedOn
-        ? await getProcessVersion(environment.spaceId, processId, defVersionInfos.versionBasedOn)
-        : undefined;
 
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
+
+      const previous = defVersionInfos.versionBasedOn
+        ? await getProcessVersion(environment.spaceId, processId, defVersionInfos.versionBasedOn)
+        : undefined;
 
       if (isUserError(previous)) message.error(previous.message);
       else setPreviousVersion(previous as PreviousVersion);
     }
     getVersionData();
-  }, [version, processId]);
+  }, [version, processId, environment, message]);
 
   // TECH DETAILS SWITCH
   detailsEntries.push([

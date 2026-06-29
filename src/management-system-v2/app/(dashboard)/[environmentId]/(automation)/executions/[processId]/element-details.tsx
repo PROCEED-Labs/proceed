@@ -220,7 +220,7 @@ export function ElementDetails({
       </div>,
     ]);
     detailsEntries.push([
-      <EntryKeyText key="instance-processmanager-key">Process Managager</EntryKeyText>,
+      <EntryKeyText key="instance-processmanager-key">Process Manager</EntryKeyText>,
       <EntryValueText key="instance-processmanager-val">
         <Space>
           {responsibleParty ? (

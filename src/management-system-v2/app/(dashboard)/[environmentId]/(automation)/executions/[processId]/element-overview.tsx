@@ -165,7 +165,7 @@ export function ElementOverview({
         </Typography.Title>
         <EntryText
           style={{ fontWeight: '600', color: '#aaa', margin: 0 }}
-          missingTextOverride="no short name available"
+          missingTextOverride="No Short Name Available"
         >
           {definitionsInfos?.userDefinedId}
         </EntryText>

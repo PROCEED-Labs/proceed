@@ -12,6 +12,7 @@ import {
   updateUser as _updateUser,
   setUserPassword as _setUserPassword,
   getUserById as _getUserById,
+  getSpaceUsers as _getSpaceUsers,
 } from '@/lib/data/db/iam/users';
 import { revalidatePath } from 'next/cache';
 import { getEnvironmentById } from './db/iam/environments';
@@ -224,4 +225,8 @@ export async function setUserTemporaryPassword(
 
 export async function getUserById(id: string) {
   return await _getUserById(id);
+}
+
+export async function getSpaceUsers(spaceId: string, isOrganization: boolean) {
+  return await _getSpaceUsers(spaceId, isOrganization);
 }

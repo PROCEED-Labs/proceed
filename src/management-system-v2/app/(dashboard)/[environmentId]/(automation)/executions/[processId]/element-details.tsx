@@ -20,11 +20,13 @@ import { EntryText } from './entry-text';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import { getProcessVersion } from '@/lib/data/processes';
 import dynamic from 'next/dynamic';
-import { getUserById } from '@/lib/data/users';
+import { getSpaceUsers, getUserById } from '@/lib/data/users';
 import { asyncMap } from '@/lib/helpers/javascriptHelpers';
 import { User } from '@/lib/data/user-schema';
 
 import cn from 'classnames';
+import { useEnvironment } from '@/components/auth-can';
+import { truthyFilter } from '@/lib/typescript-utils';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
 
 type PreviousVersion =
@@ -139,12 +141,22 @@ export function ElementDetails({
   const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
   const [responsibleParty, setResponsibleParty] = useState<User[] | undefined>(undefined);
   const [performers, setPerformers] = useState<User[] | undefined>(undefined);
+  const [spaceUsers, setSpaceUsers] = useState<any[] | undefined>(undefined);
   const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
   const metaData = getMetaDataFromElement(element.businessObject);
   const token = instance?.tokens.find((l) => l.currentFlowElementId == element.id);
   const logInfo = instance?.log.find((logEntry) => logEntry.flowElementId === element.id);
+  const environment = useEnvironment();
+
+  useEffect(() => {
+    async function getusers() {
+      const users = await getSpaceUsers(environment.spaceId, environment.isOrganization);
+      setSpaceUsers(users);
+    }
+    getusers();
+  }, [environment]);
 
   useEffect(() => {
     // using version because it contains the parent object containing some more metadata
@@ -152,38 +164,42 @@ export function ElementDetails({
       setPerformers(undefined);
       setResponsibleParty(undefined);
       const bpmnObj = await toBpmnObject(version.bpmn);
-      const defInfos = await getDefinitionsInfos(bpmnObj);
-      const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
-      const previous = await getProcessVersion(processId, defVersionInfos.versionBasedOn);
 
       if (element) {
         if (element.type === 'bpmn:Process') {
           const responsibleIds = getResponsiblePartyFromElement(
             getElementById(bpmnObj, element.id),
           );
-          const responsible = await asyncMap(
-            responsibleIds.user,
-            async (resId: string) => await getUserById(resId),
-          );
-          setResponsibleParty(responsible);
+          const responsible = responsibleIds.user
+            .map((uId) => spaceUsers?.find((e) => e.id === uId))
+            .filter(truthyFilter);
+          if (responsible.length) setResponsibleParty(responsible);
         } else {
           const elementPerformers = getPerformersFromElement(getElementById(bpmnObj, element.id));
-          const performers = elementPerformers.user
-            ? await asyncMap(
-                elementPerformers.user,
-                async (perfId: string) => await getUserById(perfId),
-              )
-            : undefined;
-          setPerformers(performers);
+          console.log('for:', elementPerformers?.user);
+          const performers = elementPerformers?.user
+            .map((uId) => spaceUsers?.find((e) => e.id === uId))
+            .filter(truthyFilter);
+          if (performers && performers.length) setPerformers(performers);
         }
       }
+    }
+    getBpmnObject();
+  }, [version, element, spaceUsers]);
+
+  useEffect(() => {
+    async function getVersionData() {
+      const bpmnObj = await toBpmnObject(version.bpmn);
+      const defInfos = await getDefinitionsInfos(bpmnObj);
+      const defVersionInfos = await getDefinitionsVersionInformation(bpmnObj);
+      const previous = await getProcessVersion(processId, defVersionInfos.versionBasedOn);
 
       setDefinitionsInfos(defInfos);
       setDefinitionsVersionInfos(defVersionInfos);
       setPreviousVersion(previous);
     }
-    getBpmnObject();
-  }, [processId, version, element]);
+    getVersionData();
+  }, [version, processId]);
 
   // TECH DETAILS SWITCH
   detailsEntries.push([

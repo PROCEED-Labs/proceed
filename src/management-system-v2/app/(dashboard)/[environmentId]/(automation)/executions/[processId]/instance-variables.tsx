@@ -303,7 +303,9 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
                 <FormFieldTitle>Format</FormFieldTitle>
                 <br />
                 <EntryText missingTextOverride="— not set">
-                  {variableDefinitionsToEdit?.dataType}
+                  {variableDefinitionsToEdit?.dataType === 'string'
+                    ? variableDefinitionsToEdit?.textFormat
+                    : variableDefinitionsToEdit?.dataType}
                 </EntryText>
               </div>
             </Col>

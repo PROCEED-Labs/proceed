@@ -224,9 +224,19 @@ export async function setUserTemporaryPassword(
 }
 
 export async function getUserById(id: string) {
-  return await _getUserById(id);
+  try {
+    return await _getUserById(id);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }
 
 export async function getSpaceUsers(spaceId: string, isOrganization: boolean) {
-  return await _getSpaceUsers(spaceId, isOrganization);
+  try {
+    return await _getSpaceUsers(spaceId, isOrganization);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }

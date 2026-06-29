@@ -1029,8 +1029,17 @@ export async function checkIfProcessExistsByName(
   }
 }
 
-export async function getProcessVersion(processDefinitionsId?: string, versionId?: string) {
-  return processDefinitionsId && versionId
-    ? await _getProcessVersion(processDefinitionsId, versionId)
-    : undefined;
+export async function getProcessVersion(
+  spaceId: string,
+  processDefinitionsId: string,
+  versionId: string,
+) {
+  try {
+    const error = await checkValidity(processDefinitionsId, 'view', spaceId);
+    if (error) return error;
+    return await _getProcessVersion(processDefinitionsId, versionId);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
+  }
 }

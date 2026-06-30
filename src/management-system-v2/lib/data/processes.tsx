@@ -286,6 +286,11 @@ export const addProcesses = async (
       });
     }
 
+    if (!value.folderId) {
+      const rootFolder = await getRootFolder(activeEnvironment.spaceId, ability);
+      value.folderId = rootFolder.id;
+    }
+
     const newProcess = {
       bpmn,
       creatorId: userId,

@@ -1,5 +1,4 @@
 import { Menu, Typography } from 'antd';
-import React from 'react';
 
 export const InstanceSelector = () => {
   return (

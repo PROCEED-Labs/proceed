@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, useEffect, useState } from 'react';
+import { CSSProperties, ReactNode, useEffect, useMemo, useState } from 'react';
 import { App, Checkbox, Divider, Space, Switch, Tag, Typography } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
 import { getTiming } from './instance-helpers';
@@ -20,27 +20,14 @@ import { EntryText } from './entry-text';
 import { DefinitionsInfos } from '@proceed/bpmn-helper/src/getters';
 import { getProcessVersion } from '@/lib/data/processes';
 import dynamic from 'next/dynamic';
-import { getSpaceUsers, getUserById } from '@/lib/data/users';
-import { asyncMap } from '@/lib/helpers/javascriptHelpers';
-import { User } from '@/lib/data/user-schema';
+import { getSpaceUsers } from '@/lib/data/users';
+import { User } from '@prisma/client';
 import cn from 'classnames';
 import { useEnvironment } from '@/components/auth-can';
 import { truthyFilter } from '@/lib/typescript-utils';
-import { isUserError } from '@/lib/user-error';
+import { isUserErrorResponse } from '@/lib/user-error';
+import { useQuery } from '@tanstack/react-query';
 const TextViewer = dynamic(() => import('@/components/text-viewer'), { ssr: false });
-
-type PreviousVersion =
-  | {
-      name: string;
-      id: string;
-      createdOn: Date;
-      description: string;
-      processId: string;
-      versionBasedOn: string | null;
-      bpmnFilePath: string;
-    }
-  | null
-  | undefined;
 
 type VersionInfo = {
   versionId?: string | undefined;
@@ -51,8 +38,8 @@ type VersionInfo = {
 };
 
 type EntryTextProps = React.ComponentProps<typeof Typography.Text>;
-const EntryKeyText = (props: EntryTextProps) => (
-  <EntryText className={cn(styles.ElementText, styles.ElementKeyText)} {...props} />
+const EntryKeyText = ({ className, ...props }: EntryTextProps) => (
+  <EntryText className={cn(styles.ElementText, styles.ElementKeyText, className)} {...props} />
 );
 const EntryValueText = (props: EntryTextProps) => {
   return <EntryText className={cn(styles.ElementText, styles.ElementValueText)} {...props} />;
@@ -138,10 +125,9 @@ export function ElementDetails({
   const [techDetails, setTechDetails] = useState(false);
   const [definitionsInfos, setDefinitionsInfos] = useState<DefinitionsInfos>();
   const [definitionsVersionInfos, setDefinitionsVersionInfos] = useState<VersionInfo>();
-  const [previousVersion, setPreviousVersion] = useState<PreviousVersion>(undefined);
+  const [previousVersionName, setPreviousVersionName] = useState<string>('');
   const [responsibleParty, setResponsibleParty] = useState<User[] | undefined>(undefined);
   const [performers, setPerformers] = useState<User[] | undefined>(undefined);
-  const [spaceUsers, setSpaceUsers] = useState<any[] | undefined>(undefined);
   const detailsEntries: ReactNode[][] = [];
 
   const isRootElement = element && element.type === 'bpmn:Process';
@@ -151,14 +137,18 @@ export function ElementDetails({
   const environment = useEnvironment();
   const { message } = App.useApp();
 
-  useEffect(() => {
-    async function getusers() {
-      const users = await getSpaceUsers(environment.spaceId, environment.isOrganization);
-      if (isUserError(users)) message.error(users.message);
-      else setSpaceUsers(users as any[]);
-    }
-    getusers();
-  }, [environment, message]);
+  const { data: spaceUsers } = useQuery({
+    queryFn: async () => {
+      const users = await getSpaceUsers(environment.spaceId);
+      if (isUserErrorResponse(users)) {
+        message.error(`Failed to load the users in the space ${users.error.message}`);
+        return [];
+      }
+
+      return users;
+    },
+    queryKey: ['space', environment.spaceId, environment.isOrganization, 'users'],
+  });
 
   useEffect(() => {
     // using version because it contains the parent object containing some more metadata
@@ -172,16 +162,16 @@ export function ElementDetails({
           const responsibleIds = getResponsiblePartyFromElement(
             getElementById(bpmnObj, element.id),
           );
-          const responsible = responsibleIds.user
+          const responsible = responsibleIds?.user
             .map((uId) => spaceUsers?.find((e) => e.id === uId))
             .filter(truthyFilter);
-          if (responsible.length) setResponsibleParty(responsible);
+          setResponsibleParty(responsible || []);
         } else {
           const elementPerformers = getPerformersFromElement(getElementById(bpmnObj, element.id));
           const performers = elementPerformers?.user
             .map((uId) => spaceUsers?.find((e) => e.id === uId))
             .filter(truthyFilter);
-          if (performers && performers.length) setPerformers(performers);
+          setPerformers(performers || []);
         }
       }
     }
@@ -201,11 +191,34 @@ export function ElementDetails({
         ? await getProcessVersion(environment.spaceId, processId, defVersionInfos.versionBasedOn)
         : undefined;
 
-      if (isUserError(previous)) message.error(previous.message);
-      else setPreviousVersion(previous as PreviousVersion);
+      if (isUserErrorResponse(previous)) message.error(previous.error.message);
+      else setPreviousVersionName(previous?.name || '');
     }
     getVersionData();
   }, [version, processId, environment, message]);
+
+  const actualOwner = useMemo(() => {
+    if (token) {
+      return token.actualOwner;
+    } else if (logInfo) {
+      return logInfo.actualOwner;
+    }
+
+    return [];
+  }, [token, logInfo]);
+
+  const performerInfos = useMemo(() => {
+    let infos;
+    if (logInfo) {
+      infos = logInfo.performers?.user || [];
+    } else if (performers) {
+      infos = performers;
+    }
+
+    return infos
+      ?.filter((i) => !i.isGuest)
+      .map((i) => ({ id: i.id, name: (i.firstName + ' ' + i.lastName).trim() }));
+  }, [logInfo, performers]);
 
   // TECH DETAILS SWITCH
   detailsEntries.push([
@@ -219,7 +232,7 @@ export function ElementDetails({
   if (isRootElement) {
     // GENERAL
     detailsEntries.push([
-      <EntryKeyText key="instance-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
+      <EntryKeyText key="instance-heading-general" className={styles.ElementSectionHeader}>
         GENERAL
       </EntryKeyText>,
     ]);
@@ -269,10 +282,10 @@ export function ElementDetails({
       <Space
         key="instance-heading-version"
         orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
+        className={styles.NewElementSection}
       >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>VERSION</EntryKeyText>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>VERSION</EntryKeyText>
       </Space>,
     ]);
     detailsEntries.push([
@@ -295,7 +308,7 @@ export function ElementDetails({
     ]);
     detailsEntries.push([
       <EntryKeyText key="instance-basedon-key">Based on</EntryKeyText>,
-      <EntryValueText key="instance-basedon-val">{previousVersion?.name}</EntryValueText>,
+      <EntryValueText key="instance-basedon-val">{previousVersionName}</EntryValueText>,
     ]);
     if (techDetails)
       detailsEntries.push([
@@ -307,13 +320,9 @@ export function ElementDetails({
 
     // INITIATOR
     detailsEntries.push([
-      <Space
-        key="instance-initiator"
-        orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
-      >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHO STARTED IT</EntryKeyText>
+      <Space key="instance-initiator" orientation="vertical" className={styles.NewElementSection}>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>WHO STARTED IT</EntryKeyText>
       </Space>,
     ]);
     const initiator = instance?.processInstanceInitiator;
@@ -365,10 +374,10 @@ export function ElementDetails({
       <Space
         key="instance-heading-timing"
         orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
+        className={styles.NewElementSection}
       >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>TIMING</EntryKeyText>
       </Space>,
     ]);
     if (techDetails)
@@ -408,10 +417,10 @@ export function ElementDetails({
         <Space
           key="instance-heading-engine"
           orientation="vertical"
-          style={{ width: '100%', padding: 0, margin: 0 }}
+          className={styles.NewElementSection}
         >
-          <Divider style={{ padding: 0, margin: 0 }} />
-          <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>WHERE IT RUNS</EntryKeyText>
+          <Divider className={styles.ElementSectionDivider} />
+          <EntryKeyText className={styles.ElementSectionHeader}>WHERE IT RUNS</EntryKeyText>
         </Space>,
       ]);
       detailsEntries.push([
@@ -430,7 +439,7 @@ export function ElementDetails({
   } else {
     // GENERAL
     detailsEntries.push([
-      <EntryKeyText key="event-heading-general" style={{ fontWeight: '600', fontSize: '.9em' }}>
+      <EntryKeyText key="event-heading-general" className={styles.ElementSectionHeader}>
         GENERAL
       </EntryKeyText>,
     ]);
@@ -491,63 +500,38 @@ export function ElementDetails({
 
     // PEOPLE
     detailsEntries.push([
-      <Space
-        key="event-heading-people"
-        orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
-      >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>PEOPLE</EntryKeyText>
+      <Space key="event-heading-people" orientation="vertical" className={styles.NewElementSection}>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>PEOPLE</EntryKeyText>
       </Space>,
     ]);
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Assigned to</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {
-          // loading from log if possible to skip fetching data
-          logInfo ? (
+        {performerInfos ? (
+          !!performerInfos.length && (
             <Space>
-              {logInfo?.performers?.user?.map((e) =>
-                !e.isGuest ? (
-                  <Tag color={'purple'} key={e.id + 'assigned'}>
-                    {e.fullName}
-                  </Tag>
-                ) : undefined,
-              )}
+              {performerInfos.map(({ id, name }) => (
+                <Tag color={'purple'} key={id + 'assigned'}>
+                  {name}
+                </Tag>
+              ))}
             </Space>
-          ) : performers ? (
-            !!performers?.length && (
-              <Space>
-                {performers.map((e) =>
-                  !e.isGuest ? (
-                    <Tag color={'purple'} key={e.id + 'assigned'}>
-                      {e.firstName + ' ' + e.lastName}
-                    </Tag>
-                  ) : undefined,
-                )}
-              </Space>
-            )
-          ) : (
-            <LoadingOutlined />
           )
-        }
+        ) : (
+          <LoadingOutlined />
+        )}
       </EntryValueText>,
     ]);
 
     detailsEntries.push([
       <EntryKeyText key="event-actualperformer-key">Done Bye</EntryKeyText>,
       <EntryValueText key="event-actualperformer-val">
-        {token && token.actualOwner?.length
-          ? token.actualOwner?.map((e) => (
-              <Tag color={'purple'} key={e.id + 'doneby'}>
-                {e.fullName}
-              </Tag>
-            ))
-          : logInfo?.actualOwner?.map((e) => (
-              <Tag color={'purple'} key={e.id + 'doneby'}>
-                {e.fullName}
-              </Tag>
-            ))}
+        {actualOwner?.map((e) => (
+          <Tag color={'purple'} key={e.id + 'doneby'}>
+            {e.fullName}
+          </Tag>
+        ))}
       </EntryValueText>,
     ]);
 
@@ -555,13 +539,13 @@ export function ElementDetails({
       detailsEntries.push([
         <TechEntryKey key="event-actualperformername-key">Username</TechEntryKey>,
         <EntryValueText key="event-actualperformername-val">
-          {logInfo?.actualOwner?.map((e) => e.username).toString()}
+          {actualOwner?.map((e) => e.username).toString()}
         </EntryValueText>,
       ]);
       detailsEntries.push([
         <TechEntryKey key="event-actualperformername-key">User ID</TechEntryKey>,
         <EntryValueText key="event-actualperformername-val">
-          {logInfo?.actualOwner?.map((e) => e.id).toString()}
+          {actualOwner?.map((e) => e.id).toString()}
         </EntryValueText>,
       ]);
     }
@@ -578,13 +562,9 @@ export function ElementDetails({
       instance,
     });
     detailsEntries.push([
-      <Space
-        key="event-heading-timing"
-        orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
-      >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>TIMING</EntryKeyText>
+      <Space key="event-heading-timing" orientation="vertical" className={styles.NewElementSection}>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>TIMING</EntryKeyText>
       </Space>,
     ]);
     detailsEntries.push([
@@ -614,13 +594,9 @@ export function ElementDetails({
 
     // OTHER
     detailsEntries.push([
-      <Space
-        key="event-heading-other"
-        orientation="vertical"
-        style={{ width: '100%', padding: 0, margin: 0 }}
-      >
-        <Divider style={{ padding: 0, margin: 0 }} />
-        <EntryKeyText style={{ fontWeight: '600', fontSize: '.9em' }}>OTHER</EntryKeyText>
+      <Space key="event-heading-other" orientation="vertical" className={styles.NewElementSection}>
+        <Divider className={styles.ElementSectionDivider} />
+        <EntryKeyText className={styles.ElementSectionHeader}>OTHER</EntryKeyText>
       </Space>,
     ]);
   }
@@ -629,11 +605,7 @@ export function ElementDetails({
   if (!isRootElement) {
     detailsEntries.push([
       <EntryKeyText key="external-key">Runs outside this system</EntryKeyText>,
-      <Checkbox
-        key="external-val"
-        disabled
-        value={element.businessObject && element.businessObject.external}
-      />,
+      <Checkbox key="external-val" disabled value={element.businessObject?.external} />,
     ]);
   }
 

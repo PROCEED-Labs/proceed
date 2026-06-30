@@ -10,12 +10,7 @@ import {
   Space,
   Typography,
 } from 'antd';
-import {
-  getDefinitionsInfos,
-  getDefinitionsVersionInformation,
-  getMetaDataFromElement,
-  toBpmnObject,
-} from '@proceed/bpmn-helper';
+import { getDefinitionsInfos, getMetaDataFromElement, toBpmnObject } from '@proceed/bpmn-helper';
 import { getTiming, statusToType } from './instance-helpers';
 import { generateDateString, generateDurationString, generateNumberString } from '@/lib/utils';
 import styles from './element-overview.module.scss';

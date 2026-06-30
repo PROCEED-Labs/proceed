@@ -10,3 +10,19 @@
 .ElementValueText {
   font-size: 0.9em;
 }
+
+.NewElementSection {
+  width: 100%;
+  padding: 0;
+  margin: 0;
+
+  .ElementSectionDivider {
+    padding: 0;
+    margin: 0;
+  }
+}
+
+.ElementSectionHeader {
+  font-weight: 600;
+  font-size: 0.9em;
+}

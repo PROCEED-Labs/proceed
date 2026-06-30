@@ -285,8 +285,28 @@ declare const _exports: {
     area: getters.AreaInfos[];
     workingPlace: getters.WorkingPlaceInfos[];
   };
-  getPerformersFromElement(element: object): any[];
-  getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+  getPerformersFromElement(element: object): {
+    user: string[];
+    roles: string[];
+  };
+  getPerformersFromElementById(
+    bpmn: string | object,
+    elementId: string,
+  ): {
+    user: string[];
+    roles: string[];
+  };
+  getResponsiblePartyFromElement(element: object): {
+    user: string[];
+    roles: string[];
+  };
+  getResponsiblePartyFromElementId(
+    bpmn: string | object,
+    elementId: string,
+  ): {
+    user: string[];
+    roles: string[];
+  };
   getPotentialOwnersFromElementById(
     elementId: string,
     bpmn: string | object,

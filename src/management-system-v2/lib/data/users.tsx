@@ -48,8 +48,8 @@ export async function deleteUser() {
       message = (
         <>
           <p>
-            You're part of Spaces where you are the only admin, in order to delete your accounts you
-            first have to either add another admin or delete these Spaces.
+            You&aposre part of Spaces where you are the only admin, in order to delete your accounts
+            you first have to either add another admin or delete these Spaces.
           </p>
           <p>The affected Spaces are:</p>
           <ul>

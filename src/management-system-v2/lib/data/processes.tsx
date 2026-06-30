@@ -68,6 +68,7 @@ import {
   getProcessScriptTaskScript as _getProcessScriptTaskScript,
   getFolderScriptTasks as _getFolderScriptTasks,
   getFolderPathScriptTasks as _getFolderPathScriptTasks,
+  getProcessVersion as _getProcessVersion,
 } from '@/lib/data/db/process';
 import { ProcessData } from '@/components/process-import';
 import { saveProcessArtifact } from './file-manager-facade';
@@ -1030,5 +1031,20 @@ export async function checkIfProcessExistsByName(
   } catch (error) {
     console.log(error);
     return data.batch === true ? [] : false;
+  }
+}
+
+export async function getProcessVersion(
+  spaceId: string,
+  processDefinitionsId: string,
+  versionId: string,
+) {
+  try {
+    const error = await checkValidity(processDefinitionsId, 'view', spaceId);
+    if (error) return error;
+    return await _getProcessVersion(processDefinitionsId, versionId);
+  } catch (e) {
+    const message = getErrorMessage(e);
+    return userError(message);
   }
 }

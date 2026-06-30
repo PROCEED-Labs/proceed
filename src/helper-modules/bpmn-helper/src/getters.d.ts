@@ -747,17 +747,58 @@ export function getLocationsFromElement(element: object): {
  * Get the performers for given element
  *
  * @param {object} element
- * @returns {Array} performers given for element
+ * @returns {{ user: string[], roles: string[] } | undefined} performers given for element
  */
-export function getPerformersFromElement(element: object): any[];
+export function getPerformersFromElement(element: object):
+  | {
+      user: string[];
+      roles: string[];
+    }
+  | undefined;
 /**
  * Get the performers for given element id
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Array} array with all performers
+ * @returns {{ user: string[], roles: string[] } | undefined} array with all performers
  */
-export function getPerformersFromElementById(bpmn: string | object, elementId: string): any[];
+export function getPerformersFromElementById(
+  bpmn: string | object,
+  elementId: string,
+):
+  | {
+      user: string[];
+      roles: string[];
+    }
+  | undefined;
+/**
+ * Get the responsible persons for given element
+ *
+ * @param {object} element
+ * @returns {{ user: string[], roles: string[] } | undefined} responsible persons given for element
+ */
+export function getResponsiblePartyFromElement(element: object):
+  | {
+      user: string[];
+      roles: string[];
+    }
+  | undefined;
+/**
+ * Get the performers for given element id
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {{ user: string[], roles: string[] } | undefined} array with all responsible persons
+ */
+export function getResponsiblePartyFromElementId(
+  bpmn: string | object,
+  elementId: string,
+):
+  | {
+      user: string[];
+      roles: string[];
+    }
+  | undefined;
 /**
  * Returrns the roles and users that may be owners of a specific element
  *

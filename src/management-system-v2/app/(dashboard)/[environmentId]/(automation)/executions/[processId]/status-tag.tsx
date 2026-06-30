@@ -12,11 +12,9 @@ import {
 import { Tag } from 'antd';
 
 export const StatusTag = ({
-  processId,
   element,
   instance,
 }: {
-  processId: string;
   element?: ElementLike;
   instance?: ExtendedInstanceInfo;
 }) => {
@@ -38,13 +36,10 @@ export const StatusTag = ({
   }
   const statusType = status && statusToType(status);
   const presets: Record<string, ReactNode> = {
-    READY: <CheckCircleOutlined />,
-    COMPLETED: <CheckCircleOutlined />,
-    RUNNING: <SyncOutlined spin />,
-    info: <ExclamationCircleOutlined />,
+    success: <CheckCircleOutlined />,
     warning: <ExclamationCircleOutlined />,
-    STOPPED: <CloseCircleOutlined />,
-    WAITING: <ClockCircleOutlined />,
+    error: <CloseCircleOutlined />,
+    info: <ClockCircleOutlined />,
   };
   return (
     status &&
@@ -52,7 +47,17 @@ export const StatusTag = ({
       <Tag
         key={status}
         color={statusType}
-        icon={status ? presets[status] : <ClockCircleOutlined />}
+        icon={
+          status ? (
+            status === 'RUNNING' ? (
+              <SyncOutlined spin />
+            ) : (
+              presets[statusToType(status)]
+            )
+          ) : (
+            <ClockCircleOutlined />
+          )
+        }
       >
         {status}
       </Tag>

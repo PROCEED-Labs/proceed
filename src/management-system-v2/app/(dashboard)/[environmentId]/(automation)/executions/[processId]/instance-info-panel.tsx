@@ -1,31 +1,49 @@
 import ResizableElement, { ResizableElementRefType } from '@/components/ResizableElement';
 import CollapsibleCard from '@/components/collapsible-card';
 import { ReactNode, useRef } from 'react';
-import { Drawer, Grid, Tabs } from 'antd';
+import { Button, Col, Grid, Modal, Row, Tabs } from 'antd';
 import type { ElementLike } from 'diagram-js/lib/core/Types';
-import { ElementStatus } from './element-status';
+import { ElementDetails } from './element-details';
 import InstanceVariables from './instance-variables';
+import { ElementOverview } from './element-overview';
+import { StatusTag } from './status-tag';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
 
-export function DisplayTable({ data }: { data: ReactNode[][] }) {
-  // TODO: make this responsive
+export function DataGrid({ data }: { data: ReactNode[][] }) {
   return (
-    <table style={{ borderSpacing: '0 .5rem', borderCollapse: 'separate' }}>
-      <tbody>
-        {data.map((row, idx_row) => (
-          <tr key={idx_row}>
-            {row.map((cell, idx_cell) => (
-              <td
-                key={`${idx_row}.${idx_cell}`}
-                style={{ paddingRight: idx_cell < row.length - 1 ? '1rem' : '' }}
+    <>
+      {data.map((row, idx_row) => (
+        <Row key={'datarid' + idx_row} style={{ marginBlock: 8 }} wrap={false}>
+          {row.length == 1 ? (
+            <Col flex="auto">{row[0]}</Col>
+          ) : (
+            <>
+              <Col
+                flex="115px"
+                style={{
+                  fontWeight: 'bold',
+                  justifyContent: 'left',
+                  alignItems: 'baseline',
+                  display: 'flex',
+                }}
               >
-                {cell}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                {row[0]}
+              </Col>
+              <Col
+                flex="auto"
+                style={{
+                  marginLeft: 20,
+                  alignItems: 'center',
+                  display: 'flex',
+                }}
+              >
+                {row[1]}
+              </Col>
+            </>
+          )}
+        </Row>
+      ))}
+    </>
   );
 }
 
@@ -42,44 +60,55 @@ export default function InstanceInfoPanel({
   open: boolean;
   processId: string;
   version: { bpmn: string };
-  instance?: ExtendedInstanceInfo;
+  instance?: {
+    engines: {
+      id: string;
+      online: boolean;
+    }[];
+    processInstanceInitiator?: any;
+    processInstanceInitiatorSpaceId?: any;
+  } & ExtendedInstanceInfo;
   element?: ElementLike;
   refetch: () => void;
 }) {
   const resizableElementRef = useRef<ResizableElementRefType>(null);
-  const breakpoints = Grid.useBreakpoint();
+  const breakpoint = Grid.useBreakpoint();
 
   const title = element?.businessObject?.name || element?.id || 'How to PROCEED?';
 
-  if (breakpoints.xl && !open) return null;
+  if (breakpoint.xl && !open) return null;
 
   const tabs = element ? (
     <Tabs
-      defaultActiveKey="1"
+      defaultActiveKey="Overview"
       items={[
         {
-          key: 'Status',
-          label: 'Status',
-          children: <ElementStatus processId={processId} element={element} instance={instance} />,
+          key: 'Overview',
+          label: 'Overview',
+          children: (
+            <ElementOverview
+              processId={processId}
+              element={element}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
-          key: 'Advanced',
-          label: 'Advanced',
-          children: 'How to proceed',
+          key: 'Details',
+          label: 'Details',
+          children: (
+            <ElementDetails
+              processId={processId}
+              element={element}
+              version={version}
+              instance={instance}
+            />
+          ),
         },
         {
-          key: 'Timing',
-          label: 'Timing',
-          children: 'How to proceed',
-        },
-        {
-          key: 'Assignments',
-          label: 'Assignments',
-          children: 'How to proceed',
-        },
-        {
-          key: 'Variables',
-          label: 'Variables',
+          key: 'Data',
+          label: 'Data',
           children: (
             <InstanceVariables
               refetch={refetch}
@@ -89,36 +118,58 @@ export default function InstanceInfoPanel({
             />
           ),
         },
-        {
-          key: 'Resources',
-          label: 'Resources',
-          children: 'How to proceed',
-        },
+        // {
+        //   key: 'Milestones',
+        //   label: 'Milestones',
+        //   children: 'How to proceed',
+        // },
+        // {
+        //   key: 'Activity',
+        //   label: 'Activity',
+        //   children: <ElementActivity processId={processId} element={element} instance={instance} />,
+        // },
       ]}
     />
   ) : null;
 
-  if (breakpoints.xl)
-    return (
-      <ResizableElement
-        initialWidth={400}
-        minWidth={400}
-        maxWidth={'40vw'}
-        style={{
-          // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
-          height: 'calc(100vh - 150px)',
-        }}
-        ref={resizableElementRef}
-      >
-        <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
-          {tabs}
-        </CollapsibleCard>
-      </ResizableElement>
-    );
+  // TODO to be determined by higher forces
+  const hideFooter = true;
 
-  return (
-    <Drawer open={open} onClose={close} title={title}>
+  return breakpoint.xl ? (
+    <ResizableElement
+      initialWidth={500}
+      minWidth={400}
+      maxWidth={'75vw'}
+      style={{
+        // BPMN.io Symbol with 23 px height + 15 px offset to bottom (=> 38 px), Footer with 32px and Header with 64px, Padding of Toolbar 12px (=> Total 146px)
+        height: 'calc(100vh - 150px)',
+        boxShadow: '0 3px 12px -4px rgba(0, 0, 0, 0.1), 0 6px 48px -2px rgba(0, 0, 0, 0.07)',
+      }}
+      ref={resizableElementRef}
+    >
+      <CollapsibleCard show={open} onCollapse={close} title={title} collapsedWidth="40px">
+        <StatusTag element={element} instance={instance} />
+        {tabs}
+      </CollapsibleCard>
+    </ResizableElement>
+  ) : (
+    <Modal
+      open={open}
+      onCancel={close}
+      onOk={close}
+      title={title}
+      width={breakpoint.xs ? '100vw' : '75vw'}
+      styles={{ body: { height: '75vh', overflowY: 'scroll', paddingRight: '1rem' } }}
+      centered
+      footer={
+        hideFooter ? null : (
+          <Button key="ok" type="primary" onClick={close}>
+            OK
+          </Button>
+        )
+      }
+    >
       {tabs}
-    </Drawer>
+    </Modal>
   );
 }

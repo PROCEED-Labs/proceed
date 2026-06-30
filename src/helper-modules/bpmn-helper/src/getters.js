@@ -856,13 +856,27 @@ async function getVariablesFromElementById(bpmn, elementId) {
  *
  * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
  * @param {string} elementId the id of the element
- * @returns {Array} array with all performers
+ * @returns {{ user: string[], roles: string[] } | undefined} array with all performers
  */
 async function getPerformersFromElementById(bpmn, elementId) {
   const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
   const element = getElementById(bpmnObj, elementId);
 
   return getPerformersFromElement(element);
+}
+
+/**
+ * Get the performers for given element id
+ *
+ * @param {(string|object)} bpmn - the process definition as XML string or BPMN-Moddle Object
+ * @param {string} elementId the id of the element
+ * @returns {{ user: string[], roles: string[] } | undefined} array with all responsible persons
+ */
+async function getResponsiblePartyFromElementId(bpmn, elementId) {
+  const bpmnObj = typeof bpmn === 'string' ? await toBpmnObject(bpmn) : bpmn;
+  const element = getElementById(bpmnObj, elementId);
+
+  return getResponsiblePartyFromElement(element);
 }
 
 /**
@@ -1169,7 +1183,7 @@ function getResourcesFromElement(element) {
  * Get the performers for given element
  *
  * @param {object} element
- * @returns {Array} performers given for element
+ * @returns {{ user: string[], roles: string[] } | undefined} performers given for element
  */
 function getPerformersFromElement(element) {
   if (element.resources) {
@@ -1186,7 +1200,29 @@ function getPerformersFromElement(element) {
       return JSON.parse(potentialOwner.resourceAssignmentExpression.expression.body);
     }
   }
-  return [];
+}
+
+/**
+ * Get the responsible persons for given element
+ *
+ * @param {object} element
+ * @returns {{ user: string[], roles: string[] } | undefined} responsible persons given for element
+ */
+function getResponsiblePartyFromElement(element) {
+  if (element.resources) {
+    const responsiblePerson = element.resources.find(
+      (resource) => resource.$type === 'proceed:ResponsibleParty',
+    );
+
+    if (
+      responsiblePerson &&
+      responsiblePerson.resourceAssignmentExpression &&
+      responsiblePerson.resourceAssignmentExpression.expression &&
+      responsiblePerson.resourceAssignmentExpression.expression.body
+    ) {
+      return JSON.parse(responsiblePerson.resourceAssignmentExpression.expression.body);
+    }
+  }
 }
 
 /**
@@ -1346,6 +1382,8 @@ module.exports = {
   getLocationsFromElement,
   getPerformersFromElement,
   getPerformersFromElementById,
+  getResponsiblePartyFromElement,
+  getResponsiblePartyFromElementId,
   getPotentialOwnersFromElementById,
   parseISODuration,
   convertISODurationToMiliseconds,

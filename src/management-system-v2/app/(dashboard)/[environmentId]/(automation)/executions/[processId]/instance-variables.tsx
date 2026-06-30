@@ -1,8 +1,20 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { EditOutlined } from '@ant-design/icons';
 
-import { App, Button, Form, Input, InputNumber, Modal, Switch, Table } from 'antd';
+import {
+  App,
+  Button,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Switch,
+  Table,
+  Typography,
+} from 'antd';
 import { updateVariables } from '@/lib/executions/instance-server-actions';
 import { useEnvironment } from '@/components/auth-can';
 import TextArea from 'antd/es/input/TextArea';
@@ -10,6 +22,7 @@ import { wrapServerCall } from '@/lib/wrap-server-call';
 import useInstanceVariables, { Variable } from './use-instance-variables';
 import { textFormatMap, typeLabelMap } from '@/lib/process-variable-schema';
 import { ExtendedInstanceInfo } from '@/lib/data/instance';
+import { EntryText } from './entry-text';
 
 type InstanceVariableProps = {
   processId: string;
@@ -17,6 +30,11 @@ type InstanceVariableProps = {
   instance: ExtendedInstanceInfo | undefined;
   refetch: () => void;
 };
+
+type FieldTitleProps = React.ComponentProps<typeof Typography.Text>;
+const FormFieldTitle = (props: FieldTitleProps) => (
+  <EntryText style={{ fontWeight: 600, color: '#777' }} {...props} />
+);
 
 const InstanceVariables: React.FC<InstanceVariableProps> = ({
   processId,
@@ -33,9 +51,15 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
 
   const [form] = Form.useForm();
 
-  const { variables } = useInstanceVariables({ version, instance });
+  const { variables, variableDefinitions } = useInstanceVariables({ version, instance });
 
   const [variableToEdit, setVariableToEdit] = useState<Variable | undefined>(undefined);
+
+  const variableToEditDefinitions = useMemo(() => {
+    if (!variableToEdit) return undefined;
+
+    return variableDefinitions.find((d) => d.name === variableToEdit.name);
+  }, [variableToEdit, variableDefinitions]);
 
   const columns: React.ComponentProps<typeof Table<Variable>>['columns'] = [
     { title: 'Name', dataIndex: 'name', key: 'name' },
@@ -130,10 +154,18 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
       />
       <Modal
         open={!!variableToEdit}
-        title={`Change value of ${variableToEdit?.name}`}
+        title={
+          <>
+            Change value of{' '}
+            <span style={{ fontWeight: 800, color: 'rgb(38, 145, 217)' }}>
+              {variableToEdit?.name}
+            </span>
+          </>
+        }
         onCancel={handleClose}
         destroyOnHidden
         okButtonProps={{ loading: submitting }}
+        okText={'Save value'}
         onOk={async () => {
           await form.validateFields();
 
@@ -172,65 +204,158 @@ const InstanceVariables: React.FC<InstanceVariableProps> = ({
           });
         }}
       >
-        <Form form={form} clearOnDestroy>
-          <Form.Item
-            name="value"
-            initialValue={updatedValue}
-            rules={[
-              {
-                validator(_, value: any) {
-                  if (value) {
-                    switch (variableToEdit?.type) {
-                      // for numbers and strings we have to check if the value is part of the
-                      // optionally defined allowed values
-                      case 'number':
-                        value = JSON.stringify(value);
-                      case 'string':
-                        {
-                          value = (value as string).trim();
-                          if (variableToEdit.allowed) {
-                            const allowedValues = variableToEdit.allowed.split(';');
+        <div
+          style={{
+            border: 'solid 1px rgb(118, 193, 255)',
+            borderRadius: 12,
+            padding: 15,
+            backgroundColor: 'rgba(118, 193, 255, 0.15)',
+          }}
+        >
+          <EntryText
+            style={{
+              display: 'block',
+              margin: '0 0 5px 0',
+              fontWeight: 600,
+              color: '#777',
+              fontSize: '.95em',
+            }}
+          >
+            Current Value
+          </EntryText>
+          <Form form={form} clearOnDestroy>
+            <Form.Item
+              name="value"
+              initialValue={updatedValue}
+              style={{ margin: 0 }}
+              rules={[
+                {
+                  validator(_, value: any) {
+                    if (value) {
+                      switch (variableToEdit?.type) {
+                        // for numbers and strings we have to check if the value is part of the
+                        // optionally defined allowed values
+                        case 'number':
+                          value = JSON.stringify(value);
+                        case 'string':
+                          {
+                            value = (value as string).trim();
+                            if (variableToEdit.allowed) {
+                              const allowedValues = variableToEdit.allowed.split(';');
 
-                            if (!allowedValues.includes(value)) {
-                              return Promise.reject(
-                                new Error(
-                                  `Invalid value. Expected one of: ${allowedValues.join(', ')}`,
-                                ),
-                              );
+                              if (!allowedValues.includes(value)) {
+                                return Promise.reject(
+                                  new Error(
+                                    `Invalid value. Expected one of: ${allowedValues.join(', ')}`,
+                                  ),
+                                );
+                              }
                             }
                           }
-                        }
-                        break;
-                      // check if the entered text can be transformed to the respective object type
-                      case 'object':
-                      case 'array': {
-                        try {
-                          const parsed = JSON.parse(value);
-                          if (
-                            (variableToEdit.type === 'array' && Array.isArray(parsed)) ||
-                            (variableToEdit.type === 'object' && !Array.isArray(parsed))
-                          ) {
-                            return Promise.resolve();
-                          }
-                        } catch (err) {}
+                          break;
+                        // check if the entered text can be transformed to the respective object type
+                        case 'object':
+                        case 'array': {
+                          try {
+                            const parsed = JSON.parse(value);
+                            if (
+                              (variableToEdit.type === 'array' && Array.isArray(parsed)) ||
+                              (variableToEdit.type === 'object' && !Array.isArray(parsed))
+                            ) {
+                              return Promise.resolve();
+                            }
+                          } catch (err) {}
 
-                        return Promise.reject(
-                          new Error(
-                            `Input is not a valid JSON ${variableToEdit.type === 'object' ? 'Object' : 'List'}.`,
-                          ),
-                        );
+                          return Promise.reject(
+                            new Error(
+                              `Input is not a valid JSON ${variableToEdit.type === 'object' ? 'Object' : 'List'}.`,
+                            ),
+                          );
+                        }
                       }
                     }
-                  }
 
-                  return Promise.resolve();
+                    return Promise.resolve();
+                  },
                 },
-              },
-            ]}
-          >
-            {updatedValueInput}
-          </Form.Item>
-        </Form>
+              ]}
+            >
+              {updatedValueInput}
+            </Form.Item>
+          </Form>
+        </div>
+        <div>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Type</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">Text</EntryText>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Format</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">
+                  {variableToEditDefinitions?.dataType === 'string'
+                    ? variableToEditDefinitions?.textFormat
+                    : variableToEditDefinitions?.dataType}
+                </EntryText>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Required at start</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">
+                  {variableToEditDefinitions?.requiredAtInstanceStartup ? 'Yes' : 'No'}
+                </EntryText>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Can be changed</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">
+                  {variableToEditDefinitions?.const ? 'No' : 'Yes'}
+                </EntryText>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Default value</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">
+                  {variableToEditDefinitions?.defaultValue}
+                </EntryText>
+              </div>
+            </Col>
+            <Col span={12}>
+              <div style={{ marginBlock: 10 }}>
+                <FormFieldTitle>Allowed values</FormFieldTitle>
+                <br />
+                <EntryText missingTextOverride="— not set">{variableToEdit?.allowed}</EntryText>
+              </div>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={24} style={{ margin: '10px 0 0 0' }}>
+              <FormFieldTitle>desc</FormFieldTitle>
+            </Col>
+          </Row>
+          <Row>
+            <Col span={24}>
+              <EntryText missingTextOverride="— not set">
+                {variableToEditDefinitions?.description}
+              </EntryText>
+            </Col>
+          </Row>
+        </div>
       </Modal>
     </>
   );

@@ -182,7 +182,7 @@ export async function createUserAndAddToOrganization(
     // Check if the user is an admin
     if (!ability.can('admin', 'All')) {
       return userError(
-        'You do not have permission to create users in this organization',
+        'You do not have permission to create users in this Space',
         UserErrorType.PermissionError,
       );
     }
@@ -251,7 +251,7 @@ export async function updateMemberByAdmin(
 
     if (!ability.can('admin', 'All')) {
       return userError(
-        'You do not have permission to update users in this organization',
+        'You do not have permission to update users in this Space',
         UserErrorType.PermissionError,
       );
     }
@@ -262,7 +262,7 @@ export async function updateMemberByAdmin(
         where: { userId_environmentId: { userId, environmentId: organizationId } },
       });
 
-      if (!membership) throw new Error('User is not a member of this organization');
+      if (!membership) throw new Error('User is not a member of this Space');
 
       // Get current role mappings for this user in this environment
       const currentMappings = await getRoleMappingByUserId(userId, organizationId);

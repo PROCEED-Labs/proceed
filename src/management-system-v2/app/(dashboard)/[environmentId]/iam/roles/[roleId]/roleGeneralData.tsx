@@ -48,9 +48,9 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
   if (role.note) {
     note = role.note;
   } else if (role.name === '@guest') {
-    note = 'This role applies to users that are not part of the organization.';
+    note = 'This role applies to users that are not part of the Space.';
   } else if (role.name === '@everyone') {
-    note = 'This role applies to every user that is part of the organization.';
+    note = 'This role applies to every user that is part of the Space.';
   }
 
   return (
@@ -77,7 +77,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
       <Form.Item
         label={
           <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            Organisation Role Type
+            Space Role Type
             <Tooltip
               title={
                 <>
@@ -97,7 +97,7 @@ const RoleGeneralData: FC<{ role: Role; roleParentFolder?: Folder }> = ({ role: 
           mode="multiple"
           allowClear
           disabled={!ability.can('update', role, { field: 'organizationRoleType' })}
-          placeholder="Select organisation role type (optional)"
+          placeholder="Select Space role type (optional)"
           options={[
             { label: 'Team', value: 'team' },
             { label: 'Back Office', value: 'back-office' },

@@ -1,6 +1,6 @@
 # PROCEED
 
-[![CI/CD](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml/badge.svg)](https://github.com/PROCEED-Labs/proceed/actions/workflows/build_test_deploy.yml)
+[![CI/CD](https://github.com/PROCEED-Labs/proceed/actions/workflows/deploy_with_db.yml/badge.svg)](https://github.com/PROCEED-Labs/proceed/actions/workflows/deploy_with_db.yml)
 
 PROCEED is an open-source Business Process Management System (BPMS) specialized on the intelligent and user-friendly creation, execution and monitoring of processes.
 Using built-in AI features and the industry-standard BPMN (Business Process Model and Notation), PROCEED's intuitive interface lets anyone visually design workflows, fosters collaboration and empowers employees to act autonomously.

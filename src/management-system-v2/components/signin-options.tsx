@@ -291,7 +291,7 @@ export function SigninOptions({
   if (createOrgOption && !env.PROCEED_PUBLIC_IAM_ONLY_ONE_ORGANIZATIONAL_SPACE) {
     tabs.push({
       icon: <VscOrganization size={26} />,
-      label: 'Create Organization',
+      label: 'Create Space',
       key: 'create-organization',
       href: '/create-organization',
       children: null,

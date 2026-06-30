@@ -1,11 +1,10 @@
 'use server';
 
 import db from '@/lib/data/db';
-import { DeploymentInput, DeploymentInputSchema } from '../deployment-schema';
 import { getCurrentEnvironment } from '@/components/auth';
 import { SuccessType, UserErrorType, userError } from '../user-error';
 import Ability from '../ability/abilityHelper';
-import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 
 export async function getDeployedProcesses(environmentId: string, withArchived = false) {
   const { ability } = await getCurrentEnvironment(environmentId);
@@ -123,52 +122,3 @@ export async function getProcessDeployments(
 export type StoredDeployment = SuccessType<
   Awaited<ReturnType<typeof getProcessDeployments>>
 >[number];
-
-export async function addDeployment(
-  spaceId: string,
-  processId: string,
-  input: DeploymentInput,
-  ability?: Ability,
-) {
-  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
-
-  if (!ability.can('create', 'Execution'))
-    return userError('Invalid Permissions', UserErrorType.PermissionError);
-
-  const data = DeploymentInputSchema.parse(input);
-
-  const res = await db.processDeployment.createManyAndReturn({
-    data: data.engineIds.map((engineId) => ({ ...data, engineIds: undefined, engineId })),
-  });
-
-  revalidateTag(`space/${spaceId}/deployments`, 'max');
-  revalidateTag(`deployments/process/${processId}`, 'max');
-
-  return res;
-}
-
-export async function updateDeployment(
-  spaceId: string,
-  processId: string,
-  deploymentId: string,
-  input: Partial<DeploymentInput>,
-  ability?: Ability,
-) {
-  if (!ability) ({ ability } = await getCurrentEnvironment(spaceId));
-
-  if (!ability.can('update', 'Execution')) {
-    return userError('Invalid Permissions', UserErrorType.PermissionError);
-  }
-
-  const data = DeploymentInputSchema.partial().strict().parse(input);
-
-  const result = await db.processDeployment.update({
-    where: { id: deploymentId },
-    data,
-  });
-
-  revalidateTag(`space/${spaceId}/deployments`, 'max');
-  revalidateTag(`deployments/process/${processId}`, 'max');
-
-  return result;
-}

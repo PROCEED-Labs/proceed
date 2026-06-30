@@ -92,7 +92,7 @@ const RolesPage = ({ roles }: { roles: RoleWithMembers[] }) => {
       sorter: (a, b) => a.name.value.localeCompare(b.name.value),
     },
     {
-      title: 'Organisation Role Type',
+      title: 'Space Role Type',
       dataIndex: 'organizationRoleType',
       key: 'organizationRoleType',
       render: (types: string[]) => {

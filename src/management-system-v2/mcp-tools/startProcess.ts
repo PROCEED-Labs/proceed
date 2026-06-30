@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { type InferSchema } from 'xmcp';
 import { isAccessible, toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { isUserErrorResponse } from '@/lib/user-error';
-import { deployProcess } from '@/lib/executions/deployment-server-actions';
 import { getProcess, getProcessLatestVersion } from '@/lib/data/db/process';
 import { toCaslResource } from '@/lib/ability/caslAbility';
 import { startInstance } from '@/lib/executions/instance-server-actions';
@@ -76,6 +75,7 @@ export default async function startProcess({
       process.version.id,
       startParameters &&
         Object.fromEntries(Object.entries(startParameters).map(([key, value]) => [key, { value }])),
+      false,
       ability,
       userId,
     );

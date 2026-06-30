@@ -1,7 +1,7 @@
 'use server';
 
 import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
-import { UserErrorType, getErrorMessage, userError } from '../user-error';
+import { UserErrorType, getErrorMessage, permissionDenied, userError } from '../user-error';
 import { AuthenticatedUserData, AuthenticatedUserDataSchema } from './user-schema';
 import { ReactNode } from 'react';
 import { OrganizationEnvironment } from './environment-schema';
@@ -21,6 +21,16 @@ import { getAppliedRolesForUser } from '../authorization/organizationEnvironment
 import db from '@/lib/data/db/index';
 import { env } from '../ms-config/env-vars';
 
+export async function getSpaceUsers(spaceId: string) {
+  const { ability, activeEnvironment } = await getCurrentEnvironment(spaceId);
+
+  if (!ability.can('view', 'User')) return permissionDenied();
+
+  const users = await _getSpaceUsers(spaceId, activeEnvironment.isOrganization);
+
+  return ability.filter('view', 'User', users);
+}
+
 export async function deleteUser() {
   const { userId } = await getCurrentUser();
 
@@ -38,10 +48,10 @@ export async function deleteUser() {
       message = (
         <>
           <p>
-            You&aposre part of organizations where you are the only admin, in order to delete your
-            accounts you first have to either add another admin or delete these organizations.
+            You&aposre part of Spaces where you are the only admin, in order to delete your accounts
+            you first have to either add another admin or delete these Spaces.
           </p>
-          <p>The affected organizations are:</p>
+          <p>The affected Spaces are:</p>
           <ul>
             {conflictingOrgsNames.map((name, idx) => (
               <li key={idx}>
@@ -55,7 +65,7 @@ export async function deleteUser() {
             ))}
           </ul>
           <p>
-            You can delete these organizations <Link href="/environments">here</Link>.
+            You can delete these Spaces <Link href="/environments">here</Link>.
           </p>
         </>
       );
@@ -226,15 +236,6 @@ export async function setUserTemporaryPassword(
 export async function getUserById(id: string) {
   try {
     return await _getUserById(id);
-  } catch (e) {
-    const message = getErrorMessage(e);
-    return userError(message);
-  }
-}
-
-export async function getSpaceUsers(spaceId: string, isOrganization: boolean) {
-  try {
-    return await _getSpaceUsers(spaceId, isOrganization);
   } catch (e) {
     const message = getErrorMessage(e);
     return userError(message);

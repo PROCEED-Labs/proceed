@@ -77,7 +77,7 @@ function useUserTasks(
     }
   }
 
-  return { userTasks };
+  return { userTasks, refetch: query.refetch };
 }
 
 export default useUserTasks;

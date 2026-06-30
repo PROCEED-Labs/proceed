@@ -18,7 +18,7 @@ import {
   UserSpacesTile,
 } from './sections';
 import FavoriteProcessesSection from './favorite-processes-section';
-import { getCurrentEnvironment } from '@/components/auth';
+import { getCurrentEnvironment, getCurrentUser } from '@/components/auth';
 import { getUsersFavourites } from '@/lib/data/users';
 import { getProcesses } from '@/lib/data/db/process';
 import styles from './page.module.scss';
@@ -33,10 +33,9 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
   const { environmentId } = await params;
   const msConfig = await getMSConfig();
 
-  const {
-    activeEnvironment: { spaceId },
-    ability,
-  } = await getCurrentEnvironment(environmentId);
+  const { activeEnvironment, ability } = await getCurrentEnvironment(environmentId);
+  const { user } = await getCurrentUser();
+  const { spaceId } = activeEnvironment;
 
   const documentationSettings = await getSpaceSettingsValues(spaceId, 'process-documentation');
   if (isUserErrorResponse(documentationSettings)) return notFound();
@@ -110,11 +109,25 @@ const StartPage = async ({ params }: { params: Promise<{ environmentId: string }
         ]}
       />
     ),
-    <UserSection
-      key="user"
-      tiles={[<UserProfileTile key="profile" />, <UserSpacesTile key="spaces" />]}
-    />,
-    <UserSpaceSection key="home" tiles={[<SettingsTile key="settings" />]} />,
+    msConfig.PROCEED_PUBLIC_IAM_ACTIVE && (
+      <UserSection
+        key="user"
+        tiles={[
+          <UserProfileTile key="profile" />,
+          !user?.isGuest && <UserSpacesTile key="spaces" />,
+        ]}
+      />
+    ),
+    !user?.isGuest && (
+      <UserSpaceSection
+        key="home"
+        tiles={[
+          (!activeEnvironment.isOrganization ||
+            ability.can('update', 'Environment') ||
+            ability.can('delete', 'Environment')) && <SettingsTile key="settings" />,
+        ]}
+      />
+    ),
   ].filter(truthyFilter);
 
   return (

@@ -108,6 +108,7 @@ const DeploymentsView = ({
             space.spaceId,
             'dynamic',
             forceEngine,
+            true,
           );
           queryClient.removeQueries({
             queryKey: ['processDeployments', space.spaceId, process.id],

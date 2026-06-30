@@ -11,13 +11,14 @@ import {
   LeftOutlined,
   RightOutlined,
 } from '@ant-design/icons';
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { useMemo, useRef, useState, useEffect, use } from 'react';
 import type { ProcessMetadata } from '@/lib/data/process-schema';
 import type { Folder } from '@/lib/data/folder-schema';
 import { processUnchangedFromBasedOnVersion } from '@/lib/data/processes';
 import AnalyticsCard from '@/components/analytics-card';
 import styles from './analytics.module.css';
 import { useQuery } from '@tanstack/react-query';
+import { EnvVarsContext } from '@/components/env-vars-context';
 
 export type AnalyticsItem = ProcessMetadata | (Folder & { type: 'folder' });
 
@@ -26,6 +27,7 @@ interface ProcessAnalyticsCardsProps {
   allProcesses: AnalyticsItem[];
   isRootFolder?: boolean;
   spaceId: string;
+  isListView?: boolean;
 }
 
 interface AnalyticsData {
@@ -68,10 +70,12 @@ const ProcessAnalyticsCards = ({
   allProcesses,
   isRootFolder = true,
   spaceId,
+  isListView = false,
 }: ProcessAnalyticsCardsProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(false);
+  const envVars = use(EnvVarsContext);
 
   const checkScrollButtons = () => {
     if (scrollRef.current) {
@@ -131,19 +135,26 @@ const ProcessAnalyticsCards = ({
 
     const processesInFolderCount = processesInFolder.length;
 
-    const releasedInFolder = processesInFolder.filter(
+    // In list view, only use released processes for analytics
+    const processesForAnalytics = isListView
+      ? processesInFolder.filter((p) => p.versions && p.versions.length > 0)
+      : processesInFolder;
+
+    const releasedInFolder = processesForAnalytics.filter(
       (p) => p.versions && p.versions.length > 0,
     ).length;
 
-    const draftsInFolder = processesInFolderCount - releasedInFolder;
-    const sharedInFolder = processesInFolder.filter(
+    const draftsInFolder = isListView ? 0 : processesInFolderCount - releasedInFolder;
+
+    const executableInFolder = processesForAnalytics.filter((p) => p.executable).length;
+
+    const sharedInFolder = processesForAnalytics.filter(
       (p) => p.shareTimestamp && p.shareTimestamp > 0,
     ).length;
-    const executableInFolder = processesInFolder.filter((p) => p.executable).length;
 
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const recentlyEditedInFolder = processesInFolder.filter(
+    const recentlyEditedInFolder = processesForAnalytics.filter(
       (p) => p.lastEditedOn && new Date(p.lastEditedOn) > sevenDaysAgo,
     ).length;
 
@@ -158,7 +169,7 @@ const ProcessAnalyticsCards = ({
       totalFolders: allFoldersGlobal.length,
       foldersInCurrentLevel: foldersInCurrent.length,
     };
-  }, [unversionedCount, processesInFolder, allProcesses, folderContents]);
+  }, [unversionedCount, processesInFolder, allProcesses, folderContents, isListView]);
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = 350;
@@ -207,58 +218,73 @@ const ProcessAnalyticsCards = ({
       >
         {/* Total Processes Card */}
         <AnalyticsCard
-          title="Total Processes"
+          title={isListView ? 'Total Released Processes' : 'Total Processes'}
           icon={<FileOutlined />}
-          mainValue={analytics.processesInFolder}
-          showProgress={true}
-          progressPercent={100}
+          mainValue={isListView ? analytics.releasedInFolder : analytics.processesInFolder}
+          showProgress={isListView ? false : true}
+          progressPercent={isListView ? undefined : 100}
           successPercent={
-            analytics.processesInFolder > 0
-              ? (analytics.releasedInFolder / analytics.processesInFolder) * 100
-              : 0
+            isListView
+              ? undefined
+              : (analytics.processesInFolder &&
+                  (analytics.releasedInFolder / analytics.processesInFolder) * 100) ||
+                0
           }
-          legend={[
-            {
-              label: 'Released',
-              value: analytics.releasedInFolder,
-              tooltip: 'Processes that have at least one released version and are ready for use',
-            },
-            {
-              label: 'Drafts',
-              value: analytics.draftsInFolder,
-              tooltip: 'Processes that have never been released (no versions created yet)',
-            },
-          ]}
+          legend={
+            isListView
+              ? undefined
+              : [
+                  {
+                    label: 'Released',
+                    value: analytics.releasedInFolder,
+                    tooltip:
+                      'Processes that have at least one released version and are ready for use',
+                  },
+                  {
+                    label: 'Drafts',
+                    value: analytics.draftsInFolder,
+                    tooltip: 'Processes that have never been released (no versions created yet)',
+                  },
+                ]
+          }
           subtitle={isRootFolder ? 'Across all folders' : 'In this folder'}
         />
 
-        {/* Executable Card */}
-        <AnalyticsCard
-          title="Executable"
-          icon={<RocketOutlined />}
-          mainValue={analytics.executableInFolder}
-          secondaryValue={analytics.processesInFolder}
-          showProgress={true}
-          progressPercent={
-            analytics.processesInFolder > 0
-              ? (analytics.executableInFolder / analytics.processesInFolder) * 100
-              : 0
-          }
-          subtitle={isRootFolder ? 'Ready for Automation' : 'Ready for Automation (In this folder)'}
-        />
+        {/* Executable Card will be shown only if automation is active */}
+        {envVars.PROCEED_PUBLIC_PROCESS_AUTOMATION_ACTIVE && (
+          <AnalyticsCard
+            title="Executable"
+            icon={<RocketOutlined />}
+            mainValue={analytics.executableInFolder}
+            secondaryValue={isListView ? analytics.releasedInFolder : analytics.processesInFolder}
+            showProgress={true}
+            progressPercent={
+              (isListView ? analytics.releasedInFolder : analytics.processesInFolder) > 0
+                ? (analytics.executableInFolder /
+                    (isListView ? analytics.releasedInFolder : analytics.processesInFolder)) *
+                  100
+                : 0
+            }
+            subtitle={
+              isRootFolder ? 'Ready for Automation' : 'Ready for Automation (In this folder)'
+            }
+          />
+        )}
 
-        {/* Needs Release Card */}
-        <AnalyticsCard
-          title="Needs Release"
-          icon={<EditOutlined />}
-          mainValue={analytics.unversionedInFolder}
-          tooltip="Processes that need to be released. Includes drafts (never released) and released processes with unreleased changes."
-          subtitle={
-            isRootFolder
-              ? 'Number of updated Processes that need release'
-              : 'Number of updated Processes that need release (In this folder)'
-          }
-        />
+        {/* Needs Release Card shown in Editor view only */}
+        {!isListView && (
+          <AnalyticsCard
+            title="Needs Release"
+            icon={<EditOutlined />}
+            mainValue={analytics.unversionedInFolder}
+            tooltip="Processes that need to be released. Includes drafts (never released) and released processes with unreleased changes."
+            subtitle={
+              isRootFolder
+                ? 'Number of updated Processes that need release'
+                : 'Number of updated Processes that need release (In this folder)'
+            }
+          />
+        )}
 
         {/* Folders Card */}
         <AnalyticsCard

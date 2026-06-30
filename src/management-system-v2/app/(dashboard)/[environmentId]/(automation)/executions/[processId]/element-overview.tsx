@@ -135,8 +135,8 @@ export function ElementOverview({
       <div
         key="image"
         style={{
-          width: '75%',
-          height: '7.5rem',
+          width: '100%',
+          height: '10rem',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',

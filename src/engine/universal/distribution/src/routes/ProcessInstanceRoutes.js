@@ -26,6 +26,18 @@ module.exports = (path, management) => {
         const initiatorInfo = ['processInstanceInitiator', 'processInstanceInitiatorSpaceId'];
         // the ms provided information about where and by whom the instance is being created
         if (initiatorInfo.every((info) => info in extras)) {
+          // expand the potential addresses with entries that use the default port
+          // => workaround for situations where the engine and the MS are in the same docker network
+          extras.managementSystemLocation.forEach((address) => {
+            const url = new URL(address);
+            if (url.port === '33081') return;
+
+            url.port = '33081';
+            let newAddress = url.toString();
+            if (newAddress.endsWith('/')) newAddress = newAddress.slice(0, -1);
+            extras.managementSystemLocation.push(newAddress);
+          });
+
           for (const address of extras.managementSystemLocation) {
             // the ms provides an array with multiple possible ways it could be reachable => test
             // which one works and save it for requests that might be necessary during instance
@@ -38,8 +50,14 @@ module.exports = (path, management) => {
               );
               if (res.response.statusCode === 200) {
                 extras.managementSystemLocation = address;
+                break;
               }
             } catch (err) {}
+          }
+          if (Array.isArray(extras.managementSystemLocation)) {
+            log.error(
+              `Could not reach the management system that is trying to start an instance through any of the given addresses. Addresses: ${extras.managementSystemLocation.join(', ')}`,
+            );
           }
         }
       }

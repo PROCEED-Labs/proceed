@@ -53,3 +53,8 @@
   font-weight: 300;
   padding: 5px;
 }
+
+.Sider :global(.ant-menu-item .ant-menu-title-content),
+.Sider :global(.ant-menu-submenu-title .ant-menu-title-content) {
+  margin-inline-start: 10px !important;
+}

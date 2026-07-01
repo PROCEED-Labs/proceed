@@ -112,7 +112,13 @@ const ConnectionsModal = ({
             </Space.Addon>
             <Form.Item
               name="hostname"
-              rules={[{ required: true, message: 'Please input the Address!' }]}
+              rules={[
+                {
+                  required: true,
+                  message:
+                    'Please specify the communication protocol and IP address / DNS name /Docker service name where a PROCEED Engine is reachable.',
+                },
+              ]}
               noStyle
             >
               <Input id="engine-modal-hostname-input" />
@@ -121,7 +127,15 @@ const ConnectionsModal = ({
         </Form.Item>
 
         <Form.Item name="port" label="Port" rules={[{ required: true }]} required>
-          <Input />
+          <Input
+            defaultValue={
+              values?.protocol === 'mqtt:'
+                ? '1883'
+                : values?.protocol === 'mqtts:'
+                  ? '8883'
+                  : '33029'
+            }
+          />
         </Form.Item>
 
         {values?.protocol === 'mqtt:' && (

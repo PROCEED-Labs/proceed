@@ -204,14 +204,14 @@ const DashboardLayout = async (
         </Link>
       ),
       icon: (
-        <Link href={spaceURL(activeEnvironment, `/tasklist`)}>
+        <span>
           <CheckSquareOutlined />
           <ActiveTasksBadge
             activeSpace={activeEnvironment}
             onIcon
             pollingInterval={pollingInterval}
           />
-        </Link>
+        </span>
       ),
       selectedRegex: '/tasklist($|/|\\?)',
       openRegex: childRegex,
@@ -318,11 +318,7 @@ const DashboardLayout = async (
           Configurations
         </Link>
       ),
-      icon: (
-        <Link href={spaceURL(activeEnvironment, `/machine-config`)}>
-          <ApiOutlined />
-        </Link>
-      ),
+      icon: <ApiOutlined />,
       selectedRegex: `/machine-config(?!/${userId}|/${activeEnvironment.spaceId})($|/|\\?)`,
     });
   }

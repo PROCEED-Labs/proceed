@@ -121,7 +121,15 @@ const ConnectionsModal = ({
               ]}
               noStyle
             >
-              <Input id="engine-modal-hostname-input" />
+              <Input
+                id="engine-modal-hostname-input"
+                // This default value is the docker servive name of our docker compose file and only shown if running locally on the default port of our docker compose file. This is a convenience for local testing.
+                defaultValue={
+                  window?.location.host === 'localhost:3002' && values?.protocol === 'http:'
+                    ? 'proceed_standalone_engine'
+                    : ''
+                }
+              />
             </Form.Item>
           </Space.Compact>
         </Form.Item>

@@ -1,6 +1,5 @@
 'use client';
 
-import { refetchEngines } from '@/lib/engines/server-actions';
 import { useEffect } from 'react';
 
 const EngineRefetchBoundary: React.FC<
@@ -14,7 +13,9 @@ const EngineRefetchBoundary: React.FC<
 
     async function refetchCycle() {
       if (!keepRunning) return;
-      await refetchEngines();
+      await fetch('/api/refresh-engines', {
+        method: 'POST',
+      });
 
       // the user sets the interval in seconds so we have to convert to milliseconds
       timeoutId = setTimeout(refetchCycle, interval * 1000);

@@ -1,6 +1,5 @@
 'use client';
 
-import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 import { useEffect } from 'react';
 
 const DeploymentRefetchBoundary: React.FC<
@@ -14,7 +13,9 @@ const DeploymentRefetchBoundary: React.FC<
 
     async function refetchCycle() {
       if (!keepRunning) return;
-      await refetchDeployments();
+      await fetch('/api/refresh-deployments', {
+        method: 'POST',
+      });
 
       // the user sets the interval in seconds so we have to convert to milliseconds
       timeoutId = setTimeout(refetchCycle, interval * 1000);

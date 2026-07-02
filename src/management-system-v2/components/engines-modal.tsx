@@ -153,7 +153,7 @@ const ConnectionsModal = ({
           <Input />
         </Form.Item>
 
-        {values?.protocol === 'mqtt:' && (
+        {(values?.protocol === 'mqtt:' || values?.protocol === 'mqtts:') && (
           <>
             <Form.Item name="username" label="Username" rules={[{ required: false }]}>
               <Input />

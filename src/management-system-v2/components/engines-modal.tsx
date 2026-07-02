@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Form, Input, Modal, ModalProps, Select, Space } from 'antd';
 
 type Protocol = 'http:' | 'https:' | 'mqtt:' | 'mqtts:';
@@ -47,6 +48,7 @@ const ConnectionsModal = ({
     password?: string;
   }>();
   const values = Form.useWatch([], form);
+  const previousProtocol = useRef<string | undefined>(initialData.protocol);
 
   return (
     <Modal
@@ -98,6 +100,28 @@ const ConnectionsModal = ({
                 <Select
                   style={{ flex: 0, backgroundColor: 'inherit', width: 'fit-content' }}
                   popupMatchSelectWidth={false}
+                  // Set the default port if the protocol changes (only if the user did not yet manually change the protocol)
+                  onChange={(protocol) => {
+                    const currentPort = form.getFieldValue('port');
+                    const isPortEmpty = currentPort === undefined || currentPort === '';
+                    // now we check if the port is the default for the previous protocol, meaning the user did not change the port manually. If the user did change the port, we will not change it automatically.
+                    const defaultPortForPreviousProtocol =
+                      previousProtocol.current === 'mqtt:'
+                        ? '1883'
+                        : previousProtocol.current === 'mqtts:'
+                          ? '8883'
+                          : '33029';
+                    const portLooksDefault = currentPort === defaultPortForPreviousProtocol;
+
+                    let nextPort = currentPort;
+                    if (isPortEmpty || portLooksDefault) {
+                      nextPort =
+                        protocol === 'mqtt:' ? '1883' : protocol === 'mqtts:' ? '8883' : '33029';
+                    }
+
+                    previousProtocol.current = protocol as string;
+                    form.setFieldsValue({ protocol, port: nextPort });
+                  }}
                   options={
                     [
                       { value: 'http:', label: 'HTTP' },

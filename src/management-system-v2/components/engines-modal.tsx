@@ -19,7 +19,7 @@ function parseInitialData(data?: { address: string; name: string | null }) {
   return {
     name: data?.name,
     protocol: 'http:' as Protocol,
-    port: '',
+    port: '33029',
     hostname: '',
   };
 }
@@ -96,7 +96,6 @@ const ConnectionsModal = ({
             <Space.Addon style={{ padding: 0, border: 0 }}>
               <Form.Item name="protocol" noStyle>
                 <Select
-                  defaultValue={'http:' satisfies Protocol}
                   style={{ flex: 0, backgroundColor: 'inherit', width: 'fit-content' }}
                   popupMatchSelectWidth={false}
                   options={
@@ -121,29 +120,13 @@ const ConnectionsModal = ({
               ]}
               noStyle
             >
-              <Input
-                id="engine-modal-hostname-input"
-                // This default value is the docker servive name of our docker compose file and only shown if running locally on the default port of our docker compose file. This is a convenience for local testing.
-                defaultValue={
-                  window?.location.host === 'localhost:3002' && values?.protocol === 'http:'
-                    ? 'proceed_standalone_engine'
-                    : ''
-                }
-              />
+              <Input id="engine-modal-hostname-input" />
             </Form.Item>
           </Space.Compact>
         </Form.Item>
 
         <Form.Item name="port" label="Port" rules={[{ required: true }]} required>
-          <Input
-            defaultValue={
-              values?.protocol === 'mqtt:'
-                ? '1883'
-                : values?.protocol === 'mqtts:'
-                  ? '8883'
-                  : '33029'
-            }
-          />
+          <Input />
         </Form.Item>
 
         {values?.protocol === 'mqtt:' && (

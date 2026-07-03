@@ -77,6 +77,9 @@ export async function getProcessDeployments(
     cacheLife({ revalidate: 10, expire: 15 });
     cacheTag(`deployments/process/${processId}`);
     const deployments = await db.processDeployment.findMany({
+      where: {
+        version: { processId: `${processId}` },
+      },
       include: {
         version: {
           select: {

@@ -43,6 +43,9 @@ export default async function getProcesses({ userCode }: InferSchema<typeof sche
     let result = await prisma.process.findMany({
       where: {
         environmentId,
+        folderId: {
+          not: null,
+        },
       },
       select: {
         id: true,

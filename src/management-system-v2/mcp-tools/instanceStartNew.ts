@@ -8,30 +8,32 @@ import { startInstance } from '@/lib/executions/instance-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
-  processId: z.string().describe('The ID of the process'),
+  processId: z.string().describe('The unique id of a specific business process.'),
   startParameters: z
     .record(z.string(), z.any())
     .optional()
     .describe(
-      'The start parameters required from the user at startup. The parameters can be found in the bpmn of the process.',
+      'The start parameters required from the user for starting a new business process instance. These are defined in the BPMN using the `<proceed:variable>` element with the attribute `requiredAtInstanceStartup="true"`. To start the process, these variables must be passed as key-value pairs in a JSON object.',
     ),
 });
 
 // Define tool metadata
 export const metadata = {
-  name: 'start-process',
+  name: 'start-new-process-execution',
   description:
-    "Starts executing a process if that process is executable. Might require specific start variables to work which can be found in the process' bpmn.",
+    'Initiate a new execution of a specific business process. This creates a new instance of that process.\n' +
+    'Only processes that are `executable` can be started. Some processes require variables that must be set at the start of the process. These are defined in the BPMN using the `<proceed:variable>` element with the attribute `requiredAtInstanceStartup="true"`. To start the process, these variables must be passed as key-value pairs in a JSON object.\n' +
+    'If a process instance is successfully started, the instance ID is returned within a text string.',
   annotations: {
-    title: 'Start a process',
-    readOnlyHint: true,
+    title: 'Start a new process execution',
+    readOnlyHint: false,
     destructiveHint: false,
-    idempotentHint: true,
+    idempotentHint: false,
   },
 };
 
 // Tool implementation
-export default async function startProcess({
+export default async function startNewProcessExecution({
   userCode,
   processId,
   startParameters,
@@ -68,7 +70,6 @@ export default async function startProcess({
 
     // we don't need to check if the variables that are required at startup are set since the engine
     // will do that for us and return an error if they aren't
-
     const instanceId = await startInstance(
       environmentId,
       processId,

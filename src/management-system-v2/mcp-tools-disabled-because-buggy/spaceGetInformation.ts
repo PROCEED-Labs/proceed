@@ -32,6 +32,7 @@ export default async function getSpaceData({ userCode }: InferSchema<typeof sche
 
     const { environmentId, ability } = verification;
 
+    // TODO: BUG here, return is null -> throws error
     const conf = await getDeepConfigurationById(environmentId, ability);
 
     const result: Record<string, any> = {

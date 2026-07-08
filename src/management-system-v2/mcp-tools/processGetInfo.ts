@@ -7,13 +7,14 @@ import { toCaslResource } from '@/lib/ability/caslAbility';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
-  processId: z.string().describe('The ID of the process'),
+  processId: z.string().describe('The unique id of a specific business process.'),
 });
 
 // Define tool metadata
 export const metadata = {
   name: 'get-process-info',
-  description: 'Get the BPMN representation of a process',
+  description:
+    'Retrieve the xml-based BPMN representation of the latest published version of a specific business process. It includes the different steps plus metadata about the process and its steps.',
   annotations: {
     title: 'Get process info',
     readOnlyHint: true,

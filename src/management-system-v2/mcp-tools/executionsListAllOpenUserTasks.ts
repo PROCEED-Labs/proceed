@@ -9,10 +9,11 @@ export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-tasks',
-  description: 'Get all tasks the user can still work on.',
+  name: 'list-all-open-user-tasks',
+  description:
+    "Lists all open tasks that the user can still work on. The result contains a JSON array with multiple objects. The objects contain some metadata such as the task's `name`, its unique `id`, and `instanceId`, which refers to the running process to which the task belongs.",
   annotations: {
-    title: 'Get all tasks',
+    title: 'List all open user tasks',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -20,7 +21,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getTasks({ userCode }: InferSchema<typeof schema>) {
+export default async function listAllOpenUserTasks({ userCode }: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
 

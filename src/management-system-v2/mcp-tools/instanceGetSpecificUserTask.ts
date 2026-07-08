@@ -8,16 +8,16 @@ import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
-  id: z.string().describe('The id of the task for which the user tries to get information.'),
+  id: z.string().describe('The unique id of a specific open user task.'),
 });
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-task',
+  name: 'get-specific-open-user-task',
   description:
-    'Get the html file that represents the requested task. This file contains information about what the user has to do to complete the task.',
+    'Retrieve the description for a specific open user task which is part of a running process instance. The return value contains a self-contained HTML representation of the requested task, including CSS, JavaScript, and HTML code. The `<body>` section contains the semantic information describing what the user must do to complete the task.',
   annotations: {
-    title: 'Get task',
+    title: 'Get one specific open user task',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -25,7 +25,10 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getTask({ userCode, id }: InferSchema<typeof schema>) {
+export default async function getSpecificOpenUserTask({
+  userCode,
+  id,
+}: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
 

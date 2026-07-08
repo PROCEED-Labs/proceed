@@ -17,31 +17,34 @@ import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 const variableSchema = z
   .array(z.object({ name: z.string(), value: z.any() }))
   .describe(
-    'A list of variables with values. The format of the entries should be { name, value }. Where name is the name of the variable and value is the value provided by the user.',
+    'An array of objects containing the specified variables of the given user task. The objects must 1. have a `name` property whose value matches the `name` attribute of a `<input>` element, and 2. have a `value` property that represents the data provided by the user. The `value` property can be of any type, but it must match the data type of the variable as defined in the process’s BPMN.',
   );
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
-  id: z.string().describe('The id of the task for which the user tries to get information.'),
+  id: z.string().describe('The id of the user task that the user wants to complete.'),
   variables: variableSchema,
 });
 
 // Define tool metadata
 export const metadata = {
-  name: 'submit-task',
+  name: 'submit-open-user-task',
   description:
-    'Submit a task for the user.\n' +
-    'The call should provide the data that would normally be sent when the user submits the associated form after having filled out all inputs.',
+    'Submits the data for an open user task so that it can be completed. Most user tasks contain input fields for which the user must provide data in the `variables` parameter. These input fields are defined in the HTML of the user task within the `<input>` elements. ',
   annotations: {
-    title: 'Submit task',
-    readOnlyHint: true,
+    title: 'Submit one specific open user task',
+    readOnlyHint: false,
     destructiveHint: false,
-    idempotentHint: true,
+    idempotentHint: false,
   },
 };
 
 // Tool implementation
-export default async function submitTask({ userCode, id, variables }: InferSchema<typeof schema>) {
+export default async function submitOpenUserTask({
+  userCode,
+  id,
+  variables,
+}: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
 

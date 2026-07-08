@@ -9,7 +9,7 @@ export const schema = toAuthorizationSchema({});
 export const metadata = {
   name: 'get-accessible-tools',
   description:
-    'Get all of the available tools that the current user can access in the current space. Some of the tools that are exposed through MCP might be blocked due to the configuration of the space or the permissions of the user in the space.',
+    "List all tools that are available and accessable to the current user in the current space. (Some of the tools listed by the standard MCP query may be blocked due to the space's configuration or the user's permissions. This query only lists the tools to which the user actually has access.)",
   annotations: {
     title: 'Get Available Tools',
     readOnlyHint: true,
@@ -60,16 +60,16 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
     );
 
     const tools = {
-      'get-organization-data': true,
-      'get-user-data': true,
-      'get-processes': canAccessProcesses,
+      // 'get-space-data': false, // TODO: currently bug in implementation
+      // 'get-user-data': false, // TODO: currently bug in implementation
+      'list-all-processes': canAccessProcesses,
       'get-process-info': canAccessProcesses,
-      'start-process': canCreateInstances,
-      'get-executions': canAccessInstances,
-      'get-execution-info': canAccessInstances,
-      'get-tasks': canAccessTasks,
-      'get-task': canAccessTasks,
-      'submit-task': canAccessTasks,
+      'start-new-process-execution': canCreateInstances,
+      'list-all-process-executions': canAccessInstances,
+      'get-process-execution-info': canAccessInstances,
+      'list-all-open-user-tasks': canAccessTasks,
+      'get-specific-open-user-task': canAccessTasks,
+      'submit-open-user-task': canAccessTasks,
     };
 
     const result = Object.entries(tools)

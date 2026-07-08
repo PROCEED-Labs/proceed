@@ -10,10 +10,11 @@ export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-processes',
-  description: 'Get all processes of the user with a short summary',
+  name: 'list-all-processes',
+  description:
+    'Retrieve all business processes to which the user has access. Various metadata from the latest published version of the processes is provided, such as whether a process is executable.',
   annotations: {
-    title: 'Get all processes',
+    title: 'List all processes',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -21,7 +22,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getProcesses({ userCode }: InferSchema<typeof schema>) {
+export default async function listAllProcesses({ userCode }: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
 

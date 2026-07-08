@@ -14,16 +14,17 @@ import { refetchDeployments } from '@/lib/executions/deployment-server-actions';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({
-  instanceId: z.string().describe('The id of the process execution to inspect.'),
+  instanceId: z.string().describe('The unique id of the process instance to be inspected.'),
 });
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-execution-info',
+  name: 'get-process-execution-info',
   description:
-    "Returns information about the current state of a process' execution in the form of a json file.",
+    'Retrieve information about the current status of a specific process execution, also known as a process instance. The returned JSON contains several important sections; among others, `processId` and `processVersion.versionId` provide a clear reference to the executed business process, `instanceState` describes the overall state of the process instance, `processInstanceInitiator` identifies the user who started the execution, the `tokens[]` array lists the process paths and elements currently being executed, and the `log[]` array lists the process elements that have already been executed.\n' +
+    'The exact definition of the returned properties can be found here: https://github.com/PROCEED-Labs/proceed/wiki/PROCEED-Engine-%E2%80%90-Process-Instance,-Tokens,-Datastructure-and-REST-Endpoint#the-instance',
   annotations: {
-    title: 'Get execution info',
+    title: 'Get process execution info',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -31,7 +32,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getExecutionInfo({
+export default async function getProcessExecutionInfo({
   userCode,
   instanceId,
 }: InferSchema<typeof schema>) {

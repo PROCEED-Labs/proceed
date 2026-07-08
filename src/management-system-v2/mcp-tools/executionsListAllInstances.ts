@@ -9,10 +9,11 @@ export const schema = toAuthorizationSchema({});
 
 // Define tool metadata
 export const metadata = {
-  name: 'get-executions',
-  description: 'Get all process executions that are accessible to the current user.',
+  name: 'list-all-process-executions',
+  description:
+    'Lists the unique identifiers of all process instances for all currently running or previously executed processes.',
   annotations: {
-    title: 'Get executions',
+    title: 'List all process executions',
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -20,7 +21,7 @@ export const metadata = {
 };
 
 // Tool implementation
-export default async function getExecutions({ userCode }: InferSchema<typeof schema>) {
+export default async function listAllProcessExecutions({ userCode }: InferSchema<typeof schema>) {
   try {
     const verification = await verifyCode(userCode);
     if (isUserErrorResponse(verification)) return `Error: ${verification.error.message}`;

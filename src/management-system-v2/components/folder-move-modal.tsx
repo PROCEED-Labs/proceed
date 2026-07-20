@@ -57,6 +57,8 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
         </div>
         <FolderTree
           showRootAsFolder
+          useSpaceNameForRoot
+          autoExpandRoot
           selectedKeys={selectedFolder ? [selectedFolder] : []}
           subtreesToReload={changedFolders}
           onSelect={(selectedElement) => {

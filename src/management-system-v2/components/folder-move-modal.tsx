@@ -13,6 +13,7 @@ type MoveToFolderModalProps = {
   onSelectFolder: (folder: string) => void;
   selectedElements: FolderChildren[];
   changedFolders?: string[];
+  selectedFolder?: string;
 };
 
 const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
@@ -23,6 +24,7 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
   onSelectFolder,
   selectedElements = [],
   changedFolders,
+  selectedFolder,
 }) => {
   return (
     <>
@@ -54,6 +56,8 @@ const MoveToFolderModal: FC<MoveToFolderModalProps> = ({
           ))}
         </div>
         <FolderTree
+          showRootAsFolder
+          selectedKeys={selectedFolder ? [selectedFolder] : []}
           subtreesToReload={changedFolders}
           onSelect={(selectedElement) => {
             if (!selectedElement) onSelectFolder('');

@@ -199,6 +199,9 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
       // the first node of the tree.
       // If showRootAsFolder is false we add the children as the root nodes of the tree
       setTree(parentNode ? [parentNode] : childrenNodes);
+      if (parentNode) {
+        setExpandedKeys((prev) => Array.from(new Set([...prev, parentNode.key])));
+      }
     }
   };
 

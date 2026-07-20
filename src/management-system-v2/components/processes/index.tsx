@@ -614,6 +614,16 @@ const Processes = ({
                         >
                           Import
                         </ProcessImportButton>
+                        {ability.can('create', 'Folder') && (
+                          <Tooltip placement="top" title="Create Folder">
+                            <Button
+                              type="default"
+                              icon={<FolderOutlined />}
+                              aria-label="create-folder-button"
+                              onClick={() => setOpenCreateFolderModal(true)}
+                            />
+                          </Tooltip>
+                        )}
                       </Space>
                     )}
 
@@ -1053,6 +1063,7 @@ const Processes = ({
       <MoveToFolderModal
         changedFolders={foldersChangedInMove}
         selectedElements={elementsToMove}
+        selectedFolder={moveTargetFolderId}
         onCreateFolder={() => {
           setOpenCreateFolderModal(true);
         }}

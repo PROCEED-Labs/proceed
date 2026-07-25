@@ -1,22 +1,75 @@
-import React, { CSSProperties, ReactNode, SetStateAction, useRef } from 'react';
+import React, { CSSProperties, ReactNode, SetStateAction, useEffect, useRef } from 'react';
 import { Card, Grid, CardProps, Table } from 'antd';
 
 export type TabCardProps<T extends { id: string }> = {
   item: T;
   onClick?: (event: React.MouseEvent<HTMLDivElement, MouseEvent>, item: T) => void;
+  onOpen?: (item: T) => void;
   Wrapper?: ((props: { children?: ReactNode; itemId: string; item: T }) => ReactNode) | string;
   selected?: boolean;
   cardProps?: CardProps;
 };
 
+const LONG_PRESS_MS = 500;
+const MOVE_CANCEL_PX = 5;
+
 export const TabCard = <T extends { id: string }>({
   item,
   onClick,
+  onOpen,
   selected,
   cardProps,
   Wrapper = 'div',
 }: TabCardProps<T>) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const pressStartPos = useRef<{ x: number; y: number } | null>(null);
+  const longPressFired = useRef(false);
+
+  const handleMove = (moveEvent: MouseEvent) => {
+    if (!pressStartPos.current) return;
+    const dx = moveEvent.clientX - pressStartPos.current.x;
+    const dy = moveEvent.clientY - pressStartPos.current.y;
+    if (Math.sqrt(dx * dx + dy * dy) > MOVE_CANCEL_PX) cleanupPress();
+  };
+
+  const handleUp = () => cleanupPress();
+
+  function cleanupPress() {
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = undefined;
+    pressStartPos.current = null;
+    window.removeEventListener('mousemove', handleMove);
+    window.removeEventListener('mouseup', handleUp);
+  }
+
+  const handleMouseDown = (event: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    if (event.button !== 0) return; // left click only
+    longPressFired.current = false;
+    pressStartPos.current = { x: event.clientX, y: event.clientY };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+
+    pressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      onClick?.(event, item);
+      cleanupPress();
+    }, LONG_PRESS_MS);
+  };
+
+  const handleClick = () => {
+    // A long-press already handled selection; a plain click opens the item instead
+    if (longPressFired.current) {
+      longPressFired.current = false;
+      return;
+    }
+    onOpen?.(item);
+  };
+
+  useEffect(() => {
+    return () => cleanupPress();
+  }, []);
 
   let style = {};
   if (selected) {
@@ -37,7 +90,8 @@ export const TabCard = <T extends { id: string }>({
         {...cardProps}
         ref={cardRef}
         style={style}
-        onClick={(e) => onClick && onClick(e, item)}
+        onMouseDown={handleMouseDown}
+        onClick={handleClick}
       />
     </Wrapper>
   );

@@ -60,8 +60,8 @@ export default async function getAvailableTools({ userCode }: InferSchema<typeof
     );
 
     const tools = {
-      // 'get-space-data': false, // TODO: currently bug in implementation
-      // 'get-user-data': false, // TODO: currently bug in implementation
+      'get-space-data': false, // TODO: currently bug in implementation
+      'get-user-data': false, // TODO: currently bug in implementation
       'list-all-processes': canAccessProcesses,
       'get-process-info': canAccessProcesses,
       'start-new-process-execution': canCreateInstances,

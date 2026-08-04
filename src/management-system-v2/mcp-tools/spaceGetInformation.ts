@@ -6,6 +6,7 @@ import { getRolesWithMembers } from '@/lib/data/db/iam/roles';
 import { asyncForEach } from '@/lib/helpers/javascriptHelpers';
 import { getUserById } from '@/lib/data/db/iam/users';
 import { isUserErrorResponse } from '@/lib/user-error';
+import { mapSubparameters } from './userGetInformation';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -49,7 +50,9 @@ export default async function getSpaceData({ userCode }: InferSchema<typeof sche
           {
             entry.subParameters[0].subParameters.forEach((dataEntry) => {
               result.data[dataEntry.name] = {
-                description: dataEntry.description?.[0].text,
+                description: dataEntry.description?.length
+                  ? dataEntry.description?.[0].text
+                  : undefined,
                 value: (dataEntry as any).value,
                 unit: dataEntry.unitRef || undefined,
               };
@@ -61,15 +64,7 @@ export default async function getSpaceData({ userCode }: InferSchema<typeof sche
             await asyncForEach(entry.subParameters, async (iamEntry) => {
               switch (iamEntry.name) {
                 case 'common-user-data':
-                  {
-                    iamEntry.subParameters.forEach((memberDataEntry) => {
-                      result.commonMemberData[memberDataEntry.name] = {
-                        description: memberDataEntry.description?.[0].text,
-                        value: (memberDataEntry as any).value,
-                        unit: memberDataEntry.unitRef || undefined,
-                      };
-                    });
-                  }
+                  mapSubparameters(iamEntry.subParameters, result.commonMemberData);
                   break;
                 case 'user':
                   {

@@ -4,6 +4,7 @@ import { toAuthorizationSchema, verifyCode } from '@/lib/mcp-utils';
 import { getUserParameter } from '@/lib/data/db/machine-config';
 import { isUserErrorResponse } from '@/lib/user-error';
 import { getUserById } from '@/lib/data/db/iam/users';
+import { Parameter } from '@/lib/data/machine-config-schema';
 
 // Define the schema for tool parameters
 export const schema = toAuthorizationSchema({});
@@ -19,6 +20,23 @@ export const metadata = {
     idempotentHint: true,
   },
 };
+
+export function mapSubparameters(
+  subParameters: Parameter['subParameters'],
+  target: Record<string, any>,
+) {
+  subParameters.forEach((par) => {
+    const mappedParameter = {
+      value: (par as any).value,
+      unit: par.unitRef,
+      description: par.description?.length ? par.description?.[0].text : undefined,
+    };
+
+    mapSubparameters(par.subParameters, mappedParameter);
+
+    target[par.name] = mappedParameter;
+  });
+}
 
 // Tool implementation
 export default async function getUserData({ userCode }: InferSchema<typeof schema>) {
@@ -47,13 +65,7 @@ export default async function getUserData({ userCode }: InferSchema<typeof schem
       },
     };
 
-    userData.subParameters[0].subParameters.forEach((par) => {
-      result[par.name] = {
-        value: (par as any).value,
-        unit: par.unitRef,
-        description: par.description?.[0].text,
-      };
-    });
+    mapSubparameters(userData.subParameters[0].subParameters, result);
 
     return {
       content: [{ type: 'text', text: JSON.stringify(result) }],

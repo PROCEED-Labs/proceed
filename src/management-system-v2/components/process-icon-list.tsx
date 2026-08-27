@@ -60,17 +60,17 @@ const IconView: FC<IconViewProps> = ({
 
     return {
       Wrapper: DraggableDiv,
+      onOpen: () => {
+        const folderPath = isReadOnly
+          ? `/processes/list/folder/${item.id}`
+          : `/processes/editor/folder/${item.id}`;
+        const processPath = isReadOnly
+          ? `/processes/list/${item.id}`
+          : `/processes/editor/${item.id}`;
+        const url = item.type === 'folder' ? folderPath : processPath;
+        router.push(spaceURL(space, url));
+      },
       cardProps: {
-        onDoubleClick: () => {
-          const folderPath = isReadOnly
-            ? `/processes/list/folder/${item.id}`
-            : `/processes/editor/folder/${item.id}`;
-          const processPath = isReadOnly
-            ? `/processes/list/${item.id}`
-            : `/processes/editor/${item.id}`;
-          const url = item.type === 'folder' ? folderPath : processPath;
-          router.push(spaceURL(space, url));
-        },
         onContextMenu: () => {
           if (elementSelection.selectedElements.some(({ id }) => id === item.id)) {
             setContextMenuItems(elementSelection.selectedElements);

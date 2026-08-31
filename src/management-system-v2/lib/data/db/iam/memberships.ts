@@ -108,6 +108,44 @@ export async function getFullMembersWithRoles(environmentId: string, ability?: A
   return usersWithRoles as unknown as TransformedUserType[];
 }
 
+export async function getFullMembersWithRolesAndOrganigram(
+  environmentId: string,
+  ability?: Ability,
+) {
+  const users = await getFullMembersWithRoles(environmentId, ability);
+
+  const memberships = await db.membership.findMany({
+    where: { environmentId },
+    include: {
+      organigram: {
+        include: {
+          teamRole: true,
+          backOfficeRole: true,
+          directManager: { include: { user: true } },
+        },
+      },
+    },
+  });
+
+  const organigramByUserId = new Map(memberships.map((m) => [m.userId, m.organigram]));
+
+  return users.map((user) => {
+    const organigram = organigramByUserId.get(user.id);
+    return {
+      ...user,
+      team: organigram?.teamRole ?? undefined,
+      backOffice: organigram?.backOfficeRole ?? undefined,
+      directManager: organigram?.directManager?.user
+        ? {
+            id: organigram.directManager.user.id,
+            firstName: organigram.directManager.user.firstName,
+            lastName: organigram.directManager.user.lastName,
+          }
+        : undefined,
+    };
+  });
+}
+
 /**
  * Returns the users that exist in a specific space
  */

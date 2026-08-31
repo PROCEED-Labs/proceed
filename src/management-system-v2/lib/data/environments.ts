@@ -82,6 +82,10 @@ export async function deleteOrganizationEnvironments(environmentIds: string[]) {
   }
 }
 
+export async function getEnvironment(environmentId: string) {
+  return getEnvironmentById(environmentId);
+}
+
 export async function updateOrganization(
   environmentId: string,
   data: Partial<UserOrganizationEnvironmentInput>,

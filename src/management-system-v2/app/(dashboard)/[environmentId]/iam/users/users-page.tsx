@@ -21,7 +21,16 @@ import { userRepresentation } from '@/lib/utils';
 import SpaceLink from '@/components/space-link';
 
 import { EditUserModal } from './edit-user-modal';
-const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
+import { TagList } from '@/components/tag-list';
+
+const UsersPage: FC<{
+  users: (User & {
+    roles?: Role[];
+    team?: { id: string; name: string };
+    directManager?: { id: string; firstName: string | null; lastName: string | null };
+    backOffice?: { id: string; name: string };
+  })[];
+}> = ({ users }) => {
   const app = App.useApp();
   const breakpoint = Grid.useBreakpoint();
   const [selectedUser, setSelectedUser] = useState<ListUser | null>(null);
@@ -69,32 +78,56 @@ const UsersPage: FC<{ users: (User & { roles?: Role[] })[] }> = ({ users }) => {
                 dataIndex: 'roles',
                 key: 'roles',
                 title: 'Roles',
+                width: '15%',
+
                 render: (_, _user) => {
-                  const user = _user as typeof _user & { roles: Role[] };
-                  if (!user.roles) return;
+                  const user = _user as typeof _user & { roles?: Role[] };
+                  if (!user.roles || user.roles.length === 0) return '';
                   return (
-                    <Popover
-                      title={`${userRepresentation({
-                        firstName: user.firstName.value,
-                        lastName: user.lastName.value,
-                        username: user.username.value,
-                      })}'s roles`}
-                      content={
-                        <div>
-                          <ul style={{ padding: 0, listStylePosition: 'inside' }}>
-                            {user.roles.map((role) => (
-                              <li key={role.id}>
-                                <SpaceLink href={`/iam/roles/${role.id}`}>{role.name}</SpaceLink>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      }
-                      trigger="hover"
-                    >
-                      {user.roles.length}
-                    </Popover>
+                    <TagList
+                      items={user.roles.map((role) => ({
+                        id: role.id,
+                        name: role.name,
+                        href: `/iam/roles/${role.id}`,
+                      }))}
+                    />
                   );
+                },
+              },
+              {
+                dataIndex: 'team',
+                key: 'team',
+                title: 'Team',
+                render: (_, _user) => {
+                  const user = _user as typeof _user & { team?: { id: string; name: string } };
+                  return user.team?.name ?? '';
+                },
+              },
+              {
+                dataIndex: 'directManager',
+                key: 'directManager',
+                title: 'Direct Manager',
+                render: (_, _user) => {
+                  const user = _user as typeof _user & {
+                    directManager?: {
+                      id: string;
+                      firstName: string | null;
+                      lastName: string | null;
+                    };
+                  };
+                  if (!user.directManager) return '';
+                  return `${user.directManager.firstName ?? ''} ${user.directManager.lastName ?? ''}`.trim();
+                },
+              },
+              {
+                dataIndex: 'backOffice',
+                key: 'backOffice',
+                title: 'Back Office',
+                render: (_, _user) => {
+                  const user = _user as typeof _user & {
+                    backOffice?: { id: string; name: string };
+                  };
+                  return user.backOffice?.name ?? '';
                 },
               },
               {

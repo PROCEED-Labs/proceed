@@ -7,6 +7,7 @@ import { useEnvironment } from './auth-can';
 import { ProcessListItemIcon } from './process-list';
 import ProceedLoadingIndicator from './loading-proceed';
 import { UserError, isUserErrorResponse } from '@/lib/user-error';
+import { getEnvironment } from '@/lib/data/environments';
 
 type FolderChildren = {
   id: string;
@@ -42,6 +43,8 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   newChildrenHook,
   treeProps,
   showRootAsFolder,
+  useSpaceNameForRoot,
+  autoExpandRoot,
   onSelect: onExternalSelect,
   onMultiSelect: onExternalMultiSelect,
   selectedKeys: externalSelectedKeys,
@@ -62,6 +65,8 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
   }) => TreeNode<TContentType>[];
   treeProps?: TreeProps<TreeNode<TContentType>>;
   showRootAsFolder?: boolean;
+  useSpaceNameForRoot?: boolean;
+  autoExpandRoot?: boolean;
   onSelect?: (folder: TContentType | undefined) => void;
   onMultiSelect?: (folder: TContentType[] | undefined) => void;
   selectedKeys?: React.Key[];
@@ -136,11 +141,17 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
       const rootFolder = await getFolder(spaceId);
       if ('error' in rootFolder) return;
 
+      let rootName: ReactNode = '< root >';
+      if (useSpaceNameForRoot) {
+        const environment = (await getEnvironment(spaceId)) as { name?: string };
+        rootName = environment?.name || 'Personal Space';
+      }
+
       rootNode = {
         ...generateTreeNode({
           // TODO: this needs to be corrected
           type: 'folder',
-          name: '< root >',
+          name: rootName,
           id: rootFolder.id,
         } as TContentType),
         selectable: !notSelectableKeys.includes(rootFolder.id),
@@ -199,6 +210,9 @@ export const FolderTree = <TContentType extends FolderChildren = FolderChildren>
       // the first node of the tree.
       // If showRootAsFolder is false we add the children as the root nodes of the tree
       setTree(parentNode ? [parentNode] : childrenNodes);
+      if (parentNode && autoExpandRoot) {
+        setExpandedKeys((prev) => Array.from(new Set([...prev, parentNode.key])));
+      }
     }
   };
 

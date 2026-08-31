@@ -2,14 +2,14 @@ import { getCurrentEnvironment } from '@/components/auth';
 import UsersPage from './users-page';
 import Content from '@/components/content';
 import UnauthorizedFallback from '@/components/unauthorized-fallback';
-import { getFullMembersWithRoles } from '@/lib/data/db/iam/memberships';
+import { getFullMembersWithRolesAndOrganigram } from '@/lib/data/db/iam/memberships';
 
 const Page = async (props: { params: Promise<{ environmentId: string }> }) => {
   const params = await props.params;
   const { ability, activeEnvironment } = await getCurrentEnvironment(params.environmentId);
   if (!ability.can('manage', 'User')) return <UnauthorizedFallback />;
 
-  const users = await getFullMembersWithRoles(activeEnvironment.spaceId, ability);
+  const users = await getFullMembersWithRolesAndOrganigram(activeEnvironment.spaceId, ability);
 
   return (
     <Content title="Identity and Access Management">
